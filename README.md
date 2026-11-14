@@ -1,5 +1,12 @@
 # West Launcher
 
+[![Windows için indir](https://img.shields.io/badge/Windows%20i%C3%A7in%20indir-.exe-7fa7c9?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/ashistan5200-png/West-Launcher/releases/latest/download/West-Launcher-Setup.exe)
+[![macOS](https://img.shields.io/badge/macOS-.dmg-26282c?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/ashistan5200-png/West-Launcher/releases/latest/download/West-Launcher-macOS.dmg)
+[![Linux](https://img.shields.io/badge/Linux-.deb-26282c?style=for-the-badge&logo=linux&logoColor=white)](https://github.com/ashistan5200-png/West-Launcher/releases/latest/download/West-Launcher-Linux.deb)
+
+Windows "bilgisayarınızı korudu" uyarısı gösterirse **Ek bilgi → Yine de çalıştır**'a tıkla (uygulama henüz imzalı değil). macOS'ta ilk açılışta uygulamaya **sağ tıkla → Aç**.
+
+
 Tauri 2 + React/TypeScript + Rust ile yazılmış, kompakt ve sade Minecraft launcher.
 
 ## Kimlik
