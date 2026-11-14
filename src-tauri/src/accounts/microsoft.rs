@@ -46,8 +46,11 @@ pub fn code_from_redirect(url: &str) -> Option<Result<String>> {
     if !url.starts_with(LIVE_REDIRECT) {
         return None;
     }
-    let query = url.split_once('?').map(|(_, q)| q).unwrap_or("");
-    let param = |k: &str| query.split('&').find_map(|kv| kv.strip_prefix(&format!("{k}="))).map(|v| v.replace('+', " "));
+    // Değerler URL kodlu gelir (ör. %24 → $). Çözülmeden gönderilirse Microsoft
+    // "The provided value for the 'code' parameter is not valid" der.
+    let parsed = reqwest::Url::parse(url).ok()?;
+    let pairs: Vec<(String, String)> = parsed.query_pairs().map(|(k, v)| (k.into_owned(), v.into_owned())).collect();
+    let param = |k: &str| pairs.iter().find(|(kk, _)| kk == k).map(|(_, v)| v.trim().to_string()).filter(|v| !v.is_empty());
     if let Some(code) = param("code") {
         return Some(Ok(code));
     }
@@ -56,7 +59,7 @@ pub fn code_from_redirect(url: &str) -> Option<Result<String>> {
         return Some(Err(AppError::msg(LOGIN_CANCELLED)));
     }
     let desc = param("error_description").or(param("error")).unwrap_or_else(|| "bilinmeyen hata".into());
-    Some(Err(AppError::msg(format!("Microsoft girişi iptal edildi veya başarısız: {}", desc.replace("%20", " ")))))
+    Some(Err(AppError::msg(format!("Microsoft girişi iptal edildi veya başarısız: {desc}"))))
 }
 
 async fn live_token(http: &Http, form: &[(&str, &str)]) -> Result<(String, String)> {
@@ -315,6 +318,9 @@ mod tests {
     #[test]
     fn redirect_parsing() {
         assert!(code_from_redirect("https://login.live.com/ppsecure/post.srf").is_none());
+        // URL kodlu karakterler çözülmeli (gerçek Microsoft kodlarında görülür)
+        let enc = code_from_redirect("https://login.live.com/oauth20_desktop.srf?code=M.C540_BAY.2.U.ab%24cd%21ef-12&lc=1055").unwrap().unwrap();
+        assert_eq!(enc, "M.C540_BAY.2.U.ab$cd!ef-12");
         let ok = code_from_redirect("https://login.live.com/oauth20_desktop.srf?code=M.C123_BAY.2.abc&lc=1033").unwrap().unwrap();
         assert_eq!(ok, "M.C123_BAY.2.abc");
         let cancel = code_from_redirect("https://login.live.com/oauth20_desktop.srf?error=access_denied&error_description=The+user+has+denied").unwrap();
