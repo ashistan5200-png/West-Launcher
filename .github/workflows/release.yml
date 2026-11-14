@@ -7,9 +7,17 @@ on:
   push:
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Sürüm etiketi (örn. v0.1.0)"
+        required: true
+        default: "v0.1.0"
 
 permissions:
   contents: write
+
+env:
+  TAG: ${{ github.event.inputs.version || github.ref_name }}
 
 jobs:
   build:
@@ -52,8 +60,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: "West Launcher ${{ github.ref_name }}"
+          tagName: ${{ env.TAG }}
+          releaseName: "West Launcher ${{ env.TAG }}"
           releaseBody: "Windows kullanıcıları: West-Launcher-Setup.exe dosyasını indirip çalıştırın."
           releaseDraft: false
           args: ${{ matrix.args }}
@@ -73,7 +81,7 @@ jobs:
                             cp "$(ls $B/release/bundle/appimage/*.AppImage | head -1)" West-Launcher-Linux.AppImage
                             F="West-Launcher-Linux.deb West-Launcher-Linux.AppImage" ;;
           esac
-          gh release upload "${{ github.ref_name }}" $F --clobber
+          gh release upload "$TAG" $F --clobber
 
   # İndirme sayfasını GitHub Pages'e yayınla
   pages:
