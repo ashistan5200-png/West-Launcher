@@ -60,7 +60,7 @@ pub fn code_from_redirect(url: &str) -> Option<Result<String>> {
 }
 
 async fn live_token(http: &Http, form: &[(&str, &str)]) -> Result<(String, String)> {
-    let r: TokenResp = http.client.post(LIVE_TOKEN).form(form).send().await?.json().await?;
+    let r: TokenResp = http.client.post(LIVE_TOKEN).timeout(STEP_TIMEOUT).form(form).send().await?.json().await?;
     match (r.access_token, r.refresh_token) {
         (Some(a), Some(rt)) => Ok((a, rt)),
         _ => Err(AppError::msg(format!("Microsoft oturumu alınamadı: {}", r.error_description.or(r.error).unwrap_or_default()))),
@@ -182,6 +182,7 @@ async fn xbl_auth(http: &Http, ticket: String) -> Result<serde_json::Value> {
     Ok(http
         .client
         .post(XBL)
+        .timeout(STEP_TIMEOUT)
         .json(&json!({
             "Properties": { "AuthMethod": "RPS", "SiteName": "user.auth.xboxlive.com", "RpsTicket": ticket },
             "RelyingParty": "http://auth.xboxlive.com", "TokenType": "JWT"
@@ -193,7 +194,14 @@ async fn xbl_auth(http: &Http, ticket: String) -> Result<serde_json::Value> {
         .await?)
 }
 
-async fn minecraft_chain(http: &Http, ms_access: &str, live: bool) -> Result<(String, i64, Option<String>, Profile)> {
+/// Giriş adımları arayüze bildirilir ("Xbox Live'a bağlanılıyor…").
+pub type Stage<'a> = &'a (dyn Fn(&'static str) + Send + Sync);
+
+/// Tek bir istek en fazla bu kadar beklenir; aksi halde kullanıcı sonsuz yükleme görür.
+const STEP_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
+
+async fn minecraft_chain(http: &Http, ms_access: &str, live: bool, stage: Stage<'_>) -> Result<(String, i64, Option<String>, Profile)> {
+    stage("Xbox Live'a bağlanılıyor…");
     let (first, second) = if live { (ms_access.to_string(), format!("d={ms_access}")) } else { (format!("d={ms_access}"), ms_access.to_string()) };
     let xbl = match xbl_auth(http, first).await {
         Ok(v) => v,
@@ -202,9 +210,11 @@ async fn minecraft_chain(http: &Http, ms_access: &str, live: bool) -> Result<(St
     let xbl_token = xbl["Token"].as_str().ok_or_else(|| AppError::msg("Xbox Live token alınamadı"))?;
     let uhs = xbl["DisplayClaims"]["xui"][0]["uhs"].as_str().unwrap_or_default().to_string();
 
+    stage("Xbox hesabı doğrulanıyor…");
     let resp = http
         .client
         .post(XSTS)
+        .timeout(STEP_TIMEOUT)
         .json(&json!({
             "Properties": { "SandboxId": "RETAIL", "UserTokens": [xbl_token] },
             "RelyingParty": "rp://api.minecraftservices.com/", "TokenType": "JWT"
@@ -224,7 +234,8 @@ async fn minecraft_chain(http: &Http, ms_access: &str, live: bool) -> Result<(St
     let xsts_token = xsts["Token"].as_str().ok_or_else(|| AppError::msg("XSTS token alınamadı"))?;
     let xuid = xsts["DisplayClaims"]["xui"][0]["xid"].as_str().map(String::from);
 
-    let resp = http.client.post(MC_LOGIN).json(&json!({ "identityToken": format!("XBL3.0 x={uhs};{xsts_token}") })).send().await?;
+    stage("Minecraft'a giriş yapılıyor…");
+    let resp = http.client.post(MC_LOGIN).timeout(STEP_TIMEOUT).json(&json!({ "identityToken": format!("XBL3.0 x={uhs};{xsts_token}") })).send().await?;
     if resp.status() == reqwest::StatusCode::FORBIDDEN {
         return Err(AppError::msg("Minecraft Services bu uygulama kimliğini kabul etmedi. Azure uygulamasının Mojang tarafından onaylanmış olması gerekir."));
     }
@@ -232,7 +243,8 @@ async fn minecraft_chain(http: &Http, ms_access: &str, live: bool) -> Result<(St
     let token = mc["access_token"].as_str().ok_or_else(|| AppError::msg("Minecraft token alınamadı"))?.to_string();
     let expires = mc["expires_in"].as_i64().unwrap_or(86_400);
 
-    let resp = http.client.get(MC_PROFILE).bearer_auth(&token).send().await?;
+    stage("Minecraft profili alınıyor…");
+    let resp = http.client.get(MC_PROFILE).timeout(STEP_TIMEOUT).bearer_auth(&token).send().await?;
     if resp.status() == reqwest::StatusCode::NOT_FOUND {
         return Err(AppError::msg("Bu Microsoft hesabında Minecraft: Java Edition yok."));
     }
@@ -240,8 +252,8 @@ async fn minecraft_chain(http: &Http, ms_access: &str, live: bool) -> Result<(St
     Ok((token, expires, xuid, profile))
 }
 
-pub async fn finish_login(http: &Http, ms_access: &str, ms_refresh: &str, live: bool) -> Result<(Account, Profile)> {
-    let (token, expires, xuid, profile) = minecraft_chain(http, ms_access, live).await?;
+pub async fn finish_login(http: &Http, ms_access: &str, ms_refresh: &str, live: bool, stage: Stage<'_>) -> Result<(Account, Profile)> {
+    let (token, expires, xuid, profile) = minecraft_chain(http, ms_access, live, stage).await?;
     let acc = Account {
         uuid: profile.id.clone(),
         username: profile.name.clone(),
@@ -261,7 +273,7 @@ pub async fn ensure_fresh(http: &Http, client_id: &str, acc: &mut Account) -> Re
     }
     let live = ms.live;
     let (access, refresh) = if live { live_refresh(http, &ms.refresh_token).await? } else { refresh_ms(http, client_id, &ms.refresh_token).await? };
-    let (fresh, _) = finish_login(http, &access, &refresh, live).await?;
+    let (fresh, _) = finish_login(http, &access, &refresh, live, &|_| {}).await?;
     acc.username = fresh.username;
     acc.ms = fresh.ms;
     Ok(true)

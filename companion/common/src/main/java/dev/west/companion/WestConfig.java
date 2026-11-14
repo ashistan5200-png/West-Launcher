@@ -20,6 +20,10 @@ public final class WestConfig {
     public String menuMode = "auto";
     /** Ana menüdeki karakter pozu: "idle" | "hero" | "wave" */
     public String pose = "hero";
+    /** Ashi PvP Koçu konuşma balonları */
+    public boolean coachTips = true;
+    /** Koç, sunuculardaki oyuncu dövüşlerinde de ipucu versin (yalnızca okur) */
+    public boolean coachEverywhere = false;
 
     private transient Path path;
     private transient long stamp;
@@ -65,6 +69,8 @@ public final class WestConfig {
         this.fpsOverlay = fresh.fpsOverlay;
         this.menuMode = fresh.menuMode;
         this.pose = fresh.pose;
+        this.coachTips = fresh.coachTips;
+        this.coachEverywhere = fresh.coachEverywhere;
         this.stamp = s;
     }
 

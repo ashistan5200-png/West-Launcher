@@ -30,5 +30,6 @@ async fn main() {
     let (tx, rx) = std::sync::mpsc::channel();
     let _h = launch::spawn(&j.path, args, &game, Arc::new(move |line, _| { use std::io::Write; let _ = writeln!(l2.lock().unwrap(), "{line}"); }), Arc::new(move |code| { let _ = tx.send(code); })).await.unwrap();
     println!("oyun başlatıldı (pid {})", _h.pid);
-    match rx.recv_timeout(std::time::Duration::from_secs(400)) { Ok(c) => println!("oyun kapandı: {:?}", c), Err(_) => println!("oyun hâlâ çalışıyor") }
+    let wait: u64 = std::env::var("GAME_WAIT").ok().and_then(|s| s.parse().ok()).unwrap_or(400);
+    match rx.recv_timeout(std::time::Duration::from_secs(wait)) { Ok(c) => println!("oyun kapandı: {:?}", c), Err(_) => println!("oyun hâlâ çalışıyor") }
 }

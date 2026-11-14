@@ -91,7 +91,7 @@ pub async fn ms_login_start(app: AppHandle, state: State<'_, AppState>) -> Resul
                     microsoft::Poll::Pending => {}
                     microsoft::Poll::SlowDown => interval += 5,
                     microsoft::Poll::Done { access, refresh } => {
-                        let (acc, _profile) = microsoft::finish_login(&st.http, &access, &refresh, false).await?;
+                        let (acc, _profile) = microsoft::finish_login(&st.http, &access, &refresh, false, &|_| {}).await?;
                         let name = acc.username.clone();
                         let mut s = store(&st);
                         s.upsert(acc);
@@ -147,6 +147,7 @@ pub async fn ms_login_window(app: AppHandle) -> Result<()> {
     let url: tauri::Url = microsoft::live_authorize_url().parse().map_err(|e| AppError::msg(format!("{e}")))?;
 
     let nav_tx = tx.clone();
+    let load_tx = tx.clone();
     let win = tauri::WebviewWindowBuilder::new(&app, LOGIN_WINDOW, tauri::WebviewUrl::External(url))
         .title("Microsoft ile giriş · West Launcher")
         .inner_size(500.0, 680.0)
@@ -154,12 +155,21 @@ pub async fn ms_login_window(app: AppHandle) -> Result<()> {
         .center()
         .focused(true)
         .incognito(true)
-        .on_navigation(move |u| match microsoft::code_from_redirect(u.as_str()) {
-            Some(r) => {
-                deliver(&nav_tx, r);
-                false
+        .on_navigation(move |u| {
+            tracing::info!("ms-login gezinme: {}{}", u.host_str().unwrap_or(""), u.path());
+            match microsoft::code_from_redirect(u.as_str()) {
+                Some(r) => {
+                    deliver(&nav_tx, r);
+                    false
+                }
+                None => true,
             }
-            None => true,
+        })
+        // Bazı WebView2 sürümleri sunucu yönlendirmesini gezinme olayı olarak bildirmez → sayfa yüklenince de bak
+        .on_page_load(move |_w, p| {
+            if let Some(r) = microsoft::code_from_redirect(p.url().as_str()) {
+                deliver(&load_tx, r);
+            }
         })
         .build()
         .map_err(|e| AppError::msg(format!("Giriş penceresi açılamadı: {e}")))?;
@@ -200,16 +210,29 @@ pub async fn ms_login_window(app: AppHandle) -> Result<()> {
             Err(e) if e.to_string() == CANCELLED => LoginEvent { status: "cancelled", username: None, message: None },
             Err(e) => LoginEvent { status: "error", username: None, message: Some(e.to_string()) },
             Ok(code) => {
-                let done: Result<String> = async {
+                let stage_app = app.clone();
+                let stage = move |m: &'static str| {
+                    tracing::info!("ms-login: {m}");
+                    let _ = stage_app.emit(EV_MS_LOGIN, LoginEvent { status: "progress", username: None, message: Some(m.into()) });
+                };
+                stage("Microsoft oturumu doğrulanıyor…");
+                let work = async {
                     let (access, refresh) = microsoft::live_exchange(&st.http, &code).await?;
-                    let (acc, _) = microsoft::finish_login(&st.http, &access, &refresh, true).await?;
+                    let (acc, _) = microsoft::finish_login(&st.http, &access, &refresh, true, &stage).await?;
                     let name = acc.username.clone();
                     let mut s = store(&st);
                     s.upsert(acc);
                     s.save(&st.paths.accounts_file())?;
-                    Ok(name)
-                }
-                .await;
+                    Ok::<String, AppError>(name)
+                };
+                // Hiçbir durumda sonsuz yükleme olmasın
+                let done: Result<String> = match tokio::time::timeout(Duration::from_secs(120), work).await {
+                    Ok(r) => r.map_err(|e| {
+                        tracing::warn!("ms-login başarısız: {e}");
+                        e
+                    }),
+                    Err(_) => Err(AppError::msg("Microsoft/Xbox sunucuları zamanında yanıt vermedi. İnternet bağlantını kontrol edip tekrar dene.")),
+                };
                 match done {
                     Ok(name) => LoginEvent { status: "done", username: Some(name), message: None },
                     Err(e) => LoginEvent { status: "error", username: None, message: Some(e.to_string()) },

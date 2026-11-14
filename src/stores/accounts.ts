@@ -31,6 +31,8 @@ interface AccountsState {
   previewId: string | null;
   /** Microsoft giriş penceresi açık ve sonuç bekleniyor */
   loginOpen: boolean;
+  /** Microsoft penceresi kapandıktan sonraki adım */
+  loginStage: string | null;
   loginError: string | null;
   busy: string | null;
   error: string | null;
@@ -76,6 +78,7 @@ export const useAccounts = create<AccountsState>((set, get) => {
     skins: [],
     previewId: null,
     loginOpen: false,
+    loginStage: null,
     loginError: null,
     busy: null,
     error: null,
@@ -99,7 +102,7 @@ export const useAccounts = create<AccountsState>((set, get) => {
     remove: (uuid) => run("remove", async () => set({ accounts: await api.removeAccount(uuid) })),
 
     startLogin: async () => {
-      set({ loginError: null, loginOpen: true });
+      set({ loginError: null, loginOpen: true, loginStage: null });
       try {
         await api.msLoginWindow();
       } catch (e) {
@@ -108,21 +111,23 @@ export const useAccounts = create<AccountsState>((set, get) => {
     },
     /** Her durumda pencereyi kapatır ve modal'ı temizler (eskiden hata kalınca kapanmıyordu). */
     cancelLogin: async () => {
-      set({ loginOpen: false, loginError: null });
+      set({ loginOpen: false, loginError: null, loginStage: null });
       await api.msLoginCancel().catch(() => {});
     },
 
     bindEvents: async () => {
       if (!isTauri()) return () => {};
       const un = await events.onMsLogin(async (e) => {
-        if (e.status === "done") {
-          set({ loginOpen: false, loginError: null, notice: `${e.username} hesabı eklendi` });
+        if (e.status === "progress") {
+          set({ loginOpen: true, loginStage: e.message });
+        } else if (e.status === "done") {
+          set({ loginOpen: false, loginStage: null, loginError: null, notice: `${e.username} hesabı eklendi` });
           await get().load();
           await get().syncAccountSkin();
         } else if (e.status === "error") {
-          set({ loginOpen: false, loginError: e.message });
+          set({ loginOpen: false, loginStage: null, loginError: e.message });
         } else {
-          set({ loginOpen: false });
+          set({ loginOpen: false, loginStage: null });
         }
       });
       return un;

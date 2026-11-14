@@ -16,6 +16,10 @@ import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.event.RenderGuiEvent;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import java.nio.file.Path;
 
@@ -39,5 +43,15 @@ public final class WestNeoForge {
         NeoForge.EVENT_BUS.addListener((ClientTickEvent.Post e) -> West.onClientTick(Minecraft.getInstance()));
         NeoForge.EVENT_BUS.addListener((RenderGuiEvent.Post e) -> Hud.render(e.getGuiGraphics()));
         NeoForge.EVENT_BUS.addListener((ClientPlayerNetworkEvent.LoggingIn e) -> West.onJoinServer(Minecraft.getInstance()));
+
+        // Ashi 1v1: tek oyunculu dünyanın yerleşik sunucusunda çalışır
+        NeoForge.EVENT_BUS.addListener((ServerTickEvent.Post e) -> West.onServerTick(e.getServer()));
+        NeoForge.EVENT_BUS.addListener((ServerStoppingEvent e) -> West.onServerStopping(e.getServer()));
+        NeoForge.EVENT_BUS.addListener((PlayerEvent.PlayerLoggedInEvent e) -> {
+            if (e.getEntity() instanceof net.minecraft.server.level.ServerPlayer sp) West.onPlayerJoin(sp);
+        });
+        NeoForge.EVENT_BUS.addListener((LivingDeathEvent e) -> {
+            if (!e.getEntity().level().isClientSide && !West.allowDeath(e.getEntity())) e.setCanceled(true);
+        });
     }
 }

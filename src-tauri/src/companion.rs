@@ -124,11 +124,15 @@ pub struct CompanionConfig {
     pub menu_mode: String,
     /// "idle" | "hero" | "wave"
     pub pose: String,
+    /// Ashi PvP Koçu konuşma balonları
+    pub coach_tips: bool,
+    /// Koç sunuculardaki dövüşlerde de ipucu versin
+    pub coach_everywhere: bool,
 }
 
 impl Default for CompanionConfig {
     fn default() -> Self {
-        Self { fullbright: false, fps_overlay: false, menu_mode: "auto".into(), pose: "hero".into() }
+        Self { fullbright: false, fps_overlay: false, menu_mode: "auto".into(), pose: "hero".into(), coach_tips: true, coach_everywhere: false }
     }
 }
 
@@ -150,7 +154,7 @@ mod tests {
     #[test]
     fn config_matches_mod_field_names() {
         let v = serde_json::to_value(CompanionConfig::default()).unwrap();
-        for k in ["fullbright", "fpsOverlay", "menuMode", "pose"] {
+        for k in ["fullbright", "fpsOverlay", "menuMode", "pose", "coachTips", "coachEverywhere"] {
             assert!(v.get(k).is_some(), "{k}");
         }
         // Mod'un Gson ile yazdığı biçim de okunabilmeli

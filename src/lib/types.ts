@@ -267,7 +267,7 @@ export interface DeviceCode {
 }
 
 export interface MsLoginEvent {
-  status: "done" | "error" | "cancelled";
+  status: "progress" | "done" | "error" | "cancelled";
   username: string | null;
   message: string | null;
 }
@@ -322,6 +322,8 @@ export interface CompanionConfig {
   fpsOverlay: boolean;
   menuMode: "auto" | "button" | "off";
   pose: "idle" | "hero" | "wave";
+  coachTips: boolean;
+  coachEverywhere: boolean;
 }
 
 export interface CompanionInfo {

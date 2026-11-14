@@ -11,6 +11,10 @@ import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
 import net.fabricmc.loader.api.FabricLoader;
+import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 
@@ -39,5 +43,11 @@ public final class WestFabric implements ClientModInitializer {
         ScreenEvents.AFTER_INIT.register((client, screen, w, h) -> West.afterScreenInit(screen, b -> Screens.getButtons(screen).add(b)));
         HudRenderCallback.EVENT.register((graphics, delta) -> Hud.render(graphics));
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> West.onJoinServer(client));
+
+        // Ashi 1v1: tek oyunculu dünyanın yerleşik sunucusunda çalışır
+        ServerTickEvents.END_SERVER_TICK.register(West::onServerTick);
+        ServerLifecycleEvents.SERVER_STOPPING.register(West::onServerStopping);
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> West.onPlayerJoin(handler.getPlayer()));
+        ServerLivingEntityEvents.ALLOW_DEATH.register((entity, source, amount) -> West.allowDeath(entity));
     }
 }

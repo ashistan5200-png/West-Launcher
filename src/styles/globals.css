@@ -273,7 +273,7 @@ input[type="checkbox"] { accent-color: rgb(var(--accent)); width: 15px; height: 
 .java-list li { display: flex; gap: 8px; align-items: center; min-width: 0; }
 
 /* ───────── Modal / Toast / İlerleme ───────── */
-.modal-backdrop { position: fixed; inset: 0; background: rgb(0 0 0 / 0.5); backdrop-filter: blur(2px); display: grid; place-items: center; z-index: 50; }
+.modal-backdrop { position: fixed; inset: 0; background: rgb(0 0 0 / 0.5); backdrop-filter: blur(2px); display: grid; place-items: center; z-index: 120; }
 .modal { background: rgb(var(--surface-2)); border: 1px solid rgb(var(--border) / 0.08); border-radius: calc(var(--radius) + 2px); box-shadow: var(--shadow-lg); max-width: calc(100vw - 32px); }
 .modal-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 6px; }
 .modal-body { padding: 10px 16px; display: flex; flex-direction: column; gap: 14px; }

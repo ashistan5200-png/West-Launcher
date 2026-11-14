@@ -51,6 +51,7 @@ public final class West {
             // Launcher'ın yazdığı ayar değişikliklerini ~2 sn'de bir yakala
             if (++tick % 40 == 0) config.reloadIfChanged();
         });
+        dev.west.companion.pvp.Coach.tick(mc);
     }
 
     /**
@@ -86,6 +87,30 @@ public final class West {
                 mc.gui.getChat().addMessage(Component.translatable("west_companion.fullbright.server_warning"));
             }
         });
+    }
+
+    // ───────── Ashi 1v1 (yerleşik sunucu olayları; loader sınıflarından iletilir) ─────────
+
+    public static void onServerTick(net.minecraft.server.MinecraftServer server) {
+        dev.west.companion.pvp.Duel.onServerTick(server);
+    }
+
+    public static void onServerStopping(net.minecraft.server.MinecraftServer server) {
+        dev.west.companion.pvp.Duel.onServerStopping(server);
+    }
+
+    public static void onPlayerJoin(net.minecraft.server.level.ServerPlayer player) {
+        dev.west.companion.pvp.Duel.onPlayerJoin(player);
+    }
+
+    /** false → ölüm iptal (düellodaki oyuncu veya Ashi) */
+    public static boolean allowDeath(net.minecraft.world.entity.LivingEntity e) {
+        try {
+            return dev.west.companion.pvp.Duel.allowDeath(e);
+        } catch (Throwable t) {
+            SafeHook.disable("duel", t);
+            return true;
+        }
     }
 
     public static boolean isPanelKey(int keyCode) {

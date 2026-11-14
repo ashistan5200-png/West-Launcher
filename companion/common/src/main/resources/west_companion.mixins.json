@@ -3,6 +3,7 @@
   "minVersion": "0.8",
   "package": "dev.west.companion.mixin",
   "compatibilityLevel": "JAVA_21",
-  "client": ["OptionInstanceMixin", "AbstractClientPlayerMixin"],
+  "mixins": ["MobAccessor", "LivingEntityShieldMixin"],
+  "client": ["OptionInstanceMixin", "AbstractClientPlayerMixin", "EntityRenderDispatcherMixin", "MultiPlayerGameModeMixin", "MinecraftAttackMixin"],
   "injectors": { "defaultRequire": 0 }
 }

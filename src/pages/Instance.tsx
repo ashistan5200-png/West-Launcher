@@ -259,6 +259,12 @@ function CompanionCard({ instanceId }: { instanceId: string }) {
               ))}
             </div>
           </div>
+          <div className="field">
+            <span>Ashi PvP Koçu</span>
+            <label className="check"><input type="checkbox" checked={c.coachTips} onChange={(e) => set({ coachTips: e.target.checked })} /> Dövüşte ipucu balonları</label>
+            <label className="check"><input type="checkbox" checked={c.coachEverywhere} onChange={(e) => set({ coachEverywhere: e.target.checked })} /> Sunuculardaki dövüşlerde de ipucu ver (yalnızca izler, senin yerine bir şey yapmaz)</label>
+          </div>
+          <p className="muted tiny">Ashi ile 1v1 için tek oyunculu bir dünyada West Paneli'ni aç (<kbd>Sağ Shift</kbd>) → "Ashi ile 1v1".</p>
           <p className="muted tiny">Oyunda <kbd>Sağ Shift</kbd> West Paneli'ni açar. Essential veya FancyMenu gibi menü modları varsa West menüsü kendiliğinden yalnızca bir düğmeye dönüşür.</p>
         </>
       )}

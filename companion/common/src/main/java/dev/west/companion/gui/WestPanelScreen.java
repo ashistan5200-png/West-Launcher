@@ -31,7 +31,7 @@ public class WestPanelScreen extends Screen {
     private int bh() { return height < 280 ? 18 : 20; }
     private int gap() { return height < 280 ? 3 : 5; }
     private int section() { return height < 280 ? 10 : 14; }
-    private int blockHeight() { return 30 + 6 * (bh() + gap()) + 3 * section() + 26; }
+    private int blockHeight() { return 30 + 7 * (bh() + gap()) + 3 * section() + 26; }
     private int top() { return Math.max(4, (height - blockHeight()) / 2); }
 
     @Override
@@ -40,6 +40,10 @@ public class WestPanelScreen extends Screen {
         int x = width / 2 - w / 2;
         int y = top() + 30;
         int d = 0;
+
+        // Ashi PvP Koçu + 1v1 botu
+        addRenderableWidget(new WestButton(x, y, w, bh, Component.translatable("west_companion.pvp.open"), b -> minecraft.setScreen(new DuelScreen(this)), d, true));
+        y += bh + gap;
 
         addRenderableWidget(new WestButton(x, y, w, bh, onOff("west_companion.fullbright", West.config.fullbright), b -> {
             West.config.fullbright = !West.config.fullbright;
@@ -100,7 +104,7 @@ public class WestPanelScreen extends Screen {
         int top = top();
         g.blit(COMPASS, cx - 120, top + 2, 0, 0, 20, 20, 20, 20);
         g.drawString(font, title, cx - 94, top + 8, 0xFFE2E4E7, false);
-        g.drawString(font, Component.translatable("west_companion.view"), cx - 120, top + 30 + 2 * (bh() + gap()) + section() - 10, 0xFF8B9098, false);
+        g.drawString(font, Component.translatable("west_companion.view"), cx - 120, top + 30 + 3 * (bh() + gap()) + section() - 10, 0xFF8B9098, false);
 
         int y = top + blockHeight() - 22;
         if (!memoryNote.isEmpty()) g.drawCenteredString(font, memoryNote, cx, y, 0xFF9FC4A8);

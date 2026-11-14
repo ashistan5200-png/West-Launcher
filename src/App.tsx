@@ -20,6 +20,7 @@ import { Splash } from "@/components/Splash";
 import { TooltipLayer } from "@/components/TooltipLayer";
 import { UpdateModal } from "@/components/UpdateCenter";
 import { LockScreen, SetupWizard } from "@/components/SetupWizard";
+import { LoginModal } from "@/components/LoginModal";
 import { AshiTour } from "@/components/AshiTour";
 import { ImportWizard } from "@/components/ImportWizard";
 import { useAccounts } from "@/stores/accounts";
@@ -43,8 +44,10 @@ export default function App() {
     const un = bindEvents();
     const nameOf = (id: string) => useInstances.getState().instances.find((i) => i.id === id)?.name ?? id;
     const unAshi = bindAshi(nameOf);
+    const unLogin = useAccounts.getState().bindEvents();
     return () => {
       void un.then((f) => f());
+      void unLogin.then((f) => f());
       void unAshi.then((f) => f());
     };
   }, [loadSettings, refresh, bindEvents, bindAshi, loadSkin]);
@@ -90,6 +93,7 @@ export default function App() {
         <AshiTour />
         <UpdateModal />
         <SetupWizard />
+        <LoginModal />
         <LockScreen />
         <TooltipLayer />
         <Splash />

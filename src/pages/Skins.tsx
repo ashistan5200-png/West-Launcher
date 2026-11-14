@@ -6,7 +6,6 @@ import {
 import clsx from "clsx";
 import { useAccounts } from "@/stores/accounts";
 import { SkinThumb } from "@/components/SkinThumb";
-import { Modal } from "@/components/Modal";
 import type { PreviewAnim } from "@/components/SkinPreview3D";
 import type { AccountView, Cape } from "@/lib/types";
 import { api, isTauri } from "@/lib/ipc";
@@ -34,8 +33,6 @@ export function SkinsPage() {
 
   useEffect(() => {
     void st.load().then(() => st.syncAccountSkin());
-    const un = st.bindEvents();
-    return () => void un.then((f) => f());
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const gallery = useMemo(() => (onlyFav ? skins.filter((s) => s.favorite) : skins), [skins, onlyFav]);
@@ -148,7 +145,6 @@ export function SkinsPage() {
         )}
       </section>
 
-      <LoginModal />
     </div>
   );
 }
@@ -240,35 +236,3 @@ function CapeCard({ account }: { account: AccountView }) {
   );
 }
 
-function LoginModal() {
-  const { loginOpen, loginError, cancelLogin, startLogin } = useAccounts();
-  return (
-    <Modal
-      open={loginOpen || !!loginError}
-      onClose={cancelLogin}
-      title="Microsoft ile giriş"
-      width={420}
-      footer={
-        loginError ? (
-          <>
-            <button className="btn btn-ghost" onClick={cancelLogin}>Kapat</button>
-            <button className="btn btn-primary" onClick={() => void startLogin()}>Tekrar dene</button>
-          </>
-        ) : (
-          <button className="btn btn-ghost" onClick={cancelLogin}>İptal</button>
-        )
-      }
-    >
-      {loginError ? (
-        <p className="hint error">{loginError}</p>
-      ) : (
-        <div className="login-box">
-          <p className="small">Açılan Microsoft penceresinde, Minecraft'a sahip hesabının e-posta adresi ve şifresiyle giriş yap. Giriş bitince pencere kendiliğinden kapanır ve hesabın buraya eklenir.</p>
-          <p className="muted tiny row"><Loader2 size={13} className="spin" /> Giriş bekleniyor…</p>
-          <button className="btn btn-ghost btn-sm" style={{ alignSelf: "flex-start" }} onClick={() => void startLogin()}>Giriş penceresini öne getir</button>
-          <p className="muted tiny">Şifren yalnızca Microsoft'un kendi sayfasına girilir; West Launcher onu görmez ve saklamaz.</p>
-        </div>
-      )}
-    </Modal>
-  );
-}
