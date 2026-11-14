@@ -4,6 +4,7 @@
 pub mod curseforge;
 pub mod install;
 pub mod modpack;
+pub mod manage;
 pub mod modrinth;
 
 use crate::error::Result;

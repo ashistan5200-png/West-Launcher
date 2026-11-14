@@ -382,3 +382,30 @@ export interface ModUpdate {
 export interface NewTexture { path: string; name: string; category: string }
 export interface NewSound { path: string; name: string; group: string; hash: string; size: number }
 export interface AssetDiff { version: string; base: string; textures: NewTexture[]; sounds: NewSound[] }
+
+// ───────── Instance içerik yöneticisi ─────────
+export interface ContentUpdate { versionId: string; versionNumber: string; fileName: string; url: string; sha1: string; size: number }
+export interface ContentFile {
+  id: string;
+  file: string;
+  kind: "mod" | "resourcepack" | "shader";
+  enabled: boolean;
+  size: number;
+  sha1: string;
+  title: string;
+  version: string | null;
+  author: string | null;
+  authorAvatar: string | null;
+  icon: string | null;
+  projectId: string | null;
+  source: "modrinth" | "curseforge" | null;
+  url: string | null;
+  update: ContentUpdate | null;
+  dependencyOf: string | null;
+  managed: boolean;
+}
+export interface UpdateReport { updated: string[]; failed: string[]; backupDir: string | null }
+export interface World { folder: string; size: number; lastPlayed: number | null; icon: string | null }
+export interface LogFile { path: string; size: number; modified: number; crash: boolean }
+export interface FileEntry { name: string; dir: boolean; size: number; modified: number }
+export interface ExportReport { path: string; linked: number; embedded: number }

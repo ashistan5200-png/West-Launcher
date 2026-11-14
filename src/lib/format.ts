@@ -11,7 +11,11 @@ export const formatRelative = (iso: string | null) => {
   if (diff < 60) return "Az önce";
   if (diff < 3600) return `${Math.floor(diff / 60)} dk önce`;
   if (diff < 86400) return `${Math.floor(diff / 3600)} sa önce`;
-  return `${Math.floor(diff / 86400)} gün önce`;
+  const d = Math.floor(diff / 86400);
+  if (d < 7) return `${d} gün önce`;
+  if (d < 30) return `${Math.floor(d / 7)} hafta önce`;
+  if (d < 365) return `${Math.floor(d / 30)} ay önce`;
+  return `${Math.floor(d / 365)} yıl önce`;
 };
 
 export const LOADER_LABEL: Record<string, string> = {

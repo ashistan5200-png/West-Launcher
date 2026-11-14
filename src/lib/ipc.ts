@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import type {
+  ContentFile, UpdateReport, World, LogFile, FileEntry, ExportReport,
   AshiEvent, AshiSkin, HuntPlan,
   PatchNote, ModUpdate, AssetDiff,
   Screenshot, FoundInstance, CompanionConfig, CompanionInfo, UpdateStatus,
@@ -73,6 +74,21 @@ export const api = {
     invoke<InstallReport>("install_content", { instanceId, source, projectId, kind }),
   installModpack: (hit: ContentHit) => invoke<Instance>("install_modpack", { source: hit.source, projectId: hit.id }),
   installedContent: (instanceId: string) => invoke<InstalledContent[]>("installed_content", { instanceId }),
+  listContent: (instanceId: string) => invoke<ContentFile[]>("list_content", { instanceId }),
+  refreshContent: (instanceId: string) => invoke<ContentFile[]>("refresh_content", { instanceId }),
+  setContentEnabled: (instanceId: string, ids: string[], enabled: boolean) => invoke<void>("set_content_enabled", { instanceId, ids, enabled }),
+  deleteContent: (instanceId: string, ids: string[]) => invoke<void>("delete_content", { instanceId, ids }),
+  updateContent: (instanceId: string, ids: string[]) => invoke<UpdateReport>("update_content", { instanceId, ids }),
+  addContentFiles: (instanceId: string, paths: string[]) => invoke<string[]>("add_content_files", { instanceId, paths }),
+  listWorlds: (instanceId: string) => invoke<World[]>("list_worlds", { instanceId }),
+  backupWorld: (instanceId: string, folder: string) => invoke<string>("backup_world", { instanceId, folder }),
+  deleteWorld: (instanceId: string, folder: string) => invoke<void>("delete_world", { instanceId, folder }),
+  worldBackupsDir: (instanceId: string) => invoke<string>("world_backups_dir", { instanceId }),
+  listLogs: (instanceId: string) => invoke<LogFile[]>("list_logs", { instanceId }),
+  readLog: (instanceId: string, path: string) => invoke<string>("read_log", { instanceId, path }),
+  listFiles: (instanceId: string, path: string) => invoke<FileEntry[]>("list_files", { instanceId, path }),
+  filePath: (instanceId: string, path: string) => invoke<string>("file_path", { instanceId, path }),
+  exportMrpack: (instanceId: string, dest: string, version: string, extras: string[]) => invoke<ExportReport>("export_mrpack", { instanceId, dest, version, extras }),
 
   // Ashi asistanı + anahtarlar (değerler asla UI'a dönmez)
   ashiChat: (history: unknown[], message: string, activeInstance: string | null) =>

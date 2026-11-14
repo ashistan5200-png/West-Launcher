@@ -60,3 +60,141 @@ pub async fn install_modpack(app: AppHandle, state: State<'_, AppState>, source:
 pub fn installed_content(state: State<'_, AppState>, instance_id: String) -> Vec<InstalledContent> {
     load_index(&state.paths.instance_dir(&instance_id))
 }
+
+// ───────── Instance içerik yöneticisi ─────────
+
+use crate::content::manage::{self, ContentFile, ExportOpts, ExportReport, FileEntry, LogFile, UpdateReport, World};
+use crate::core::Progress;
+
+fn not_running(state: &AppState, id: &str) -> Result<()> {
+    if state.running.lock().contains_key(id) || state.hunts.lock().contains_key(id) {
+        return Err(AppError::msg("Oyun açıkken bu işlem yapılamaz; önce oyunu kapat"));
+    }
+    Ok(())
+}
+
+fn backups_root(state: &AppState, id: &str) -> std::path::PathBuf {
+    let base = state.settings.read().backup_dir.clone().map(std::path::PathBuf::from).unwrap_or_else(|| state.paths.backups());
+    base.join(id)
+}
+
+async fn blocking<T: Send + 'static>(f: impl FnOnce() -> Result<T> + Send + 'static) -> Result<T> {
+    tokio::task::spawn_blocking(f).await.map_err(|e| AppError::msg(e.to_string()))?
+}
+
+#[tauri::command]
+pub async fn list_content(state: State<'_, AppState>, instance_id: String) -> Result<Vec<ContentFile>> {
+    let (a, b) = (state.paths.instance_dir(&instance_id), state.paths.instance_game_dir(&instance_id));
+    blocking(move || Ok(manage::list(&a, &b))).await
+}
+
+#[tauri::command]
+pub async fn refresh_content(state: State<'_, AppState>, instance_id: String) -> Result<Vec<ContentFile>> {
+    let inst = InstanceManager::new(&state.paths).get(&instance_id)?;
+    let loader = loader_slug(inst.loader.kind);
+    manage::refresh(&state.http, &state.paths.instance_dir(&instance_id), &state.paths.instance_game_dir(&instance_id), &inst.mc_version, loader.as_deref()).await
+}
+
+#[tauri::command]
+pub fn set_content_enabled(state: State<'_, AppState>, instance_id: String, ids: Vec<String>, enabled: bool) -> Result<()> {
+    not_running(&state, &instance_id)?;
+    manage::set_enabled(&state.paths.instance_game_dir(&instance_id), &ids, enabled)
+}
+
+#[tauri::command]
+pub fn delete_content(state: State<'_, AppState>, instance_id: String, ids: Vec<String>) -> Result<()> {
+    not_running(&state, &instance_id)?;
+    manage::delete(&state.paths.instance_dir(&instance_id), &state.paths.instance_game_dir(&instance_id), &ids)
+}
+
+#[tauri::command]
+pub async fn update_content(app: AppHandle, state: State<'_, AppState>, instance_id: String, ids: Vec<String>) -> Result<UpdateReport> {
+    not_running(&state, &instance_id)?;
+    let progress = progress_emitter(&app);
+    let task = format!("update:{instance_id}");
+    let r = manage::update(
+        &state.http,
+        &state.paths.instance_dir(&instance_id),
+        &state.paths.instance_game_dir(&instance_id),
+        &backups_root(&state, &instance_id),
+        &ids,
+        |cur, total| progress(Progress { task: task.clone(), stage: if cur >= total { "done".into() } else { "update".into() }, current: cur as u64, total: total as u64, message: Some("İçerik güncelleniyor".into()) }),
+    )
+    .await;
+    r
+}
+
+#[tauri::command]
+pub fn add_content_files(state: State<'_, AppState>, instance_id: String, paths: Vec<String>) -> Result<Vec<String>> {
+    not_running(&state, &instance_id)?;
+    manage::add_files(&state.paths.instance_game_dir(&instance_id), &paths)
+}
+
+#[tauri::command]
+pub async fn list_worlds(state: State<'_, AppState>, instance_id: String) -> Result<Vec<World>> {
+    let g = state.paths.instance_game_dir(&instance_id);
+    blocking(move || Ok(manage::worlds(&g))).await
+}
+
+#[tauri::command]
+pub async fn backup_world(state: State<'_, AppState>, instance_id: String, folder: String) -> Result<String> {
+    let g = state.paths.instance_game_dir(&instance_id);
+    let b = backups_root(&state, &instance_id);
+    let keep = state.settings.read().backup_keep;
+    blocking(move || manage::backup_world(&g, &b, &folder, keep)).await
+}
+
+#[tauri::command]
+pub fn delete_world(state: State<'_, AppState>, instance_id: String, folder: String) -> Result<()> {
+    not_running(&state, &instance_id)?;
+    manage::delete_world(&state.paths.instance_game_dir(&instance_id), &folder)
+}
+
+#[tauri::command]
+pub fn world_backups_dir(state: State<'_, AppState>, instance_id: String) -> String {
+    backups_root(&state, &instance_id).join("worlds").display().to_string()
+}
+
+#[tauri::command]
+pub fn list_logs(state: State<'_, AppState>, instance_id: String) -> Vec<LogFile> {
+    manage::logs(&state.paths.instance_game_dir(&instance_id))
+}
+
+#[tauri::command]
+pub async fn read_log(state: State<'_, AppState>, instance_id: String, path: String) -> Result<String> {
+    let g = state.paths.instance_game_dir(&instance_id);
+    blocking(move || manage::read_log(&g, &path)).await
+}
+
+#[tauri::command]
+pub fn list_files(state: State<'_, AppState>, instance_id: String, path: String) -> Result<Vec<FileEntry>> {
+    manage::list_dir(&state.paths.instance_game_dir(&instance_id), &path)
+}
+
+#[tauri::command]
+pub fn file_path(state: State<'_, AppState>, instance_id: String, path: String) -> Result<String> {
+    let g = state.paths.instance_game_dir(&instance_id);
+    if path.is_empty() {
+        return Ok(g.display().to_string());
+    }
+    let rel = content::safe_rel(&path).ok_or_else(|| AppError::msg("Geçersiz yol"))?;
+    Ok(g.join(rel).display().to_string())
+}
+
+#[tauri::command]
+pub async fn export_mrpack(state: State<'_, AppState>, instance_id: String, dest: String, version: String, extras: Vec<String>) -> Result<ExportReport> {
+    let inst = InstanceManager::new(&state.paths).get(&instance_id)?;
+    let (a, b) = (state.paths.instance_dir(&instance_id), state.paths.instance_game_dir(&instance_id));
+    blocking(move || {
+        let loader = loader_slug(inst.loader.kind);
+        let lv = inst.loader.version.clone().unwrap_or_default();
+        manage::export_mrpack(&a, &b, std::path::Path::new(&dest), &ExportOpts {
+            name: &inst.name,
+            version: &version,
+            mc: &inst.mc_version,
+            loader: loader.as_deref().map(|l| (l, lv.as_str())),
+            extras: &extras,
+        })
+    })
+    .await
+}

@@ -1,18 +1,28 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { open as openPath } from "@tauri-apps/plugin-shell";
-import { Copy, FolderOpen, LayoutTemplate, Loader2, Play, Square, Trash2 } from "lucide-react";
+import { Boxes, Clock, Copy, FileText, FolderOpen, Globe2, LayoutTemplate, Loader2, MoreVertical, Play, Settings2, Share2, Square, Tag, Timer, Trash2, Folder } from "lucide-react";
 import clsx from "clsx";
 import { useInstances } from "@/stores/instances";
 import { useSettings } from "@/stores/settings";
 import { useAshi, useHuntRunning } from "@/stores/ashi";
 import { InstanceIcon } from "@/components/InstanceIcon";
 import { Modal } from "@/components/Modal";
+import { ContentTab } from "@/components/instance/ContentTab";
+import { FilesTab, LogsTab, ShareTab, WorldsTab } from "@/components/instance/OtherTabs";
+import { Menu } from "@/components/instance/Menu";
 import { api } from "@/lib/ipc";
-import { LOADER_LABEL, formatDuration } from "@/lib/format";
+import { LOADER_LABEL, formatDuration, formatRelative } from "@/lib/format";
 import type { CompanionConfig, CompanionInfo, Instance, JvmProfile } from "@/lib/types";
 
-type Tab = "console" | "settings";
+type Tab = "content" | "files" | "worlds" | "logs" | "share" | "settings";
+const TABS: { id: Tab; label: string; icon: typeof Boxes }[] = [
+  { id: "content", label: "İçerik", icon: Boxes },
+  { id: "files", label: "Dosyalar", icon: Folder },
+  { id: "worlds", label: "Dünyalar", icon: Globe2 },
+  { id: "logs", label: "Loglar", icon: FileText },
+  { id: "share", label: "Paylaş", icon: Share2 },
+];
 
 export function InstancePage() {
   const { id = "" } = useParams();
@@ -22,7 +32,7 @@ export function InstancePage() {
   const inst = instances.find((i) => i.id === id);
   const hunting = useHuntRunning(id);
   const openAshi = useAshi((s) => s.openConfirm);
-  const [tab, setTab] = useState<Tab>("console");
+  const [tab, setTab] = useState<Tab>("content");
   const [cloneOpen, setCloneOpen] = useState(false);
 
   if (!inst) return <p className="muted pad">Instance bulunamadı.</p>;
@@ -30,49 +40,59 @@ export function InstancePage() {
   const isRunning = running[id] !== undefined;
   const isLaunching = !!launching[id];
   const exit = lastExit[id];
+  const locked = isRunning || isLaunching || hunting;
+  const del = async () => {
+    if (confirm(`"${inst.name}" ve tüm dünyaları silinsin mi?`)) {
+      await remove(id);
+      navigate("/library");
+    }
+  };
 
   return (
-    <div className="stack">
-      <header className="instance-header">
-        <InstanceIcon instance={inst} size={64} />
-        <div className="grow">
-          <h1>{inst.name}</h1>
-          <div className="chips">
-            <span className="chip">{LOADER_LABEL[inst.loader.kind]} {inst.loader.version ?? ""}</span>
-            <span className="chip">{inst.mcVersion}</span>
-            <span className="chip">{formatDuration(inst.totalPlaySecs)} oynandı</span>
-            {inst.importedFrom && <span className="chip">↳ {inst.importedFrom}</span>}
+    <div className="stack ipage">
+      <header className="ihead">
+        <InstanceIcon instance={inst} size={76} />
+        <div className="grow ihead-text">
+          <h1 className="truncate">{inst.name}</h1>
+          <div className="ihead-line">
+            <span><Tag size={16} /> {LOADER_LABEL[inst.loader.kind]} {inst.mcVersion}</span>
+            <span className="dot" />
+            <span><Timer size={16} /> {formatDuration(inst.totalPlaySecs)}</span>
+            {inst.importedFrom && <><span className="dot" /><span>↳ {inst.importedFrom}</span></>}
+          </div>
+          <div className="ihead-line">
+            <span><Clock size={16} /> {inst.lastPlayed ? `Son oynama: ${formatRelative(inst.lastPlayed).toLowerCase()}` : "Hiç oynanmadı"}</span>
           </div>
         </div>
-        <div className="row">
-          <button className="icon-btn" title="Klasörü aç" onClick={async () => openPath(await api.instancePath(id))}>
-            <FolderOpen size={17} />
-          </button>
-          <button className="icon-btn" title="Klonla" onClick={() => setCloneOpen(true)}>
-            <Copy size={17} />
-          </button>
+        <div className="ihead-actions">
           <button
-            className="icon-btn"
-            title="Şablon oluştur"
-            onClick={async () => { await api.makeTemplate(id, `${inst.name} şablonu`); await refresh(); }}
-          >
-            <LayoutTemplate size={17} />
-          </button>
-          <button
-            className={`btn ${isRunning ? "btn-danger" : "btn-primary"}`}
+            className={clsx("btn ihead-play", isRunning ? "btn-danger" : "btn-primary")}
             disabled={isLaunching || hunting}
             title={hunting ? "Ashi bu instance'ta suçlu avında" : undefined}
             onClick={() => (isRunning ? kill(id) : launch(id, offlineName))}
           >
-            {isLaunching ? <Loader2 size={16} className="spin" /> : isRunning ? <Square size={14} fill="currentColor" /> : <Play size={16} fill="currentColor" />}
+            {isLaunching ? <Loader2 size={20} className="spin" /> : isRunning ? <Square size={17} fill="currentColor" /> : <Play size={20} />}
             {hunting ? "Ashi avda" : isRunning ? "Durdur" : "Oyna"}
           </button>
+          <button className={clsx("round-btn", tab === "settings" && "on")} title="Instance ayarları" onClick={() => setTab(tab === "settings" ? "content" : "settings")}>
+            <Settings2 size={20} />
+          </button>
+          <Menu
+            trigger={() => <button className="icon-btn" aria-label="Daha fazla"><MoreVertical size={20} /></button>}
+            items={[
+              { label: "Klasörü aç", icon: <FolderOpen size={14} />, onClick: async () => openPath(await api.instancePath(id)) },
+              { label: "Klonla", icon: <Copy size={14} />, onClick: () => setCloneOpen(true) },
+              { label: "Şablon oluştur", icon: <LayoutTemplate size={14} />, onClick: async () => { await api.makeTemplate(id, `${inst.name} şablonu`); await refresh(); } },
+              { label: "Instance'ı sil", icon: <Trash2 size={14} />, danger: true, disabled: locked, onClick: () => void del() },
+            ]}
+          />
         </div>
       </header>
 
       {exit?.crashed && !exit.duringHunt && !isRunning && !hunting && (
         <div className="banner banner-error row">
           <span className="grow">Oyun {exit.code} çıkış koduyla çöktü.</span>
+          <button className="btn btn-sm btn-ghost" onClick={() => setTab("logs")}>Logları gör</button>
           {exit.modCount >= 2 && (
             <button className="btn btn-sm btn-ghost" onClick={() => openAshi(id, inst.name)}>
               Ashi'den suçluyu bulmasını iste
@@ -81,55 +101,22 @@ export function InstancePage() {
         </div>
       )}
 
-      <div className="tabs">
-        {(["console", "settings"] as Tab[]).map((t) => (
-          <button key={t} className={clsx("tab", tab === t && "active")} onClick={() => setTab(t)}>
-            {t === "console" ? "Konsol" : "Ayarlar"}
+      <nav className="pill-tabs" role="tablist">
+        {TABS.map(({ id: t, label, icon: Icon }) => (
+          <button key={t} role="tab" aria-selected={tab === t} className={clsx("pill-tab", tab === t && "on")} onClick={() => setTab(t)}>
+            <Icon size={18} /> {label}
           </button>
         ))}
-      </div>
+      </nav>
 
-      {tab === "console" ? (
-        <Console lines={logs[id] ?? []} />
-      ) : (
-        <InstanceSettings
-          instance={inst}
-          onDelete={async () => {
-            if (confirm(`"${inst.name}" ve tüm dünyaları silinsin mi?`)) {
-              await remove(id);
-              navigate("/library");
-            }
-          }}
-        />
-      )}
+      {tab === "content" && <ContentTab instanceId={id} locked={locked} />}
+      {tab === "files" && <FilesTab instanceId={id} />}
+      {tab === "worlds" && <WorldsTab instanceId={id} locked={locked} />}
+      {tab === "logs" && <LogsTab instanceId={id} live={logs[id] ?? []} />}
+      {tab === "share" && <ShareTab instance={inst} />}
+      {tab === "settings" && <InstanceSettings instance={inst} onDelete={() => void del()} />}
 
       <CloneModal open={cloneOpen} onClose={() => setCloneOpen(false)} name={inst.name} onConfirm={(n, w) => clone(id, n, w)} />
-    </div>
-  );
-}
-
-function Console({ lines }: { lines: { line: string; stderr: boolean }[] }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [follow, setFollow] = useState(true);
-  useEffect(() => {
-    if (follow && ref.current) ref.current.scrollTop = ref.current.scrollHeight;
-  }, [lines, follow]);
-
-  const level = (l: string) => (/\b(ERROR|FATAL)\b|Exception/.test(l) ? "err" : /\bWARN\b/.test(l) ? "warn" : "");
-
-  return (
-    <div
-      className="console"
-      ref={ref}
-      onScroll={(e) => {
-        const el = e.currentTarget;
-        setFollow(el.scrollHeight - el.scrollTop - el.clientHeight < 40);
-      }}
-    >
-      {lines.length === 0 && <span className="muted">Oyun başlatıldığında loglar burada akacak.</span>}
-      {lines.map((l, i) => (
-        <div key={i} className={clsx("log-line", l.stderr && "stderr", level(l.line))}>{l.line}</div>
-      ))}
     </div>
   );
 }
