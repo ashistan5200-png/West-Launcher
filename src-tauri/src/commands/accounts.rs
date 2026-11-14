@@ -91,7 +91,7 @@ pub async fn ms_login_start(app: AppHandle, state: State<'_, AppState>) -> Resul
                     microsoft::Poll::Pending => {}
                     microsoft::Poll::SlowDown => interval += 5,
                     microsoft::Poll::Done { access, refresh } => {
-                        let (acc, _profile) = microsoft::finish_login(&st.http, &access, &refresh).await?;
+                        let (acc, _profile) = microsoft::finish_login(&st.http, &access, &refresh, false).await?;
                         let name = acc.username.clone();
                         let mut s = store(&st);
                         s.upsert(acc);
@@ -113,10 +113,112 @@ pub async fn ms_login_start(app: AppHandle, state: State<'_, AppState>) -> Resul
 }
 
 #[tauri::command]
-pub fn ms_login_cancel(state: State<'_, AppState>) {
+pub fn ms_login_cancel(app: AppHandle, state: State<'_, AppState>) {
     if let Some(c) = state.ms_login.lock().take() {
         c.store(true, Ordering::Relaxed);
     }
+    if let Some(w) = app.get_webview_window(LOGIN_WINDOW) {
+        let _ = w.close();
+    }
+}
+
+const LOGIN_WINDOW: &str = "ms-login";
+const CANCELLED: &str = microsoft::LOGIN_CANCELLED;
+
+type CodeSender = Arc<parking_lot::Mutex<Option<tokio::sync::oneshot::Sender<Result<String>>>>>;
+
+fn deliver(tx: &CodeSender, r: Result<String>) {
+    if let Some(t) = tx.lock().take() {
+        let _ = t.send(r);
+    }
+}
+
+/// Doğrudan Microsoft girişi: login.live.com launcher içinde ayrı bir pencerede
+/// açılır. Pencere IPC yetkisi olmayan harici bir sayfadır; yalnızca yönlendirme
+/// adresindeki yetki kodu yakalanır, şifre launcher'a hiç ulaşmaz.
+#[tauri::command]
+pub async fn ms_login_window(app: AppHandle) -> Result<()> {
+    if let Some(w) = app.get_webview_window(LOGIN_WINDOW) {
+        let _ = w.set_focus();
+        return Ok(());
+    }
+    let (tx, rx) = tokio::sync::oneshot::channel::<Result<String>>();
+    let tx: CodeSender = Arc::new(parking_lot::Mutex::new(Some(tx)));
+    let url: tauri::Url = microsoft::live_authorize_url().parse().map_err(|e| AppError::msg(format!("{e}")))?;
+
+    let nav_tx = tx.clone();
+    let win = tauri::WebviewWindowBuilder::new(&app, LOGIN_WINDOW, tauri::WebviewUrl::External(url))
+        .title("Microsoft ile giriş · West Launcher")
+        .inner_size(500.0, 680.0)
+        .min_inner_size(420.0, 560.0)
+        .center()
+        .focused(true)
+        .incognito(true)
+        .on_navigation(move |u| match microsoft::code_from_redirect(u.as_str()) {
+            Some(r) => {
+                deliver(&nav_tx, r);
+                false
+            }
+            None => true,
+        })
+        .build()
+        .map_err(|e| AppError::msg(format!("Giriş penceresi açılamadı: {e}")))?;
+
+    let close_tx = tx.clone();
+    win.on_window_event(move |e| {
+        if matches!(e, tauri::WindowEvent::CloseRequested { .. } | tauri::WindowEvent::Destroyed) {
+            deliver(&close_tx, Err(AppError::msg(CANCELLED)));
+        }
+    });
+
+    // Bazı WebView'lar yönlendirmeyi gezinme olayı olarak bildirmez → adresi de izle
+    let poll_tx = tx.clone();
+    let poll_app = app.clone();
+    tokio::spawn(async move {
+        loop {
+            tokio::time::sleep(Duration::from_millis(300)).await;
+            if poll_tx.lock().is_none() {
+                break;
+            }
+            let Some(w) = poll_app.get_webview_window(LOGIN_WINDOW) else { break };
+            if let Ok(u) = w.url() {
+                if let Some(r) = microsoft::code_from_redirect(u.as_str()) {
+                    deliver(&poll_tx, r);
+                    break;
+                }
+            }
+        }
+    });
+
+    tokio::spawn(async move {
+        let result = rx.await.unwrap_or_else(|_| Err(AppError::msg(CANCELLED)));
+        if let Some(w) = app.get_webview_window(LOGIN_WINDOW) {
+            let _ = w.close();
+        }
+        let st = app.state::<AppState>();
+        let ev = match result {
+            Err(e) if e.to_string() == CANCELLED => LoginEvent { status: "cancelled", username: None, message: None },
+            Err(e) => LoginEvent { status: "error", username: None, message: Some(e.to_string()) },
+            Ok(code) => {
+                let done: Result<String> = async {
+                    let (access, refresh) = microsoft::live_exchange(&st.http, &code).await?;
+                    let (acc, _) = microsoft::finish_login(&st.http, &access, &refresh, true).await?;
+                    let name = acc.username.clone();
+                    let mut s = store(&st);
+                    s.upsert(acc);
+                    s.save(&st.paths.accounts_file())?;
+                    Ok(name)
+                }
+                .await;
+                match done {
+                    Ok(name) => LoginEvent { status: "done", username: Some(name), message: None },
+                    Err(e) => LoginEvent { status: "error", username: None, message: Some(e.to_string()) },
+                }
+            }
+        };
+        let _ = app.emit(EV_MS_LOGIN, ev);
+    });
+    Ok(())
 }
 
 /// Başlatma için oturum: açık parametre > etkin hesap (MS ise token tazelenir) > offline ad.

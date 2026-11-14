@@ -197,7 +197,6 @@ function KeysSection() {
         placeholder="sk-ant-…"
         set={secrets?.anthropic ?? false}
       />
-      <ClientIdField />
       <KeyField
         name="curseforge"
         title="CurseForge API anahtarı"
@@ -244,27 +243,6 @@ function KeyField({ name, title, hint, placeholder, set }: { name: "anthropic" |
   );
 }
 
-function ClientIdField() {
-  const { settings, update } = useSettings();
-  const [value, setValue] = useState(settings.microsoftClientId ?? "");
-  useEffect(() => setValue(settings.microsoftClientId ?? ""), [settings.microsoftClientId]);
-  return (
-    <div className="key-field">
-      <div className="key-head">
-        <KeyRound size={15} />
-        <strong>Microsoft uygulama kimliği</strong>
-        <span className={clsx("key-status", settings.microsoftClientId && "on")}>{settings.microsoftClientId ? "Ayarlı" : "Eklenmedi"}</span>
-      </div>
-      <p className="muted tiny">
-        Microsoft ile giriş için Azure'da kayıtlı bir uygulamanın (client) kimliği. Minecraft hizmetlerine erişim için uygulamanın Mojang tarafından onaylanmış olması gerekir.
-      </p>
-      <form className="row" onSubmit={(e) => { e.preventDefault(); void update({ microsoftClientId: value.trim() || null }); }}>
-        <input spellCheck={false} placeholder="00000000-0000-0000-0000-000000000000" value={value} onChange={(e) => setValue(e.target.value)} />
-        <button className="btn btn-primary btn-sm" disabled={value.trim() === (settings.microsoftClientId ?? "")}>Kaydet</button>
-      </form>
-    </div>
-  );
-}
 
 const LOCAL_MODELS = [
   { id: "qwen2.5:3b", label: "Hafif", note: "≈2 GB · 8 GB RAM'li bilgisayarlar için" },

@@ -76,6 +76,8 @@ export const api = {
   removeAccount: (uuid: string) => invoke<AccountView[]>("remove_account", { uuid }),
   msLoginStart: () => invoke<DeviceCode>("ms_login_start"),
   msLoginCancel: () => invoke<void>("ms_login_cancel"),
+  /** Doğrudan giriş: Microsoft'un giriş sayfasını ayrı bir pencerede açar */
+  msLoginWindow: () => invoke<void>("ms_login_window"),
   accountSkin: (account: string) => invoke<Skin | null>("account_skin", { account }),
   accountCapes: (account: string) => invoke<Cape[]>("account_capes", { account }),
   setAccountCape: (account: string, capeId: string | null) => invoke<void>("set_account_cape", { account, capeId }),

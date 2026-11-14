@@ -25,6 +25,9 @@ pub struct MsTokens {
     pub mc_access_token: String,
     pub mc_expires_at: DateTime<Utc>,
     pub xuid: Option<String>,
+    /// login.live.com ile doğrudan girişle mi alındı (yenileme yolu buna göre seçilir)
+    #[serde(default)]
+    pub live: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { api, events, isTauri } from "@/lib/ipc";
-import type { AccountView, DeviceCode, Skin } from "@/lib/types";
+import type { AccountView, Skin } from "@/lib/types";
 
 /** Klasik skinlerde sağ kolun 4. sütunu (x=54..55, y=20..31) doludur; slim'de saydamdır. */
 async function detectSlim(dataUrl: string): Promise<boolean> {
@@ -29,7 +29,8 @@ interface AccountsState {
   skins: Skin[];
   /** Önizlemede gösterilen skin (arşivden ya da hesabın kendisinden) */
   previewId: string | null;
-  login: DeviceCode | null;
+  /** Microsoft giriş penceresi açık ve sonuç bekleniyor */
+  loginOpen: boolean;
   loginError: string | null;
   busy: string | null;
   error: string | null;
@@ -74,7 +75,7 @@ export const useAccounts = create<AccountsState>((set, get) => {
     accounts: [],
     skins: [],
     previewId: null,
-    login: null,
+    loginOpen: false,
     loginError: null,
     busy: null,
     error: null,
@@ -98,27 +99,30 @@ export const useAccounts = create<AccountsState>((set, get) => {
     remove: (uuid) => run("remove", async () => set({ accounts: await api.removeAccount(uuid) })),
 
     startLogin: async () => {
-      set({ loginError: null });
+      set({ loginError: null, loginOpen: true });
       try {
-        set({ login: await api.msLoginStart() });
+        await api.msLoginWindow();
       } catch (e) {
-        set({ loginError: String(e) });
+        set({ loginError: String(e), loginOpen: false });
       }
     },
+    /** Her durumda pencereyi kapatır ve modal'ı temizler (eskiden hata kalınca kapanmıyordu). */
     cancelLogin: async () => {
+      set({ loginOpen: false, loginError: null });
       await api.msLoginCancel().catch(() => {});
-      set({ login: null });
     },
 
     bindEvents: async () => {
       if (!isTauri()) return () => {};
       const un = await events.onMsLogin(async (e) => {
         if (e.status === "done") {
-          set({ login: null, notice: `${e.username} hesabı eklendi` });
+          set({ loginOpen: false, loginError: null, notice: `${e.username} hesabı eklendi` });
           await get().load();
           await get().syncAccountSkin();
         } else if (e.status === "error") {
-          set({ loginError: e.message });
+          set({ loginOpen: false, loginError: e.message });
+        } else {
+          set({ loginOpen: false });
         }
       });
       return un;

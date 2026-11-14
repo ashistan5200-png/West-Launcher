@@ -85,7 +85,7 @@ Ashi'nin araçları her sağlayıcıda aynıdır: `search_content`, `list_instan
 - **Hesaplar** (`accounts/`):
   - Microsoft girişi cihaz koduyla yapılır (Microsoft → Xbox Live → XSTS → Minecraft). Token'lar `accounts.json` dosyasında saklanır, süresi dolmadan önce yenilenir ve arayüze hiç gönderilmez.
   - Offline hesaplar da eklenebilir. Oyun etkin hesapla başlatılır.
-  - Microsoft girişi, Mojang'ın onayladığı bir Azure uygulama kimliği ister; kimlik Ayarlar'dan girilir.
+  - Microsoft girişi doğrudan yapılır: Microsoft'un kendi giriş sayfası launcher içinde ayrı bir pencerede açılır. Ek bir kimlik ya da kod gerekmez ve şifre launcher'a hiç ulaşmaz.
 - **Skin arşivi** (`skins.rs`):
   - Bilgisayardan `.png` yüklenebilir; dosyanın 64×64 ya da 64×32 olduğu kontrol edilir ve kolun ince mi klasik mi olduğu otomatik anlaşılır.
   - Oyuncu adından skin alınabilir. Favoriler ve son kullanılanlar tutulur; aynı skin iki kez eklenmez.

@@ -1,8 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
-import { open as openUrl } from "@tauri-apps/plugin-shell";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Check, Copy, ExternalLink, Loader2, LogIn, RefreshCw, Rotate3d, Star, Trash2, Upload, UserPlus, UserRound, X,
+  Check, Loader2, LogIn, RefreshCw, Rotate3d, Star, Trash2, Upload, UserPlus, UserRound, X,
 } from "lucide-react";
 import clsx from "clsx";
 import { useAccounts } from "@/stores/accounts";
@@ -242,24 +241,32 @@ function CapeCard({ account }: { account: AccountView }) {
 }
 
 function LoginModal() {
-  const { login, loginError, cancelLogin } = useAccounts();
-  const [copied, setCopied] = useState(false);
-  const open = !!login || !!loginError;
+  const { loginOpen, loginError, cancelLogin, startLogin } = useAccounts();
   return (
-    <Modal open={open} onClose={cancelLogin} title="Microsoft ile giriş" width={440}
-      footer={<button className="btn btn-ghost" onClick={cancelLogin}>{loginError ? "Kapat" : "İptal"}</button>}>
+    <Modal
+      open={loginOpen || !!loginError}
+      onClose={cancelLogin}
+      title="Microsoft ile giriş"
+      width={420}
+      footer={
+        loginError ? (
+          <>
+            <button className="btn btn-ghost" onClick={cancelLogin}>Kapat</button>
+            <button className="btn btn-primary" onClick={() => void startLogin()}>Tekrar dene</button>
+          </>
+        ) : (
+          <button className="btn btn-ghost" onClick={cancelLogin}>İptal</button>
+        )
+      }
+    >
       {loginError ? (
         <p className="hint error">{loginError}</p>
-      ) : login && (
+      ) : (
         <div className="login-box">
-          <p className="small">Tarayıcıda açılan sayfaya bu kodu gir ve Minecraft'a sahip Microsoft hesabınla giriş yap:</p>
-          <button className="login-code" title="Kopyala" onClick={() => { void navigator.clipboard.writeText(login.userCode); setCopied(true); }}>
-            {login.userCode} {copied ? <Check size={16} /> : <Copy size={16} />}
-          </button>
-          <button className="btn btn-primary" onClick={() => openUrl(login.verificationUri)}>
-            <ExternalLink size={15} /> {login.verificationUri.replace("https://", "")} adresini aç
-          </button>
-          <p className="muted tiny row"><Loader2 size={13} className="spin" /> Girişin tamamlanması bekleniyor… Bu pencereyi açık bırakabilirsin.</p>
+          <p className="small">Açılan Microsoft penceresinde, Minecraft'a sahip hesabının e-posta adresi ve şifresiyle giriş yap. Giriş bitince pencere kendiliğinden kapanır ve hesabın buraya eklenir.</p>
+          <p className="muted tiny row"><Loader2 size={13} className="spin" /> Giriş bekleniyor…</p>
+          <button className="btn btn-ghost btn-sm" style={{ alignSelf: "flex-start" }} onClick={() => void startLogin()}>Giriş penceresini öne getir</button>
+          <p className="muted tiny">Şifren yalnızca Microsoft'un kendi sayfasına girilir; West Launcher onu görmez ve saklamaz.</p>
         </div>
       )}
     </Modal>

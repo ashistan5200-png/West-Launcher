@@ -1,8 +1,11 @@
 //! Microsoft → Xbox Live → XSTS → Minecraft kimlik zinciri (cihaz kodu akışı)
 //! ve Minecraft Services profil/skin/pelerin uç noktaları.
 //!
-//! Not: api.minecraftservices.com yalnızca Mojang'ın onayladığı Azure uygulama
-//! kimliklerini (client id) kabul eder. Kimlik Ayarlar'dan girilir.
+//! İki giriş yolu:
+//!   - Doğrudan giriş (varsayılan): Microsoft'un login.live.com sayfası launcher
+//!     içinde ayrı bir pencerede açılır; kullanıcı e-posta/şifresiyle giriş yapar.
+//!     Minecraft'ın masaüstü istemci kimliği kullanılır, ayrıca kimlik gerekmez.
+//!   - Cihaz kodu (gelişmiş): Mojang onaylı kendi Azure uygulama kimliğiyle.
 
 use super::{Account, AccountKind, MsTokens};
 use crate::core::http::Http;
@@ -18,6 +21,61 @@ const XBL: &str = "https://user.auth.xboxlive.com/user/authenticate";
 const XSTS: &str = "https://xsts.auth.xboxlive.com/xsts/authorize";
 const MC_LOGIN: &str = "https://api.minecraftservices.com/authentication/login_with_xbox";
 const MC_PROFILE: &str = "https://api.minecraftservices.com/minecraft/profile";
+
+// ───────── Doğrudan giriş (login.live.com) ─────────
+const LIVE_CLIENT_ID: &str = "00000000402b5328";
+const LIVE_AUTHORIZE: &str = "https://login.live.com/oauth20_authorize.srf";
+const LIVE_TOKEN: &str = "https://login.live.com/oauth20_token.srf";
+/// Girişin kullanıcı tarafından iptal edildiğini belirten iç işaret.
+pub const LOGIN_CANCELLED: &str = "__west_login_cancelled__";
+pub const LIVE_REDIRECT: &str = "https://login.live.com/oauth20_desktop.srf";
+const LIVE_SCOPE: &str = "service::user.auth.xboxlive.com::MBI_SSL";
+
+/// Giriş penceresinde açılacak Microsoft sayfası.
+pub fn live_authorize_url() -> String {
+    let q = |s: &str| s.replace(':', "%3A").replace('/', "%2F");
+    format!(
+        "{LIVE_AUTHORIZE}?client_id={LIVE_CLIENT_ID}&response_type=code&scope={}&redirect_uri={}&prompt=select_account",
+        q(LIVE_SCOPE),
+        q(LIVE_REDIRECT)
+    )
+}
+
+/// Pencere yönlendirmesinden yetki kodunu ayıklar (`...oauth20_desktop.srf?code=...`).
+pub fn code_from_redirect(url: &str) -> Option<Result<String>> {
+    if !url.starts_with(LIVE_REDIRECT) {
+        return None;
+    }
+    let query = url.split_once('?').map(|(_, q)| q).unwrap_or("");
+    let param = |k: &str| query.split('&').find_map(|kv| kv.strip_prefix(&format!("{k}="))).map(|v| v.replace('+', " "));
+    if let Some(code) = param("code") {
+        return Some(Ok(code));
+    }
+    // Kullanıcı Microsoft sayfasındaki × ile vazgeçti → hata değil, sessiz iptal
+    if param("error").as_deref() == Some("access_denied") {
+        return Some(Err(AppError::msg(LOGIN_CANCELLED)));
+    }
+    let desc = param("error_description").or(param("error")).unwrap_or_else(|| "bilinmeyen hata".into());
+    Some(Err(AppError::msg(format!("Microsoft girişi iptal edildi veya başarısız: {}", desc.replace("%20", " ")))))
+}
+
+async fn live_token(http: &Http, form: &[(&str, &str)]) -> Result<(String, String)> {
+    let r: TokenResp = http.client.post(LIVE_TOKEN).form(form).send().await?.json().await?;
+    match (r.access_token, r.refresh_token) {
+        (Some(a), Some(rt)) => Ok((a, rt)),
+        _ => Err(AppError::msg(format!("Microsoft oturumu alınamadı: {}", r.error_description.or(r.error).unwrap_or_default()))),
+    }
+}
+
+pub async fn live_exchange(http: &Http, code: &str) -> Result<(String, String)> {
+    live_token(http, &[("client_id", LIVE_CLIENT_ID), ("code", code), ("grant_type", "authorization_code"), ("redirect_uri", LIVE_REDIRECT), ("scope", LIVE_SCOPE)]).await
+}
+
+async fn live_refresh(http: &Http, refresh: &str) -> Result<(String, String)> {
+    live_token(http, &[("client_id", LIVE_CLIENT_ID), ("refresh_token", refresh), ("grant_type", "refresh_token"), ("redirect_uri", LIVE_REDIRECT), ("scope", LIVE_SCOPE)])
+        .await
+        .map_err(|_| AppError::msg("Microsoft oturumu sona erdi; hesabı yeniden ekle"))
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -120,19 +178,27 @@ pub struct Profile {
 }
 
 /// MS erişim token'ından Minecraft token'ı + profil üretir.
-async fn minecraft_chain(http: &Http, ms_access: &str) -> Result<(String, i64, Option<String>, Profile)> {
-    let xbl: serde_json::Value = http
+async fn xbl_auth(http: &Http, ticket: String) -> Result<serde_json::Value> {
+    Ok(http
         .client
         .post(XBL)
         .json(&json!({
-            "Properties": { "AuthMethod": "RPS", "SiteName": "user.auth.xboxlive.com", "RpsTicket": format!("d={ms_access}") },
+            "Properties": { "AuthMethod": "RPS", "SiteName": "user.auth.xboxlive.com", "RpsTicket": ticket },
             "RelyingParty": "http://auth.xboxlive.com", "TokenType": "JWT"
         }))
         .send()
         .await?
         .error_for_status()?
         .json()
-        .await?;
+        .await?)
+}
+
+async fn minecraft_chain(http: &Http, ms_access: &str, live: bool) -> Result<(String, i64, Option<String>, Profile)> {
+    let (first, second) = if live { (ms_access.to_string(), format!("d={ms_access}")) } else { (format!("d={ms_access}"), ms_access.to_string()) };
+    let xbl = match xbl_auth(http, first).await {
+        Ok(v) => v,
+        Err(_) => xbl_auth(http, second).await.map_err(|e| AppError::msg(format!("Xbox Live girişi başarısız: {e}")))?,
+    };
     let xbl_token = xbl["Token"].as_str().ok_or_else(|| AppError::msg("Xbox Live token alınamadı"))?;
     let uhs = xbl["DisplayClaims"]["xui"][0]["uhs"].as_str().unwrap_or_default().to_string();
 
@@ -174,14 +240,14 @@ async fn minecraft_chain(http: &Http, ms_access: &str) -> Result<(String, i64, O
     Ok((token, expires, xuid, profile))
 }
 
-pub async fn finish_login(http: &Http, ms_access: &str, ms_refresh: &str) -> Result<(Account, Profile)> {
-    let (token, expires, xuid, profile) = minecraft_chain(http, ms_access).await?;
+pub async fn finish_login(http: &Http, ms_access: &str, ms_refresh: &str, live: bool) -> Result<(Account, Profile)> {
+    let (token, expires, xuid, profile) = minecraft_chain(http, ms_access, live).await?;
     let acc = Account {
         uuid: profile.id.clone(),
         username: profile.name.clone(),
         kind: AccountKind::Microsoft,
         skin_id: None,
-        ms: Some(MsTokens { refresh_token: ms_refresh.into(), mc_access_token: token, mc_expires_at: Utc::now() + ChronoDuration::seconds(expires - 120), xuid }),
+        ms: Some(MsTokens { refresh_token: ms_refresh.into(), mc_access_token: token, mc_expires_at: Utc::now() + ChronoDuration::seconds(expires - 120), xuid, live }),
         added: Utc::now(),
     };
     Ok((acc, profile))
@@ -193,8 +259,9 @@ pub async fn ensure_fresh(http: &Http, client_id: &str, acc: &mut Account) -> Re
     if ms.mc_expires_at > Utc::now() + ChronoDuration::minutes(5) {
         return Ok(false);
     }
-    let (access, refresh) = refresh_ms(http, client_id, &ms.refresh_token).await?;
-    let (fresh, _) = finish_login(http, &access, &refresh).await?;
+    let live = ms.live;
+    let (access, refresh) = if live { live_refresh(http, &ms.refresh_token).await? } else { refresh_ms(http, client_id, &ms.refresh_token).await? };
+    let (fresh, _) = finish_login(http, &access, &refresh, live).await?;
     acc.username = fresh.username;
     acc.ms = fresh.ms;
     Ok(true)
@@ -228,4 +295,20 @@ pub async fn set_cape(http: &Http, token: &str, cape_id: Option<&str>) -> Result
     };
     req.send().await?.error_for_status()?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn redirect_parsing() {
+        assert!(code_from_redirect("https://login.live.com/ppsecure/post.srf").is_none());
+        let ok = code_from_redirect("https://login.live.com/oauth20_desktop.srf?code=M.C123_BAY.2.abc&lc=1033").unwrap().unwrap();
+        assert_eq!(ok, "M.C123_BAY.2.abc");
+        let cancel = code_from_redirect("https://login.live.com/oauth20_desktop.srf?error=access_denied&error_description=The+user+has+denied").unwrap();
+        assert_eq!(cancel.unwrap_err().to_string(), LOGIN_CANCELLED);
+        let err = code_from_redirect("https://login.live.com/oauth20_desktop.srf?error=server_error&error_description=Try+again").unwrap();
+        assert!(err.unwrap_err().to_string().contains("Try again"));
+        assert!(live_authorize_url().contains("redirect_uri=https%3A%2F%2Flogin.live.com%2Foauth20_desktop.srf"));
+    }
 }

@@ -98,6 +98,7 @@ pub fn run() {
             commands::accounts::remove_account,
             commands::accounts::ms_login_start,
             commands::accounts::ms_login_cancel,
+            commands::accounts::ms_login_window,
             commands::accounts::apply_skin,
             commands::accounts::account_skin,
             commands::accounts::account_capes,
