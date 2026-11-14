@@ -8,6 +8,7 @@ pub mod importer;
 pub mod instance;
 pub mod java;
 pub mod launch;
+pub mod news;
 pub mod screenshots;
 pub mod settings;
 pub mod skins;

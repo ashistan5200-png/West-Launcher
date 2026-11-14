@@ -351,3 +351,34 @@ export interface UpdateStatus {
   total: number;
   error: string | null;
 }
+
+// ───────── Haberler ─────────
+export interface PatchNote {
+  id: string;
+  title: string;
+  version: string;
+  kind: "release" | "snapshot" | string;
+  date: string;
+  image: string | null;
+  summary: string;
+  contentPath: string;
+}
+
+export interface ModUpdate {
+  projectId: string;
+  slug: string;
+  title: string;
+  icon: string | null;
+  downloads: number;
+  versionName: string;
+  versionNumber: string;
+  date: string;
+  gameVersions: string[];
+  loaders: string[];
+  changelog: string;
+  url: string;
+}
+
+export interface NewTexture { path: string; name: string; category: string }
+export interface NewSound { path: string; name: string; group: string; hash: string; size: number }
+export interface AssetDiff { version: string; base: string; textures: NewTexture[]; sounds: NewSound[] }

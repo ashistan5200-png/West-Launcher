@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import type {
   AshiEvent, AshiSkin, HuntPlan,
+  PatchNote, ModUpdate, AssetDiff,
   Screenshot, FoundInstance, CompanionConfig, CompanionInfo, UpdateStatus,
   AccountView, Cape, DeviceCode, MsLoginEvent, Skin, OllamaStatus, PullProgress,
   ChatOutcome, ContentHit, ContentKind, ContentSource, InstallReport, InstalledContent, SearchQuery, SearchResult, SecretStatus,
@@ -44,6 +45,15 @@ export const api = {
     invoke<number>("launch_instance", { id, auth: null, offlineName: opts.offlineName ?? null, joinServer: opts.joinServer ?? null }),
   kill: (id: string) => invoke<void>("kill_instance", { id }),
   running: () => invoke<RunningInfo[]>("running_instances"),
+  // Haberler
+  newsPatchNotes: () => invoke<PatchNote[]>("news_patch_notes"),
+  newsPatchBody: (contentPath: string) => invoke<string>("news_patch_body", { contentPath }),
+  newsModUpdates: () => invoke<ModUpdate[]>("news_mod_updates"),
+  newsAssetDiff: (version: string, base: string | null) => invoke<AssetDiff>("news_asset_diff", { version, base }),
+  newsTexture: (version: string, path: string) => invoke<ArrayBuffer>("news_texture", { version, path }),
+  newsSound: (hash: string) => invoke<ArrayBuffer>("news_sound", { hash }),
+  newsExport: (dest: string, file: { version?: string; path?: string; hash?: string }) =>
+    invoke<void>("news_export", { dest, version: file.version ?? null, path: file.path ?? null, hash: file.hash ?? null }),
   updateStatus: () => invoke<UpdateStatus>("update_status"),
   checkUpdate: () => invoke<UpdateStatus>("check_update"),
   installUpdate: () => invoke<void>("install_update"),

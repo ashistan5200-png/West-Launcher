@@ -15,6 +15,7 @@ import { SettingsPage } from "@/pages/Settings";
 import { BrowsePage } from "@/pages/Browse";
 import { SkinsPage } from "@/pages/Skins";
 import { GalleryPage } from "@/pages/Gallery";
+import { NewsPage } from "@/pages/News";
 import { Splash } from "@/components/Splash";
 import { TooltipLayer } from "@/components/TooltipLayer";
 import { UpdateModal } from "@/components/UpdateCenter";
@@ -70,6 +71,7 @@ export default function App() {
                   <Route path="/browse" element={<BrowsePage />} />
                   <Route path="/skins" element={<SkinsPage />} />
                   <Route path="/gallery" element={<GalleryPage />} />
+                  <Route path="/news" element={<NewsPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                 </Routes>
               </motion.div>

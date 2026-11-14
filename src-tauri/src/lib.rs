@@ -9,6 +9,7 @@ pub mod crash;
 pub mod error;
 pub mod importer;
 pub mod instance;
+pub mod news;
 pub mod java;
 pub mod paths;
 pub mod screenshots;
@@ -129,6 +130,14 @@ pub fn run() {
             commands::updater::update_status,
             commands::updater::check_update,
             commands::updater::install_update,
+            // Haberler
+            commands::news::news_patch_notes,
+            commands::news::news_patch_body,
+            commands::news::news_mod_updates,
+            commands::news::news_asset_diff,
+            commands::news::news_texture,
+            commands::news::news_sound,
+            commands::news::news_export,
         ])
         .run(tauri::generate_context!())
         .expect("West Launcher başlatılamadı");

@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { Home, Library, Settings, Plus, Play, Compass, Shirt, Images } from "lucide-react";
+import { Home, Library, Settings, Plus, Play, Compass, Shirt, Images, Newspaper } from "lucide-react";
 import { useChat } from "@/stores/chat";
 import { AshiHead } from "./AshiHead";
 import clsx from "clsx";
@@ -12,6 +12,7 @@ const NAV = [
   { to: "/browse", icon: Compass, label: "Keşfet" },
   { to: "/skins", icon: Shirt, label: "Skin ve hesaplar" },
   { to: "/gallery", icon: Images, label: "Ekran görüntüleri" },
+  { to: "/news", icon: Newspaper, label: "Haberler ve güncellemeler" },
 ];
 
 export function Sidebar() {
