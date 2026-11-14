@@ -11,6 +11,8 @@ use std::path::{Path, PathBuf};
 pub struct Secrets {
     pub anthropic_api_key: Option<String>,
     pub curseforge_api_key: Option<String>,
+    /// İsteğe bağlı launcher kilidi — Argon2id PHC dizesi (şifrenin kendisi asla saklanmaz)
+    pub launcher_password: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -43,5 +45,40 @@ impl Secrets {
     pub fn status(&self) -> SecretStatus {
         let has = |k: &Option<String>| k.as_deref().map(|s| !s.trim().is_empty()).unwrap_or(false);
         SecretStatus { anthropic: has(&self.anthropic_api_key), curseforge: has(&self.curseforge_api_key) }
+    }
+}
+
+// ───────── Launcher kilidi ─────────
+
+use argon2::password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString};
+use argon2::Argon2;
+
+pub fn hash_password(pw: &str) -> Result<String> {
+    if pw.chars().count() < 4 {
+        return Err(crate::error::AppError::msg("Şifre en az 4 karakter olmalı"));
+    }
+    // 16 baytlık kriptografik rastgele tuz (UUID v4 işletim sisteminin CSPRNG'sinden üretilir)
+    let salt = SaltString::encode_b64(uuid::Uuid::new_v4().as_bytes()).map_err(|e| crate::error::AppError::msg(e.to_string()))?;
+    Argon2::default()
+        .hash_password(pw.as_bytes(), &salt)
+        .map(|h| h.to_string())
+        .map_err(|e| crate::error::AppError::msg(e.to_string()))
+}
+
+pub fn verify_password(pw: &str, phc: &str) -> bool {
+    PasswordHash::new(phc).map(|h| Argon2::default().verify_password(pw.as_bytes(), &h).is_ok()).unwrap_or(false)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn password_roundtrip() {
+        let h = hash_password("ashi1234").unwrap();
+        assert!(h.starts_with("$argon2"));
+        assert!(!h.contains("ashi1234"));
+        assert!(verify_password("ashi1234", &h));
+        assert!(!verify_password("yanlis", &h));
+        assert!(hash_password("abc").is_err());
     }
 }

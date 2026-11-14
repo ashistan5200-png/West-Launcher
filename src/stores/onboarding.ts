@@ -5,11 +5,17 @@ import { useSettings } from "./settings";
 
 interface OnboardingState {
   splashDone: boolean;
+  /** İlk kurulum sihirbazı (giriş adımlı) açık mı */
+  setupOpen: boolean;
+  /** Launcher şifreyle kilitli ve henüz açılmadı */
+  locked: boolean | null;
   touring: boolean;
   wizardOpen: boolean;
   found: FoundInstance[] | null;
   scanning: boolean;
   finishSplash: () => void;
+  setLocked: (v: boolean) => void;
+  finishSetup: (opts: { tour: boolean; importAfter: boolean }) => Promise<void>;
   startTour: () => void;
   endTour: () => Promise<void>;
   openWizard: () => void;
@@ -19,6 +25,8 @@ interface OnboardingState {
 
 export const useOnboarding = create<OnboardingState>((set, get) => ({
   splashDone: false,
+  setupOpen: false,
+  locked: null,
   touring: false,
   wizardOpen: false,
   found: null,
@@ -28,6 +36,18 @@ export const useOnboarding = create<OnboardingState>((set, get) => ({
     if (get().splashDone) return;
     set({ splashDone: true });
     maybeStart();
+  },
+
+  setLocked: (locked) => {
+    set({ locked });
+    maybeStart();
+  },
+
+  finishSetup: async ({ tour, importAfter }) => {
+    set({ setupOpen: false });
+    await useSettings.getState().update({ onboardingDone: true });
+    if (importAfter) get().openWizard();
+    else if (tour) get().startTour();
   },
 
   startTour: () => {
@@ -57,13 +77,17 @@ export const useOnboarding = create<OnboardingState>((set, get) => ({
   },
 }));
 
-/** İlk açılışta tur, hem açılış animasyonu bitip hem ayarlar yüklendiğinde bir kez başlar. */
+/**
+ * İlk açılışta kurulum sihirbazı; açılış animasyonu bitmiş, ayarlar yüklenmiş ve
+ * (varsa) launcher kilidi açılmış olmalı. Yalnızca bir kez başlar.
+ */
 let started = false;
 function maybeStart() {
   const o = useOnboarding.getState();
   const s = useSettings.getState();
-  if (started || !o.splashDone || !s.loaded || s.settings.onboardingDone) return;
+  if (started || !o.splashDone || !s.loaded || o.locked !== false || s.settings.onboardingDone) return;
   started = true;
-  o.startTour();
+  useOnboarding.setState({ setupOpen: true });
+  void o.scan(); // sihirbaz sürerken diğer launcher'ları tara
 }
 useSettings.subscribe(maybeStart);

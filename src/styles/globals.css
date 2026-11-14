@@ -668,3 +668,30 @@ kbd { font-family: var(--mono); font-size: var(--fs-xs); padding: 1px 6px; borde
 .sound-row .grow { display: flex; flex-direction: column; }
 .play-btn { width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; display: grid; place-items: center; background: rgb(var(--accent) / 0.14); color: rgb(var(--accent)); transition: background .15s ease; }
 .play-btn:hover, .play-btn.on { background: rgb(var(--accent)); color: rgb(var(--on-accent)); }
+
+/* ───────── Kurulum sihirbazı + kilit ekranı ───────── */
+.setup-layer { position: fixed; inset: var(--titlebar) 0 0 0; z-index: 95; background:
+  radial-gradient(60% 50% at 50% 30%, rgb(var(--surface-2) / 0.9), rgb(var(--bg) / 0.97) 70%); backdrop-filter: blur(6px); overflow-y: auto; }
+.setup-stage { position: relative; width: min(980px, 100%); min-height: 560px; margin: 0 auto; padding-top: 70px; }
+.setup-progress { position: absolute; top: 22px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; }
+.setup-progress span { width: 8px; height: 8px; border-radius: 4px; background: rgb(var(--border) / 0.14); transition: width .3s ease, background .3s ease; }
+.setup-progress span.done { background: rgb(var(--accent) / 0.45); }
+.setup-progress span.on { width: 22px; background: rgb(var(--accent)); }
+.setup-mascot { position: absolute; left: 50%; z-index: 3; pointer-events: none; filter: drop-shadow(0 8px 10px rgb(0 0 0 / 0.3)); }
+.setup-card { position: absolute; left: 50%; z-index: 2; margin-top: 70px; padding: 26px 24px 18px; border-radius: 18px;
+  background: rgb(var(--surface-2)); border: 1px solid rgb(var(--border) / 0.08); box-shadow: var(--shadow-lg); }
+.setup-mascot { margin-top: 70px; }
+.setup-body { display: flex; flex-direction: column; gap: 12px; }
+.setup-body h2 { font-size: var(--fs-xl); }
+.setup-body p { color: rgb(var(--text) / 0.88); }
+.setup-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 18px; }
+.setup-or { display: flex; align-items: center; gap: 10px; color: rgb(var(--text-faint)); font-size: var(--fs-xs); }
+.setup-or::before, .setup-or::after { content: ""; flex: 1; height: 1px; background: rgb(var(--border) / 0.08); }
+.setup-account { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: var(--radius-sm); background: rgb(var(--success) / 0.1); color: rgb(160 200 172); font-size: var(--fs-sm); }
+.pw-field { position: relative; display: flex; }
+.pw-field input { padding-right: 40px !important; }
+.pw-eye { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 30px; height: 28px; border-radius: 7px; display: grid; place-items: center; color: rgb(var(--text-muted)); transition: background .15s ease, color .15s ease; }
+.pw-eye:hover { background: rgb(var(--border) / 0.08); color: rgb(var(--text)); }
+.pw-eye.static { pointer-events: none; }
+.pw-eye[aria-pressed="true"] { color: rgb(var(--accent)); }
+.setup-body .hint svg, .setup-body .muted svg { vertical-align: -2px; }

@@ -89,3 +89,47 @@ pub async fn ollama_pull(app: AppHandle, state: State<'_, AppState>) -> Result<(
     }
     res
 }
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LockStatus {
+    pub has_password: bool,
+}
+
+#[tauri::command]
+pub fn lock_status(state: State<'_, AppState>) -> LockStatus {
+    LockStatus { has_password: Secrets::load(&state.paths.root).launcher_password.is_some() }
+}
+
+/// `None` veya boş → kilidi kaldırır.
+#[tauri::command]
+pub fn set_launcher_password(state: State<'_, AppState>, password: Option<String>) -> Result<LockStatus> {
+    let mut s = Secrets::load(&state.paths.root);
+    s.launcher_password = match password.filter(|p| !p.is_empty()) {
+        Some(p) => Some(crate::secrets::hash_password(&p)?),
+        None => None,
+    };
+    s.save(&state.paths.root)?;
+    Ok(LockStatus { has_password: s.launcher_password.is_some() })
+}
+
+#[tauri::command]
+pub async fn verify_launcher_password(state: State<'_, AppState>, password: String) -> Result<bool> {
+    let hash = Secrets::load(&state.paths.root).launcher_password;
+    // Argon2 bilinçli olarak yavaştır; arayüzü bloklamamak için ayrı iş parçacığında
+    Ok(match hash {
+        Some(h) => tokio::task::spawn_blocking(move || crate::secrets::verify_password(&password, &h)).await.unwrap_or(false),
+        None => true,
+    })
+}
+
+/// "Şifremi unuttum": kilidi kaldırır ve güvenlik için kayıtlı hesapları siler
+/// (kurtarma yolu kilidin hesap çalmaya dönüşmesini engeller).
+#[tauri::command]
+pub fn reset_launcher_lock(state: State<'_, AppState>) -> Result<()> {
+    let mut s = Secrets::load(&state.paths.root);
+    s.launcher_password = None;
+    s.save(&state.paths.root)?;
+    let _ = std::fs::remove_file(state.paths.accounts_file());
+    Ok(())
+}

@@ -19,6 +19,7 @@ import { NewsPage } from "@/pages/News";
 import { Splash } from "@/components/Splash";
 import { TooltipLayer } from "@/components/TooltipLayer";
 import { UpdateModal } from "@/components/UpdateCenter";
+import { LockScreen, SetupWizard } from "@/components/SetupWizard";
 import { AshiTour } from "@/components/AshiTour";
 import { ImportWizard } from "@/components/ImportWizard";
 import { useAccounts } from "@/stores/accounts";
@@ -88,6 +89,8 @@ export default function App() {
         <ImportWizard />
         <AshiTour />
         <UpdateModal />
+        <SetupWizard />
+        <LockScreen />
         <TooltipLayer />
         <Splash />
         <ErrorToast />

@@ -91,6 +91,8 @@ jobs:
   pages:
     needs: build
     runs-on: ubuntu-latest
+    # Repo ayarlarında Pages açılana kadar bu adım başarısız olur; sürümü etkilemesin
+    continue-on-error: true
     permissions:
       pages: write
       id-token: write

@@ -9,6 +9,7 @@ const Ashi3D = lazy(() => import("./Ashi3D"));
 
 interface Props {
   mood: AshiMood;
+  facing?: number;
   width?: number;
   height?: number;
   interactive?: boolean;

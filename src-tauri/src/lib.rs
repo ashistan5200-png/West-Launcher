@@ -92,6 +92,10 @@ pub fn run() {
             commands::assistant::ashi_chat,
             commands::assistant::secret_status,
             commands::assistant::set_secret,
+            commands::assistant::lock_status,
+            commands::assistant::set_launcher_password,
+            commands::assistant::verify_launcher_password,
+            commands::assistant::reset_launcher_lock,
             commands::assistant::ollama_status,
             commands::assistant::ollama_pull,
             // Hesaplar + skin yöneticisi

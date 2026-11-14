@@ -7,6 +7,7 @@ import type { OllamaStatus, PullProgress, Settings } from "@/lib/types";
 import { useChat } from "@/stores/chat";
 import { useOnboarding } from "@/stores/onboarding";
 import { UpdateSettings } from "@/components/UpdateCenter";
+import { PasswordField } from "@/components/SetupWizard";
 import { useSettings } from "@/stores/settings";
 import { api, isTauri } from "@/lib/ipc";
 import { ACCENT_PRESETS } from "@/lib/theme";
@@ -132,6 +133,7 @@ export function SettingsPage() {
 
       <UpdateSettings autoUpdate={settings.autoUpdate} onToggle={(v) => update({ autoUpdate: v })} />
       <AiSection />
+      <LockSection />
       <KeysSection />
 
       <section className="card stack span-2">
@@ -175,6 +177,48 @@ export function SettingsPage() {
         )}
       </section>
     </div>
+  );
+}
+
+/** Launcher kilidi: açılışta şifre sorulur. Şifre yalnızca Argon2 özeti olarak saklanır. */
+function LockSection() {
+  const [has, setHas] = useState<boolean | null>(null);
+  const [pw, setPw] = useState("");
+  const [visible, setVisible] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  useEffect(() => {
+    if (isTauri()) api.lockStatus().then((s) => setHas(s.hasPassword)).catch(() => setHas(false));
+  }, []);
+  if (has === null) return null;
+
+  const save = async (value: string | null) => {
+    try {
+      await api.setLauncherPassword(value);
+      setHas(!!value);
+      setPw("");
+      setVisible(false);
+      setMsg({ ok: true, text: value ? "Şifre kaydedildi. Launcher açılışta şifre soracak." : "Kilit kaldırıldı." });
+    } catch (e) {
+      setMsg({ ok: false, text: String(e) });
+    }
+  };
+
+  return (
+    <section className="card stack span-2">
+      <div className="section-head">
+        <h3>Launcher kilidi</h3>
+        <span className="muted tiny">{has ? "Açık: launcher açılışta şifre sorar." : "Kapalı"}</span>
+      </div>
+      <div className="row" style={{ gap: 8 }}>
+        <div style={{ flex: 1 }}>
+          <PasswordField id="settings-pw" value={pw} onChange={setPw} visible={visible} onToggle={() => setVisible((v) => !v)}
+            placeholder={has ? "Yeni şifre" : "En az 4 karakter"} onEnter={() => pw && void save(pw)} />
+        </div>
+        <button className="btn btn-primary" disabled={pw.length < 4} onClick={() => void save(pw)}><KeyRound size={15} /> {has ? "Değiştir" : "Kilitle"}</button>
+        {has && <button className="btn btn-ghost" onClick={() => void save(null)}><Trash2 size={15} /> Kaldır</button>}
+      </div>
+      {msg && <p className={clsx("hint", !msg.ok && "error")}>{msg.text}</p>}
+    </section>
   );
 }
 

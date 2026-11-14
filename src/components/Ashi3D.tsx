@@ -94,6 +94,76 @@ const POSES: Record<AshiMood, Pose> = {
     p.skin.head.rotation.x = -0.2;
   },
 
+  // ── Kurulum sihirbazı pozları ──
+  // Kartın üst kenarında oturma: bacaklar öne uzanmış, kenardan sarkıyor gibi
+  sit: (p, t) => {
+    breathe(p, t);
+    p.skin.rightLeg.rotation.x = -Math.PI / 2 + Math.sin(t * 1.7) * 0.12;
+    p.skin.leftLeg.rotation.x = -Math.PI / 2 + Math.sin(t * 1.7 + 1.4) * 0.12;
+    p.skin.head.rotation.y = Math.sin(t * 0.6) * 0.2;
+    p.skin.rightArm.rotation.x = -0.25;
+    p.skin.leftArm.rotation.x = -0.25;
+  },
+
+  // Şifre gizli: iki el gözlerin üstünde, kafa hafif önde
+  "sit-cover": (p, t) => {
+    p.skin.rightLeg.rotation.x = -Math.PI / 2;
+    p.skin.leftLeg.rotation.x = -Math.PI / 2;
+    p.skin.head.rotation.x = 0.12;
+    p.skin.rightArm.rotation.x = -2.55;
+    p.skin.rightArm.rotation.z = 0.55;
+    p.skin.leftArm.rotation.x = -2.55;
+    p.skin.leftArm.rotation.z = -0.55;
+    p.position.y = Math.sin(t * 2.2) * 0.1;
+  },
+
+  // Şifre gösteriliyor: bir el aşağı inmiş, kafa eğik — parmak arasından aşağı bakıyor
+  "sit-peek": (p, t) => {
+    p.skin.rightLeg.rotation.x = -Math.PI / 2;
+    p.skin.leftLeg.rotation.x = -Math.PI / 2;
+    p.skin.head.rotation.x = 0.42;
+    p.skin.head.rotation.y = -0.18 + Math.sin(t * 0.8) * 0.04;
+    // sağ el yüzden iyice inmiş (bir göz açık), sol el hâlâ yarı kapatıyor
+    p.skin.rightArm.rotation.x = -0.95;
+    p.skin.rightArm.rotation.z = 0.35;
+    p.skin.leftArm.rotation.x = -2.25;
+    p.skin.leftArm.rotation.z = -0.3;
+  },
+
+  // Oturarak selam (son adım)
+  "sit-wave": (p, t) => {
+    p.skin.rightLeg.rotation.x = -Math.PI / 2 + Math.sin(t * 2.2) * 0.18;
+    p.skin.leftLeg.rotation.x = -Math.PI / 2 + Math.sin(t * 2.2 + 1.4) * 0.18;
+    p.skin.rightArm.rotation.x = Math.PI;
+    p.skin.rightArm.rotation.z = Math.sin(t * 7) * 0.45 - 0.25;
+    p.skin.leftArm.rotation.x = -0.25;
+    p.skin.head.rotation.z = Math.sin(t * 1.5) * 0.08 + 0.08;
+  },
+
+  // Koşu: geniş kol/bacak salınımı, zıplayan gövde
+  run: (p, t) => {
+    const w = t * 15;
+    p.skin.rightLeg.rotation.x = Math.cos(w) * 1.25;
+    p.skin.leftLeg.rotation.x = Math.cos(w + Math.PI) * 1.25;
+    p.skin.rightArm.rotation.x = Math.cos(w + Math.PI) * 1.4;
+    p.skin.leftArm.rotation.x = Math.cos(w) * 1.4;
+    p.skin.rightArm.rotation.z = -0.18;
+    p.skin.leftArm.rotation.z = 0.18;
+    p.skin.body.rotation.x = 0.12;
+    p.skin.head.rotation.x = -0.05;
+    p.position.y = Math.abs(Math.cos(w)) * 1.2;
+  },
+
+  // Zıplama: kollar yukarı, bacaklar toplanmış (dikey yay CSS tarafında)
+  jump: (p) => {
+    p.skin.rightArm.rotation.x = -2.6;
+    p.skin.leftArm.rotation.x = -2.6;
+    p.skin.rightArm.rotation.z = -0.35;
+    p.skin.leftArm.rotation.z = 0.35;
+    p.skin.rightLeg.rotation.x = -0.7;
+    p.skin.leftLeg.rotation.x = 0.35;
+  },
+
   // Üzgün: kafa önde, omuzlar düşük, yavaş salınım
   sad: (p, t) => {
     p.skin.head.rotation.x = 0.45;
@@ -124,22 +194,48 @@ function makeLens(): Group {
   return g;
 }
 
+/**
+ * Pozlar arası geçiş hızı (kare başına yaklaşma oranı). Gizlice bakış yavaş,
+ * yakalanınca gözleri kapatma bilerek hızlıdır.
+ */
+const EASE: Partial<Record<AshiMood, number>> = { "sit-cover": 0.42, "sit-peek": 0.07, run: 0.5, jump: 0.35, bonk: 0.5 };
+
+const PARTS = (p: PlayerObject) => [p.skin.head, p.skin.body, p.skin.rightArm, p.skin.leftArm, p.skin.rightLeg, p.skin.leftLeg];
+
+function snapshot(p: PlayerObject): number[] {
+  const out: number[] = [];
+  for (const part of PARTS(p)) out.push(part.rotation.x, part.rotation.y, part.rotation.z);
+  out.push(p.position.x, p.position.y, p.position.z, p.rotation.x, p.rotation.y, p.rotation.z);
+  return out;
+}
+
+function apply(p: PlayerObject, v: number[]) {
+  let i = 0;
+  for (const part of PARTS(p)) part.rotation.set(v[i++], v[i++], v[i++]);
+  p.position.set(v[i++], v[i++], v[i++]);
+  p.rotation.set(v[i++], v[i++], v[i++]);
+}
+
 interface Props {
   mood: AshiMood;
+  /** Gövdenin dönük olduğu yön (radyan): 0 = kameraya, +π/2 / −π/2 = yanlara */
+  facing?: number;
   width?: number;
   height?: number;
   /** Fareyle çevrilebilsin mi */
   interactive?: boolean;
 }
 
-export default function Ashi3D({ mood, width = 120, height = 150, interactive = false }: Props) {
+export default function Ashi3D({ mood, facing = -0.42, width = 120, height = 150, interactive = false }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const viewer = useRef<SkinViewer | null>(null);
   const moodRef = useRef(mood);
   const skin = useAshi((s) => s.skin);
   const reduceMotion = useSettings((s) => s.settings.theme.reduceMotion);
 
+  const facingRef = useRef(facing);
   moodRef.current = mood;
+  facingRef.current = facing;
 
   useEffect(() => {
     if (!canvas.current) return;
@@ -154,15 +250,26 @@ export default function Ashi3D({ mood, width = 120, height = 150, interactive = 
     v.controls.enableRotate = interactive;
     v.globalLight.intensity = 2.6;
     v.cameraLight.intensity = 0.9;
-    v.playerWrapper.rotation.y = -0.42; // 3/4 bakış — daha sevimli
+    v.playerWrapper.rotation.y = facingRef.current; // varsayılan 3/4 bakış — daha sevimli
 
     const lens = makeLens();
     v.playerObject.skin.rightArm.add(lens);
 
+    let prev: number[] | null = null;
     v.animation = new FunctionAnimation((player, progress) => {
       reset(player);
       lens.visible = false;
       POSES[moodRef.current](player, progress, lens);
+      // Hedef poza yumuşak yaklaş (ani sıçrama yok)
+      const target = snapshot(player);
+      if (prev) {
+        const k = EASE[moodRef.current] ?? 0.2;
+        apply(player, (prev = prev.map((a, i) => a + (target[i] - a) * k)));
+      } else {
+        prev = target;
+      }
+      const w = v.playerWrapper.rotation;
+      w.y += (facingRef.current - w.y) * 0.18;
     });
     viewer.current = v;
     return () => {

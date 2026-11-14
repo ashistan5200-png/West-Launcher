@@ -78,6 +78,11 @@ export const api = {
   ashiChat: (history: unknown[], message: string, activeInstance: string | null) =>
     invoke<ChatOutcome>("ashi_chat", { history, message, activeInstance }),
   secretStatus: () => invoke<SecretStatus>("secret_status"),
+  // Launcher kilidi (şifre yalnızca Argon2 özeti olarak saklanır)
+  lockStatus: () => invoke<{ hasPassword: boolean }>("lock_status"),
+  setLauncherPassword: (password: string | null) => invoke<{ hasPassword: boolean }>("set_launcher_password", { password }),
+  verifyLauncherPassword: (password: string) => invoke<boolean>("verify_launcher_password", { password }),
+  resetLauncherLock: () => invoke<void>("reset_launcher_lock"),
   ollamaStatus: () => invoke<OllamaStatus>("ollama_status"),
   ollamaPull: () => invoke<void>("ollama_pull"),
   setSecret: (name: "anthropic" | "curseforge", value: string) => invoke<SecretStatus>("set_secret", { name, value }),

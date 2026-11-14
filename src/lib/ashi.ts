@@ -3,7 +3,10 @@
  * Pusula logosuyla uyumlu olarak "iz", "rota", "harita" diliyle konuşur.
  */
 
-export type AshiMood = "wave" | "idle" | "think" | "search" | "bonk" | "celebrate" | "sad";
+export type AshiMood =
+  | "wave" | "idle" | "think" | "search" | "bonk" | "celebrate" | "sad"
+  // Kurulum sihirbazı (kartın üstünde oturan maskot)
+  | "sit" | "sit-wave" | "sit-cover" | "sit-peek" | "run" | "jump";
 
 const pick = <T,>(arr: T[], seed: number) => arr[Math.abs(seed) % arr.length];
 
