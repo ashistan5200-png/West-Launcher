@@ -1,23 +1,22 @@
-# Bir "v*" etiketi gönderildiğinde (örn. v0.1.0) Windows, macOS ve Linux
-# kurulum dosyalarını derler ve GitHub Releases'e yükler. İndirme sayfasındaki
+# main dalına gönderimde (veya elle) Windows, macOS ve Linux kurulum
+# dosyalarını derler ve package.json'daki sürümle (örn. v0.1.0) GitHub
+# Releases'e yükler; etiketi GitHub kendisi oluşturur. İndirme sayfasındaki
 # düğmeler sabit adlı dosyalara bağlanır: releases/latest/download/<ad>.
 name: Sürüm yayınla
 
 on:
   push:
-    tags: ["v*"]
+    branches: [main]
+    paths: ["src/**", "src-tauri/**", "package.json", "site/**", ".github/workflows/**"]
   workflow_dispatch:
-    inputs:
-      version:
-        description: "Sürüm etiketi (örn. v0.1.0)"
-        required: true
-        default: "v0.1.0"
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 permissions:
   contents: write
 
-env:
-  TAG: ${{ github.event.inputs.version || github.ref_name }}
 
 jobs:
   build:
@@ -55,6 +54,10 @@ jobs:
           workspaces: src-tauri
 
       - run: npm ci
+
+      - name: Sürüm etiketi
+        shell: bash
+        run: echo "TAG=v$(node -p "require('./package.json').version")" >> "$GITHUB_ENV"
 
       - uses: tauri-apps/tauri-action@v0
         env:
