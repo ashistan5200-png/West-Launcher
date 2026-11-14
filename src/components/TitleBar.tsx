@@ -2,6 +2,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Minus, Square, X } from "lucide-react";
 import { isTauri } from "@/lib/ipc";
 import { Logo } from "./Logo";
+import { UpdateButton } from "./UpdateCenter";
 
 const win = () => (isTauri() ? getCurrentWindow() : null);
 
@@ -13,6 +14,7 @@ export function TitleBar() {
         <span data-tauri-drag-region>West</span>
       </div>
       <div className="titlebar-actions">
+        <UpdateButton />
         <button className="tb-btn" aria-label="Küçült" onClick={() => win()?.minimize()}>
           <Minus size={14} />
         </button>

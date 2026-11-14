@@ -59,6 +59,7 @@ export interface Settings {
   companionEnabled: boolean;
   discordRpc: boolean;
   discordClientId: string | null;
+  autoUpdate: boolean;
 }
 
 export interface ManifestEntry {
@@ -327,4 +328,26 @@ export interface CompanionInfo {
   compatible: boolean;
   enabled: boolean;
   config: CompanionConfig;
+}
+
+// ───────── Uygulama güncellemeleri ─────────
+export interface UpdateInfo {
+  current: string;
+  version: string;
+  title: string;
+  notes: string;
+  publishedAt: string | null;
+  pageUrl: string;
+  assetName: string;
+  size: number;
+}
+
+export interface UpdateStatus {
+  current: string;
+  info: UpdateInfo | null;
+  downloaded: boolean;
+  downloading: boolean;
+  received: number;
+  total: number;
+  error: string | null;
 }

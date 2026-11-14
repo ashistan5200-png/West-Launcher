@@ -20,6 +20,7 @@ const DEFAULT: Settings = {
   companionEnabled: true,
   discordRpc: true,
   discordClientId: null,
+  autoUpdate: true,
 };
 
 interface SettingsState {

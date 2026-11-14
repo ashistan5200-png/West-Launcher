@@ -65,7 +65,8 @@ jobs:
         with:
           tagName: ${{ env.TAG }}
           releaseName: "West Launcher ${{ env.TAG }}"
-          releaseBody: "Windows kullanıcıları: West-Launcher-Setup.exe dosyasını indirip çalıştırın."
+          # Sürüm notları = son commit mesajı (launcher'daki güncelleme penceresinde gösterilir)
+          releaseBody: ${{ github.event.head_commit.message || 'West Launcher güncellemesi' }}
           releaseDraft: false
           args: ${{ matrix.args }}
 

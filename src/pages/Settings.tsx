@@ -6,6 +6,7 @@ import { events } from "@/lib/ipc";
 import type { OllamaStatus, PullProgress, Settings } from "@/lib/types";
 import { useChat } from "@/stores/chat";
 import { useOnboarding } from "@/stores/onboarding";
+import { UpdateSettings } from "@/components/UpdateCenter";
 import { useSettings } from "@/stores/settings";
 import { api, isTauri } from "@/lib/ipc";
 import { ACCENT_PRESETS } from "@/lib/theme";
@@ -129,6 +130,7 @@ export function SettingsPage() {
         )}
       </section>
 
+      <UpdateSettings autoUpdate={settings.autoUpdate} onToggle={(v) => update({ autoUpdate: v })} />
       <AiSection />
       <KeysSection />
 

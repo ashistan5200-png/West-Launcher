@@ -48,6 +48,7 @@ pub struct AppState {
     /// Süren Microsoft cihaz kodu girişi (iptal bayrağı)
     pub ms_login: Mutex<Option<Arc<AtomicBool>>>,
     pub discord: crate::discord::Discord,
+    pub update: Mutex<crate::commands::updater::UpdateState>,
 }
 
 impl AppState {
@@ -63,6 +64,7 @@ impl AppState {
             hunts: Mutex::new(HashMap::new()),
             ms_login: Mutex::new(None),
             discord,
+            update: Mutex::new(Default::default()),
         }
     }
 

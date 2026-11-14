@@ -11,6 +11,7 @@ pub mod launch;
 pub mod screenshots;
 pub mod settings;
 pub mod skins;
+pub mod updater;
 pub mod versions;
 pub mod window;
 

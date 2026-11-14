@@ -2,7 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import type {
   AshiEvent, AshiSkin, HuntPlan,
-  Screenshot, FoundInstance, CompanionConfig, CompanionInfo,
+  Screenshot, FoundInstance, CompanionConfig, CompanionInfo, UpdateStatus,
   AccountView, Cape, DeviceCode, MsLoginEvent, Skin, OllamaStatus, PullProgress,
   ChatOutcome, ContentHit, ContentKind, ContentSource, InstallReport, InstalledContent, SearchQuery, SearchResult, SecretStatus,
   GameExit, GameLog, Hardware, Instance, JavaInstall, JvmProfile, LoaderKind,
@@ -44,6 +44,9 @@ export const api = {
     invoke<number>("launch_instance", { id, auth: null, offlineName: opts.offlineName ?? null, joinServer: opts.joinServer ?? null }),
   kill: (id: string) => invoke<void>("kill_instance", { id }),
   running: () => invoke<RunningInfo[]>("running_instances"),
+  updateStatus: () => invoke<UpdateStatus>("update_status"),
+  checkUpdate: () => invoke<UpdateStatus>("check_update"),
+  installUpdate: () => invoke<void>("install_update"),
   getCompanion: (id: string) => invoke<CompanionInfo>("get_companion", { id }),
   setCompanionConfig: (id: string, config: CompanionConfig) => invoke<void>("set_companion_config", { id, config }),
 
@@ -121,6 +124,7 @@ export const events = {
     listen<{ path: string; thumb: string | null }>("screenshot-thumb", (e) => cb(e.payload)),
   onScreenshotTaken: (cb: (x: { instanceId: string }) => void): Promise<UnlistenFn> =>
     listen<{ instanceId: string }>("screenshot-taken", (e) => cb(e.payload)),
+  onUpdate: (cb: (x: UpdateStatus) => void): Promise<UnlistenFn> => listen<UpdateStatus>("update-status", (e) => cb(e.payload)),
   onMsLogin: (cb: (x: MsLoginEvent) => void): Promise<UnlistenFn> => listen<MsLoginEvent>("ms-login", (e) => cb(e.payload)),
 };
 

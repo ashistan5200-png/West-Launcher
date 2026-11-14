@@ -56,6 +56,8 @@ pub struct Settings {
     /// Discord Rich Presence (Discord Developer Portal'daki uygulama kimliği gerekir)
     pub discord_rpc: bool,
     pub discord_client_id: Option<String>,
+    /// Yeni sürüm bulununca arka planda indir (kurulum yine kullanıcı onayıyla)
+    pub auto_update: bool,
 }
 
 impl Default for Settings {
@@ -77,6 +79,7 @@ impl Default for Settings {
             companion_enabled: true,
             discord_rpc: true,
             discord_client_id: None,
+            auto_update: true,
         }
     }
 }

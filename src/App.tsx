@@ -17,6 +17,7 @@ import { SkinsPage } from "@/pages/Skins";
 import { GalleryPage } from "@/pages/Gallery";
 import { Splash } from "@/components/Splash";
 import { TooltipLayer } from "@/components/TooltipLayer";
+import { UpdateModal } from "@/components/UpdateCenter";
 import { AshiTour } from "@/components/AshiTour";
 import { ImportWizard } from "@/components/ImportWizard";
 import { useAccounts } from "@/stores/accounts";
@@ -84,6 +85,7 @@ export default function App() {
         <AshiConfirmModal />
         <ImportWizard />
         <AshiTour />
+        <UpdateModal />
         <TooltipLayer />
         <Splash />
         <ErrorToast />

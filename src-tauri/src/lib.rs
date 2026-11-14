@@ -16,6 +16,7 @@ pub mod secrets;
 pub mod settings;
 pub mod skins;
 pub mod state;
+pub mod updater;
 pub mod util;
 
 use paths::Paths;
@@ -42,6 +43,7 @@ pub fn run() {
         .setup(move |app| {
             let window = app.get_webview_window("main").expect("main window");
             commands::window::apply_effect(&window, &effect);
+            commands::updater::spawn_background(app.handle().clone());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -123,6 +125,10 @@ pub fn run() {
             commands::importer::detect_launchers,
             commands::importer::detect_launcher_folder,
             commands::importer::import_instance,
+            // Uygulama güncellemeleri
+            commands::updater::update_status,
+            commands::updater::check_update,
+            commands::updater::install_update,
         ])
         .run(tauri::generate_context!())
         .expect("West Launcher başlatılamadı");
