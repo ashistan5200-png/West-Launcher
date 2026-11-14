@@ -1,0 +1,95 @@
+use crate::error::Result;
+use serde::{Deserialize, Serialize};
+use std::path::Path;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct ThemeSettings {
+    /// Hex vurgu rengi (mat buz mavisi varsayılan), örn. "#7fa7c9"
+    pub accent: String,
+    /// 0–40 px arası arka plan bulanıklığı (CSS backdrop-filter)
+    pub blur: u8,
+    /// Pencere saydamlığı 0.6–1.0
+    pub opacity: f32,
+    /// "mica" | "acrylic" | "none" — native pencere efekti
+    pub window_effect: String,
+    /// "compact" | "comfortable"
+    pub density: String,
+    pub reduce_motion: bool,
+}
+
+impl Default for ThemeSettings {
+    fn default() -> Self {
+        Self {
+            accent: "#7fa7c9".into(),
+            blur: 12,
+            opacity: 0.94,
+            window_effect: "mica".into(),
+            density: "compact".into(),
+            reduce_motion: false,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct Settings {
+    pub theme: ThemeSettings,
+    /// Genel varsayılan bellek (MB). None → donanıma göre otomatik.
+    pub default_memory_mb: Option<u32>,
+    pub auto_java: bool,
+    pub max_concurrent_downloads: usize,
+    pub backup_on_exit: bool,
+    pub backup_dir: Option<String>,
+    pub backup_keep: usize,
+    pub close_on_launch: bool,
+    /// Mojang onaylı Azure uygulama kimliği (Microsoft girişi için)
+    pub microsoft_client_id: Option<String>,
+    /// Ashi'nin yapay zekası: "ollama" (ücretsiz, yerel) | "claude" (kendi anahtarınla) | "off"
+    pub ai_provider: String,
+    pub ollama_url: String,
+    pub ollama_model: String,
+    /// İlk açılış turu (Ashi) ve aktarım sihirbazı tamamlandı mı
+    pub onboarding_done: bool,
+    /// Uyumlu instance'lara West Companion oyun içi modunu kur
+    pub companion_enabled: bool,
+    /// Discord Rich Presence (Discord Developer Portal'daki uygulama kimliği gerekir)
+    pub discord_rpc: bool,
+    pub discord_client_id: Option<String>,
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        Self {
+            theme: ThemeSettings::default(),
+            default_memory_mb: None,
+            auto_java: true,
+            max_concurrent_downloads: 24,
+            backup_on_exit: true,
+            backup_dir: None,
+            backup_keep: 10,
+            close_on_launch: false,
+            microsoft_client_id: None,
+            ai_provider: "ollama".into(),
+            ollama_url: crate::assistant::ollama::DEFAULT_URL.into(),
+            ollama_model: crate::assistant::ollama::DEFAULT_MODEL.into(),
+            onboarding_done: false,
+            companion_enabled: true,
+            discord_rpc: true,
+            discord_client_id: None,
+        }
+    }
+}
+
+impl Settings {
+    pub fn load(path: &Path) -> Self {
+        std::fs::read(path)
+            .ok()
+            .and_then(|b| serde_json::from_slice(&b).ok())
+            .unwrap_or_default()
+    }
+
+    pub fn save(&self, path: &Path) -> Result<()> {
+        crate::util::write_json_atomic(path, self)
+    }
+}

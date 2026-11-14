@@ -1,0 +1,37 @@
+plugins {
+    id "fabric-loom" version "1.10-SNAPSHOT"
+}
+
+version = "${project.mod_version}+fabric-${project.minecraft_version}"
+group = "dev.west.companion"
+base { archivesName = "west-companion" }
+
+repositories { mavenCentral() }
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    // Ortak kod iki loader'da da derlensin diye resmi Mojang adları
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+}
+
+sourceSets.main {
+    java.srcDir "../common/src/main/java"
+    resources.srcDir "../common/src/main/resources"
+}
+
+loom {
+    mixin { defaultRefmapName = "west_companion.refmap.json" }
+}
+
+processResources {
+    inputs.property "version", project.version
+    filesMatching("fabric.mod.json") { expand "version": project.version }
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
+    withSourcesJar()
+}
+tasks.withType(JavaCompile).configureEach { options.encoding = "UTF-8"; options.release = 21 }

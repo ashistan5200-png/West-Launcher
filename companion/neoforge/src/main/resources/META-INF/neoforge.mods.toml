@@ -1,0 +1,28 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+license = "MIT"
+
+[[mods]]
+modId = "west_companion"
+version = "${version}"
+displayName = "West Companion"
+logoFile = "icon.png"
+authors = "West Launcher"
+description = '''West Launcher'ın oyun içi parçası: özel ana menü, West paneli, FullBright ve FPS göstergesi.'''
+
+[[mixins]]
+config = "west_companion.mixins.json"
+
+[[dependencies.west_companion]]
+modId = "neoforge"
+type = "required"
+versionRange = "[21.1,)"
+ordering = "NONE"
+side = "CLIENT"
+
+[[dependencies.west_companion]]
+modId = "minecraft"
+type = "required"
+versionRange = "[1.21.1,1.21.2)"
+ordering = "NONE"
+side = "CLIENT"

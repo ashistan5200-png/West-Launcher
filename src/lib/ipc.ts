@@ -1,0 +1,126 @@
+import { invoke } from "@tauri-apps/api/core";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import type {
+  AshiEvent, AshiSkin, HuntPlan,
+  Screenshot, FoundInstance, CompanionConfig, CompanionInfo,
+  AccountView, Cape, DeviceCode, MsLoginEvent, Skin, OllamaStatus, PullProgress,
+  ChatOutcome, ContentHit, ContentKind, ContentSource, InstallReport, InstalledContent, SearchQuery, SearchResult, SecretStatus,
+  GameExit, GameLog, Hardware, Instance, JavaInstall, JvmProfile, LoaderKind,
+  LoaderVersion, ManifestEntry, NewInstance, Progress, RunningInfo, Settings,
+} from "./types";
+
+/** Rust komutlarının tek, tipli giriş noktası. */
+export const api = {
+  // ayarlar & sistem
+  getSettings: () => invoke<Settings>("get_settings"),
+  saveSettings: (settings: Settings) => invoke<void>("save_settings", { settings }),
+  getHardware: () => invoke<Hardware>("get_hardware"),
+  getDataDir: () => invoke<string>("get_data_dir"),
+  setWindowEffect: (effect: string) => invoke<void>("set_window_effect", { effect }),
+
+  // sürümler
+  listMcVersions: (includeSnapshots = false) => invoke<ManifestEntry[]>("list_mc_versions", { includeSnapshots }),
+  listLoaderVersions: (kind: LoaderKind, mc: string) => invoke<LoaderVersion[]>("list_loader_versions", { kind, mc }),
+
+  // instance
+  listInstances: () => invoke<Instance[]>("list_instances"),
+  getInstance: (id: string) => invoke<Instance>("get_instance", { id }),
+  createInstance: (req: NewInstance) => invoke<Instance>("create_instance", { req }),
+  updateInstance: (instance: Instance) => invoke<Instance>("update_instance", { instance }),
+  cloneInstance: (id: string, name: string, includeWorlds: boolean) =>
+    invoke<Instance>("clone_instance", { id, name, includeWorlds }),
+  makeTemplate: (id: string, name: string) => invoke<Instance>("make_template", { id, name }),
+  createFromTemplate: (templateId: string, name: string) => invoke<Instance>("create_from_template", { templateId, name }),
+  deleteInstance: (id: string) => invoke<void>("delete_instance", { id }),
+  instancePath: (id: string) => invoke<string>("instance_path", { id }),
+
+  // java
+  listJava: () => invoke<JavaInstall[]>("list_java"),
+  installJava: (major: number) => invoke<JavaInstall>("install_java", { major }),
+  previewJvm: (instanceId: string, javaMajor: number) => invoke<JvmProfile>("preview_jvm", { instanceId, javaMajor }),
+
+  // başlatma
+  launch: (id: string, opts: { offlineName?: string; joinServer?: string } = {}) =>
+    invoke<number>("launch_instance", { id, auth: null, offlineName: opts.offlineName ?? null, joinServer: opts.joinServer ?? null }),
+  kill: (id: string) => invoke<void>("kill_instance", { id }),
+  running: () => invoke<RunningInfo[]>("running_instances"),
+  getCompanion: (id: string) => invoke<CompanionInfo>("get_companion", { id }),
+  setCompanionConfig: (id: string, config: CompanionConfig) => invoke<void>("set_companion_config", { id, config }),
+
+  // Ashi — Otomatik Suçlu Avcısı
+  planHunt: (id: string) => invoke<HuntPlan>("plan_hunt", { id }),
+  startHunt: (id: string, offlineName: string) => invoke<HuntPlan>("start_hunt", { id, auth: null, offlineName }),
+  cancelHunt: (id: string) => invoke<void>("cancel_hunt", { id }),
+  disableMods: (id: string, files: string[]) => invoke<string[]>("disable_mods", { id, files }),
+  ashiSkin: () => invoke<AshiSkin>("ashi_skin"),
+
+  // İçerik motoru
+  searchContent: (query: SearchQuery) => invoke<SearchResult>("search_content", { query }),
+  installContent: (instanceId: string, source: ContentSource, projectId: string, kind: ContentKind) =>
+    invoke<InstallReport>("install_content", { instanceId, source, projectId, kind }),
+  installModpack: (hit: ContentHit) => invoke<Instance>("install_modpack", { source: hit.source, projectId: hit.id }),
+  installedContent: (instanceId: string) => invoke<InstalledContent[]>("installed_content", { instanceId }),
+
+  // Ashi asistanı + anahtarlar (değerler asla UI'a dönmez)
+  ashiChat: (history: unknown[], message: string, activeInstance: string | null) =>
+    invoke<ChatOutcome>("ashi_chat", { history, message, activeInstance }),
+  secretStatus: () => invoke<SecretStatus>("secret_status"),
+  ollamaStatus: () => invoke<OllamaStatus>("ollama_status"),
+  ollamaPull: () => invoke<void>("ollama_pull"),
+  setSecret: (name: "anthropic" | "curseforge", value: string) => invoke<SecretStatus>("set_secret", { name, value }),
+
+  // Hesaplar (token'lar asla UI'a gelmez)
+  listAccounts: () => invoke<AccountView[]>("list_accounts"),
+  addOfflineAccount: (name: string) => invoke<AccountView[]>("add_offline_account", { name }),
+  setActiveAccount: (uuid: string) => invoke<AccountView[]>("set_active_account", { uuid }),
+  removeAccount: (uuid: string) => invoke<AccountView[]>("remove_account", { uuid }),
+  msLoginStart: () => invoke<DeviceCode>("ms_login_start"),
+  msLoginCancel: () => invoke<void>("ms_login_cancel"),
+  accountSkin: (account: string) => invoke<Skin | null>("account_skin", { account }),
+  accountCapes: (account: string) => invoke<Cape[]>("account_capes", { account }),
+  setAccountCape: (account: string, capeId: string | null) => invoke<void>("set_account_cape", { account, capeId }),
+  applySkin: (skinId: string, account: string) => invoke<{ uploaded: boolean; accounts: AccountView[] }>("apply_skin", { skinId, account }),
+
+  // Skin arşivi
+  listSkins: () => invoke<Skin[]>("list_skins"),
+  importSkinFile: (path: string) => invoke<Skin>("import_skin_file", { path }),
+  importSkinPlayer: (name: string) => invoke<Skin>("import_skin_player", { name }),
+  updateSkin: (id: string, patch: { name?: string; slim?: boolean; favorite?: boolean }) =>
+    invoke<Skin>("update_skin", { id, name: patch.name ?? null, slim: patch.slim ?? null, favorite: patch.favorite ?? null }),
+  deleteSkin: (id: string) => invoke<void>("delete_skin", { id }),
+
+  // Ekran görüntüleri
+  listScreenshots: (instanceId: string | null = null) => invoke<Screenshot[]>("list_screenshots", { instanceId }),
+  generateThumbs: (paths: string[]) => invoke<void>("generate_thumbs", { paths }),
+  /** İkili yanıt → blob: URL (tuval kirlenmez) */
+  readScreenshot: (path: string) => invoke<ArrayBuffer>("read_screenshot", { path }),
+  copyScreenshot: (path: string) => invoke<void>("copy_screenshot", { path }),
+  copyPngBytes: (pngBase64: string) => invoke<void>("copy_png_bytes", { pngBase64 }),
+  exportScreenshot: (path: string, dest: string) => invoke<void>("export_screenshot", { path, dest }),
+  exportPng: (dest: string, pngBase64: string) => invoke<void>("export_png", { dest, pngBase64 }),
+  deleteScreenshot: (path: string) => invoke<void>("delete_screenshot", { path }),
+  saveScreenshotEdit: (source: string, pngBase64: string) => invoke<Screenshot>("save_screenshot_edit", { source, pngBase64 }),
+  screenshotsFolder: (instanceId: string) => invoke<string>("screenshots_folder", { instanceId }),
+
+  // Diğer launcher'lardan aktarım
+  detectLaunchers: () => invoke<FoundInstance[]>("detect_launchers"),
+  detectLauncherFolder: (path: string) => invoke<FoundInstance[]>("detect_launcher_folder", { path }),
+  importInstance: (found: FoundInstance, mcVersion: string | null, includeWorlds: boolean) =>
+    invoke<Instance>("import_instance", { found, mcVersion, includeWorlds }),
+};
+
+export const events = {
+  onProgress: (cb: (p: Progress) => void): Promise<UnlistenFn> => listen<Progress>("progress", (e) => cb(e.payload)),
+  onGameLog: (cb: (l: GameLog) => void): Promise<UnlistenFn> => listen<GameLog>("game-log", (e) => cb(e.payload)),
+  onGameExit: (cb: (x: GameExit) => void): Promise<UnlistenFn> => listen<GameExit>("game-exit", (e) => cb(e.payload)),
+  onAshi: (cb: (x: AshiEvent) => void): Promise<UnlistenFn> => listen<AshiEvent>("ashi", (e) => cb(e.payload)),
+  onOllamaPull: (cb: (x: PullProgress) => void): Promise<UnlistenFn> => listen<PullProgress>("ollama-pull", (e) => cb(e.payload)),
+  onThumb: (cb: (x: { path: string; thumb: string | null }) => void): Promise<UnlistenFn> =>
+    listen<{ path: string; thumb: string | null }>("screenshot-thumb", (e) => cb(e.payload)),
+  onScreenshotTaken: (cb: (x: { instanceId: string }) => void): Promise<UnlistenFn> =>
+    listen<{ instanceId: string }>("screenshot-taken", (e) => cb(e.payload)),
+  onMsLogin: (cb: (x: MsLoginEvent) => void): Promise<UnlistenFn> => listen<MsLoginEvent>("ms-login", (e) => cb(e.payload)),
+};
+
+/** Tarayıcıda (vite dev, Tauri dışı) UI geliştirmeyi kırmamak için. */
+export const isTauri = () => typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;

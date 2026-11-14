@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "west_companion",
+  "version": "${version}",
+  "name": "West Companion",
+  "description": "West Launcher'ın oyun içi parçası: özel ana menü, West paneli, FullBright ve FPS göstergesi.",
+  "authors": ["West Launcher"],
+  "license": "MIT",
+  "icon": "icon.png",
+  "environment": "client",
+  "entrypoints": { "client": ["dev.west.companion.fabric.WestFabric"] },
+  "mixins": ["west_companion.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "~1.21.1",
+    "fabric-api": "*",
+    "java": ">=21"
+  }
+}

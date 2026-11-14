@@ -1,0 +1,97 @@
+# Bir "v*" etiketi gönderildiğinde (örn. v0.1.0) Windows, macOS ve Linux
+# kurulum dosyalarını derler ve GitHub Releases'e yükler. İndirme sayfasındaki
+# düğmeler sabit adlı dosyalara bağlanır: releases/latest/download/<ad>.
+name: Sürüm yayınla
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            args: "--bundles nsis"
+          - os: macos-latest
+            args: "--target universal-apple-darwin --bundles dmg"
+          - os: ubuntu-22.04
+            args: "--bundles deb,appimage"
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Linux bağımlılıkları
+        if: matrix.os == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.os == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - run: npm ci
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "West Launcher ${{ github.ref_name }}"
+          releaseBody: "Windows kullanıcıları: West-Launcher-Setup.exe dosyasını indirip çalıştırın."
+          releaseDraft: false
+          args: ${{ matrix.args }}
+
+      # İndirme sayfasının her zaman aynı adrese bağlanabilmesi için sabit adlı kopyalar
+      - name: Sabit adlı dosyaları yükle
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          B=src-tauri/target
+          case "${{ matrix.os }}" in
+            windows-latest) cp "$(ls $B/release/bundle/nsis/*-setup.exe | head -1)" West-Launcher-Setup.exe; F=West-Launcher-Setup.exe ;;
+            macos-latest)   cp "$(ls $B/universal-apple-darwin/release/bundle/dmg/*.dmg | head -1)" West-Launcher-macOS.dmg; F=West-Launcher-macOS.dmg ;;
+            ubuntu-22.04)   cp "$(ls $B/release/bundle/deb/*.deb | head -1)" West-Launcher-Linux.deb
+                            cp "$(ls $B/release/bundle/appimage/*.AppImage | head -1)" West-Launcher-Linux.AppImage
+                            F="West-Launcher-Linux.deb West-Launcher-Linux.AppImage" ;;
+          esac
+          gh release upload "${{ github.ref_name }}" $F --clobber
+
+  # İndirme sayfasını GitHub Pages'e yayınla
+  pages:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deploy
+        uses: actions/deploy-pages@v4

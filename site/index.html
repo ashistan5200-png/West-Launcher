@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>West Launcher</title>
+<meta name="description" content="Sade ve hızlı Minecraft launcher'ı. Modrinth + CurseForge, Ashi asistanı, skin yöneticisi, ekran görüntüsü stüdyosu.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='10.25' fill='none' stroke='%23c9ced6' stroke-width='1.5'/%3E%3Cg transform='rotate(-35 12 12)'%3E%3Cpath d='M12 4.6 14.6 12H9.4Z' fill='%237fa7c9'/%3E%3Cpath d='M12 19.4 9.4 12h5.2Z' fill='%236b7078'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+<style>
+  /* Tek sütun, ortalanmış ürün sayfası: üstte pusula + ad, altında indirme düğmeleri ve özellikler */
+  :root {
+    --bg: #131416; --surface: #1e1f23; --surface-2: #26282c; --line: rgba(255,255,255,.07);
+    --text: #e2e4e7; --muted: #8b9098; --accent: #7fa7c9; --accent-hover: #91b4d2; --on-accent: #101215;
+    --font: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; letter-spacing: .005em;
+    padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right));
+    -webkit-font-smoothing: antialiased;
+  }
+  main { max-width: 860px; margin: 0 auto; padding-block: 72px 56px; display: flex; flex-direction: column; gap: 56px; }
+  .hero { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 18px; }
+  .compass { width: 84px; height: 84px; }
+  .needle { transform-origin: 12px 12px; animation: settle 1.6s cubic-bezier(.12,.85,.16,1) both .1s; }
+  @keyframes settle { from { transform: rotate(-1115deg); } to { transform: rotate(-35deg); } }
+  @media (prefers-reduced-motion: reduce) { .needle { animation: none; transform: rotate(-35deg); } }
+  h1 { margin: 0; font-size: clamp(32px, 6vw, 46px); font-weight: 600; letter-spacing: -.012em; text-wrap: balance; }
+  .lead { margin: 0; max-width: 56ch; color: var(--muted); font-size: 17px; }
+  .downloads { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .primary {
+    display: inline-flex; align-items: center; gap: 12px; padding: 16px 28px; border-radius: 14px;
+    background: var(--accent); color: var(--on-accent); font-weight: 600; font-size: 17px; text-decoration: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,.2), 0 12px 30px rgba(0,0,0,.28); transition: background .15s ease, transform .15s ease;
+  }
+  .primary:hover { background: var(--accent-hover); transform: translateY(-1px); }
+  .primary:focus-visible, .alt a:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
+  .primary small { display: block; font-weight: 500; font-size: 12.5px; opacity: .75; }
+  .alt { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+  .alt a {
+    padding: 8px 14px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line);
+    color: var(--text); text-decoration: none; font-size: 14px; transition: background .15s ease;
+  }
+  .alt a:hover { background: var(--surface-2); }
+  .note { margin: 0; font-size: 13px; color: var(--muted); max-width: 60ch; text-align: center; }
+  .note b { color: var(--text); font-weight: 600; }
+  .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+  .feature { padding: 18px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); min-width: 0; }
+  .feature h2 { margin: 0 0 4px; font-size: 15px; font-weight: 600; }
+  .feature p { margin: 0; font-size: 14px; color: var(--muted); }
+  footer { text-align: center; font-size: 12.5px; color: var(--muted); }
+  footer a { color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <section class="hero">
+    <svg class="compass" viewBox="0 0 24 24" aria-hidden="true">
+      <g opacity=".55" fill="none" stroke="#c9ced6" stroke-width="1.3" stroke-linecap="round">
+        <circle cx="12" cy="12" r="10.3"/><path d="M12 1.7v2.1M12 20.2v2.1M1.7 12h2.1M20.2 12h2.1"/>
+      </g>
+      <g class="needle">
+        <path d="M12 4.6 14.6 12H9.4L12 4.6Z" fill="#7fa7c9"/>
+        <path d="M12 19.4 9.4 12h5.2L12 19.4Z" fill="#6b7078"/>
+      </g>
+      <circle cx="12" cy="12" r="1.35" fill="#131416" stroke="#c9ced6" stroke-opacity=".7"/>
+    </svg>
+    <h1>West Launcher</h1>
+    <p class="lead">Sade ve hızlı bir Minecraft launcher'ı. Modları tek yerden bul, çöken paketin suçlusunu Ashi bulsun, skinini ve ekran görüntülerini launcher'dan yönet.</p>
+
+    <div class="downloads">
+      <a id="primary" class="primary" href="https://github.com/ashistan5200-png/West-Launcher/releases/latest/download/West-Launcher-Setup.exe">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 19h16"/></svg>
+        <span><span id="primary-label">Windows için indir</span><small id="primary-sub">64-bit · Windows 10 ve 11</small></span>
+      </a>
+      <div class="alt" id="alt">
+        <a data-os="windows" href="https://github.com/ashistan5200-png/West-Launcher/releases/latest/download/West-Launcher-Setup.exe">Windows (.exe)</a>
+        <a data-os="mac" href="https://github.com/ashistan5200-png/West-Launcher/releases/latest/download/West-Launcher-macOS.dmg">macOS (.dmg)</a>
+        <a data-os="linux" href="https://github.com/ashistan5200-png/West-Launcher/releases/latest/download/West-Launcher-Linux.deb">Linux (.deb)</a>
+        <a data-os="linux-appimage" href="https://github.com/ashistan5200-png/West-Launcher/releases/latest/download/West-Launcher-Linux.AppImage">Linux (AppImage)</a>
+      </div>
+      <p class="note" id="note">Windows <b>"Windows bilgisayarınızı korudu"</b> uyarısı gösterirse <b>Ek bilgi → Yine de çalıştır</b>'a tıkla. Uygulama henüz dijital olarak imzalanmadığı için bu uyarı çıkar.</p>
+    </div>
+  </section>
+
+  <section class="features" aria-label="Özellikler">
+    <div class="feature"><h2>Tek yerden mod</h2><p>Modrinth ve CurseForge'da birlikte ara. Gerekli kütüphaneler kendiliğinden kurulur.</p></div>
+    <div class="feature"><h2>Ashi</h2><p>Ne istediğini yaz, uygun modları önersin. Paket çökerse suçlu modu bulsun.</p></div>
+    <div class="feature"><h2>Oyun içi West menüsü</h2><p>Özel ana menü, FullBright ve FPS göstergesi. Essential gibi modlarla çakışmaz.</p></div>
+    <div class="feature"><h2>Skin ve galeri</h2><p>Skinini 3D önizle ve değiştir. Ekran görüntülerini kırp, filtrele, paylaş.</p></div>
+    <div class="feature"><h2>Kolay geçiş</h2><p>Modrinth App, CurseForge, Prism ve MultiMC'deki paketlerini tek tıkla aktar.</p></div>
+    <div class="feature"><h2>Hafif</h2><p>Kurulum yaklaşık 5 MB. Arka planda bilgisayarını yormaz.</p></div>
+  </section>
+
+  <footer>
+    <a href="https://github.com/ashistan5200-png/West-Launcher/releases">Tüm sürümler</a> ·
+    <a href="https://github.com/ashistan5200-png/West-Launcher">Kaynak kod</a> ·
+    West Launcher, Mojang veya Microsoft ile bağlantılı değildir.
+  </footer>
+</main>
+<script>
+  // Ziyaretçinin işletim sistemine göre ana düğmeyi seç
+  (function () {
+    var ua = navigator.userAgent || "";
+    var os = /Windows/i.test(ua) ? "windows" : /Mac/i.test(ua) && !/iPhone|iPad/i.test(ua) ? "mac" : /Linux|X11/i.test(ua) && !/Android/i.test(ua) ? "linux" : null;
+    if (!os || os === "windows") return;
+    var link = document.querySelector('#alt a[data-os="' + os + '"]');
+    var p = document.getElementById("primary");
+    p.href = link.href;
+    document.getElementById("primary-label").textContent = os === "mac" ? "macOS için indir" : "Linux için indir";
+    document.getElementById("primary-sub").textContent = os === "mac" ? "Apple Silicon ve Intel" : ".deb · Ubuntu, Debian, Mint";
+    document.getElementById("note").innerHTML = os === "mac"
+      ? 'macOS açmayı reddederse uygulamaya <b>sağ tıkla → Aç</b>. Uygulama henüz imzalı olmadığı için bu adım gerekir.'
+      : 'Diğer dağıtımlar için AppImage sürümünü indirip çalıştırma izni ver.';
+  })();
+</script>
+</body>
+</html>
