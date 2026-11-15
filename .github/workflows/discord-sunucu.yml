@@ -1,0 +1,34 @@
+name: Discord sunucusunu kur
+
+# Elle çalıştırılır: Actions → "Discord sunucusunu kur" → Run workflow.
+# Bot anahtarı yalnızca DISCORD_BOT_TOKEN adlı depo sırrından okunur; kayıtlarda görünmez.
+on:
+  workflow_dispatch:
+    inputs:
+      guild_id:
+        description: "Sunucu kimliği (bot tek sunucudaysa boş bırak)"
+        required: false
+        default: ""
+      temizle:
+        description: "Sunucudaki mevcut kanalları önce sil (yalnızca yeni, boş sunucu için)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  kur:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Sunucuyu kur
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          GUILD_ID: ${{ inputs.guild_id }}
+          TEMIZLE: ${{ inputs.temizle && '1' || '0' }}
+        run: node tools/discord-sunucu/kur.mjs
