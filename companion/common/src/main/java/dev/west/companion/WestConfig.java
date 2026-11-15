@@ -16,14 +16,6 @@ public final class WestConfig {
 
     public boolean fullbright = false;
     public boolean fpsOverlay = false;
-    /** "auto" = West ana menüsü (çakışma yoksa) · "button" = yalnızca West düğmesi · "off" */
-    public String menuMode = "auto";
-    /** Ana menüdeki karakter pozu: "idle" | "hero" | "wave" */
-    public String pose = "hero";
-    /** Ashi PvP Koçu konuşma balonları */
-    public boolean coachTips = true;
-    /** Koç, sunuculardaki oyuncu dövüşlerinde de ipucu versin (yalnızca okur) */
-    public boolean coachEverywhere = false;
 
     private transient Path path;
     private transient long stamp;
@@ -67,14 +59,7 @@ public final class WestConfig {
         WestConfig fresh = load(path);
         this.fullbright = fresh.fullbright;
         this.fpsOverlay = fresh.fpsOverlay;
-        this.menuMode = fresh.menuMode;
-        this.pose = fresh.pose;
-        this.coachTips = fresh.coachTips;
-        this.coachEverywhere = fresh.coachEverywhere;
         this.stamp = s;
     }
 
-    public boolean showWestButton() {
-        return !"off".equals(menuMode);
-    }
 }

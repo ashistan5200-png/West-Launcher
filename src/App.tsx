@@ -21,6 +21,7 @@ import { TooltipLayer } from "@/components/TooltipLayer";
 import { UpdateModal } from "@/components/UpdateCenter";
 import { LockScreen, SetupWizard } from "@/components/SetupWizard";
 import { LoginModal } from "@/components/LoginModal";
+import { ContextMenu } from "@/components/ContextMenu";
 import { AshiTour } from "@/components/AshiTour";
 import { ImportWizard } from "@/components/ImportWizard";
 import { useAccounts } from "@/stores/accounts";
@@ -94,6 +95,7 @@ export default function App() {
         <UpdateModal />
         <SetupWizard />
         <LoginModal />
+        <ContextMenu />
         <LockScreen />
         <TooltipLayer />
         <Splash />

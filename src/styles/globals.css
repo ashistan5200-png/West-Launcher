@@ -796,3 +796,12 @@ kbd { font-family: var(--mono); font-size: var(--fs-xs); padding: 1px 6px; borde
   .logs-split { grid-template-columns: 1fr; }
   .crow-sub .upd-pill { display: none; }
 }
+
+/* ───────── Sağ tık menüsü ───────── */
+.ctx-menu { position: fixed; z-index: 200; min-width: 220px; padding: 5px; border-radius: 12px; background: rgb(var(--surface-3)); border: 1px solid rgb(var(--border) / 0.1); box-shadow: var(--shadow-lg); transform-origin: top left; }
+.ctx-item { width: 100%; display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: 8px; font-size: var(--fs-sm); color: rgb(var(--text) / 0.9); text-align: left; }
+.ctx-item:hover { background: rgb(var(--accent) / 0.14); color: rgb(var(--text)); }
+.ctx-item svg { color: rgb(var(--text-muted)); flex: none; }
+.ctx-item span { flex: 1; }
+.ctx-item kbd { font: inherit; font-size: var(--fs-xs); color: rgb(var(--text-faint)); background: none; border: 0; padding: 0; }
+.ctx-sep { height: 1px; margin: 4px 6px; background: rgb(var(--border) / 0.08); }

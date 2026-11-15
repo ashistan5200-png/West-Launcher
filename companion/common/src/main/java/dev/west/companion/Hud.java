@@ -13,7 +13,6 @@ public final class Hud {
 
     public static void render(GuiGraphics g) {
         Minecraft mc = Minecraft.getInstance();
-        dev.west.companion.pvp.Coach.render(g);
         if (!West.config.fpsOverlay || mc.options.hideGui || mc.getDebugOverlay().showDebugScreen()) return;
         SafeHook.run("hud", () -> {
             long now = System.currentTimeMillis();

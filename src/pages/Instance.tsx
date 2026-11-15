@@ -232,40 +232,14 @@ function CompanionCard({ instanceId }: { instanceId: string }) {
     <section className="card stack">
       <h3>West Companion <span className="muted tiny">oyun içi</span></h3>
       {!info.compatible ? (
-        <p className="muted small">Oyun içi West menüsü ve paneli şimdilik Minecraft 1.21.1 + Fabric/NeoForge instance'larında çalışır.</p>
+        <p className="muted small">Oyun içi West Paneli şimdilik Minecraft 1.21.1 + Fabric/NeoForge instance'larında çalışır.</p>
       ) : !info.enabled ? (
         <p className="muted small">Ayarlar'dan "West Companion" kapatılmış.</p>
       ) : (
         <>
           <label className="check"><input type="checkbox" checked={c.fullbright} onChange={(e) => set({ fullbright: e.target.checked })} /> FullBright (her yer aydınlık)</label>
           <label className="check"><input type="checkbox" checked={c.fpsOverlay} onChange={(e) => set({ fpsOverlay: e.target.checked })} /> FPS / MS / bellek göstergesi</label>
-          <div className="field">
-            <span>Ana menü</span>
-            <div className="segmented">
-              {(["auto", "button", "off"] as const).map((m) => (
-                <button key={m} className={clsx(c.menuMode === m && "active")} onClick={() => set({ menuMode: m })}>
-                  {m === "auto" ? "West menüsü" : m === "button" ? "Sadece düğme" : "Kapalı"}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="field">
-            <span>Menüdeki karakter pozu</span>
-            <div className="segmented">
-              {(["hero", "wave", "idle"] as const).map((m) => (
-                <button key={m} className={clsx(c.pose === m && "active")} onClick={() => set({ pose: m })}>
-                  {m === "hero" ? "Kılıçlı" : m === "wave" ? "Selam" : "Durağan"}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="field">
-            <span>Ashi PvP Koçu</span>
-            <label className="check"><input type="checkbox" checked={c.coachTips} onChange={(e) => set({ coachTips: e.target.checked })} /> Dövüşte ipucu balonları</label>
-            <label className="check"><input type="checkbox" checked={c.coachEverywhere} onChange={(e) => set({ coachEverywhere: e.target.checked })} /> Sunuculardaki dövüşlerde de ipucu ver (yalnızca izler, senin yerine bir şey yapmaz)</label>
-          </div>
-          <p className="muted tiny">Ashi ile 1v1 için tek oyunculu bir dünyada West Paneli'ni aç (<kbd>Sağ Shift</kbd>) → "Ashi ile 1v1".</p>
-          <p className="muted tiny">Oyunda <kbd>Sağ Shift</kbd> West Paneli'ni açar. Essential veya FancyMenu gibi menü modları varsa West menüsü kendiliğinden yalnızca bir düğmeye dönüşür.</p>
+          <p className="muted tiny">Oyunda <kbd>Sağ Shift</kbd> ya da duraklat menüsündeki "◆ West" düğmesi West Paneli'ni açar.</p>
         </>
       )}
     </section>

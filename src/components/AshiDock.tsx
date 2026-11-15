@@ -133,17 +133,34 @@ function HuntCard({ hunt: h }: { hunt: HuntView }) {
           </>
         )}
 
-        {h.status === "done" && h.verdict?.kind === "culprit" && (
-          <>
-            <ModList mods={h.verdict.mods} highlight />
-            <div className="row">
-              <button className="btn btn-primary btn-sm" onClick={() => disable(h.instanceId, h.verdict!.kind === "culprit" ? h.verdict!.mods.map((m) => m.file) : [])}>
-                <Ban size={14} /> Devre dışı bırak
-              </button>
-              <button className="btn btn-ghost btn-sm" onClick={() => close(h.instanceId)}>Dokunma</button>
-            </div>
-            <p className="muted tiny">Mod silinmez; dosya <code>.disabled</code> olur, istediğin zaman geri açabilirsin.</p>
-          </>
+        {h.status === "done" && h.verdict?.kind === "culprit" && (() => {
+          const mods = h.verdict.mods;
+          const lib = mods.some((m) => m.library);
+          const deps = [...new Set(mods.flatMap((m) => m.dependents))];
+          return (
+            <>
+              <ModList mods={mods} highlight />
+              {lib && (
+                <p className="muted tiny">
+                  Bu bir kütüphane{deps.length > 0 && <> ve şu modlar ona bağlı: <strong>{deps.slice(0, 5).join(", ")}</strong>{deps.length > 5 && ` +${deps.length - 5}`}</>}.
+                  Kapatmak yerine İçerik sekmesinden güncellemeyi dene.
+                </p>
+              )}
+              <div className="row">
+                {!lib && (
+                  <button className="btn btn-primary btn-sm" onClick={() => disable(h.instanceId, mods.map((m) => m.file))}>
+                    <Ban size={14} /> Devre dışı bırak
+                  </button>
+                )}
+                <button className="btn btn-ghost btn-sm" onClick={() => close(h.instanceId)}>{lib ? "Tamam" : "Dokunma"}</button>
+              </div>
+              {!lib && <p className="muted tiny">Mod silinmez; dosya <code>.disabled</code> olur, istediğin zaman geri açabilirsin.</p>}
+            </>
+          );
+        })()}
+
+        {h.status === "done" && h.verdict?.kind === "dependency" && (
+          <pre className="ashi-error">{h.verdict.message}</pre>
         )}
 
         {h.status === "done" && h.verdict?.kind === "combination" && (

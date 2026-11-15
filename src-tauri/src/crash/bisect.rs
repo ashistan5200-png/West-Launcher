@@ -24,6 +24,8 @@ pub const OFF_SUFFIX: &str = ".ashi-off";
 #[serde(rename_all = "camelCase")]
 pub enum Phase {
     Baseline,
+    /// Yalnızca kütüphaneler açık: sorun kütüphanelerde mi?
+    Libraries,
     Hunting,
     Verify,
     Done,
@@ -40,21 +42,65 @@ pub enum Verdict {
     NotReproduced,
 }
 
+/// Bir denemenin sonucu.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Res {
+    /// Oyun ana menüye ulaştı
+    Ok,
+    /// İlk çökmeyle aynı hata
+    Crash,
+    /// Başka bir hata (çoğunlukla kapatılan bir moda gizli bağımlılık) → sonuç belirsiz
+    Other,
+}
+
 #[derive(Debug, Clone)]
 pub struct Test {
     pub phase: Phase,
     pub enabled: BTreeSet<usize>,
 }
 
+/// Kütüphane/çekirdek modlar: av sırasında asla tek başına kapatılmaz.
+const KNOWN_LIBS: &[&str] = &[
+    "fabric-api", "fabric", "fabric-language-kotlin", "fabric_language_kotlin", "fabric-language-scala", "quilted_fabric_api", "qsl",
+    "cloth-config", "cloth_config", "cloth-config2", "architectury", "geckolib", "owo", "owo-lib", "yet_another_config_lib_v3", "yacl",
+    "forgeconfigapiport", "kotlinforforge", "balm", "bookshelf", "puzzleslib", "collective", "moonlight", "resourcefullib", "creativecore",
+    "citadel", "curios", "trinkets", "cardinal-components", "cardinal-components-base", "playeranimator", "player-animator", "midnightlib",
+    "konkrete", "iceberg", "framework", "terrablender", "lithostitched", "cristellib", "supermartijn642corelib", "supermartijn642configlib",
+    "libipn", "fzzy_config", "silk", "azurelib", "polymer", "placeholder-api", "sodium", "indium", "satin", "lambdynlights_api", "modmenu",
+    "fabricloader", "java", "minecraft", "neoforge", "forge", "jei", "rei", "emi", "kotlin", "mixinextras", "mixinsquared",
+];
+
+pub fn is_library(m: &ModInfo, dependents: usize) -> bool {
+    static LIBISH: once_cell::sync::Lazy<regex::Regex> =
+        once_cell::sync::Lazy::new(|| regex::Regex::new(r"(?i)(^|[-_ ])(lib|libs|library|api|core|config|kotlin|scala|language|loader)([-_ ]|$)|lib$|api$").unwrap());
+    if m.provides.iter().any(|id| KNOWN_LIBS.contains(&id.as_str())) {
+        return true;
+    }
+    if m.provides.iter().any(|id| LIBISH.is_match(id)) || LIBISH.is_match(&m.name) {
+        return true;
+    }
+    // Birden fazla mod buna bağlıysa pratikte bir kütüphanedir
+    dependents >= 2
+}
+
 pub struct Planner {
     deps: Vec<BTreeSet<usize>>,
     all: BTreeSet<usize>,
+    /// Kütüphaneler
+    libs: BTreeSet<usize>,
+    /// Her denemede açık tutulanlar (kütüphaneler + gizli bağımlılık olarak bulunanlar)
+    always: BTreeSet<usize>,
     suspects: BTreeSet<usize>,
     last_nonempty: BTreeSet<usize>,
     phase: Phase,
     pending: Option<Test>,
     verdict: Option<Verdict>,
+    /// Bir önceki deneme belirsiz çıktıysa öteki yarıyı dene
+    flip: bool,
+    others_in_row: u8,
     pub round: u32,
+    /// Belirsiz (farklı hatayla biten) deneme sayısı
+    pub inconclusive: u32,
 }
 
 impl Planner {
@@ -74,31 +120,52 @@ impl Planner {
                     .or_insert(i);
             }
         }
-        let deps = mods
+        let deps: Vec<BTreeSet<usize>> = mods
             .iter()
             .enumerate()
-            .map(|(i, m)| {
-                // Hiçbir jar'ın sağlamadığı kimlikler (minecraft, fabricloader, java…) yok sayılır
-                m.depends.iter().filter_map(|d| by_id.get(d.as_str()).copied()).filter(|&j| j != i).collect()
-            })
+            .map(|(i, m)| m.depends.iter().filter_map(|d| by_id.get(d.as_str()).copied()).filter(|&j| j != i).collect())
             .collect();
+        let mut dependents = vec![0usize; mods.len()];
+        for d in &deps {
+            for &j in d {
+                dependents[j] += 1;
+            }
+        }
         let all: BTreeSet<usize> = (0..mods.len()).collect();
+        let mut libs: BTreeSet<usize> = mods.iter().enumerate().filter(|(i, m)| is_library(m, dependents[*i])).map(|(i, _)| i).collect();
+        // Kütüphanelerin bağımlılıkları da kütüphane sayılır
+        let mut stack: Vec<usize> = libs.iter().copied().collect();
+        while let Some(i) = stack.pop() {
+            for &d in &deps[i] {
+                if libs.insert(d) {
+                    stack.push(d);
+                }
+            }
+        }
+        if libs.len() == all.len() {
+            libs.clear(); // her şey kütüphaneyse ayrım anlamsız
+        }
         Self {
             deps,
             suspects: all.clone(),
             last_nonempty: all.clone(),
             all,
+            libs,
+            always: BTreeSet::new(),
             phase: Phase::Baseline,
             pending: None,
             verdict: None,
+            flip: false,
+            others_in_row: 0,
             round: 0,
+            inconclusive: 0,
         }
     }
 
-    /// Kaba üst sınır: baseline + ⌈log2 n⌉ + doğrulama
+    /// Kaba üst sınır: baseline + kütüphane kontrolü + ⌈log2 n⌉ + doğrulama
     pub fn estimated_rounds(n: usize) -> u32 {
         let bits = usize::BITS - n.saturating_sub(1).leading_zeros();
-        bits + 2
+        bits + 3
     }
 
     pub fn suspects(&self) -> &BTreeSet<usize> {
@@ -111,6 +178,15 @@ impl Planner {
 
     pub fn verdict(&self) -> Option<&Verdict> {
         self.verdict.as_ref()
+    }
+
+    pub fn is_library(&self, i: usize) -> bool {
+        self.libs.contains(&i)
+    }
+
+    /// i'ye zorunlu olarak bağlı modlar
+    pub fn dependents(&self, i: usize) -> Vec<usize> {
+        (0..self.deps.len()).filter(|&j| self.deps[j].contains(&i)).collect()
     }
 
     pub fn closure(&self, seed: &BTreeSet<usize>) -> BTreeSet<usize> {
@@ -126,6 +202,24 @@ impl Planner {
         out
     }
 
+    fn with_always(&self, s: &BTreeSet<usize>) -> BTreeSet<usize> {
+        self.closure(&s.union(&self.always).copied().collect())
+    }
+
+    /// Gizli bağımlılık bulundu (ör. eksik sınıfı sağlayan mod): bundan sonra hep açık
+    /// tutulur ve şüpheli listesinden çıkar. Bekleyen deneme yeniden kurulur.
+    pub fn force_enable(&mut self, i: usize) -> bool {
+        if self.always.contains(&i) {
+            return false;
+        }
+        self.always.insert(i);
+        if self.suspects.len() > 1 {
+            self.suspects.remove(&i);
+        }
+        self.pending = None;
+        true
+    }
+
     /// Sıradaki deneme; av bittiyse None.
     pub fn next(&mut self) -> Option<Test> {
         if self.phase == Phase::Done {
@@ -136,13 +230,15 @@ impl Planner {
         }
         let enabled = match self.phase {
             Phase::Baseline => self.all.clone(),
+            Phase::Libraries => self.closure(&self.libs),
             Phase::Hunting => {
                 let s: Vec<usize> = self.suspects.iter().copied().collect();
                 let mid = s.len() / 2;
                 let a: BTreeSet<usize> = s[..mid].iter().copied().collect();
                 let b: BTreeSet<usize> = s[mid..].iter().copied().collect();
-                let ea = self.closure(&a);
-                let eb = self.closure(&b);
+                let (first, second) = if self.flip { (b, a) } else { (a, b) };
+                let ea = self.with_always(&first);
+                let eb = self.with_always(&second);
                 if !ea.is_superset(&self.suspects) {
                     ea
                 } else if !eb.is_superset(&self.suspects) {
@@ -150,10 +246,10 @@ impl Planner {
                 } else {
                     // Bağımlılıklar yüzünden bölünemiyor → grubu doğrula
                     self.phase = Phase::Verify;
-                    self.closure(&self.suspects)
+                    self.with_always(&self.suspects)
                 }
             }
-            Phase::Verify => self.closure(&self.suspects),
+            Phase::Verify => self.with_always(&self.suspects),
             Phase::Done => unreachable!(),
         };
         let t = Test { phase: self.phase, enabled };
@@ -161,37 +257,66 @@ impl Planner {
         Some(t)
     }
 
-    pub fn record(&mut self, crashed: bool) {
+    pub fn record(&mut self, res: Res) {
         let Some(test) = self.pending.take() else { return };
         self.round += 1;
+        if res == Res::Other {
+            self.inconclusive += 1;
+        }
         match test.phase {
             Phase::Baseline => {
-                if !crashed {
+                if res == Res::Ok {
                     return self.finish(Verdict::NotReproduced);
                 }
-                self.phase = if self.suspects.len() <= 1 { Phase::Verify } else { Phase::Hunting };
-                if self.phase == Phase::Verify {
-                    // Tek mod varsa baseline zaten doğrulamadır
+                if self.suspects.len() <= 1 {
                     return self.finish(Verdict::Culprit { mods: self.suspects.iter().copied().collect() });
                 }
+                self.phase = if self.libs.is_empty() { Phase::Hunting } else { Phase::Libraries };
             }
-            Phase::Hunting => {
-                if crashed {
-                    self.suspects = self.suspects.intersection(&test.enabled).copied().collect();
+            Phase::Libraries => {
+                if res == Res::Crash {
+                    // Sorun kütüphanelerin kendisinde: yalnızca onların arasında ara
+                    self.suspects = self.libs.clone();
                 } else {
-                    self.suspects = self.suspects.difference(&test.enabled).copied().collect();
-                }
-                if self.suspects.is_empty() {
-                    return self.finish(Verdict::Combination { suspects: self.last_nonempty.iter().copied().collect() });
+                    // Kütüphaneler tek başına sağlam → hep açık kalsınlar, asıl modlarda ara
+                    self.always = self.libs.clone();
+                    self.suspects = self.all.difference(&self.libs).copied().collect();
                 }
                 self.last_nonempty = self.suspects.clone();
-                if self.suspects.len() == 1 {
-                    self.phase = Phase::Verify;
+                if self.suspects.is_empty() {
+                    return self.finish(Verdict::Combination { suspects: self.libs.iter().copied().collect() });
                 }
+                self.phase = if self.suspects.len() == 1 { Phase::Verify } else { Phase::Hunting };
             }
+            Phase::Hunting => match res {
+                Res::Crash | Res::Ok => {
+                    self.others_in_row = 0;
+                    self.flip = false;
+                    if res == Res::Crash {
+                        self.suspects = self.suspects.intersection(&test.enabled).copied().collect();
+                    } else {
+                        self.suspects = self.suspects.difference(&test.enabled).copied().collect();
+                    }
+                    if self.suspects.is_empty() {
+                        return self.finish(Verdict::Combination { suspects: self.last_nonempty.iter().copied().collect() });
+                    }
+                    self.last_nonempty = self.suspects.clone();
+                    if self.suspects.len() == 1 {
+                        self.phase = Phase::Verify;
+                    }
+                }
+                Res::Other => {
+                    // Bu bölünme gizli bir bağımlılığı kopardı: öteki yarıyı dene.
+                    self.others_in_row += 1;
+                    self.flip = !self.flip;
+                    if self.others_in_row >= 2 {
+                        return self.finish(Verdict::Combination { suspects: self.suspects.iter().copied().collect() });
+                    }
+                }
+            },
             Phase::Verify => {
                 let ids: Vec<usize> = self.suspects.iter().copied().collect();
-                return self.finish(if crashed { Verdict::Culprit { mods: ids } } else { Verdict::Combination { suspects: ids } });
+                return self.finish(if res == Res::Crash { Verdict::Culprit { mods: ids } } else { Verdict::Combination { suspects: ids } });
             }
             Phase::Done => {}
         }
@@ -268,7 +393,7 @@ mod tests {
                 assert!(p.deps[*i].is_subset(&t.enabled), "eksik bağımlılıkla test");
             }
             let crashed = bad.iter().all(|b| t.enabled.contains(b));
-            p.record(crashed);
+            p.record(if crashed { Res::Crash } else { Res::Ok });
             assert!(p.round < 40);
         }
         (p.verdict().unwrap().clone(), p.round)
@@ -307,7 +432,7 @@ mod tests {
         let mods = pack(30);
         let mut p = Planner::new(&mods);
         p.next();
-        p.record(false);
+        p.record(Res::Ok);
         assert_eq!(p.verdict(), Some(&Verdict::NotReproduced));
         assert_eq!(p.round, 1);
     }
@@ -323,10 +448,56 @@ mod tests {
         assert!(!matches!(run(&mods, &[10, 50]).0, Verdict::Culprit { ref mods } if mods.len() == 1));
     }
 
+    /// Kütüphaneler (Fabric API, Kotlin…) suçlu değilken hiçbir denemede kapatılmaz.
+    #[test]
+    fn libraries_stay_enabled_while_hunting_mods() {
+        let mut mods = pack(40);
+        mods.push(m("fabric-language-kotlin.jar", &["fabric-language-kotlin"], &[]));
+        let kotlin = mods.len() - 1;
+        let bad = 17;
+        let mut p = Planner::new(&mods);
+        assert!(p.is_library(0) && p.is_library(1) && p.is_library(kotlin));
+        while let Some(t) = p.next() {
+            if t.phase == Phase::Hunting || t.phase == Phase::Verify {
+                assert!(t.enabled.contains(&0) && t.enabled.contains(&kotlin), "kütüphane kapatıldı");
+            }
+            p.record(if t.enabled.contains(&bad) { Res::Crash } else { Res::Ok });
+        }
+        assert_eq!(p.verdict(), Some(&Verdict::Culprit { mods: vec![bad] }));
+    }
+
+    /// Bir mod kapatılınca başka bir mod farklı hatayla çökse bile (gizli bağımlılık)
+    /// asıl suçlu bulunur; farklı hata "suçlu burada" diye sayılmaz.
+    #[test]
+    fn hidden_dependency_crash_is_not_mistaken_for_the_real_one() {
+        let mods = pack(32);
+        let bad = 9;
+        // mod020 gizlice mod021'e bağlı (beyan etmemiş): 21 kapalı + 20 açık → farklı hata
+        let mut p = Planner::new(&mods);
+        let mut guard = 0;
+        while let Some(t) = p.next() {
+            guard += 1;
+            assert!(guard < 40);
+            let res = if t.enabled.contains(&20) && !t.enabled.contains(&21) {
+                Res::Other
+            } else if t.enabled.contains(&bad) {
+                Res::Crash
+            } else {
+                Res::Ok
+            };
+            p.record(res);
+        }
+        match p.verdict().unwrap() {
+            Verdict::Culprit { mods } => assert_eq!(mods, &vec![bad]),
+            Verdict::Combination { suspects } => assert!(suspects.contains(&bad)),
+            v => panic!("{v:?}"),
+        }
+    }
+
     #[test]
     fn estimate() {
-        assert_eq!(Planner::estimated_rounds(2), 3);
-        assert_eq!(Planner::estimated_rounds(200), 10);
+        assert_eq!(Planner::estimated_rounds(2), 4);
+        assert_eq!(Planner::estimated_rounds(200), 11);
     }
 
     #[test]

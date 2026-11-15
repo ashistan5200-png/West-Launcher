@@ -3,7 +3,8 @@
 
 use super::launch::{kill_game, start_game, LaunchMode};
 use crate::core::auth::AuthSession;
-use crate::crash::bisect::{self, Phase, Planner, Verdict};
+use crate::crash::bisect::{self, Phase, Planner, Res, Verdict};
+use crate::crash::fingerprint::Fingerprint;
 use crate::crash::modinfo::{self, ModInfo};
 use crate::error::{AppError, Result};
 use crate::state::{AppState, GameSignal, Hunt};
@@ -38,11 +39,15 @@ const SETTLE: Duration = Duration::from_secs(6);
 pub struct ModBrief {
     pub file: String,
     pub name: String,
+    /// Kütüphane/çekirdek mod: kapatmak yerine güncellemek önerilir
+    pub library: bool,
+    /// Bu moda zorunlu olarak bağlı modlar (kapatılırsa onlar da çalışmaz)
+    pub dependents: Vec<String>,
 }
 
 impl From<&ModInfo> for ModBrief {
     fn from(m: &ModInfo) -> Self {
-        Self { file: m.file.clone(), name: m.name.clone() }
+        Self { file: m.file.clone(), name: m.name.clone(), library: false, dependents: vec![] }
     }
 }
 
@@ -52,6 +57,8 @@ pub enum VerdictDto {
     Culprit { mods: Vec<ModBrief> },
     Combination { suspects: Vec<ModBrief> },
     NotReproduced,
+    /// Oyun bir bağımlılık/uyumsuzluk hatasıyla hiç açılmıyor: mod yükleyici zaten nedenini söylüyor
+    Dependency { message: String },
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -72,11 +79,13 @@ pub struct AshiEvent {
     pub message: Option<String>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 enum Outcome {
     Ok,
-    Crash,
+    Crash(Fingerprint, String),
 }
+
+static REPORT_PATH: Lazy<Regex> = Lazy::new(|| Regex::new(r"Crash report saved to:?\s*(?:#@!@#\s*)?(.+?\.txt)").unwrap());
 
 struct Ctx {
     app: AppHandle,
@@ -161,6 +170,8 @@ async fn hunt(ctx: &Ctx, mods: &[ModInfo], auth: AuthSession, cancel: &AtomicBoo
     let st = ctx.app.state::<AppState>();
     let mods_dir = st.paths.instance_game_dir(&ctx.id).join("mods");
     let mut planner = Planner::new(mods);
+    let mut baseline: Option<Fingerprint> = None;
+    let mut retries = 0u32;
 
     while let Some(test) = planner.next() {
         if cancel.load(Ordering::Relaxed) {
@@ -170,12 +181,55 @@ async fn hunt(ctx: &Ctx, mods: &[ModInfo], auth: AuthSession, cancel: &AtomicBoo
         ctx.emit("testing", Some(&planner), test.enabled.len(), None, None, None);
 
         let outcome = run_test(ctx, auth.clone(), cancel).await?;
-        planner.record(outcome == Outcome::Crash);
-        let label = if outcome == Outcome::Crash { "crash" } else { "ok" };
+        let (res, label) = match &outcome {
+            Outcome::Ok => (Res::Ok, "ok"),
+            Outcome::Crash(fp, text) => match &baseline {
+                None => {
+                    // İlk tur: bağımlılık hatasıysa avlanmaya gerek yok, yükleyici nedenini söylüyor
+                    if let Fingerprint::Dependency { message } = fp {
+                        return Ok((planner, VerdictDto::Dependency { message: message.clone() }));
+                    }
+                    tracing::info!("Ashi: ilk çökme parmak izi: {}", fp.summary());
+                    baseline = Some(fp.clone());
+                    (Res::Crash, "crash")
+                }
+                Some(b) if fp.same_as(b) => (Res::Crash, "crash"),
+                Some(_) => {
+                    // Farklı hata: kapatılan bir moda gizli bağımlılık mı? Eksik sınıfı sağlayan modu bul.
+                    let hidden = Fingerprint::missing_class(text).and_then(|cls| {
+                        (0..mods.len()).filter(|i| !test.enabled.contains(i)).find(|&i| {
+                            let on = mods_dir.join(&mods[i].file);
+                            let off = mods_dir.join(format!("{}{}", mods[i].file, bisect::OFF_SUFFIX));
+                            modinfo::jar_has_class(if on.exists() { &on } else { &off }, &cls)
+                        })
+                    });
+                    if let Some(i) = hidden.filter(|_| retries < 12) {
+                        if planner.force_enable(i) {
+                            retries += 1;
+                            tracing::info!("Ashi: gizli bağımlılık bulundu, hep açık kalacak: {}", mods[i].name);
+                            ctx.emit("tested", Some(&planner), test.enabled.len(), Some("other"), None, Some(format!("{} gizli bir bağımlılık; açık tutuluyor", mods[i].name)));
+                            continue;
+                        }
+                    }
+                    tracing::info!("Ashi: farklı bir hata (belirsiz deneme): {}", fp.summary());
+                    (Res::Other, "other")
+                }
+            },
+        };
+        planner.record(res);
         ctx.emit("tested", Some(&planner), test.enabled.len(), Some(label), None, None);
     }
 
-    let brief = |ids: &[usize]| ids.iter().map(|&i| ModBrief::from(&mods[i])).collect::<Vec<_>>();
+    let brief = |ids: &[usize]| {
+        ids.iter()
+            .map(|&i| {
+                let mut b = ModBrief::from(&mods[i]);
+                b.library = planner.is_library(i);
+                b.dependents = planner.dependents(i).into_iter().map(|j| mods[j].name.clone()).collect();
+                b
+            })
+            .collect::<Vec<_>>()
+    };
     let verdict = match planner.verdict().cloned().unwrap_or(Verdict::NotReproduced) {
         Verdict::Culprit { mods } => VerdictDto::Culprit { mods: brief(&mods) },
         Verdict::Combination { suspects } => VerdictDto::Combination { suspects: brief(&suspects) },
@@ -200,30 +254,46 @@ async fn run_test(ctx: &Ctx, auth: AuthSession, cancel: &AtomicBool) -> Result<O
 
     let started = Instant::now();
     let mut ready_at: Option<Instant> = None;
-    let mut verdict: Option<Outcome> = None;
+    let mut verdict: Option<bool> = None; // Some(true) = çöktü
     let mut user_closed = false;
+    let mut timed_out = false;
+    let mut log: std::collections::VecDeque<String> = std::collections::VecDeque::new();
+    let mut report: Option<String> = None;
 
     loop {
         let sig = tokio::time::timeout(Duration::from_millis(500), rx.recv()).await;
         match sig {
             Ok(Some(GameSignal::Log(line))) => {
+                if let Some(c) = REPORT_PATH.captures(&line) {
+                    report = Some(c[1].trim().to_string());
+                }
                 if verdict.is_none() && CRASH.is_match(&line) {
-                    verdict = Some(Outcome::Crash);
-                    kill_game(&st, &ctx.id);
+                    verdict = Some(true);
+                    // Raporun/yığın izinin yazılması için kısa bir süre tanı
+                    let st2 = ctx.app.clone();
+                    let id2 = ctx.id.clone();
+                    tokio::spawn(async move {
+                        tokio::time::sleep(Duration::from_millis(1500)).await;
+                        kill_game(&st2.state::<AppState>(), &id2);
+                    });
                 } else if ready_at.is_none() && READY.is_match(&line) {
                     ready_at = Some(Instant::now());
+                }
+                log.push_back(line);
+                if log.len() > 4000 {
+                    log.pop_front();
                 }
             }
             Ok(Some(GameSignal::Exit(code))) => {
                 if verdict.is_none() {
                     verdict = Some(match (ready_at, code) {
-                        (Some(_), _) => Outcome::Ok,
+                        (Some(_), _) => false,
                         // Ana menüden önce temiz çıkış = kullanıcı pencereyi kapattı
                         (None, Some(0)) => {
                             user_closed = true;
-                            Outcome::Crash
+                            true
                         }
-                        _ => Outcome::Crash,
+                        _ => true,
                     });
                 }
                 break;
@@ -241,11 +311,12 @@ async fn run_test(ctx: &Ctx, auth: AuthSession, cancel: &AtomicBool) -> Result<O
         if verdict.is_none() {
             if let Some(t) = ready_at {
                 if t.elapsed() >= SETTLE {
-                    verdict = Some(Outcome::Ok);
+                    verdict = Some(false);
                     kill_game(&st, &ctx.id);
                 }
             } else if started.elapsed() >= TEST_TIMEOUT {
-                verdict = Some(Outcome::Crash);
+                verdict = Some(true);
+                timed_out = true;
                 kill_game(&st, &ctx.id);
             }
         }
@@ -259,7 +330,22 @@ async fn run_test(ctx: &Ctx, auth: AuthSession, cancel: &AtomicBool) -> Result<O
     if user_closed {
         return Err(AppError::msg("Oyun penceresi ana menüden önce kapatıldı; Ashi avı durdurdu. Avı tekrar başlatabilirsin."));
     }
-    Ok(verdict.unwrap_or(Outcome::Crash))
+    if verdict == Some(false) {
+        return Ok(Outcome::Ok);
+    }
+    // Parmak izi: çökme raporu (varsa) + son log satırları
+    let mut text = String::new();
+    if let Some(p) = report {
+        let path = std::path::PathBuf::from(&p);
+        let path = if path.is_absolute() { path } else { st.paths.instance_game_dir(&ctx.id).join(path) };
+        if let Ok(r) = std::fs::read_to_string(&path) {
+            text.push_str(&r);
+            text.push('\n');
+        }
+    }
+    text.extend(log.iter().map(|l| format!("{l}\n")));
+    let fp = crate::crash::fingerprint::from_text(&text, timed_out);
+    Ok(Outcome::Crash(fp, text))
 }
 
 async fn wait_exit(rx: &mut mpsc::UnboundedReceiver<GameSignal>) {

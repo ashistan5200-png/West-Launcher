@@ -1,6 +1,5 @@
 package dev.west.companion.gui;
 
-import dev.west.companion.Compat;
 import dev.west.companion.West;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -10,7 +9,7 @@ import net.minecraft.resources.ResourceLocation;
 /**
  * Oyun içi West paneli (Sağ Shift veya menüdeki "West" düğmesi):
  * FullBright, FPS/MS göstergesi, görüş mesafesi ön ayarları, bellek temizleme
- * ve ana menü modu. Ayarlar `config/west-companion.json`'a yazılır ve
+ * ve bellek temizleme. Ayarlar `config/west-companion.json`'a yazılır ve
  * launcher'daki instance ayarlarıyla senkron kalır.
  */
 public class WestPanelScreen extends Screen {
@@ -31,7 +30,7 @@ public class WestPanelScreen extends Screen {
     private int bh() { return height < 280 ? 18 : 20; }
     private int gap() { return height < 280 ? 3 : 5; }
     private int section() { return height < 280 ? 10 : 14; }
-    private int blockHeight() { return 30 + 7 * (bh() + gap()) + 3 * section() + 26; }
+    private int blockHeight() { return 30 + 5 * (bh() + gap()) + 3 * section() + 26; }
     private int top() { return Math.max(4, (height - blockHeight()) / 2); }
 
     @Override
@@ -40,10 +39,6 @@ public class WestPanelScreen extends Screen {
         int x = width / 2 - w / 2;
         int y = top() + 30;
         int d = 0;
-
-        // Ashi PvP Koçu + 1v1 botu
-        addRenderableWidget(new WestButton(x, y, w, bh, Component.translatable("west_companion.pvp.open"), b -> minecraft.setScreen(new DuelScreen(this)), d, true));
-        y += bh + gap;
 
         addRenderableWidget(new WestButton(x, y, w, bh, onOff("west_companion.fullbright", West.config.fullbright), b -> {
             West.config.fullbright = !West.config.fullbright;
@@ -82,19 +77,8 @@ public class WestPanelScreen extends Screen {
             memoryNote = Component.translatable("west_companion.gc.done", freed).getString();
         }, d += 30, false));
 
-        String[] modes = {"auto", "button", "off"};
-        addRenderableWidget(new WestButton(x, y += bh + gap, w, bh, modeLabel(), b -> {
-            int i = java.util.Arrays.asList(modes).indexOf(West.config.menuMode);
-            West.config.menuMode = modes[(i + 1) % modes.length];
-            West.config.save();
-            b.setMessage(modeLabel());
-        }, d += 30, false));
 
         addRenderableWidget(new WestButton(x, y + bh + gap + section(), w, bh, Component.translatable("gui.done"), b -> onClose(), d + 30, true));
-    }
-
-    private Component modeLabel() {
-        return Component.translatable("west_companion.menu_mode").append(": ").append(Component.translatable("west_companion.menu_mode." + West.config.menuMode));
     }
 
     @Override
@@ -104,13 +88,10 @@ public class WestPanelScreen extends Screen {
         int top = top();
         g.blit(COMPASS, cx - 120, top + 2, 0, 0, 20, 20, 20, 20);
         g.drawString(font, title, cx - 94, top + 8, 0xFFE2E4E7, false);
-        g.drawString(font, Component.translatable("west_companion.view"), cx - 120, top + 30 + 3 * (bh() + gap()) + section() - 10, 0xFF8B9098, false);
+        g.drawString(font, Component.translatable("west_companion.view"), cx - 120, top + 30 + 2 * (bh() + gap()) + section() - 10, 0xFF8B9098, false);
 
         int y = top + blockHeight() - 22;
         if (!memoryNote.isEmpty()) g.drawCenteredString(font, memoryNote, cx, y, 0xFF9FC4A8);
-        if (Compat.conflict()) {
-            g.drawCenteredString(font, Component.translatable("west_companion.compat", String.join(", ", Compat.conflicts())), cx, y + 12, 0xFF8B9098);
-        }
         if (West.config.fullbright && minecraft.getConnection() != null && !minecraft.hasSingleplayerServer()) {
             g.drawCenteredString(font, Component.translatable("west_companion.fullbright.server_hint"), cx, y + 24, 0xFFC7A566);
         }

@@ -153,18 +153,19 @@ export const useAshi = create<AshiState>((set, get) => ({
               next.line = randomLine(e.phase === "baseline" ? ashiLines.baseline : e.phase === "verify" ? ashiLines.verify : ashiLines.testing, nextSeed());
               break;
             case "tested":
-              next.reactMood = e.outcome === "crash" ? "bonk" : "wave";
+              next.reactMood = e.outcome === "crash" ? "bonk" : e.outcome === "other" ? "think" : "wave";
               next.reactAt = Date.now();
-              next.reaction = randomLine(e.outcome === "crash" ? ashiLines.crashed : ashiLines.survived, nextSeed());
+              next.reaction = e.message ?? randomLine(e.outcome === "crash" ? ashiLines.crashed : e.outcome === "other" ? ashiLines.other : ashiLines.survived, nextSeed());
               break;
             case "done":
               next.status = "done";
               next.reaction = null;
               next.verdict = e.verdict;
-              next.mood = e.verdict?.kind === "culprit" ? "celebrate" : e.verdict?.kind === "combination" ? "think" : "sad";
+              next.mood = e.verdict?.kind === "culprit" ? "celebrate" : e.verdict?.kind === "combination" || e.verdict?.kind === "dependency" ? "think" : "sad";
               next.line =
-                e.verdict?.kind === "culprit" ? ashiLines.culprit(e.verdict.mods.length)
+                e.verdict?.kind === "culprit" ? (e.verdict.mods.every((m) => m.library) ? ashiLines.libraryCulprit : ashiLines.culprit(e.verdict.mods.length))
                 : e.verdict?.kind === "combination" ? ashiLines.combination
+                : e.verdict?.kind === "dependency" ? ashiLines.dependency
                 : ashiLines.notReproduced;
               break;
             case "cancelled":

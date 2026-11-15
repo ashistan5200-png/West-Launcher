@@ -8,7 +8,7 @@ version = "${version}"
 displayName = "West Companion"
 logoFile = "icon.png"
 authors = "West Launcher"
-description = '''West Launcher'ın oyun içi parçası: özel ana menü, West paneli, FullBright ve FPS göstergesi.'''
+description = '''West Client'ın oyun içi parçası: West Paneli, FullBright, FPS göstergesi ve offline skin.'''
 
 [[mixins]]
 config = "west_companion.mixins.json"

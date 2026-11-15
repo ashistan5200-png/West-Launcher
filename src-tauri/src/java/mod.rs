@@ -156,6 +156,13 @@ fn adoptium_arch() -> &'static str {
 /// Temurin JRE'yi indirip `java/<major>/` altına kurar.
 pub async fn install(http: &Http, paths: &Paths, major: u32, progress: ProgressFn) -> Result<JavaInstall> {
     let task = format!("java-{major}");
+    let r = install_inner(http, paths, major, &task, &progress).await;
+    // Başarılı da olsa hata da olsa ilerleme kartı kapanmalı
+    report(&progress, &task, "done", 1, 1);
+    r
+}
+
+async fn install_inner(http: &Http, paths: &Paths, major: u32, task: &str, progress: &ProgressFn) -> Result<JavaInstall> {
     let mut arch = adoptium_arch();
     // Java 8'in macOS ARM yapısı yok → Rosetta ile x64
     if major == 8 && cfg!(target_os = "macos") && arch == "aarch64" {
@@ -175,7 +182,7 @@ pub async fn install(http: &Http, paths: &Paths, major: u32, progress: ProgressF
     let pkg = &assets.first().ok_or_else(|| AppError::NotFound(format!("Java {major} paketi")))?.binary.package;
 
     let archive = paths.cache().join(&pkg.name);
-    report(&progress, &task, "java", 0, 1);
+    report(progress, task, "java", 0, 1);
     http.download(&DownloadTask { url: pkg.link.clone(), path: archive.clone(), sha1: None, size: None }).await?;
     if let Some(expected) = &pkg.checksum {
         use sha2::Digest;
@@ -200,7 +207,7 @@ pub async fn install(http: &Http, paths: &Paths, major: u32, progress: ProgressF
         .find(|e| e.file_name() == java_bin_name() && e.path().parent().map(|p| p.ends_with("bin")).unwrap_or(false))
         .map(|e| e.into_path())
         .ok_or_else(|| AppError::msg("Kurulan arşivde java bulunamadı"))?;
-    report(&progress, &task, "java", 1, 1);
+    report(progress, task, "java", 1, 1);
     let mut j = probe(&bin).await.ok_or_else(|| AppError::msg("Kurulan Java çalıştırılamadı"))?;
     j.managed = true;
     Ok(j)

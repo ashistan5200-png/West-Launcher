@@ -31,6 +31,7 @@ export const STAGE_LABEL: Record<string, string> = {
   loader: "Mod yükleyici kuruluyor",
   files: "Dosyalar indiriliyor",
   java: "Java hazırlanıyor",
+  update: "İçerik güncelleniyor",
   done: "Hazır",
 };
 

@@ -204,3 +204,22 @@ pub fn scan(mods_dir: &Path) -> Result<Vec<ModInfo>> {
     out.sort_by(|a, b| a.file.to_lowercase().cmp(&b.file.to_lowercase()));
     Ok(out)
 }
+
+/// Bir jar'ın (veya içine gömülü jar'ların) verilen sınıfı içerip içermediği.
+/// Gizli bağımlılıkları bulmak için: "NoClassDefFoundError: a/b/C" → C'yi hangi mod sağlıyor?
+pub fn jar_has_class(path: &Path, class_path: &str) -> bool {
+    fn check<R: Read + Seek>(zip: &mut zip::ZipArchive<R>, entry: &str, depth: u8) -> bool {
+        if zip.by_name(entry).is_ok() {
+            return true;
+        }
+        if depth >= 1 {
+            return false;
+        }
+        let nested: Vec<String> = zip.file_names().filter(|n| n.ends_with(".jar")).map(String::from).collect();
+        nested.iter().any(|n| {
+            read_entry(zip, n).and_then(|b| zip::ZipArchive::new(Cursor::new(b)).ok()).map(|mut z| check(&mut z, entry, depth + 1)).unwrap_or(false)
+        })
+    }
+    let entry = format!("{}.class", class_path.trim_start_matches('/'));
+    std::fs::File::open(path).ok().and_then(|f| zip::ZipArchive::new(f).ok()).map(|mut z| check(&mut z, &entry, 0)).unwrap_or(false)
+}

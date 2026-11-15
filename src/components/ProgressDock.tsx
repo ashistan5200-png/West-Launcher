@@ -6,13 +6,19 @@ import { STAGE_LABEL } from "@/lib/format";
 export function ProgressDock() {
   const progress = useInstances((s) => s.progress);
   const instances = useInstances((s) => s.instances);
-  const items = Object.values(progress).filter((p) => p.stage !== "done");
+  // "done" gelmese bile %100'e ulaşan iş kart olarak kalmasın
+  const items = Object.values(progress).filter((p) => p.stage !== "done" && !(p.total > 0 && p.current >= p.total && p.stage === "java"));
+  const label = (task: string) => {
+    if (task.startsWith("java-")) return `Java ${task.slice(5)}`;
+    const id = task.startsWith("update:") ? task.slice(7) : task;
+    return instances.find((i) => i.id === id)?.name ?? id;
+  };
 
   return (
     <AnimatePresence>
         {items.map((p) => {
           const pct = p.total ? Math.min(100, (p.current / p.total) * 100) : 0;
-          const name = instances.find((i) => i.id === p.task)?.name ?? p.task;
+          const name = label(p.task);
           return (
             <motion.div
               key={p.task}

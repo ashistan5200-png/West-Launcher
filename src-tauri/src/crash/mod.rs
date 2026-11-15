@@ -3,3 +3,4 @@
 
 pub mod bisect;
 pub mod modinfo;
+pub mod fingerprint;

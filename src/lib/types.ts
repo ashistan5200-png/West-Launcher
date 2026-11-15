@@ -124,14 +124,19 @@ export interface GameExit {
 export interface ModBrief {
   file: string;
   name: string;
+  /** Kütüphane/çekirdek mod (Fabric API, Kotlin…) */
+  library: boolean;
+  /** Bu moda bağlı modlar */
+  dependents: string[];
 }
 
 export type HuntVerdict =
   | { kind: "culprit"; mods: ModBrief[] }
   | { kind: "combination"; suspects: ModBrief[] }
-  | { kind: "notReproduced" };
+  | { kind: "notReproduced" }
+  | { kind: "dependency"; message: string };
 
-export type HuntPhase = "baseline" | "hunting" | "verify" | "done";
+export type HuntPhase = "baseline" | "libraries" | "hunting" | "verify" | "done";
 
 export interface AshiEvent {
   instanceId: string;
@@ -142,7 +147,7 @@ export interface AshiEvent {
   totalMods: number;
   enabled: number;
   suspects: number;
-  outcome: "crash" | "ok" | null;
+  outcome: "crash" | "ok" | "other" | null;
   verdict: HuntVerdict | null;
   message: string | null;
 }
@@ -320,10 +325,6 @@ export interface FoundInstance {
 export interface CompanionConfig {
   fullbright: boolean;
   fpsOverlay: boolean;
-  menuMode: "auto" | "button" | "off";
-  pose: "idle" | "hero" | "wave";
-  coachTips: boolean;
-  coachEverywhere: boolean;
 }
 
 export interface CompanionInfo {

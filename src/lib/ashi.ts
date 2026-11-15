@@ -48,6 +48,14 @@ export const ashiLines = {
   culprit: (n: number) => (n === 1 ? "Buldum! Suçlu bu:" : "Buldum! Bu modlar birlikte suçlu:"),
   combination:
     "Tek bir suçlu yok; çökme birkaç modun bir arada olmasından çıkıyor. En güçlü şüpheliler şunlar:",
+  other: [
+    "Bu sefer başka bir hata çıktı; bir mod ötekine gizlice bağlı. Diğer yarıyı deniyorum.",
+    "Farklı bir çökme — bu iz yanıltıcı, sayıma katmıyorum.",
+  ],
+  libraryCulprit:
+    "Sorun bir kütüphanede görünüyor. Kütüphaneyi kapatmak ona bağlı modları da bozar; önce güncellemeni öneririm.",
+  dependency:
+    "Oyun bir bağımlılık hatasıyla hiç açılmıyor; avlanmaya gerek yok. Mod yükleyicinin söylediği şu:",
   notReproduced:
     "Tüm modlar açıkken denedim ama oyun çökmedi. Çökme rastgele olabilir ya da dünyaya girince oluyor olabilir.",
   cancelled: "Peki, avı bıraktım. Bütün modlarını eskisi gibi geri açtım.",
