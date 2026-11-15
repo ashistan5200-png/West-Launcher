@@ -6,10 +6,10 @@ use discord_rich_presence::{activity, DiscordIpc, DiscordIpcClient};
 use std::sync::mpsc::{channel, Receiver, RecvTimeoutError, Sender};
 use std::time::Duration;
 
-#[derive(Debug, Clone)]
 /// West Client'ın Discord Developer Portal'daki uygulama kimliği (gizli değil).
 pub const DEFAULT_APP_ID: &str = "1571515539149422734";
 
+#[derive(Debug, Clone)]
 pub enum Presence {
     Idle,
     Playing { instance: String, detail: String, started_unix: i64 },
