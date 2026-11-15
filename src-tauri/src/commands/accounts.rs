@@ -149,7 +149,7 @@ pub async fn ms_login_window(app: AppHandle) -> Result<()> {
     let nav_tx = tx.clone();
     let load_tx = tx.clone();
     let win = tauri::WebviewWindowBuilder::new(&app, LOGIN_WINDOW, tauri::WebviewUrl::External(url))
-        .title("Microsoft ile giriş · West Launcher")
+        .title("Microsoft ile giriş · West Client")
         .inner_size(500.0, 680.0)
         .min_inner_size(420.0, 560.0)
         .center()

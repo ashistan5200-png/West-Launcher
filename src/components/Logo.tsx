@@ -1,5 +1,5 @@
 /**
- * West Launcher pusula logosu. Düz vektör: dış halka, ana yön çentikleri ve
+ * West Client pusula logosu. Düz vektör: dış halka, ana yön çentikleri ve
  * iki renkli iğne. Kuzey ucu vurgu rengini, güney ucu nötr tonu kullanır;
  * böylece logo kullanıcının seçtiği temaya uyar.
  */

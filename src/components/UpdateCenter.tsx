@@ -51,7 +51,7 @@ export function UpdateButton() {
           initial={{ opacity: 0, y: -4 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0 }}
-          title={`West Launcher ${info.version} hazır`}
+          title={`West Client ${info.version} hazır`}
         >
           {status.downloading ? <Loader2 size={13} className="spin" /> : <ArrowUpCircle size={14} />}
           <span>{status.downloaded ? "Güncelle" : "Güncelleme"} · v{info.version}</span>
@@ -125,7 +125,7 @@ export function UpdateSettings({ autoUpdate, onToggle }: { autoUpdate: boolean; 
       <h3>Güncellemeler</h3>
       <div className="row">
         <span className="grow small">
-          West Launcher <strong>v{status?.current ?? "…"}</strong>
+          West Client <strong>v{status?.current ?? "…"}</strong>
           {info ? <> · <span className="accent">v{info.version} hazır</span></> : status && !checking ? " · en güncel sürüm" : ""}
         </span>
         {info ? (

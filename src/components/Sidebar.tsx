@@ -7,12 +7,12 @@ import { useInstances } from "@/stores/instances";
 import { InstanceIcon } from "./InstanceIcon";
 
 const NAV = [
-  { to: "/", icon: Home, label: "Ana Sayfa" },
-  { to: "/library", icon: Library, label: "Kütüphane" },
-  { to: "/browse", icon: Compass, label: "Keşfet" },
-  { to: "/skins", icon: Shirt, label: "Skin ve hesaplar" },
-  { to: "/gallery", icon: Images, label: "Ekran görüntüleri" },
-  { to: "/news", icon: Newspaper, label: "Haberler ve güncellemeler" },
+  { to: "/", icon: Home, label: "Ana Sayfa", short: "Ana" },
+  { to: "/library", icon: Library, label: "Kütüphane", short: "Kütüphane" },
+  { to: "/browse", icon: Compass, label: "Keşfet", short: "Keşfet" },
+  { to: "/skins", icon: Shirt, label: "Skin ve hesaplar", short: "Skin" },
+  { to: "/gallery", icon: Images, label: "Ekran görüntüleri", short: "Galeri" },
+  { to: "/news", icon: Newspaper, label: "Haberler ve güncellemeler", short: "Haberler" },
 ];
 
 export function Sidebar() {
@@ -23,9 +23,10 @@ export function Sidebar() {
 
   return (
     <nav className="sidebar">
-      {NAV.map(({ to, icon: Icon, label }) => (
-        <NavLink key={to} to={to} end data-tour={to} className={({ isActive }) => clsx("nav-item", isActive && "active")} title={label}>
-          <Icon size={18} />
+      {NAV.map(({ to, icon: Icon, label, short }) => (
+        <NavLink key={to} to={to} end data-tour={to} className={({ isActive }) => clsx("nav-item labeled", isActive && "active")} title={label}>
+          <span className="nav-ico"><Icon size={19} /></span>
+          <span className="nav-label">{short}</span>
         </NavLink>
       ))}
 

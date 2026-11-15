@@ -1,10 +1,10 @@
 import { create } from "zustand";
 import { api, isTauri } from "@/lib/ipc";
-import { applyTheme } from "@/lib/theme";
+import { applyTheme, DEFAULT_ACCENT, LEGACY_DEFAULT_ACCENT } from "@/lib/theme";
 import type { Settings, ThemeSettings } from "@/lib/types";
 
 const DEFAULT: Settings = {
-  theme: { accent: "#7fa7c9", blur: 12, opacity: 0.94, windowEffect: "mica", density: "compact", reduceMotion: false },
+  theme: { accent: DEFAULT_ACCENT, blur: 14, opacity: 0.96, windowEffect: "mica", density: "compact", reduceMotion: false },
   defaultMemoryMb: null,
   autoJava: true,
   maxConcurrentDownloads: 24,
@@ -41,7 +41,17 @@ export const useSettings = create<SettingsState>((set, get) => ({
   loaded: false,
 
   load: async () => {
-    const settings = isTauri() ? await api.getSettings() : DEFAULT;
+    let settings = isTauri() ? await api.getSettings() : DEFAULT;
+    // West Client tasarımına geçiş: eski varsayılan vurgu bir kez yeni varsayılana çevrilir
+    let migrated = false;
+    try {
+      migrated = localStorage.getItem("west.accentV2") === "1";
+      localStorage.setItem("west.accentV2", "1");
+    } catch { /* depolama yoksa her açılışta kontrol edilir */ }
+    if (!migrated && settings.theme.accent.toLowerCase() === LEGACY_DEFAULT_ACCENT) {
+      settings = { ...settings, theme: { ...settings.theme, accent: DEFAULT_ACCENT } };
+      if (isTauri()) void api.saveSettings(settings);
+    }
     applyTheme(settings.theme);
     set({ settings, loaded: true });
   },

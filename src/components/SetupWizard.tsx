@@ -191,7 +191,7 @@ export function SetupWizard() {
             {step === "welcome" && (
               <div className="setup-body">
                 <Logo size={34} />
-                <h2>West Launcher'a hoş geldin</h2>
+                <h2>West Client'a hoş geldin</h2>
                 <p>Ben Ashi. Seni birkaç adımda hazır edeyim: hesabını bağlayalım, eski paketlerini taşıyalım, sonra oyuna.</p>
               </div>
             )}
@@ -236,7 +236,7 @@ export function SetupWizard() {
                   <p className="muted small"><Loader2 size={13} className="spin" /> Bilgisayarındaki launcher'lara bakıyorum…</p>
                 ) : launchers.length ? (
                   <>
-                    <p>Bilgisayarında <strong>{launchers.join(", ")}</strong> buldum ({found!.length} instance). Modlarını, ayarlarını ve paketlerini West Launcher'a taşıyabilirim; orijinallerine dokunmam.</p>
+                    <p>Bilgisayarında <strong>{launchers.join(", ")}</strong> buldum ({found!.length} instance). Modlarını, ayarlarını ve paketlerini West Client'a taşıyabilirim; orijinallerine dokunmam.</p>
                     <label className="check"><input type="checkbox" checked={importAfter} onChange={(e) => setImportAfter(e.target.checked)} /> <Import size={14} /> Kurulum bitince aktarım sihirbazını aç</label>
                   </>
                 ) : (

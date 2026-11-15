@@ -1,8 +1,8 @@
-# West Launcher
+# West Client
 
-[![Windows için indir](https://img.shields.io/badge/Windows%20i%C3%A7in%20indir-.exe-7fa7c9?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/ashistan5200-png/West-Launcher/releases/latest/download/West-Launcher-Setup.exe)
-[![macOS](https://img.shields.io/badge/macOS-.dmg-26282c?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/ashistan5200-png/West-Launcher/releases/latest/download/West-Launcher-macOS.dmg)
-[![Linux](https://img.shields.io/badge/Linux-.deb-26282c?style=for-the-badge&logo=linux&logoColor=white)](https://github.com/ashistan5200-png/West-Launcher/releases/latest/download/West-Launcher-Linux.deb)
+[![Windows için indir](https://img.shields.io/badge/Windows%20i%C3%A7in%20indir-.exe-7fa7c9?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/ashistan5200-png/West-Launcher/releases/latest/download/West-Client-Setup.exe)
+[![macOS](https://img.shields.io/badge/macOS-.dmg-26282c?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/ashistan5200-png/West-Launcher/releases/latest/download/West-Client-macOS.dmg)
+[![Linux](https://img.shields.io/badge/Linux-.deb-26282c?style=for-the-badge&logo=linux&logoColor=white)](https://github.com/ashistan5200-png/West-Launcher/releases/latest/download/West-Client-Linux.deb)
 
 Windows "bilgisayarınızı korudu" uyarısı gösterirse **Ek bilgi → Yine de çalıştır**'a tıkla (uygulama henüz imzalı değil). macOS'ta ilk açılışta uygulamaya **sağ tıkla → Aç**.
 
@@ -99,7 +99,7 @@ Ashi'nin araçları her sağlayıcıda aynıdır: `search_content`, `list_instan
 - **Düzenleyici** (`ScreenshotEditor` + `lib/imageEdit.ts`): Kırpma (oran ön ayarlarıyla), yeniden boyutlandırma, parlaklık, kontrast, doygunluk, sıcaklık, vinyet, 7 filtre, kalem ve yazı. Önizleme ile kaydedilen dosya aynı işlem hattından geçer. Sonuç her zaman `_west-edit` adlı bir kopya olarak kaydedilir; orijinal dosya değişmez.
 
 ### Açılış ve ilk kurulum
-- `Splash`: Pusula iğnesi hızla dönüp yavaşlayarak durur, ardından "West Launcher" yazısı belirir. Tıklanınca atlanır.
+- `Splash`: Pusula iğnesi hızla dönüp yavaşlayarak durur, ardından "West Client" yazısı belirir. Tıklanınca atlanır.
 - `AshiTour`: Yalnızca ilk açılışta çalışır. Ashi uçarak sahneye girer ve kenar çubuğundaki bölümleri sırayla gösterir. Balonda "Devam et", "Bu ne işe yarıyor?" ve "Anladım, geç" düğmeleri vardır. Tur Ayarlar'dan yeniden başlatılabilir.
 - `ImportWizard` + `importer.rs`: Modrinth App, CurseForge, Prism Launcher, MultiMC ve resmi launcher'daki instance'ları bulur. Taşınabilir kurulumlar için "Klasör seç…" seçeneği vardır.
   - Meta veri yoksa Minecraft sürümü ve loader son oyun logundan tahmin edilir; tahmin edilemezse sürüm listeden seçilir.

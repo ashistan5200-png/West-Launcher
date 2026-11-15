@@ -740,7 +740,7 @@ pub fn export_mrpack(instance_dir: &Path, game_dir: &Path, dest: &Path, o: &Expo
             deps.insert(key.into(), v.into());
         }
     }
-    let index = serde_json::json!({ "formatVersion": 1, "game": "minecraft", "versionId": o.version, "name": o.name, "summary": "West Launcher ile paylaşıldı", "files": files, "dependencies": deps });
+    let index = serde_json::json!({ "formatVersion": 1, "game": "minecraft", "versionId": o.version, "name": o.name, "summary": "West Client ile paylaşıldı", "files": files, "dependencies": deps });
     zw.start_file("modrinth.index.json", opts)?;
     std::io::Write::write_all(&mut zw, serde_json::to_vec_pretty(&index)?.as_slice())?;
     zw.finish()?;

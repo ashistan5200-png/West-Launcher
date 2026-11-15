@@ -21,7 +21,7 @@ pub struct ThemeSettings {
 impl Default for ThemeSettings {
     fn default() -> Self {
         Self {
-            accent: "#7fa7c9".into(),
+            accent: "#e8a25c".into(),
             blur: 12,
             opacity: 0.94,
             window_effect: "mica".into(),

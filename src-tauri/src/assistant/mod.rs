@@ -33,7 +33,7 @@ pub(crate) const SEARCH_LIMIT: u32 = 8;
 
 /// Sabit sistem istemi — önbelleğe alınabilmesi için değişken bilgi içermez;
 /// aktif instance gibi bağlam kullanıcı mesajına eklenir.
-pub(crate) const SYSTEM: &str = "Sen Ashi'sin: West Launcher adlı Minecraft launcher'ının içindeki yardımcı. \
+pub(crate) const SYSTEM: &str = "Sen Ashi'sin: West Client adlı Minecraft launcher'ının içindeki yardımcı. \
 Meraklı, sakin ve samimi bir iz sürücüsün; kısa ve net konuşursun. Kullanıcı hangi dilde yazarsa o dilde cevap ver (çoğunlukla Türkçe).\n\n\
 Görevin: kullanıcının isteğine uygun mod, modpack, shader ve resource pack bulmak.\n\
 - Önerdiğin her içeriği search_content ile bulmuş olmalısın; aramada çıkmayan bir projeyi asla önerme ya da uydurma.\n\
@@ -111,7 +111,7 @@ fn tools() -> Value {
         },
         {
             "name": "list_instances",
-            "description": "Kullanıcının West Launcher'daki instance'larını (ad, Minecraft sürümü, loader) listeler.",
+            "description": "Kullanıcının West Client'daki instance'larını (ad, Minecraft sürümü, loader) listeler.",
             "strict": true,
             "input_schema": { "type": "object", "additionalProperties": false, "properties": {}, "required": [] }
         },

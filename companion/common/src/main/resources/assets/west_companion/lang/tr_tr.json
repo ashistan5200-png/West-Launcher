@@ -11,6 +11,6 @@
   "west_companion.gc.done": "%s MB bellek boşaltıldı",
   "west_companion.fullbright.server_hint": "Bazı sunucular FullBright'ı yasaklayabilir",
   "west_companion.fullbright.server_warning": "[West] FullBright açık — bazı sunucular bunu yasaklayabilir. Sağ Shift ile kapatabilirsin.",
-  "key.categories.west_companion": "West Launcher",
+  "key.categories.west_companion": "West Client",
   "key.west_companion.panel": "West Paneli'ni aç"
 }

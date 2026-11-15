@@ -42,6 +42,7 @@ pub fn run() {
         .plugin(tauri_plugin_clipboard_manager::init())
         .manage(state)
         .setup(move |app| {
+            remove_old_install();
             let window = app.get_webview_window("main").expect("main window");
             commands::window::apply_effect(&window, &effect);
             commands::updater::spawn_background(app.handle().clone());
@@ -159,5 +160,27 @@ pub fn run() {
             commands::news::news_export,
         ])
         .run(tauri::generate_context!())
-        .expect("West Launcher başlatılamadı");
+        .expect("West Client başlatılamadı");
 }
+
+/// "West Launcher" adıyla kurulmuş eski sürümü (yeni ad = yeni kurulum klasörü)
+/// sessizce kaldırır. Kullanıcı verileri ayrı klasörde (`WestLauncher`) olduğu için korunur.
+#[cfg(windows)]
+pub fn remove_old_install() {
+    std::thread::spawn(|| {
+        std::thread::sleep(std::time::Duration::from_secs(15));
+        let Some(local) = std::env::var_os("LOCALAPPDATA") else { return };
+        let old = std::path::Path::new(&local).join("West Launcher");
+        let un = old.join("uninstall.exe");
+        let me = std::env::current_exe().ok();
+        if !un.exists() || me.map(|m| m.starts_with(&old)).unwrap_or(true) {
+            return;
+        }
+        tracing::info!("eski West Launcher kurulumu kaldırılıyor: {}", old.display());
+        use std::os::windows::process::CommandExt;
+        let _ = std::process::Command::new(&un).arg("/S").creation_flags(0x0800_0000).spawn();
+    });
+}
+
+#[cfg(not(windows))]
+pub fn remove_old_install() {}

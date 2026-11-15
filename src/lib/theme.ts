@@ -50,8 +50,13 @@ export function applyTheme(t: ThemeSettings) {
  * Mat, düşük doygunluklu vurgu seti. Hepsi antrasit zeminde okunur kalır,
  * hiçbiri neon/parlama hissi vermez (HSL doygunluk ≈ %20–35).
  */
+export const DEFAULT_ACCENT = "#e8a25c";
+/** Eski varsayılan: yeni tasarıma geçerken bu değer yeni varsayılana çevrilir. */
+export const LEGACY_DEFAULT_ACCENT = "#7fa7c9";
+
 export const ACCENT_PRESETS = [
-  "#7fa7c9", // buz mavisi (varsayılan)
+  "#e8a25c", // West gün batımı (varsayılan)
+  "#7fa7c9", // buz mavisi
   "#79a88a", // adaçayı yeşili
   "#6aa6a2", // mat petrol
   "#9aa4b2", // arduvaz

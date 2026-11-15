@@ -7,6 +7,7 @@ import { useInstances } from "@/stores/instances";
 import { useSettings } from "@/stores/settings";
 import { useAshi, useHuntRunning } from "@/stores/ashi";
 import { InstanceIcon } from "@/components/InstanceIcon";
+import { CoverArt } from "@/components/CoverArt";
 import { Modal } from "@/components/Modal";
 import { ContentTab } from "@/components/instance/ContentTab";
 import { FilesTab, LogsTab, ShareTab, WorldsTab } from "@/components/instance/OtherTabs";
@@ -51,6 +52,8 @@ export function InstancePage() {
   return (
     <div className="stack ipage">
       <header className="ihead">
+        <CoverArt seed={inst.id} className="ihead-art" wide />
+        <div className="ihead-shade" />
         <InstanceIcon instance={inst} size={76} />
         <div className="grow ihead-text">
           <h1 className="truncate">{inst.name}</h1>

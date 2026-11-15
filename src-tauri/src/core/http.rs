@@ -24,7 +24,7 @@ pub struct Http {
 impl Http {
     pub fn new() -> Self {
         let client = reqwest::Client::builder()
-            .user_agent(concat!("WestLauncher/", env!("CARGO_PKG_VERSION")))
+            .user_agent(concat!("WestClient/", env!("CARGO_PKG_VERSION")))
             .connect_timeout(Duration::from_secs(10))
             .timeout(Duration::from_secs(300))
             .pool_max_idle_per_host(32)

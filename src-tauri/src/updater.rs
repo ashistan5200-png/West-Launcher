@@ -112,7 +112,7 @@ pub async fn check_against(http: &Http, current: &str) -> Result<Option<UpdateIn
     Ok(Some(UpdateInfo {
         current: current.into(),
         version: rel.tag_name.trim_start_matches('v').to_string(),
-        title: rel.name.unwrap_or_else(|| format!("West Launcher {}", rel.tag_name)),
+        title: rel.name.unwrap_or_else(|| format!("West Client {}", rel.tag_name)),
         notes: rel.body.unwrap_or_default(),
         published_at: rel.published_at,
         page_url: rel.html_url,

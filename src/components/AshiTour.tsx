@@ -17,7 +17,7 @@ interface Step {
 const STEPS: Step[] = [
   {
     title: "Selam, ben Ashi!",
-    text: "West Launcher'a hoş geldin. Sana birkaç dakikada her şeyi gezdireyim; istediğin an geçebilirsin.",
+    text: "West Client'a hoş geldin. Sana birkaç dakikada her şeyi gezdireyim; istediğin an geçebilirsin.",
     more: "Ben bu launcher'ın rehberi ve iz sürücüsüyüm: mod bulurum, çöken paketlerde suçlu modu yakalarım, sorularını cevaplarım.",
     mood: "wave",
   },
@@ -99,7 +99,7 @@ export function AshiTour() {
     ? scanning && !found
       ? "Bilgisayarında başka launcher var mı diye bakıyorum…"
       : launchers.length
-        ? `Bilgisayarında ${launchers.join(", ")} tespit ettim (${found!.length} instance). Mevcut modpack'lerini ve ayarlarını West Launcher'a hemen aktarmak ister misin?`
+        ? `Bilgisayarında ${launchers.join(", ")} tespit ettim (${found!.length} instance). Mevcut modpack'lerini ve ayarlarını West Client'a hemen aktarmak ister misin?`
         : "Başka bir launcher bulamadım. İleride Kütüphane'den bir klasör seçip aktarım yapabilirsin."
     : step.text;
   const mood: AshiMood = isImport ? (launchers.length ? "think" : "wave") : step.mood;

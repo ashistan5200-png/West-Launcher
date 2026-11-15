@@ -64,9 +64,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: ${{ env.TAG }}
-          releaseName: "West Launcher ${{ env.TAG }}"
+          releaseName: "West Client ${{ env.TAG }}"
           # Sürüm notları = son commit mesajı (launcher'daki güncelleme penceresinde gösterilir)
-          releaseBody: ${{ github.event.head_commit.message || 'West Launcher güncellemesi' }}
+          releaseBody: ${{ github.event.head_commit.message || 'West Client güncellemesi' }}
           releaseDraft: false
           args: ${{ matrix.args }}
 
@@ -85,6 +85,8 @@ jobs:
                             cp "$(ls $B/release/bundle/appimage/*.AppImage | head -1)" West-Launcher-Linux.AppImage
                             F="West-Launcher-Linux.deb West-Launcher-Linux.AppImage" ;;
           esac
+          # Yeni adlı kopyalar (indirme sayfası); eski adlar eski sürümlerin otomatik güncellemesi için kalır
+          for f in $F; do cp "$f" "${f/West-Launcher/West-Client}"; F="$F ${f/West-Launcher/West-Client}"; done
           gh release upload "$TAG" $F --clobber
 
   # İndirme sayfasını GitHub Pages'e yayınla

@@ -117,7 +117,7 @@ pub fn build_args(paths: &Paths, version: &VersionJson, libs: &ResolvedLibraries
         ("user_properties", "{}".into()),
         ("version_type", version.kind.clone().unwrap_or_else(|| "release".into())),
         ("natives_directory", opts.natives_dir.display().to_string()),
-        ("launcher_name", "WestLauncher".into()),
+        ("launcher_name", "WestClient".into()),
         ("launcher_version", env!("CARGO_PKG_VERSION").into()),
         ("classpath", classpath.clone()),
         ("classpath_separator", sep.into()),

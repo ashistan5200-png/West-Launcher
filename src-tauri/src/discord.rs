@@ -81,7 +81,7 @@ fn worker(rx: Receiver<Presence>, mut client_id: Option<String>, mut enabled: bo
             continue;
         }
         let c = client.as_mut().unwrap();
-        let assets = activity::Assets::new().large_image("west").large_text("West Launcher");
+        let assets = activity::Assets::new().large_image("west").large_text("West Client");
         let res = match &current {
             Presence::Playing { instance, detail, started_unix } => c.set_activity(
                 activity::Activity::new()

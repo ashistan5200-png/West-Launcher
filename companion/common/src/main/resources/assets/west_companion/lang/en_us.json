@@ -11,6 +11,6 @@
   "west_companion.gc.done": "Freed %s MB",
   "west_companion.fullbright.server_hint": "Some servers may forbid FullBright",
   "west_companion.fullbright.server_warning": "[West] FullBright is on — some servers may forbid it. Press Right Shift to turn it off.",
-  "key.categories.west_companion": "West Launcher",
+  "key.categories.west_companion": "West Client",
   "key.west_companion.panel": "Open West Panel"
 }

@@ -31,7 +31,7 @@ export function ScreenshotEditor({ shot }: { shot: Screenshot }) {
   const [aspect, setAspect] = useState<number | null>(null);
   const [color, setColor] = useState(COLORS[0]);
   const [size, setSize] = useState(8);
-  const [text, setText] = useState("West Launcher");
+  const [text, setText] = useState("West Client");
   const [busy, setBusy] = useState<string | null>(null);
   const [draftCrop, setDraftCrop] = useState<Rect | null>(null);
   const view = useRef<HTMLCanvasElement>(null);

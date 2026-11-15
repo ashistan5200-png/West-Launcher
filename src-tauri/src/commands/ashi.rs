@@ -1,4 +1,4 @@
-//! Ashi — West Launcher'ın maskotu ve Otomatik Suçlu Avcısı.
+//! Ashi — West Client'ın maskotu ve Otomatik Suçlu Avcısı.
 //! Planlama `crash::bisect`'te; burada her turu gerçekten oyunu açarak koşarız.
 
 use super::launch::{kill_game, start_game, LaunchMode};

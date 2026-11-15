@@ -92,7 +92,7 @@ export function ImportWizard() {
           {scanning && !found
             ? "Bilgisayarını tarıyorum…"
             : all.length
-              ? `Bilgisayarında ${groups.map(([l]) => LAUNCHER_LABEL[l]).join(", ")} buldum. Modpack'lerini, modlarını ve ayarlarını West Launcher'a hemen aktarmak ister misin? Orijinal dosyalarına dokunmam, sadece kopyalarım.`
+              ? `Bilgisayarında ${groups.map(([l]) => LAUNCHER_LABEL[l]).join(", ")} buldum. Modpack'lerini, modlarını ve ayarlarını West Client'a hemen aktarmak ister misin? Orijinal dosyalarına dokunmam, sadece kopyalarım.`
               : "Bilinen konumlarda başka bir launcher bulamadım. Taşınabilir bir MultiMC/Prism ya da farklı bir .minecraft klasörün varsa \"Klasör seç…\" ile gösterebilirsin."}
         </p>
         <button className="icon-btn" title="Yeniden tara" disabled={scanning || running} onClick={() => scan()}><RefreshCw size={15} className={clsx(scanning && "spin")} /></button>

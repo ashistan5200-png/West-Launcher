@@ -1,32 +1,51 @@
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Play, Plus, Clock, Square, Loader2 } from "lucide-react";
+import { motion } from "framer-motion";
+import { ArrowRight, Boxes, Clock, Compass, Download, Loader2, Newspaper, Play, Plus, Square, Timer, UserRound } from "lucide-react";
 import { useInstances } from "@/stores/instances";
 import { useSettings } from "@/stores/settings";
-import { InstanceCard } from "@/components/InstanceCard";
-import { InstanceIcon } from "@/components/InstanceIcon";
-import { Logo } from "@/components/Logo";
 import { useAccounts } from "@/stores/accounts";
-import { SkinThumb } from "@/components/SkinThumb";
+import { InstanceCard } from "@/components/InstanceCard";
+import { CoverArt } from "@/components/CoverArt";
+import { Logo } from "@/components/Logo";
+import { api, isTauri } from "@/lib/ipc";
+import type { PatchNote } from "@/lib/types";
 import { LOADER_LABEL, formatDuration, formatRelative } from "@/lib/format";
+
+const greet = () => {
+  const h = new Date().getHours();
+  return h < 6 ? "İyi geceler" : h < 12 ? "Günaydın" : h < 18 ? "İyi günler" : "İyi akşamlar";
+};
 
 export function HomePage() {
   const navigate = useNavigate();
   const { instances, running, launching, launch, kill } = useInstances();
-  const { offlineName, setOfflineName } = useSettings();
+  const offlineName = useSettings((s) => s.offlineName);
   const account = useAccounts((s) => s.accounts.find((a) => a.active) ?? null);
-  const accountSkin = useAccounts((s) => s.skins.find((k) => k.id === account?.skinId) ?? null);
-  const playable = instances.filter((i) => !i.isTemplate);
+  const playable = useMemo(
+    () => instances.filter((i) => !i.isTemplate).sort((a, b) => (b.lastPlayed ?? "").localeCompare(a.lastPlayed ?? "")),
+    [instances],
+  );
   const hero = playable[0];
+  const totalSecs = playable.reduce((s, i) => s + i.totalPlaySecs, 0);
+  const [news, setNews] = useState<PatchNote[]>([]);
+  useEffect(() => {
+    if (isTauri()) api.newsPatchNotes().then((n) => setNews(n.slice(0, 3))).catch(() => {});
+  }, []);
 
   if (!hero) {
     return (
-      <div className="empty">
-        <Logo size={40} />
-        <h2>West Launcher'a hoş geldin</h2>
-        <p className="muted">İlk instance'ını oluştur veya başka bir launcher'dan içe aktar.</p>
-        <button className="btn btn-primary" onClick={() => navigate("/library?new=1")}>
-          <Plus size={16} /> Instance oluştur
-        </button>
+      <div className="welcome">
+        <CoverArt seed="west-client" className="welcome-art" wide />
+        <div className="welcome-body">
+          <Logo size={44} />
+          <h1>West Client'a hoş geldin</h1>
+          <p className="muted">İlk instance'ını oluştur ya da başka bir launcher'daki paketlerini taşı.</p>
+          <div className="row" style={{ justifyContent: "center", gap: 10 }}>
+            <button className="btn btn-primary btn-xl" onClick={() => navigate("/library?new=1")}><Plus size={18} /> Instance oluştur</button>
+            <button className="btn btn-ghost btn-xl" onClick={() => navigate("/browse")}><Compass size={18} /> Modpack keşfet</button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -35,57 +54,85 @@ export function HomePage() {
   const heroLaunching = !!launching[hero.id];
 
   return (
-    <div className="stack-lg">
-      <section className="hero card">
-        <InstanceIcon instance={hero} size={72} />
-        <div className="hero-text">
-          <span className="eyebrow">Kaldığın yerden devam et</span>
-          <h1>{hero.name}</h1>
-          <div className="chips">
-            <span className="chip">{LOADER_LABEL[hero.loader.kind]}</span>
-            <span className="chip">{hero.mcVersion}</span>
-            <span className="chip"><Clock size={12} /> {formatDuration(hero.totalPlaySecs)}</span>
-            <span className="muted small">{formatRelative(hero.lastPlayed)}</span>
+    <div className="home">
+      <motion.section className="hero2" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
+        <CoverArt seed={hero.id} className="hero2-art" wide />
+        <div className="hero2-shade" />
+        <div className="hero2-body">
+          <span className="eyebrow2">{greet()}{account ? `, ${account.username}` : ""} · kaldığın yerden devam et</span>
+          <h1 className="hero2-title">{hero.name}</h1>
+          <div className="hero2-meta">
+            <span className={`loader-badge ${hero.loader.kind}`}>{LOADER_LABEL[hero.loader.kind]}</span>
+            <span>Minecraft {hero.mcVersion}</span>
+            <span className="dot" />
+            <span><Timer size={14} /> {formatDuration(hero.totalPlaySecs)}</span>
+            <span className="dot" />
+            <span><Clock size={14} /> {formatRelative(hero.lastPlayed)}</span>
+          </div>
+          <div className="hero2-actions">
+            <button
+              className={`btn hero2-play ${heroRunning ? "btn-danger" : "btn-primary"}`}
+              disabled={heroLaunching}
+              onClick={() => (heroRunning ? kill(hero.id) : launch(hero.id, offlineName))}
+            >
+              {heroLaunching ? <Loader2 size={20} className="spin" /> : heroRunning ? <Square size={17} fill="currentColor" /> : <Play size={20} fill="currentColor" />}
+              {heroLaunching ? "Hazırlanıyor…" : heroRunning ? "Durdur" : "Oyna"}
+            </button>
+            <button className="btn btn-glass" onClick={() => navigate(`/instance/${hero.id}`)}>Instance'ı aç <ArrowRight size={16} /></button>
           </div>
         </div>
-        <div className="hero-actions">
-          {account ? (
-            <button className="account-chip" onClick={() => navigate("/skins")} title="Hesabı değiştir">
-              {accountSkin ? <SkinThumb dataUrl={accountSkin.dataUrl} slim={accountSkin.slim} height={30} /> : null}
-              <span>
-                <strong>{account.username}</strong>
-                <span className="muted tiny">{account.kind === "microsoft" ? "Microsoft" : "Offline"}</span>
-              </span>
-            </button>
-          ) : (
-            <input
-              className="input-sm"
-              value={offlineName}
-              onChange={(e) => setOfflineName(e.target.value)}
-              placeholder="Offline kullanıcı adı"
-              title="Hesap eklemek için Skin ve hesaplar sayfasına git"
-            />
-          )}
-          <button
-            className={`btn btn-xl ${heroRunning ? "btn-danger" : "btn-primary"}`}
-            disabled={heroLaunching}
-            onClick={() => (heroRunning ? kill(hero.id) : launch(hero.id, offlineName))}
-          >
-            {heroLaunching ? <Loader2 size={18} className="spin" /> : heroRunning ? <Square size={16} fill="currentColor" /> : <Play size={18} fill="currentColor" />}
-            {heroLaunching ? "Hazırlanıyor" : heroRunning ? "Durdur" : "Oyna"}
-          </button>
-        </div>
+      </motion.section>
+
+      <section className="stat-row">
+        <Stat icon={Timer} label="Toplam oyun süresi" value={formatDuration(totalSecs)} />
+        <Stat icon={Boxes} label="Instance" value={String(playable.length)} onClick={() => navigate("/library")} />
+        <Stat icon={UserRound} label="Hesap" value={account?.username ?? "Ekle"} sub={account ? (account.kind === "microsoft" ? "Microsoft" : "Offline") : undefined} onClick={() => navigate("/skins")} />
+        <Stat icon={Download} label="İçerik bul" value="Keşfet" sub="Modrinth + CurseForge" onClick={() => navigate("/browse")} />
       </section>
 
-      <section>
-        <div className="section-head">
-          <h2>Son oynananlar</h2>
-          <button className="btn btn-ghost btn-sm" onClick={() => navigate("/library")}>Tümü</button>
-        </div>
-        <div className="grid">
-          {playable.slice(1, 9).map((i) => <InstanceCard key={i.id} instance={i} />)}
-        </div>
-      </section>
+      {playable.length > 1 && (
+        <section>
+          <div className="section-head2">
+            <h2>Son oynananlar</h2>
+            <button className="btn-link" onClick={() => navigate("/library")}>Tümünü gör <ArrowRight size={14} /></button>
+          </div>
+          <div className="grid2">{playable.slice(1, 7).map((i) => <InstanceCard key={i.id} instance={i} />)}</div>
+        </section>
+      )}
+
+      {news.length > 0 && (
+        <section>
+          <div className="section-head2">
+            <h2>Minecraft'ta neler var</h2>
+            <button className="btn-link" onClick={() => navigate("/news")}>Haberler <ArrowRight size={14} /></button>
+          </div>
+          <div className="news-row">
+            {news.map((n) => (
+              <button key={n.id} className="news-card" onClick={() => navigate("/news")}>
+                {n.image ? <img src={n.image} alt="" loading="lazy" /> : <CoverArt seed={n.id} className="news-card-art" />}
+                <div className="news-card-body">
+                  <span className={`news-kind ${n.kind}`}><Newspaper size={12} /> {n.kind === "snapshot" ? "Snapshot" : "Sürüm"} {n.version}</span>
+                  <strong className="clamp-2">{n.title}</strong>
+                </div>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
+  );
+}
+
+function Stat({ icon: Icon, label, value, sub, onClick }: { icon: typeof Timer; label: string; value: string; sub?: string; onClick?: () => void }) {
+  const Tag = onClick ? "button" : "div";
+  return (
+    <Tag className={`stat ${onClick ? "clickable" : ""}`} onClick={onClick}>
+      <span className="stat-ico"><Icon size={18} /></span>
+      <span className="stat-text">
+        <span className="stat-label">{label}</span>
+        <strong className="truncate">{value}</strong>
+        {sub && <span className="tiny muted">{sub}</span>}
+      </span>
+    </Tag>
   );
 }

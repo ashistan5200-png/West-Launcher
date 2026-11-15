@@ -9,7 +9,7 @@ const DURATION_MS = 2300;
 
 /**
  * Sinematik açılış: pusula halkası belirir, iğne hızla dönüp ease-out ile
- * yavaşlayarak logodaki batı-eğik konumunda durur, ardından "West Launcher"
+ * yavaşlayarak logodaki batı-eğik konumunda durur, ardından "West Client"
  * yazısı belirir ve ekran yumuşakça arayüze geçer. Tıklayınca atlanır.
  */
 export function Splash() {
@@ -29,7 +29,7 @@ export function Splash() {
           onClick={finishSplash}
           exit={{ opacity: 0, scale: 1.015 }}
           transition={{ duration: 0.45, ease: [0.4, 0, 0.2, 1] }}
-          aria-label="West Launcher açılıyor"
+          aria-label="West Client açılıyor"
         >
           <div className="splash-compass">
             <motion.svg
@@ -62,7 +62,7 @@ export function Splash() {
             animate={{ opacity: 1, y: 0, letterSpacing: "0.04em" }}
             transition={{ duration: 0.9, delay: reduce ? 0 : 1.1, ease: [0.22, 1, 0.36, 1] }}
           >
-            West Launcher
+            West Client
           </motion.h1>
           <motion.span className="splash-sub" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: reduce ? 0 : 1.5 }}>
             Rotanı belirle.

@@ -216,7 +216,7 @@ export function ShareTab({ instance }: { instance: Instance }) {
         <h3><Share2 size={17} /> Modpack olarak paylaş</h3>
         <p className="small">
           Bu instance'ı tek bir <code>.mrpack</code> dosyasına dönüştürür. Modrinth'te bulunan modlar pakete bağlantı olarak eklenir, böylece dosya küçük kalır; bulunamayanlar ve seçtiğin ayarlar pakete gömülür.
-          Arkadaşın dosyayı West Launcher, Modrinth App ya da Prism Launcher ile açabilir.
+          Arkadaşın dosyayı West Client, Modrinth App ya da Prism Launcher ile açabilir.
         </p>
         <label className="field"><span>Paket sürümü</span><input value={version} onChange={(e) => setVersion(e.target.value)} /></label>
         {available.length > 0 && (
