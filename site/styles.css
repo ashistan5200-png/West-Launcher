@@ -259,3 +259,42 @@ main, footer { position: relative; z-index: 1; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
   .reveal { opacity: 1; transform: none; }
 }
+
+/* ───── Hesap sayfası (e-posta bağlantıları) ───── */
+.acct-page { min-height: 100vh; background: radial-gradient(800px 500px at 15% -10%, rgb(232 162 92 / .18), transparent 60%), radial-gradient(700px 500px at 110% 110%, rgb(110 168 214 / .14), transparent 60%), var(--bg); }
+.acct { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; padding: 40px 20px; position: relative; z-index: 1; }
+.acct-card { width: min(460px, 100%); padding: 34px 30px; border-radius: 24px; background: rgb(21 22 29 / .9); border: 1px solid var(--line); box-shadow: 0 40px 100px rgb(0 0 0 / .55); backdrop-filter: blur(12px); animation: rise-in .6s cubic-bezier(.2,.8,.2,1); }
+@keyframes rise-in { from { opacity: 0; transform: translateY(20px) scale(.98); } }
+.acct-state { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; }
+.acct-state[hidden] { display: none; }
+.acct-state h1 { font-size: 26px; }
+.acct-ico { width: 64px; height: 64px; border-radius: 20px; display: grid; place-items: center; font-size: 30px; font-weight: 800; background: rgb(232 162 92 / .14); color: var(--amber); }
+.acct-ico.ok { background: rgb(112 196 142 / .16); color: var(--green); animation: pop-in .5s cubic-bezier(.3,1.6,.5,1); }
+.acct-ico.bad { background: rgb(236 90 130 / .16); color: var(--pink); }
+@keyframes pop-in { from { transform: scale(.4); opacity: 0; } }
+.acct-field { width: 100%; display: flex; flex-direction: column; gap: 6px; text-align: left; font-size: 14px; font-weight: 600; color: var(--muted); }
+.acct-field input { height: 48px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: #0d0e13; color: var(--text); font: inherit; font-size: 16px; outline: none; transition: border-color .2s, box-shadow .2s; }
+.acct-field input:focus { border-color: rgb(232 162 92 / .6); box-shadow: 0 0 0 4px rgb(232 162 92 / .12); }
+.acct-check { align-self: flex-start; display: flex; gap: 8px; align-items: center; font-size: 14px; color: var(--muted); }
+.acct-check input { accent-color: var(--amber); width: 16px; height: 16px; }
+.acct-error { width: 100%; padding: 10px 12px; border-radius: 10px; background: rgb(236 90 130 / .12); color: #f2a3b8; font-size: 14px; text-align: left; }
+.acct .btn { width: 100%; }
+.acct .btn:disabled { opacity: .55; pointer-events: none; }
+.meter { width: 100%; display: flex; align-items: center; gap: 5px; margin-top: -6px; }
+.meter i { flex: 1; height: 4px; border-radius: 2px; background: rgb(255 255 255 / .08); transition: background .2s; }
+.meter small { width: 70px; text-align: right; color: var(--muted); font-size: 12px; }
+.meter[data-level="0"] i:nth-child(-n+1), .meter[data-level="1"] i:nth-child(-n+1) { background: var(--pink); }
+.meter[data-level="2"] i:nth-child(-n+2) { background: var(--amber); }
+.meter[data-level="3"] i:nth-child(-n+3), .meter[data-level="4"] i:nth-child(-n+4) { background: var(--green); }
+.acct-foot { font-size: 13px; }
+.spinner { width: 34px; height: 34px; border-radius: 50%; border: 3px solid rgb(255 255 255 / .1); border-top-color: var(--amber); animation: spinr 0.9s linear infinite; }
+@keyframes spinr { to { transform: rotate(360deg); } }
+
+/* ───── Canlı topluluk ───── */
+.community { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 48px; }
+.community .stat b { font-size: 40px; }
+.tags { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 22px; min-height: 38px; }
+.tags span { padding: 7px 14px; border-radius: 999px; background: rgb(232 162 92 / .1); border: 1px solid rgb(232 162 92 / .25); color: var(--amber2); font-weight: 700; font-size: 14px; animation: rise-in .5s both; }
+.live-dot { display: inline-block; width: 8px; height: 8px; border-radius: 4px; background: var(--green); box-shadow: 0 0 0 0 rgb(112 196 142 / .6); animation: live 1.8s infinite; margin-right: 6px; vertical-align: 1px; }
+@keyframes live { 70% { box-shadow: 0 0 0 10px rgb(112 196 142 / 0); } 100% { box-shadow: 0 0 0 0 rgb(112 196 142 / 0); } }
+@media (max-width: 700px) { .community { grid-template-columns: 1fr; } }

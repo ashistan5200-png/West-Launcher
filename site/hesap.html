@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>West hesabı — West Client</title>
+<link rel="icon" href="assets/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="acct-page">
+<div class="motes" id="motes"></div>
+<main class="acct">
+  <a class="brand" href="./"><img src="assets/icon-256.png" alt=""> West <b>Client</b></a>
+  <section class="acct-card" id="card">
+    <div class="acct-state" id="loading"><span class="spinner"></span><p class="muted">Bağlantı kontrol ediliyor…</p></div>
+
+    <div class="acct-state" id="confirmed" hidden>
+      <div class="acct-ico ok">✓</div>
+      <h1>E-postan doğrulandı!</h1>
+      <p class="muted">West hesabın hazır. Şimdi West Client'a dön ve <b>Skin ve hesaplar → West hesabı → Giriş yap</b> ile e-postan ve şifrenle giriş yap.</p>
+      <a class="btn btn-ghost" href="./">West Client'ın sitesine git</a>
+    </div>
+
+    <form class="acct-state" id="reset" hidden novalidate>
+      <div class="acct-ico">🔑</div>
+      <h1>Yeni şifre belirle</h1>
+      <p class="muted" id="resetFor">West hesabın için yeni bir şifre seç.</p>
+      <label class="acct-field"><span>Yeni şifre</span><input id="pw1" type="password" autocomplete="new-password" minlength="8" required></label>
+      <div class="meter" id="meter"><i></i><i></i><i></i><i></i><small></small></div>
+      <label class="acct-field"><span>Yeni şifre (tekrar)</span><input id="pw2" type="password" autocomplete="new-password" minlength="8" required></label>
+      <label class="acct-check"><input type="checkbox" id="show"> Şifreyi göster</label>
+      <p class="acct-error" id="resetErr" hidden></p>
+      <button class="btn btn-primary" type="submit" id="resetBtn">Şifreyi değiştir</button>
+    </form>
+
+    <div class="acct-state" id="resetDone" hidden>
+      <div class="acct-ico ok">✓</div>
+      <h1>Şifren değişti</h1>
+      <p class="muted">West Client'a dön ve yeni şifrenle giriş yap. Güvenliğin için bu sayfadaki oturum kapatıldı.</p>
+      <a class="btn btn-ghost" href="./">West Client'ın sitesine git</a>
+    </div>
+
+    <div class="acct-state" id="failed" hidden>
+      <div class="acct-ico bad">!</div>
+      <h1 id="failTitle">Bağlantı geçersiz</h1>
+      <p class="muted" id="failText">Bu bağlantı kullanılmış ya da süresi dolmuş olabilir.</p>
+      <a class="btn btn-ghost" href="./">West Client'ın sitesine git</a>
+    </div>
+
+    <div class="acct-state" id="nothing" hidden>
+      <div class="acct-ico">🧭</div>
+      <h1>West hesabı</h1>
+      <p class="muted">Bu sayfa, West hesabı e-postalarındaki bağlantılar içindir. Hesap oluşturmak ya da giriş yapmak için West Client'ı aç: <b>Skin ve hesaplar → West hesabı</b>.</p>
+      <a class="btn btn-primary" href="./#indir">West Client'ı indir</a>
+    </div>
+  </section>
+  <p class="acct-foot muted">Şifren yalnızca West hesap sunucusuna gönderilir; bu sayfa onu saklamaz.</p>
+</main>
+<script src="config.js"></script>
+<script src="hesap.js"></script>
+</body>
+</html>

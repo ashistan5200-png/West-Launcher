@@ -1,6 +1,6 @@
 /* West Client tanıtım sitesi — bağımlılıksız */
 (() => {
-  const REPO = "ashistan5200-png/West-Launcher";
+  const { repo: REPO, supabaseUrl: SB, supabaseKey: SBKEY } = window.WEST;
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -281,4 +281,26 @@
     .catch(() => {
       $("#timeline").innerHTML = `<p class="muted center">Güncelleme notları şu an yüklenemedi. <a class="amber" href="https://github.com/${REPO}/releases" target="_blank" rel="noopener">GitHub'da gör →</a></p>`;
     });
+
+  // ───────── Canlı topluluk (yalnızca toplam sayılar ve gündem etiketleri) ─────────
+  const sbCount = async (path) => {
+    const resp = await fetch(`${SB}/rest/v1/${path}`, { headers: { apikey: SBKEY, Prefer: "count=exact", Range: "0-0" } });
+    if (!resp.ok) throw new Error(String(resp.status));
+    return +(resp.headers.get("content-range") || "").split("/")[1] || 0;
+  };
+  const setCount = (el, n) => { el.dataset.count = String(n); el.textContent = "0"; };
+  Promise.all([
+    sbCount("profiles?select=id"),
+    sbCount("posts?select=id&repost_of=is.null"),
+    sbCount(`posts?select=id&created_at=gt.${new Date(Date.now() - 86400e3).toISOString()}`),
+  ]).then(([users, posts, today]) => {
+    if (users < 1) return; // henüz kimse yoksa bölümü gösterme
+    setCount($("#cUsers"), users); setCount($("#cPosts"), posts); setCount($("#cToday"), today);
+    const sec = $("#topluluk");
+    sec.hidden = false;
+    $$(".reveal", sec).forEach((el) => io.observe(el));
+    return fetch(`${SB}/rest/v1/rpc/trending_tags`, { method: "POST", headers: { apikey: SBKEY, "Content-Type": "application/json" }, body: JSON.stringify({ p_limit: 12 }) })
+      .then((resp) => (resp.ok ? resp.json() : []))
+      .then((tags) => { $("#cTags").innerHTML = tags.map((t, i) => `<span style="animation-delay:${i * 0.05}s">#${esc(t.tag)}</span>`).join(""); });
+  }).catch(() => {});
 })();

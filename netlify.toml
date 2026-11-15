@@ -1,0 +1,32 @@
+# West Client tanıtım sitesi — Netlify
+# Derleme yok: site/ klasörü olduğu gibi yayınlanır.
+[build]
+  publish = "site"
+  command = ""
+
+# Supabase e-posta bağlantıları (kayıt doğrulama, şifre sıfırlama) buraya gelir
+[[redirects]]
+  from = "/hesap"
+  to = "/hesap.html"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://api.github.com https://sicijptcjixnwgnrsibs.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+# Hesap sayfası arama motorlarında görünmesin
+[[headers]]
+  for = "/hesap.html"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+    Cache-Control = "no-store"
