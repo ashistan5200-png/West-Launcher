@@ -114,10 +114,10 @@ export function SettingsPage() {
         </label>
         {settings.discordRpc && (
           <label className="field">
-            <span>Discord uygulama kimliği</span>
+            <span>Discord uygulama kimliği <span className="muted">(isteğe bağlı)</span></span>
             <input
               spellCheck={false}
-              placeholder="Discord Developer Portal → Applications → Application ID"
+              placeholder="Boş bırak: West Client'ın kendi Discord uygulaması kullanılır"
               defaultValue={settings.discordClientId ?? ""}
               onBlur={(e) => update({ discordClientId: e.target.value.trim() || null })}
             />

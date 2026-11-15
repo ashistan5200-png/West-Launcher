@@ -7,6 +7,9 @@ use std::sync::mpsc::{channel, Receiver, RecvTimeoutError, Sender};
 use std::time::Duration;
 
 #[derive(Debug, Clone)]
+/// West Client'ın Discord Developer Portal'daki uygulama kimliği (gizli değil).
+pub const DEFAULT_APP_ID: &str = "1571515539149422734";
+
 pub enum Presence {
     Idle,
     Playing { instance: String, detail: String, started_unix: i64 },
@@ -68,7 +71,11 @@ fn worker(rx: Receiver<Presence>, mut client_id: Option<String>, mut enabled: bo
                 }
             }
         }
-        let Some(id) = client_id.clone().filter(|_| enabled) else { continue };
+        if !enabled {
+            continue;
+        }
+        // Kullanıcı kendi uygulama kimliğini girmediyse West Client'ın resmi Discord uygulaması
+        let id = client_id.clone().filter(|s| !s.trim().is_empty()).unwrap_or_else(|| DEFAULT_APP_ID.to_string());
         if client.is_none() {
             let Ok(mut c) = DiscordIpcClient::new(&id) else { continue };
             if c.connect().is_err() {
