@@ -453,3 +453,23 @@ export interface World { folder: string; size: number; lastPlayed: number | null
 export interface LogFile { path: string; size: number; modified: number; crash: boolean }
 export interface FileEntry { name: string; dir: boolean; size: number; modified: number }
 export interface ExportReport { path: string; linked: number; embedded: number }
+
+// ───────── Oyun modları (Build / PvP …) ─────────
+export interface GameMode {
+  id: string;
+  name: string;
+  icon: string;
+  enabled: string[];
+  disabled: string[];
+  hasOptions: boolean;
+}
+export interface GameModes {
+  modes: GameMode[];
+  active: string | null;
+}
+export interface ModeApplyReport {
+  enabled: number;
+  disabled: number;
+  optionsRestored: boolean;
+  missing: number;
+}

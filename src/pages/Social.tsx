@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { NavLink, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { open as openUrl } from "@tauri-apps/plugin-shell";
 import {
   ArrowLeft, AtSign, BadgeCheck, Bell, Bookmark, CalendarDays, Check, ChevronLeft, ChevronRight, Flag, Globe2, Hash, Heart, Home, ImagePlus,
@@ -13,6 +12,7 @@ import * as S from "@/lib/social";
 import type { Post, Profile } from "@/lib/social";
 import { useWest } from "@/stores/west";
 import { useSocial } from "@/stores/social";
+import { pickCropped } from "@/components/ImageCropper";
 import { Avatar, PostCard, RichText, ago } from "@/components/social/PostCard";
 import { Composer, ComposeModal } from "@/components/social/Composer";
 import { WestAccountCard } from "@/components/WestAccountCard";
@@ -545,10 +545,17 @@ function EditProfileModal({ open, onClose, profile, onSaved }: { open: boolean; 
   const [error, setError] = useState<string | null>(null);
   useEffect(() => { if (open) { setD(profile); setError(null); } }, [open, profile]);
   const upload = async (field: "avatar_url" | "banner_url") => {
-    const path = await openDialog({ multiple: false, filters: [{ name: "Görsel", extensions: ["png", "jpg", "jpeg", "webp", "gif"] }] });
-    if (typeof path !== "string") return;
-    setBusy(field);
-    try { setD({ ...d, [field]: await api.westUpload(path, field === "avatar_url" ? "avatars" : "banners") }); } catch (e) { setError(err(e)); } finally { setBusy(null); }
+    const avatar = field === "avatar_url";
+    try {
+      // Önce kırpma penceresi: konum, yakınlaştırma, döndürme
+      const path = await pickCropped(avatar
+        ? { aspect: 1, round: true, title: "Profil fotoğrafını ayarla", outWidth: 512 }
+        : { aspect: 3, title: "Banner'ı ayarla", outWidth: 1500 });
+      if (!path) return;
+      setBusy(field);
+      const url = await api.westUpload(path, avatar ? "avatars" : "banners");
+      setD((cur) => ({ ...cur, [field]: url }));
+    } catch (e) { setError(err(e)); } finally { setBusy(null); }
   };
   const links = useMemo(() => (d.links?.length ? d.links : []), [d.links]);
   const save = async () => {
@@ -568,14 +575,17 @@ function EditProfileModal({ open, onClose, profile, onSaved }: { open: boolean; 
     <Modal open={open} onClose={onClose} title="Profili düzenle" width={620}
       footer={<><button className="btn btn-ghost" onClick={onClose}>Vazgeç</button><button className="btn btn-primary" disabled={!!busy} onClick={() => void save()}>{busy === "save" && <Loader2 size={15} className="spin" />} Kaydet</button></>}>
       <div className="s-edit">
-        <div className="s-edit-banner" onClick={() => void upload("banner_url")}>
-          {d.banner_url ? <img src={d.banner_url} alt="" referrerPolicy="no-referrer" /> : <div className="s-banner-ph" />}
-          <span className="s-edit-cam">{busy === "banner_url" ? <Loader2 size={18} className="spin" /> : <ImagePlus size={18} />} Banner</span>
-          {d.banner_url && <button className="s-edit-rm" onClick={(e) => { e.stopPropagation(); setD({ ...d, banner_url: null }); }}><X size={14} /></button>}
-        </div>
-        <div className="s-edit-avatar" onClick={() => void upload("avatar_url")}>
-          <Avatar url={d.avatar_url} name={d.username} size={96} />
-          <span className="s-edit-cam round">{busy === "avatar_url" ? <Loader2 size={18} className="spin" /> : <ImagePlus size={18} />}</span>
+        <div className="s-edit-head">
+          <button type="button" className="s-edit-banner" onClick={() => void upload("banner_url")} disabled={!!busy} aria-label="Banner'ı değiştir">
+            {d.banner_url ? <img src={d.banner_url} alt="" referrerPolicy="no-referrer" /> : <div className="s-banner-ph" />}
+            <span className="s-edit-cam">{busy === "banner_url" ? <Loader2 size={18} className="spin" /> : <ImagePlus size={18} />} Banner'ı değiştir</span>
+          </button>
+          {d.banner_url && <button type="button" className="s-edit-rm" title="Banner'ı kaldır" onClick={() => setD({ ...d, banner_url: null })}><X size={14} /></button>}
+          <button type="button" className="s-edit-avatar" onClick={() => void upload("avatar_url")} disabled={!!busy} aria-label="Profil fotoğrafını değiştir">
+            <Avatar url={d.avatar_url} name={d.username} size={96} />
+            <span className="s-edit-cam round">{busy === "avatar_url" ? <Loader2 size={18} className="spin" /> : <ImagePlus size={18} />}</span>
+          </button>
+          {d.avatar_url && <button type="button" className="s-edit-rm avatar" title="Fotoğrafı kaldır" onClick={() => setD({ ...d, avatar_url: null })}><X size={12} /></button>}
         </div>
         <label className="field"><span>Görünen ad</span><input value={d.display_name ?? ""} maxLength={40} placeholder={d.username} onChange={(e) => setD({ ...d, display_name: e.target.value })} /></label>
         <label className="field"><span>Biyografi <span className="muted">({(d.bio ?? "").length}/300)</span></span><textarea rows={4} maxLength={300} value={d.bio ?? ""} placeholder="Kendinden bahset: hangi modları seversin, ne oynarsın…" onChange={(e) => setD({ ...d, bio: e.target.value })} /></label>

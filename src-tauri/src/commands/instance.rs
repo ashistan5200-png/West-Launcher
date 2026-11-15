@@ -107,3 +107,42 @@ pub fn set_instance_image(state: State<'_, AppState>, id: String, kind: String, 
     mgr.save(&inst)?;
     Ok(inst)
 }
+
+// ───────── Oyun modları (Build / PvP …) ─────────
+
+use crate::instance::modes::{self, ApplyReport, GameMode, Modes};
+
+fn not_running(state: &AppState, id: &str) -> Result<()> {
+    if state.running.lock().contains_key(id) {
+        return Err(AppError::msg("Oyun açıkken mod değiştirilemez; önce oyunu kapat."));
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn list_modes(state: State<'_, AppState>, id: String) -> Modes {
+    modes::load(&state.paths.instance_dir(&id))
+}
+
+/// Şu anki açık/kapalı içerikleri (ve isteğe bağlı options.txt'yi) yeni bir mod olarak kaydeder.
+/// `mode_id` verilirse o modu günceller.
+#[tauri::command]
+pub fn save_mode(state: State<'_, AppState>, id: String, mode_id: Option<String>, name: String, icon: String, include_options: bool) -> Result<GameMode> {
+    modes::capture(&state.paths.instance_dir(&id), &state.paths.instance_game_dir(&id), mode_id.as_deref(), &name, &icon, include_options)
+}
+
+#[tauri::command]
+pub fn apply_mode(state: State<'_, AppState>, id: String, mode_id: String) -> Result<ApplyReport> {
+    not_running(&state, &id)?;
+    modes::apply(&state.paths.instance_dir(&id), &state.paths.instance_game_dir(&id), &mode_id)
+}
+
+#[tauri::command]
+pub fn rename_mode(state: State<'_, AppState>, id: String, mode_id: String, name: String, icon: String) -> Result<()> {
+    modes::rename(&state.paths.instance_dir(&id), &mode_id, &name, &icon)
+}
+
+#[tauri::command]
+pub fn delete_mode(state: State<'_, AppState>, id: String, mode_id: String) -> Result<()> {
+    modes::delete(&state.paths.instance_dir(&id), &mode_id)
+}

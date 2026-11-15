@@ -5,6 +5,7 @@ pub mod cloud;
 pub mod ashi;
 pub mod assistant;
 pub mod content;
+pub mod files;
 pub mod importer;
 pub mod instance;
 pub mod java;

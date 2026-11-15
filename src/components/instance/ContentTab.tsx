@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { useNavigate } from "react-router-dom";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { open as openUrl } from "@tauri-apps/plugin-shell";
@@ -9,7 +10,9 @@ import {
 import clsx from "clsx";
 import { ContentIcon } from "@/components/ContentIcon";
 import { Menu, Switch } from "./Menu";
-import { api } from "@/lib/ipc";
+import { api, isTauri } from "@/lib/ipc";
+import { Modal } from "@/components/Modal";
+import { ModesBar } from "./ModesBar";
 import type { ContentFile } from "@/lib/types";
 
 type KindFilter = "all" | "mod" | "resourcepack" | "shader";
@@ -129,6 +132,10 @@ export function ContentTab({ instanceId, locked }: { instanceId: string; locked:
     const picked = await openDialog({ multiple: true, filters: [{ name: "Mod veya paket", extensions: ["jar", "zip"] }] });
     const paths = Array.isArray(picked) ? picked : picked ? [picked] : [];
     if (!paths.length) return;
+    await addPaths(paths);
+  };
+
+  const addPaths = async (paths: string[]) => {
     try {
       const added = await api.addContentFiles(instanceId, paths);
       setNotice({ ok: true, text: `${added.length} dosya eklendi.` });
@@ -138,7 +145,31 @@ export function ContentTab({ instanceId, locked }: { instanceId: string; locked:
     }
   };
 
-  const reveal = async (c: ContentFile) => openUrl(await api.filePath(instanceId, c.id.split("/")[0]));
+  // Dosyaları pencereye sürükle-bırak: önce onay sorulur
+  const [dragging, setDragging] = useState(false);
+  const [dropped, setDropped] = useState<string[] | null>(null);
+  const lockedRef = useRef(locked);
+  lockedRef.current = locked;
+  useEffect(() => {
+    if (!isTauri()) return;
+    let wv;
+    try { wv = getCurrentWebview(); } catch { return; }
+    const un = wv.onDragDropEvent((e) => {
+      const t = e.payload.type;
+      if (t === "enter" || t === "over") setDragging(true);
+      else if (t === "leave") setDragging(false);
+      else if (t === "drop") {
+        setDragging(false);
+        const paths = e.payload.paths.filter((p) => /\.(jar|zip)$/i.test(p));
+        if (lockedRef.current) setNotice({ ok: false, text: "Oyun açıkken içerik eklenemez." });
+        else if (!paths.length) setNotice({ ok: false, text: "Yalnızca .jar (mod) veya .zip (resource pack / shader) dosyaları eklenebilir." });
+        else setDropped(paths);
+      }
+    });
+    return () => void un.then((f) => f());
+  }, []);
+
+  const reveal = async (c: ContentFile) => api.openPath(await api.filePath(instanceId, c.id.split("/")[0]));
 
   return (
     <div className="ctab">
@@ -151,6 +182,8 @@ export function ContentTab({ instanceId, locked }: { instanceId: string; locked:
         <button className="btn btn-ghost lg" disabled={locked} onClick={() => void upload()}><FolderUp size={16} /> Dosya yükle</button>
         <button className="btn btn-primary lg" onClick={() => navigate(`/browse?instance=${encodeURIComponent(instanceId)}`)}><Compass size={16} /> İçerik keşfet</button>
       </div>
+
+      <ModesBar instanceId={instanceId} locked={locked} onApplied={() => void refresh()} onNotice={setNotice} />
 
       <div className="ctab-bar">
         <Menu
@@ -278,6 +311,14 @@ export function ContentTab({ instanceId, locked }: { instanceId: string; locked:
           })
         )}
       </div>
+      {dragging && !locked && (
+        <div className="drop-overlay"><FolderUp size={34} /><strong>Bırak, bu instance'a ekleyelim</strong><span className="muted small">.jar modlar · .zip resource pack ve shader'lar</span></div>
+      )}
+      <Modal open={!!dropped} onClose={() => setDropped(null)} title="Dosyalar eklensin mi?" width={460}
+        footer={<><button className="btn btn-ghost" onClick={() => setDropped(null)}>Vazgeç</button><button className="btn btn-primary" onClick={() => { const p = dropped ?? []; setDropped(null); void addPaths(p); }}><Download size={15} /> {dropped?.length ?? 0} dosyayı ekle</button></>}>
+        <p className="small">Bu dosyalar instance'a kopyalanacak. Yalnızca güvendiğin kaynaklardan indirdiğin dosyaları ekle.</p>
+        <ul className="drop-list">{(dropped ?? []).map((p) => <li key={p}><Box size={14} /> <span className="truncate">{p.split(/[\\/]/).pop()}</span></li>)}</ul>
+      </Modal>
     </div>
   );
 }

@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { open as openPath } from "@tauri-apps/plugin-shell";
 import { Paintbrush, Pencil, Boxes, Clock, Copy, FileText, FolderOpen, Globe2, LayoutTemplate, Loader2, MoreVertical, Play, Settings2, Share2, Square, Tag, Timer, Trash2, Folder } from "lucide-react";
 import clsx from "clsx";
 import { useInstances } from "@/stores/instances";
@@ -15,7 +14,7 @@ import { FilesTab, LogsTab, ShareTab, WorldsTab } from "@/components/instance/Ot
 import { Menu } from "@/components/instance/Menu";
 import { api } from "@/lib/ipc";
 import { LOADER_LABEL, formatDuration, formatRelative } from "@/lib/format";
-import type { CompanionConfig, CompanionInfo, Instance, JvmProfile } from "@/lib/types";
+import type { CompanionConfig, CompanionInfo, Instance, JvmProfile, LoaderKind, LoaderVersion, ManifestEntry } from "@/lib/types";
 
 type Tab = "content" | "files" | "worlds" | "logs" | "share" | "settings";
 const TABS: { id: Tab; label: string; icon: typeof Boxes }[] = [
@@ -87,7 +86,7 @@ export function InstancePage() {
             trigger={() => <button className="icon-btn" aria-label="Daha fazla"><MoreVertical size={20} /></button>}
             items={[
               { label: "Görünümü düzenle", icon: <Paintbrush size={14} />, onClick: () => setAppearOpen(true) },
-              { label: "Klasörü aç", icon: <FolderOpen size={14} />, onClick: async () => openPath(await api.instancePath(id)) },
+              { label: "Klasörü aç", icon: <FolderOpen size={14} />, onClick: async () => api.openPath(await api.instancePath(id)) },
               { label: "Klonla", icon: <Copy size={14} />, onClick: () => setCloneOpen(true) },
               { label: "Şablon oluştur", icon: <LayoutTemplate size={14} />, onClick: async () => { await api.makeTemplate(id, `${inst.name} şablonu`); await refresh(); } },
               { label: "Instance'ı sil", icon: <Trash2 size={14} />, danger: true, disabled: locked, onClick: () => void del() },
@@ -185,6 +184,8 @@ function InstanceSettings({ instance, onDelete }: { instance: Instance; onDelete
         </div>
       </section>
 
+      <VersionCard instance={instance} />
+
       <CompanionCard instanceId={instance.id} />
 
       <section className="card stack">
@@ -250,6 +251,86 @@ function CompanionCard({ instanceId }: { instanceId: string }) {
           <p className="muted tiny">Oyunda <kbd>Sağ Shift</kbd> ya da duraklat menüsündeki "◆ West" düğmesi West Paneli'ni açar.</p>
         </>
       )}
+    </section>
+  );
+}
+
+/** Minecraft ve yükleyici sürümünü değiştirme. Kaydedince oyun bir sonraki açılışta yeni sürümü kurar. */
+function VersionCard({ instance }: { instance: Instance }) {
+  const refresh = useInstances((s) => s.refresh);
+  const running = useInstances((s) => s.running[instance.id] !== undefined);
+  const [snapshots, setSnapshots] = useState(false);
+  const [mcList, setMcList] = useState<ManifestEntry[]>([]);
+  const [mc, setMc] = useState(instance.mcVersion);
+  const [kind, setKind] = useState<LoaderKind>(instance.loader.kind);
+  const [loaderList, setLoaderList] = useState<LoaderVersion[] | null>(null);
+  const [lv, setLv] = useState<string | null>(instance.loader.version);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => { setMc(instance.mcVersion); setKind(instance.loader.kind); setLv(instance.loader.version); }, [instance]);
+  useEffect(() => { api.listMcVersions(snapshots).then(setMcList).catch(() => setMcList([])); }, [snapshots]);
+  useEffect(() => {
+    if (kind === "vanilla") { setLoaderList([]); setLv(null); return; }
+    setLoaderList(null);
+    api.listLoaderVersions(kind, mc).then((l) => {
+      setLoaderList(l);
+      // Seçili sürüm bu listede yoksa en son kararlı sürümü öner
+      setLv((cur) => (cur && l.some((x) => x.version === cur) ? cur : (l.find((x) => x.stable) ?? l[0])?.version ?? null));
+    }).catch(() => setLoaderList([]));
+  }, [kind, mc]);
+
+  const changed = mc !== instance.mcVersion || kind !== instance.loader.kind || (lv ?? null) !== (instance.loader.version ?? null);
+  const loaderMissing = kind !== "vanilla" && (!lv || (loaderList !== null && loaderList.length === 0));
+
+  const save = async () => {
+    const mcChanged = mc !== instance.mcVersion || kind !== instance.loader.kind;
+    if (mcChanged && !confirm(`Sürüm ${LOADER_LABEL[instance.loader.kind]} ${instance.mcVersion} → ${LOADER_LABEL[kind]} ${mc} olarak değişecek.\n\nBazı modlar yeni sürümle uyumsuz olabilir. Önemli dünyaların varsa önce yedek al. Devam edilsin mi?`)) return;
+    setBusy(true);
+    try {
+      await api.updateInstance({ ...instance, mcVersion: mc, loader: { kind, version: kind === "vanilla" ? null : lv } });
+      await refresh();
+      setMsg({ ok: true, text: mcChanged ? "Sürüm değişti. İçerik sekmesinde \"Tümünü güncelle\" ile modları yeni sürüme uygun hale getir; oyun ilk açılışta yeni sürümü indirir." : "Yükleyici sürümü değişti; ilk açılışta indirilecek." });
+    } catch (e) { setMsg({ ok: false, text: String(e).replace(/^Error: /, "") }); } finally { setBusy(false); }
+  };
+
+  const releases = mcList.filter((v) => snapshots || v.type === "release");
+  return (
+    <section className="card stack">
+      <h3>Sürüm</h3>
+      <label className="field">
+        <span>Minecraft sürümü</span>
+        <select value={mc} onChange={(e) => setMc(e.target.value)} disabled={running}>
+          {!releases.some((v) => v.id === mc) && <option value={mc}>{mc}</option>}
+          {releases.map((v) => <option key={v.id} value={v.id}>{v.id}{v.type !== "release" ? " (snapshot)" : ""}</option>)}
+        </select>
+      </label>
+      <label className="check tiny"><input type="checkbox" checked={snapshots} onChange={(e) => setSnapshots(e.target.checked)} /> Snapshot'ları göster</label>
+      <div className="field">
+        <span>Yükleyici</span>
+        <div className="segmented wrap">
+          {(["vanilla", "fabric", "quilt", "forge", "neoforge"] as LoaderKind[]).map((k) => (
+            <button key={k} className={clsx(kind === k && "active")} disabled={running} onClick={() => setKind(k)}>{LOADER_LABEL[k]}</button>
+          ))}
+        </div>
+      </div>
+      {kind !== "vanilla" && (
+        <label className="field">
+          <span>{LOADER_LABEL[kind]} sürümü</span>
+          {loaderList === null ? <span className="muted small"><Loader2 size={13} className="spin" /> Sürümler yükleniyor…</span>
+            : loaderList.length === 0 ? <span className="hint error">{LOADER_LABEL[kind]}, Minecraft {mc} için mevcut değil.</span>
+            : (
+              <select value={lv ?? ""} onChange={(e) => setLv(e.target.value)} disabled={running}>
+                {loaderList.map((v) => <option key={v.version} value={v.version}>{v.version}{v.stable ? "" : " (beta)"}</option>)}
+              </select>
+            )}
+        </label>
+      )}
+      {running && <p className="muted tiny">Oyun açıkken sürüm değiştirilemez.</p>}
+      {msg && <p className={clsx("hint", !msg.ok && "error")}>{msg.text}</p>}
+      <button className="btn btn-primary" style={{ alignSelf: "flex-start" }} disabled={!changed || loaderMissing || busy || running} onClick={() => void save()}>
+        {busy && <Loader2 size={15} className="spin" />} Sürümü değiştir
+      </button>
     </section>
   );
 }

@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { convertFileSrc } from "@tauri-apps/api/core";
-import { open as openPath } from "@tauri-apps/plugin-shell";
 import { ChevronLeft, ChevronRight, Copy, Download, FolderOpen, Grid3x3, Images, List, Pencil, RefreshCw, Trash2, X } from "lucide-react";
 import clsx from "clsx";
 import { useGallery } from "@/stores/gallery";
@@ -69,7 +68,7 @@ export function GalleryPage() {
         </div>
         <button className="icon-btn" title="Yenile" onClick={() => g.load()}><RefreshCw size={15} className={clsx(g.loading && "spin")} /></button>
         {g.instance && (
-          <button className="icon-btn" title="Klasörü aç" onClick={async () => openPath(await api.screenshotsFolder(g.instance!))}><FolderOpen size={15} /></button>
+          <button className="icon-btn" title="Klasörü aç" onClick={async () => api.openPath(await api.screenshotsFolder(g.instance!))}><FolderOpen size={15} /></button>
         )}
       </div>
 
@@ -169,7 +168,7 @@ function Lightbox({ shot, list }: { shot: Screenshot; list: Screenshot[] }) {
           <span className="muted tiny">{shot.instanceName} · {new Date(shot.modified).toLocaleString("tr-TR")} · {fmtSize(shot.size)} · {i + 1}/{list.length}</span>
         </div>
         <Actions s={shot} />
-        <button className="icon-btn" title="Klasörde göster" onClick={async () => openPath(await api.screenshotsFolder(shot.instanceId))}><FolderOpen size={15} /></button>
+        <button className="icon-btn" title="Klasörde göster" onClick={async () => api.openPath(await api.screenshotsFolder(shot.instanceId))}><FolderOpen size={15} /></button>
         <button className="icon-btn" title="Kapat" onClick={() => g.view(null)}><X size={16} /></button>
       </div>
     </motion.div>

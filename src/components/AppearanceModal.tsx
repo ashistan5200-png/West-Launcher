@@ -1,16 +1,14 @@
 import { useEffect, useState } from "react";
-import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { ImagePlus, Loader2, Shuffle, Trash2 } from "lucide-react";
 import clsx from "clsx";
 import { Modal } from "./Modal";
 import { CoverArt } from "./CoverArt";
 import { InstanceIcon } from "./InstanceIcon";
 import { InstanceBanner } from "./InstanceBanner";
+import { pickCropped } from "./ImageCropper";
 import { api } from "@/lib/ipc";
 import { useInstances } from "@/stores/instances";
 import type { Instance } from "@/lib/types";
-
-const IMAGES = [{ name: "Görsel", extensions: ["png", "jpg", "jpeg", "webp", "gif"] }];
 
 /** Instance'ın görünümü: ad, profil fotoğrafı (simge) ve banner. */
 export function AppearanceModal({ instance, open, onClose }: { instance: Instance; open: boolean; onClose: () => void }) {
@@ -44,8 +42,10 @@ export function AppearanceModal({ instance, open, onClose }: { instance: Instanc
   };
   const pick = (kind: "icon" | "banner") =>
     run(kind, async () => {
-      const p = await openDialog({ multiple: false, filters: IMAGES });
-      if (typeof p !== "string") return;
+      const p = await pickCropped(kind === "icon"
+        ? { aspect: 1, title: "Profil fotoğrafını ayarla", outWidth: 512 }
+        : { aspect: 4, title: "Banner'ı ayarla", outWidth: 1600 });
+      if (!p) return;
       return api.setInstanceImage(instance.id, kind, p);
     });
   const save = (patch: Partial<Instance>) => run("save", async () => api.updateInstance({ ...cur, ...patch }));
@@ -76,7 +76,7 @@ export function AppearanceModal({ instance, open, onClose }: { instance: Instanc
           <div className="row">
             <button className="btn btn-ghost" disabled={!!busy} onClick={() => void pick("icon")}>{busy === "icon" ? <Loader2 size={15} className="spin" /> : <ImagePlus size={15} />} Görsel seç</button>
             {cur.icon && <button className="btn btn-danger-ghost" disabled={!!busy} onClick={() => void run("icon-rm", () => api.setInstanceImage(instance.id, "icon", null))}><Trash2 size={15} /> Kaldır</button>}
-            <span className="muted tiny">Kare görseller en iyi sonucu verir.</span>
+            <span className="muted tiny">Seçtikten sonra konumunu, boyutunu ve yönünü ayarlayabilirsin.</span>
           </div>
         </div>
 

@@ -28,6 +28,8 @@ import { ImportWizard } from "@/components/ImportWizard";
 import { useAccounts } from "@/stores/accounts";
 import { AshiChat } from "@/components/AshiChat";
 import { AiSetupModal } from "@/components/AiSetup";
+import { ImageCropperHost } from "@/components/ImageCropper";
+import { AmbientSky } from "@/components/AmbientSky";
 import { ContentToasts } from "@/components/ContentToasts";
 import { useSettings } from "@/stores/settings";
 import { useInstances } from "@/stores/instances";
@@ -62,6 +64,7 @@ export default function App() {
         <div className="shell-body">
           <Sidebar />
           <main className="content">
+            <AmbientSky />
             <AnimatePresence mode="wait">
               <motion.div
                 key={location.pathname}
@@ -103,6 +106,7 @@ export default function App() {
         </div>
         <AshiConfirmModal />
         <AiSetupModal />
+        <ImageCropperHost />
         <ImportWizard />
         <AshiTour />
         <UpdateModal />

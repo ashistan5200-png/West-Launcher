@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { open as openPath } from "@tauri-apps/plugin-shell";
 import { save as saveDialog } from "@tauri-apps/plugin-dialog";
-import { Archive, ChevronRight, File, FileWarning, Folder, FolderOpen, Globe2, HardDrive, Loader2, Package, ScrollText, Share2, Terminal, Trash2 } from "lucide-react";
+import { Archive, ChevronRight, File, FileCog, FilePen, FileWarning, Folder, FolderOpen, Globe2, HardDrive, Loader2, Package, ScrollText, Share2, Terminal, Trash2 } from "lucide-react";
 import clsx from "clsx";
 import { api } from "@/lib/ipc";
 import { formatRelative } from "@/lib/format";
 import type { ExportReport, FileEntry, Instance, LogFile, World } from "@/lib/types";
+import { EDITABLE, FileEditor } from "./FileEditor";
 
 const fmtSize = (b: number) => (b >= 1 << 30 ? `${(b / (1 << 30)).toFixed(1)} GB` : b >= 1 << 20 ? `${(b / (1 << 20)).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
 const fromUnix = (s: number | null) => (s ? new Date(s * 1000).toISOString() : null);
@@ -44,8 +44,8 @@ export function WorldsTab({ instanceId, locked }: { instanceId: string; locked: 
     <div className="stack">
       <div className="ctab-bar">
         <span className="muted small grow">{worlds ? `${worlds.length} dünya` : ""}</span>
-        <button className="btn-link" onClick={async () => openPath(await api.worldBackupsDir(instanceId)).catch(() => setMsg({ ok: false, text: "Henüz yedek yok." }))}><Archive size={16} /> Yedekler klasörü</button>
-        <button className="btn-link" onClick={async () => openPath(await api.filePath(instanceId, "saves")).catch(() => {})}><FolderOpen size={16} /> saves klasörü</button>
+        <button className="btn-link" onClick={async () => api.openPath(await api.worldBackupsDir(instanceId)).catch(() => setMsg({ ok: false, text: "Henüz yedek yok." }))}><Archive size={16} /> Yedekler klasörü</button>
+        <button className="btn-link" onClick={async () => api.openPath(await api.filePath(instanceId, "saves")).catch(() => {})}><FolderOpen size={16} /> saves klasörü</button>
       </div>
       {msg && <div className={clsx("banner", msg.ok ? "banner-ok" : "banner-error")}>{msg.text}</div>}
       {worlds === null ? (
@@ -62,7 +62,7 @@ export function WorldsTab({ instanceId, locked }: { instanceId: string; locked: 
                 <span className="muted tiny">{formatRelative(fromUnix(w.lastPlayed))} · {fmtSize(w.size)}</span>
               </div>
               <button className="icon-btn" title="Yedekle" disabled={busy === w.folder} onClick={() => void backup(w)}>{busy === w.folder ? <Loader2 size={17} className="spin" /> : <Archive size={17} />}</button>
-              <button className="icon-btn" title="Klasörü aç" onClick={async () => openPath(await api.filePath(instanceId, `saves/${w.folder}`))}><FolderOpen size={17} /></button>
+              <button className="icon-btn" title="Klasörü aç" onClick={async () => api.openPath(await api.filePath(instanceId, `saves/${w.folder}`))}><FolderOpen size={17} /></button>
               <button className="icon-btn danger" title="Sil" disabled={locked} onClick={() => void remove(w)}><Trash2 size={17} /></button>
             </div>
           ))}
@@ -113,7 +113,7 @@ export function LogsTab({ instanceId, live }: { instanceId: string; live: { line
       <div className="stack" style={{ minWidth: 0 }}>
         <div className="ctab-bar">
           <input className="logs-filter" placeholder="Loglarda ara…" value={filter} onChange={(e) => setFilter(e.target.value)} />
-          {sel !== "live" && <button className="btn-link" onClick={async () => openPath(await api.filePath(instanceId, sel))}><FolderOpen size={16} /> Dosyayı aç</button>}
+          {sel !== "live" && <button className="btn-link" onClick={async () => api.openPath(await api.filePath(instanceId, sel))}><FolderOpen size={16} /> Dosyayı aç</button>}
         </div>
         <div className="console" ref={ref}>
           {sel !== "live" && text === null ? <Loader2 size={16} className="spin" /> : lines.length === 0 ? (
@@ -132,16 +132,22 @@ export function FilesTab({ instanceId }: { instanceId: string }) {
   const [path, setPath] = useState("");
   const [entries, setEntries] = useState<FileEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [hasOptions, setHasOptions] = useState(false);
   useEffect(() => {
     setEntries(null);
     setError(null);
     api.listFiles(instanceId, path).then(setEntries).catch((e) => { setEntries([]); setError(errText(e)); });
   }, [instanceId, path]);
+  useEffect(() => {
+    api.listFiles(instanceId, "").then((es) => setHasOptions(es.some((e) => e.name === "options.txt"))).catch(() => setHasOptions(false));
+  }, [instanceId]);
   const crumbs = path ? path.split("/") : [];
+  const rel = (e: FileEntry) => (path ? `${path}/${e.name}` : e.name);
   const open = async (e: FileEntry) => {
-    const rel = path ? `${path}/${e.name}` : e.name;
-    if (e.dir) setPath(rel);
-    else await openPath(await api.filePath(instanceId, rel));
+    if (e.dir) setPath(rel(e));
+    else if (EDITABLE.test(e.name)) setEditing(rel(e));
+    else await api.openPath(await api.filePath(instanceId, rel(e))).catch((x) => setError(errText(x)));
   };
 
   return (
@@ -156,20 +162,22 @@ export function FilesTab({ instanceId }: { instanceId: string }) {
             </span>
           ))}
         </nav>
-        <button className="btn-link" onClick={async () => openPath(await api.filePath(instanceId, path))}><FolderOpen size={16} /> Klasörde aç</button>
+        {hasOptions && <button className="btn-link" onClick={() => setEditing("options.txt")}><FileCog size={16} /> Oyun ayarları (options.txt)</button>}
+        <button className="btn-link" onClick={async () => api.openPath(await api.filePath(instanceId, path)).catch((x) => setError(errText(x)))}><FolderOpen size={16} /> Klasörde aç</button>
       </div>
       {error && <div className="banner banner-error">{error}</div>}
       <div className="ctable">
         {entries === null ? <div className="ctable-empty"><Loader2 size={18} className="spin" /></div> : entries.length === 0 ? <div className="ctable-empty muted">Klasör boş.</div> : entries.map((e) => (
           <button key={e.name} className="frow" onDoubleClick={() => void open(e)} onClick={() => e.dir && void open(e)}>
-            {e.dir ? <Folder size={17} className="accent-fg" /> : <File size={17} className="muted" />}
+            {e.dir ? <Folder size={17} className="accent-fg" /> : EDITABLE.test(e.name) ? <FilePen size={17} className="muted" /> : <File size={17} className="muted" />}
             <span className="grow truncate">{e.name}</span>
             <span className="muted tiny">{e.dir ? "" : fmtSize(e.size)}</span>
             <span className="muted tiny frow-date">{formatRelative(fromUnix(e.modified))}</span>
           </button>
         ))}
       </div>
-      <p className="muted tiny">Dosyaya çift tıklayınca bilgisayarındaki varsayılan uygulamayla açılır.</p>
+      <p className="muted tiny">Ayar dosyalarına (txt, json, toml, cfg…) çift tıklayınca West Client içinde düzenlenir; diğerleri bilgisayarındaki uygulamayla açılır.</p>
+      <FileEditor instanceId={instanceId} path={editing} onClose={() => setEditing(null)} />
     </div>
   );
 }
@@ -236,7 +244,7 @@ export function ShareTab({ instance }: { instance: Instance }) {
         {result && (
           <div className="banner banner-ok row">
             <span className="grow">Hazır: {result.linked} dosya bağlantıyla, {result.embedded} dosya pakete gömülü.</span>
-            <button className="btn btn-sm btn-ghost" onClick={() => openPath(result.path.replace(/[\\/][^\\/]+$/, ""))}><FolderOpen size={14} /> Göster</button>
+            <button className="btn btn-sm btn-ghost" onClick={() => void api.openPath(result.path, true)}><FolderOpen size={14} /> Göster</button>
           </div>
         )}
         {error && <div className="banner banner-error">{error}</div>}

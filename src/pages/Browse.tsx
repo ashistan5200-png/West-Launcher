@@ -8,7 +8,9 @@ import clsx from "clsx";
 import { api, isTauri } from "@/lib/ipc";
 import type { ContentHit, ContentKind, ContentTags, Instance, SearchQuery } from "@/lib/types";
 import { useInstances } from "@/stores/instances";
+import { useContent } from "@/stores/content";
 import { ContentIcon } from "@/components/ContentIcon";
+import { InstanceIcon } from "@/components/InstanceIcon";
 import { Menu } from "@/components/instance/Menu";
 import { InstallMenu } from "@/components/InstallMenu";
 import { Pagination } from "@/components/Pagination";
@@ -66,10 +68,15 @@ export function BrowsePage() {
   const instances = useMemo(() => allInstances.filter((i) => !i.isTemplate), [allInstances]);
   const fromInstance = instances.find((i) => i.id === params.get("instance")) ?? null;
 
-  const kind = (params.get("kind") as ContentKind) || "mod";
+  // Vanilla instance'a mod kurulamaz → doğrudan resource pack'lerle başla
+  const kind = (params.get("kind") as ContentKind) || (fromInstance?.loader.kind === "vanilla" ? "resourcepack" : "mod");
   const [query, setQuery] = useState(params.get("q") ?? "");
-  const [version, setVersion] = useState<string>(fromInstance?.mcVersion ?? "");
-  const [loader, setLoader] = useState<string>(fromInstance && fromInstance.loader.kind !== "vanilla" ? fromInstance.loader.kind : "");
+  const [freeVersion, setVersion] = useState<string>("");
+  const [freeLoader, setLoader] = useState<string>("");
+  // Instance'tan gelindiyse sürüm ve yükleyici o instance'a kilitlenir
+  const version = fromInstance?.mcVersion ?? freeVersion;
+  const loader = fromInstance ? (fromInstance.loader.kind === "vanilla" ? "" : fromInstance.loader.kind) : freeLoader;
+  const leaveInstance = () => setParams({ kind: kind === "mod" && fromInstance?.loader.kind === "vanilla" ? "mod" : kind });
   const [env, setEnv] = useState<Env>("all");
   const [cats, setCats] = useState<string[]>([]);
   const [sort, setSort] = useState<NonNullable<SearchQuery["sort"]>>("relevance");
@@ -88,6 +95,8 @@ export function BrowsePage() {
     if (isTauri()) api.contentTags().then(setTags).catch(() => {});
   }, []);
   useEffect(() => setCats([]), [kind]);
+  const loadInstalled = useContent((s) => s.loadInstalled);
+  useEffect(() => { if (fromInstance) void loadInstalled(fromInstance.id); }, [fromInstance?.id, loadInstalled]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const categoryGroups = useMemo(() => {
     const list = (tags?.categories ?? []).filter((c) => c.projectType === kind && !LOADERS.includes(c.name as never));
@@ -144,7 +153,7 @@ export function BrowsePage() {
     topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  const activeFilters = (version ? 1 : 0) + (loader ? 1 : 0) + (env !== "all" ? 1 : 0) + cats.length;
+  const activeFilters = (fromInstance ? 0 : (version ? 1 : 0) + (loader ? 1 : 0)) + (env !== "all" ? 1 : 0) + cats.length;
   const reset = () => {
     setVersion("");
     setLoader("");
@@ -160,6 +169,17 @@ export function BrowsePage() {
           {activeFilters > 0 && <button className="btn-link" onClick={reset}><RotateCcw size={13} /> Temizle</button>}
         </div>
 
+        {fromInstance ? (
+          <section className="bf-target">
+            <InstanceIcon instance={fromInstance} size={40} />
+            <div className="grow">
+              <strong className="truncate">{fromInstance.name}</strong>
+              <span className="muted tiny">{LOADER_LABEL[fromInstance.loader.kind]} {fromInstance.mcVersion}</span>
+            </div>
+            <p className="muted tiny">Yalnızca bu instance'a uyan içerikler gösteriliyor. "Kur" dediğinde uyumlu en son sürüm ve bağımlılıkları kurulur.</p>
+            <button className="btn btn-ghost btn-sm" onClick={leaveInstance}>Tüm içeriği göster</button>
+          </section>
+        ) : (
         <section className="bf-sec">
           <h4>Minecraft sürümü</h4>
           <select className="bf-select" value={version} onChange={(e) => setVersion(e.target.value)}>
@@ -168,8 +188,9 @@ export function BrowsePage() {
           </select>
           <label className="check tiny"><input type="checkbox" checked={snapshots} onChange={(e) => setSnapshots(e.target.checked)} /> Snapshot'ları da göster</label>
         </section>
+        )}
 
-        {(kind === "mod" || kind === "modpack") && (
+        {!fromInstance && (kind === "mod" || kind === "modpack") && (
           <section className="bf-sec">
             <h4>Yükleyici</h4>
             <div className="bf-chips">
@@ -223,21 +244,21 @@ export function BrowsePage() {
         </div>
 
         <nav className="pill-tabs">
-          {KINDS.map((k) => (
+          {KINDS.filter((k) => !fromInstance || (k.id !== "modpack" && !(k.id === "mod" && fromInstance.loader.kind === "vanilla"))).map((k) => (
             <button key={k.id} className={clsx("pill-tab", kind === k.id && "on")} onClick={() => setParams({ kind: k.id, ...(fromInstance ? { instance: fromInstance.id } : {}) })}>{k.label}</button>
           ))}
         </nav>
 
         <div className="bmeta muted small">
           {loading && hits.length === 0 ? "Aranıyor…" : `${formatCount(total)} sonuç · sayfa ${page} / ${pages.toLocaleString("tr-TR")}`}
-          {fromInstance && <span> · <strong>{fromInstance.name}</strong> için filtreler önceden seçildi</span>}
+          {fromInstance && <span> · <strong>{fromInstance.name}</strong> ile uyumlu</span>}
           {kind === "modpack" && <span> · Modpack'ler kendi sürümüyle yeni bir instance olarak kurulur</span>}
         </div>
 
         {error && <div className="banner banner-error">{error}</div>}
 
         <div className={`bresults ${loading && hits.length ? "dim" : ""}`}>
-          {hits.map((h) => <ResultCard key={h.id} hit={h} instances={instances} preferred={fromInstance} onOpen={() => setDetail(h)} />)}
+          {hits.map((h) => <ResultCard key={h.id} hit={h} instances={instances} preferred={fromInstance} direct={!!fromInstance} onOpen={() => setDetail(h)} />)}
         </div>
 
         {loading && hits.length === 0 && <div className="center pad muted"><Loader2 className="spin" size={18} /></div>}
@@ -251,7 +272,7 @@ export function BrowsePage() {
   );
 }
 
-function ResultCard({ hit, instances, preferred, onOpen }: { hit: ContentHit; instances: Instance[]; preferred: Instance | null; onOpen: () => void }) {
+function ResultCard({ hit, instances, preferred, direct, onOpen }: { hit: ContentHit; instances: Instance[]; preferred: Instance | null; direct: boolean; onOpen: () => void }) {
   const side = sideLabel(hit);
   const range = versionRange(hit.versions);
   const shots = hit.gallery ?? [];
@@ -281,7 +302,7 @@ function ResultCard({ hit, instances, preferred, onOpen }: { hit: ContentHit; in
         {hit.updated && <span className="rstat muted">{formatRelative(hit.updated)}</span>}
         <div className="row" style={{ gap: 6 }}>
           <button className="icon-btn" title="Modrinth sayfası" onClick={() => void openUrl(hit.url)}><ExternalLink size={16} /></button>
-          <InstallMenu hit={hit} instances={instances} preferred={preferred} />
+          <InstallMenu hit={hit} instances={instances} preferred={preferred} direct={direct} />
         </div>
       </div>
     </article>

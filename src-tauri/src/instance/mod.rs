@@ -1,6 +1,7 @@
 //! İzole instance (profil) yönetimi: oluşturma, klonlama, şablon, silme.
 
 pub mod loaders;
+pub mod modes;
 
 use crate::error::{AppError, Result};
 use crate::paths::Paths;

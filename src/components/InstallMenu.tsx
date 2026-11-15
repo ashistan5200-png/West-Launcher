@@ -19,9 +19,11 @@ export function incompatibility(hit: ContentHit, inst: Instance): string | null 
 }
 
 /** "Ekle ▾": hedef instance seçimi (modpack'lerde doğrudan "Kur"). */
-export function InstallMenu({ hit, instances, preferred }: { hit: ContentHit; instances: Instance[]; preferred: Instance | null }) {
+export function InstallMenu({ hit, instances, preferred, direct }: { hit: ContentHit; instances: Instance[]; preferred: Instance | null; direct?: boolean }) {
   const installing = useContent((s) => !!s.installing[contentKey(hit)]);
   const install = useContent((s) => s.install);
+  // Instance'tan açılan Keşfet: tek tıkla o instance'a, uyumlu en son sürüm kurulur
+  const installed = useContent((s) => !!preferred && !!s.installed[preferred.id]?.has(contentKey(hit)));
   const [done, setDone] = useState<string | null>(null);
   const run = async (inst: Instance | null) => {
     await install(hit, inst?.id ?? null);
@@ -32,6 +34,14 @@ export function InstallMenu({ hit, instances, preferred }: { hit: ContentHit; in
     return (
       <button className="btn btn-primary" disabled={installing} onClick={() => void run(null)} title={done ? `→ ${done}` : undefined}>
         {installing ? <Loader2 size={15} className="spin" /> : done ? <Check size={15} /> : <Download size={15} />} {done ? "Kuruldu" : "Kur"}
+      </button>
+    );
+  }
+  if (direct && preferred) {
+    const why = incompatibility(hit, preferred);
+    return (
+      <button className={installed ? "btn btn-ghost" : "btn btn-primary"} disabled={installing || installed || !!why} title={why ?? `${preferred.name} için uyumlu en son sürüm kurulur`} onClick={() => void run(preferred)}>
+        {installing ? <Loader2 size={15} className="spin" /> : installed || done ? <Check size={15} /> : <Download size={15} />} {installed ? "Kurulu" : why ? "Uyumsuz" : "Kur"}
       </button>
     );
   }

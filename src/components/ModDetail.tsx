@@ -92,7 +92,7 @@ export function ModDetail({ hit, instances, preferred, onClose }: { hit: Content
               </div>
             </div>
             <div className="mdetail-actions">
-              <InstallMenu hit={hit} instances={instances} preferred={preferred} />
+              <InstallMenu hit={hit} instances={instances} preferred={preferred} direct={!!preferred} />
               <button className="icon-btn" onClick={onClose} aria-label="Kapat"><X size={18} /></button>
             </div>
           </div>
