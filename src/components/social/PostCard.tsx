@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { open as openUrl } from "@tauri-apps/plugin-shell";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import {
-  BadgeCheck, BarChart2, Bookmark, Copy, Flag, Heart, Lock, MessageCircle, MoreHorizontal, Pin, Quote, Repeat2, Trash2, UserX, VolumeX,
+  BadgeCheck, BarChart2, Bookmark, Copy, Flag, Heart, Lock, MessageCircle, MoreHorizontal, Pencil, Pin, Quote, Repeat2, Trash2, UserX, VolumeX,
 } from "lucide-react";
 import clsx from "clsx";
 import { Menu } from "@/components/instance/Menu";
@@ -117,6 +117,7 @@ export function PostCard({ post: initial, onChanged, onDeleted, onOpenMedia, det
   const [post, setPost] = useState<Post>(isRepost ? S.cachedPost(initial.repost_of) ?? initial : initial);
   const [gone, setGone] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [editing, setEditing] = useState<string | null>(null);
   if (gone) return null;
   const mine = me?.userId === post.author_id;
   const update = (p: Post) => { setPost(p); onChanged?.(p); };
@@ -164,6 +165,7 @@ export function PostCard({ post: initial, onChanged, onDeleted, onOpenMedia, det
                   { label: "Metni kopyala", icon: <Copy size={14} />, onClick: () => void copyText(post.body ?? "") },
                   ...(mine
                     ? [
+                        { label: "Düzenle", icon: <Pencil size={14} />, onClick: () => setEditing(post.body ?? "") },
                         { label: myProfile?.pinned_post_id === post.id ? "Sabitlemeyi kaldır" : "Profilime sabitle", icon: <Pin size={14} />, onClick: async () => { const r = await S.pinPost(me!.userId, myProfile?.pinned_post_id === post.id ? null : post.id); if (r[0]) useSocial.getState().setMe(r[0]); } },
                         { label: "Sil", icon: <Trash2 size={14} />, danger: true, onClick: async () => { if (!confirm("Bu gönderi silinsin mi?")) return; await S.deletePost(post.id); setGone(true); onDeleted?.(post.id); } },
                       ]
@@ -179,7 +181,18 @@ export function PostCard({ post: initial, onChanged, onDeleted, onOpenMedia, det
             </div>
           </div>
           {post.reply_to && !detail && <div className="muted tiny">Yanıt olarak</div>}
-          {post.body && <p className={clsx("s-body", detail && "big")}><RichText text={post.body} /></p>}
+          {editing !== null ? (
+            <div className="s-edit-inline" onClick={(e) => e.stopPropagation()}>
+              <textarea value={editing} maxLength={500} rows={3} autoFocus onChange={(e) => setEditing(e.target.value)} />
+              <div className="row" style={{ justifyContent: "flex-end", gap: 6 }}>
+                <span className="muted tiny grow">{500 - editing.length}</span>
+                <button className="btn btn-ghost btn-sm" onClick={() => setEditing(null)}>Vazgeç</button>
+                <button className="btn btn-primary btn-sm" disabled={!editing.trim() && !post.media.length} onClick={async () => {
+                  try { await S.editPost(post.id, editing.trim()); const f = await S.postById(post.id); if (f) update(f); setEditing(null); } catch (e) { setMsg(String(e).replace(/^Error: /, "")); }
+                }}>Kaydet</button>
+              </div>
+            </div>
+          ) : post.body && <p className={clsx("s-body", detail && "big")}><RichText text={post.body} /></p>}
           <MediaGrid media={post.media} onOpen={(i) => onOpenMedia?.(post.media, i)} />
           {post.poll && <PollView post={post} onVoted={update} />}
           {post.quote_of && <QuoteEmbed id={post.quote_of} />}

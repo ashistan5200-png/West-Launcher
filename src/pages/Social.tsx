@@ -5,7 +5,7 @@ import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { open as openUrl } from "@tauri-apps/plugin-shell";
 import {
   ArrowLeft, AtSign, BadgeCheck, Bell, Bookmark, CalendarDays, Check, ChevronLeft, ChevronRight, Flag, Globe2, Hash, Heart, Home, ImagePlus,
-  Link2, Loader2, Lock, MapPin, MessageCircle, MoreHorizontal, PenSquare, Quote, Repeat2, Search, UserCheck, UserPlus, UserRound, UserX, VolumeX, X,
+  Link2, Loader2, Lock, Mail, MapPin, MessageCircle, MoreHorizontal, PenSquare, Quote, Repeat2, Search, Shield, UserCheck, UserPlus, UserRound, UserX, VolumeX, X,
 } from "lucide-react";
 import clsx from "clsx";
 import { api } from "@/lib/ipc";
@@ -16,6 +16,8 @@ import { useSocial } from "@/stores/social";
 import { Avatar, PostCard, RichText, ago } from "@/components/social/PostCard";
 import { Composer, ComposeModal } from "@/components/social/Composer";
 import { WestAccountCard } from "@/components/WestAccountCard";
+import { StoriesBar } from "@/components/social/Stories";
+import { MessagesView } from "@/components/social/Messages";
 import { Modal } from "@/components/Modal";
 import { Menu } from "@/components/instance/Menu";
 import { formatCount } from "@/lib/format";
@@ -23,7 +25,7 @@ import { formatCount } from "@/lib/format";
 const err = (e: unknown) => String(e).replace(/^Error: /, "");
 
 // ───────── Ortak düzen ─────────
-export function SocialLayout({ children }: { children: ReactNode }) {
+export function SocialLayout({ children, wide }: { children: ReactNode; wide?: boolean }) {
   const account = useWest((s) => s.account);
   const loaded = useWest((s) => s.loaded);
   const { me, loadMe, unread, refreshUnread, openCompose } = useSocial();
@@ -49,11 +51,13 @@ export function SocialLayout({ children }: { children: ReactNode }) {
     { to: "/social", icon: Home, label: "Akış", end: true },
     { to: "/social/search", icon: Search, label: "Keşfet" },
     { to: "/social/notifications", icon: Bell, label: "Bildirimler", badge: unread.notifications },
+    { to: "/social/messages", icon: Mail, label: "Mesajlar", badge: unread.messages },
     { to: "/social/bookmarks", icon: Bookmark, label: "Yer imleri" },
     ...(me ? [{ to: `/u/${me.username}`, icon: UserRound, label: "Profil" }] : []),
+    { to: "/social/settings", icon: Shield, label: "Gizlilik" },
   ];
   return (
-    <div className="s-layout">
+    <div className={clsx("s-layout", wide && "wide")}>
       <aside className="s-nav">
         {nav.map((n) => (
           <NavLink key={n.to} to={n.to} end={n.end} className={({ isActive }) => clsx("s-nav-item", isActive && "on")}>
@@ -70,13 +74,13 @@ export function SocialLayout({ children }: { children: ReactNode }) {
         )}
       </aside>
       <main className="s-center">{children}</main>
-      <aside className="s-rail">
+      {!wide && <aside className="s-rail">
         <form className="s-search" onSubmit={(e) => { e.preventDefault(); if (q.trim()) navigate(`/social/search?q=${encodeURIComponent(q.trim())}`); }}>
           <Search size={15} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="West'te ara" />
         </form>
         <Trending />
         <WhoToFollow />
-      </aside>
+      </aside>}
       <ComposeModal />
     </div>
   );
@@ -234,6 +238,7 @@ export function SocialFeedPage() {
           <button key={k} className={clsx(tab === k && "on")} onClick={() => setTab(k)}>{l}</button>
         ))}
       </div>
+      <StoriesBar />
       <Composer onPosted={() => window.dispatchEvent(new CustomEvent("west:posted"))} />
       <PostList load={load} deps={[tab]} empty={tab === "following" ? <><UserPlus size={26} /><p>Takip ettiğin kişilerin gönderileri burada görünür. Sağdaki önerilerden birini takip et!</p></> : <><Globe2 size={26} /><p>Henüz gönderi yok. İlk paylaşan sen ol!</p></>} />
     </SocialLayout>
@@ -286,7 +291,7 @@ export function NotificationsPage() {
         : shown.map((n) => {
           const Icon = N_ICON[n.type] ?? Bell;
           return (
-            <button key={n.id} className={clsx("s-notif", !n.read && "unread", n.type)} onClick={() => (n.post_id ? navigate(`/post/${n.post_id}`) : n.actor && navigate(`/u/${n.actor.username}`))}>
+            <button key={n.id} className={clsx("s-notif", !n.read && "unread", n.type)} onClick={() => (n.type === "message" ? navigate("/social/messages") : n.post_id ? navigate(`/post/${n.post_id}`) : n.actor && navigate(`/u/${n.actor.username}`))}>
               <Icon size={20} className="s-notif-ico" fill={n.type === "like" ? "currentColor" : "none"} />
               <div className="grow" style={{ minWidth: 0 }}>
                 <Avatar url={n.actor?.avatar_url} name={n.actor?.username ?? "?"} size={30} />
@@ -469,6 +474,9 @@ export function ProfilePage() {
                   ]}
                 />
                 {!blocked && (
+                  <button className="round-btn sm" title="Mesaj gönder" onClick={async () => { try { navigate(`/social/messages/${await S.startDm(p.id)}`); } catch (e) { setNotice(err(e)); } }}><Mail size={17} /></button>
+                )}
+                {!blocked && (
                   <button className={clsx("btn", rel.following ? "btn-ghost follow-on" : "btn-primary")} onClick={() => void doFollow()}>
                     {rel.following === "accepted" ? <span className="follow-label"><span>Takip ediliyor</span><span>Takibi bırak</span></span> : rel.following === "pending" ? "İstek gönderildi" : rel.followsMe ? "Sen de takip et" : "Takip et"}
                   </button>
@@ -596,5 +604,68 @@ function EditProfileModal({ open, onClose, profile, onSaved }: { open: boolean; 
         {error && <p className="hint error">{error}</p>}
       </div>
     </Modal>
+  );
+}
+
+// ───────── Mesajlar ─────────
+export function MessagesPage() {
+  return <SocialLayout wide><MessagesView /></SocialLayout>;
+}
+
+// ───────── Gizlilik ve güvenlik ─────────
+export function PrivacyPage() {
+  const account = useWest((s) => s.account);
+  const { me, setMe } = useSocial();
+  const [blocked, setBlocked] = useState<Profile[] | null>(null);
+  const [muted, setMuted] = useState<Profile[] | null>(null);
+  const [saved, setSaved] = useState<string | null>(null);
+  useEffect(() => {
+    if (!account) return;
+    S.blockedList(account.userId).then(setBlocked).catch(() => setBlocked([]));
+    S.mutedList(account.userId).then(setMuted).catch(() => setMuted([]));
+  }, [account]);
+  const patch = async (p: Partial<Profile>) => {
+    if (!me) return;
+    try { const [np] = await S.updateProfile(me.id, p); setMe(np); setSaved("Kaydedildi"); } catch (e) { setSaved(err(e)); }
+  };
+  return (
+    <SocialLayout>
+      <div className="s-title"><h2><Shield size={20} /> Gizlilik ve güvenlik</h2></div>
+      {me && (
+        <section className="s-settings">
+          <label className="s-set-row">
+            <span><strong><Lock size={15} /> Gizli hesap</strong><span className="muted small">Gönderilerini ve hikâyelerini yalnızca onayladığın takipçiler görür. Yeni takipçiler istek gönderir.</span></span>
+            <input type="checkbox" className="switch-cb" checked={me.is_private} onChange={(e) => void patch({ is_private: e.target.checked })} />
+          </label>
+          <label className="s-set-row">
+            <span><strong><Mail size={15} /> Kimler mesaj atabilir</strong><span className="muted small">Mevcut sohbetler etkilenmez.</span></span>
+            <select value={me.allow_dms} onChange={(e) => void patch({ allow_dms: e.target.value as Profile["allow_dms"] })}>
+              <option value="everyone">Herkes</option><option value="followers">Takip ettiklerim</option><option value="none">Kimse</option>
+            </select>
+          </label>
+          {saved && <p className="muted tiny">{saved}</p>}
+        </section>
+      )}
+      <section className="s-settings">
+        <h3><UserX size={16} /> Engellenenler</h3>
+        <p className="muted small">Engellediğin kişiler seni göremez, takip edemez ve mesaj atamaz; sen de onları görmezsin.</p>
+        {blocked === null ? <Loader2 size={16} className="spin" /> : blocked.length === 0 ? <p className="muted small">Kimseyi engellemedin.</p>
+          : blocked.map((p) => <UserRow key={p.id} p={p} extra={<button className="btn btn-ghost btn-sm" onClick={async (e) => { e.stopPropagation(); await S.setBlock(account!.userId, p.id, false); setBlocked((b) => b?.filter((x) => x.id !== p.id) ?? null); }}>Engeli kaldır</button>} />)}
+      </section>
+      <section className="s-settings">
+        <h3><VolumeX size={16} /> Sessize alınanlar</h3>
+        <p className="muted small">Sessize aldığın kişilerin gönderileri akışında görünmez ve senden haberi olmaz.</p>
+        {muted === null ? <Loader2 size={16} className="spin" /> : muted.length === 0 ? <p className="muted small">Kimseyi sessize almadın.</p>
+          : muted.map((p) => <UserRow key={p.id} p={p} extra={<button className="btn btn-ghost btn-sm" onClick={async (e) => { e.stopPropagation(); await S.setMute(account!.userId, p.id, false); setMuted((b) => b?.filter((x) => x.id !== p.id) ?? null); }}>Sesi aç</button>} />)}
+      </section>
+      <section className="s-settings">
+        <h3><Flag size={16} /> Güvenli kal</h3>
+        <ul className="small muted" style={{ margin: 0, paddingLeft: 18 }}>
+          <li>Şifreni, e-postanı ya da Minecraft hesap bilgilerini kimseyle paylaşma.</li>
+          <li>Rahatsız eden birini gönderi menüsünden ya da profilinden engelleyebilir ve şikâyet edebilirsin.</li>
+          <li>Tanımadığın kişilerden gelen bağlantılara dikkat et.</li>
+        </ul>
+      </section>
+    </SocialLayout>
   );
 }

@@ -1,4 +1,4 @@
-import { BookmarksPage, NotificationsPage, PostPage, ProfilePage, SocialFeedPage, SocialSearchPage, TagPage } from "@/pages/Social";
+import { BookmarksPage, MessagesPage, PrivacyPage, NotificationsPage, PostPage, ProfilePage, SocialFeedPage, SocialSearchPage, TagPage } from "@/pages/Social";
 import { useEffect } from "react";
 import { Route, Routes, useLocation } from "react-router-dom";
 import { AnimatePresence, MotionConfig, motion } from "framer-motion";
@@ -81,6 +81,9 @@ export default function App() {
                   <Route path="/social" element={<SocialFeedPage />} />
                   <Route path="/social/notifications" element={<NotificationsPage />} />
                   <Route path="/social/bookmarks" element={<BookmarksPage />} />
+                  <Route path="/social/messages" element={<MessagesPage />} />
+                  <Route path="/social/messages/:id" element={<MessagesPage />} />
+                  <Route path="/social/settings" element={<PrivacyPage />} />
                   <Route path="/social/search" element={<SocialSearchPage />} />
                   <Route path="/social/tag/:tag" element={<TagPage />} />
                   <Route path="/u/:username" element={<ProfilePage />} />

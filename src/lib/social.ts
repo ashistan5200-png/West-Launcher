@@ -151,3 +151,76 @@ export const notifications = async () => {
 };
 export const markAllRead = (me: string) => api.westApi("PATCH", R("notifications"), { query: [["user_id", eq(me)], ["read", "eq.false"]], body: { read: true } });
 export const unreadCounts = () => api.westApi<{ notifications: number; messages: number }>("POST", R("rpc/unread_counts"), { body: {} });
+
+// ───────── Mesajlar (DM) ─────────
+export interface Message { id: string; conversation_id: string; sender_id: string; body: string | null; media: Media[]; reply_to: string | null; created_at: string }
+export interface Conversation { id: string; is_group: boolean; title: string | null; last_message_at: string; members: { user_id: string; last_read_at: string }[]; others: Profile[]; last: Message | null; unread: boolean }
+
+export const startDm = (other: string) => api.westApi<string>("POST", R("rpc/start_dm"), { body: { other } });
+export const conversations = async (me: string): Promise<Conversation[]> => {
+  const mine = await api.westApi<{ conversation_id: string; last_read_at: string }[]>("GET", R("conversation_members"), { query: [["user_id", eq(me)]] });
+  if (!mine.length) return [];
+  const ids = mine.map((m) => m.conversation_id);
+  const [convs, members] = await Promise.all([
+    api.westApi<{ id: string; is_group: boolean; title: string | null; last_message_at: string }[]>("GET", R("conversations"), { query: [["id", inList(ids)], ["order", "last_message_at.desc"]] }),
+    api.westApi<{ conversation_id: string; user_id: string; last_read_at: string }[]>("GET", R("conversation_members"), { query: [["conversation_id", inList(ids)]] }),
+  ]);
+  const people = await profilesByIds(members.filter((m) => m.user_id !== me).map((m) => m.user_id));
+  const lasts = await Promise.all(convs.map((c) => api.westApi<Message[]>("GET", R("messages"), { query: [["conversation_id", eq(c.id)], ["order", "created_at.desc"], ["limit", "1"]] }).then((x) => x[0] ?? null).catch(() => null)));
+  return convs.map((c, i) => {
+    const ms = members.filter((m) => m.conversation_id === c.id);
+    const myRead = mine.find((m) => m.conversation_id === c.id)?.last_read_at ?? c.last_message_at;
+    const last = lasts[i];
+    return {
+      ...c,
+      members: ms,
+      others: people.filter((p) => ms.some((m) => m.user_id === p.id)),
+      last,
+      unread: !!last && last.sender_id !== me && new Date(last.created_at) > new Date(myRead),
+    };
+  });
+};
+export const messages = (conv: string, before?: string) =>
+  api.westApi<Message[]>("GET", R("messages"), { query: [["conversation_id", eq(conv)], ["created_at", `lt.${before ?? new Date(Date.now() + 60000).toISOString()}`], ["order", "created_at.desc"], ["limit", "50"]] }).then((m) => m.reverse());
+export const newerMessages = (conv: string, after: string) =>
+  api.westApi<Message[]>("GET", R("messages"), { query: [["conversation_id", eq(conv)], ["created_at", `gt.${after}`], ["order", "created_at.asc"], ["limit", "100"]] });
+export const sendMessage = async (conv: string, body: string, media: Media[] = [], replyTo: string | null = null) =>
+  (await api.westApi<Message[]>("POST", R("messages"), { body: { conversation_id: conv, body: body.trim() || null, media, reply_to: replyTo }, prefer: "return=representation" }))[0];
+export const deleteMessage = (id: string) => api.westApi("DELETE", R("messages"), { query: [["id", eq(id)]] });
+export const markConversationRead = (conv: string, me: string) =>
+  api.westApi("PATCH", R("conversation_members"), { query: [["conversation_id", eq(conv)], ["user_id", eq(me)]], body: { last_read_at: new Date().toISOString() } });
+export const conversationMembers = (conv: string) =>
+  api.westApi<{ conversation_id: string; user_id: string; last_read_at: string }[]>("GET", R("conversation_members"), { query: [["conversation_id", eq(conv)]] });
+export const leaveConversation = (conv: string, me: string) => api.westApi("DELETE", R("conversation_members"), { query: [["conversation_id", eq(conv)], ["user_id", eq(me)]] });
+
+// ───────── Hikâyeler ─────────
+export interface Story { id: string; author_id: string; media_url: string; caption: string | null; created_at: string; expires_at: string }
+export interface StoryGroup { author: Profile; stories: Story[]; seen: boolean }
+export const storyGroups = async (me: string | null): Promise<StoryGroup[]> => {
+  const list = await api.westApi<Story[]>("GET", R("stories"), { query: [["expires_at", `gt.${new Date().toISOString()}`], ["order", "created_at.asc"], ["limit", "300"]] });
+  if (!list.length) return [];
+  const [authors, views] = await Promise.all([
+    profilesByIds(list.map((s) => s.author_id)),
+    me ? api.westApi<{ story_id: string }[]>("GET", R("story_views"), { query: [["viewer_id", eq(me)], ["story_id", inList(list.map((s) => s.id))]] }) : Promise.resolve([]),
+  ]);
+  const seen = new Set(views.map((v) => v.story_id));
+  const groups = authors.map((a) => {
+    const stories = list.filter((s) => s.author_id === a.id);
+    return { author: a, stories, seen: stories.every((s) => seen.has(s.id)) };
+  });
+  // Kendi hikâyen önce, sonra görülmemişler, en yeniler
+  return groups.sort((x, y) => Number(y.author.id === me) - Number(x.author.id === me) || Number(x.seen) - Number(y.seen)
+    || new Date(y.stories[y.stories.length - 1].created_at).getTime() - new Date(x.stories[x.stories.length - 1].created_at).getTime());
+};
+export const createStory = (mediaUrl: string, caption: string) => api.westApi("POST", R("stories"), { body: { media_url: mediaUrl, caption: caption.trim() || null } });
+export const deleteStory = (id: string) => api.westApi("DELETE", R("stories"), { query: [["id", eq(id)]] });
+export const markStorySeen = (id: string) => api.westApi("POST", R("story_views"), { body: { story_id: id }, prefer: "resolution=ignore-duplicates" }).catch(() => {});
+export const storyViewers = async (id: string) => {
+  const v = await api.westApi<{ viewer_id: string; viewed_at: string }[]>("GET", R("story_views"), { query: [["story_id", eq(id)], ["order", "viewed_at.desc"]] });
+  const ps = await profilesByIds(v.map((x) => x.viewer_id));
+  return v.map((x) => ({ ...x, profile: ps.find((p) => p.id === x.viewer_id) })).filter((x) => x.profile);
+};
+
+// ───────── Gizlilik listeleri ─────────
+export const blockedList = async (me: string) => profilesByIds((await api.westApi<{ blocked_id: string }[]>("GET", R("blocks"), { query: [["blocker_id", eq(me)]] })).map((b) => b.blocked_id));
+export const mutedList = async (me: string) => profilesByIds((await api.westApi<{ muted_id: string }[]>("GET", R("mutes"), { query: [["muter_id", eq(me)]] })).map((b) => b.muted_id));
