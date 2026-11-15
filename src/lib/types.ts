@@ -190,6 +190,25 @@ export interface ContentHit {
   versions?: string[];
   loaders?: string[];
   updated?: string | null;
+  gallery?: string[];
+}
+
+/** Modrinth proje ayrıntısı (yalnızca kullanılan alanlar) */
+export interface ProjectDetail {
+  id: string; slug: string; title: string; description: string; body: string; project_type: string;
+  categories: string[]; additional_categories?: string[]; loaders: string[]; game_versions: string[];
+  client_side: string; server_side: string; downloads: number; followers: number;
+  icon_url: string | null; published: string; updated: string;
+  license?: { id: string; name: string; url: string | null } | null;
+  source_url?: string | null; issues_url?: string | null; wiki_url?: string | null; discord_url?: string | null;
+  donation_urls?: { platform: string; url: string }[];
+  gallery: { url: string; raw_url?: string; title: string | null; description: string | null; featured: boolean }[];
+  ownerName?: string; ownerAvatar?: string | null;
+}
+export interface ProjectVersion {
+  id: string; name: string; version_number: string; changelog: string | null; date_published: string;
+  downloads: number; version_type: "release" | "beta" | "alpha"; game_versions: string[]; loaders: string[];
+  files: { filename: string; size: number; primary: boolean }[];
 }
 
 export interface WestAccount { username: string; email: string; emailConfirmed: boolean }

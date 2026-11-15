@@ -24,6 +24,16 @@ pub async fn search_content(state: State<'_, AppState>, query: SearchQuery) -> R
 }
 
 #[tauri::command]
+pub async fn content_project(state: State<'_, AppState>, id: String) -> Result<serde_json::Value> {
+    content::modrinth::project_detail(&state.http, &id).await
+}
+
+#[tauri::command]
+pub async fn content_versions(state: State<'_, AppState>, id: String) -> Result<serde_json::Value> {
+    content::modrinth::project_versions(&state.http, &id).await
+}
+
+#[tauri::command]
 pub async fn content_tags(state: State<'_, AppState>) -> Result<content::modrinth::Tags> {
     content::modrinth::tags(&state.http, &state.paths.cache()).await
 }

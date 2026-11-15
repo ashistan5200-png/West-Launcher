@@ -91,6 +91,8 @@ pub fn run() {
             commands::content::install_modpack,
             commands::content::installed_content,
             commands::content::content_tags,
+            commands::content::content_project,
+            commands::content::content_versions,
             commands::cloud::west_status,
             commands::cloud::west_username_available,
             commands::cloud::west_signup,

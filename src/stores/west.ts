@@ -18,8 +18,8 @@ export const useWest = create<WestState>((set) => ({
   loaded: false,
   load: async () => {
     if (!isTauri()) return set({ loaded: true });
-    const s = await api.westStatus().catch(() => ({ configured: false, account: null }));
-    set({ configured: s.configured, account: s.account, loaded: true });
+    const s = await api.westStatus().catch(() => null);
+    set({ configured: !!s?.configured, account: s?.account ?? null, loaded: true });
   },
   setAccount: (account) => set({ account }),
   logout: async () => {

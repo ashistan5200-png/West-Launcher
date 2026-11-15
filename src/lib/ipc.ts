@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import type {
+  ProjectDetail, ProjectVersion,
   ContentTags, WestStatus, WestAccount, WestSignupResult,
   ContentFile, UpdateReport, World, LogFile, FileEntry, ExportReport,
   AshiEvent, AshiSkin, HuntPlan,
@@ -72,6 +73,8 @@ export const api = {
   // İçerik motoru
   searchContent: (query: SearchQuery) => invoke<SearchResult>("search_content", { query }),
   contentTags: () => invoke<ContentTags>("content_tags"),
+  contentProject: (id: string) => invoke<ProjectDetail>("content_project", { id }),
+  contentVersions: (id: string) => invoke<ProjectVersion[]>("content_versions", { id }),
   westStatus: () => invoke<WestStatus>("west_status"),
   westUsernameAvailable: (username: string) => invoke<boolean>("west_username_available", { username }),
   westSignup: (username: string, email: string, password: string) => invoke<WestSignupResult>("west_signup", { username, email, password }),

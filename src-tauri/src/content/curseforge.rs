@@ -122,6 +122,7 @@ impl Mod {
             versions: vec![],
             loaders: vec![],
             updated: None,
+            gallery: vec![],
         }
     }
 }

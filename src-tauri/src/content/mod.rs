@@ -70,6 +70,9 @@ pub struct ContentHit {
     pub loaders: Vec<String>,
     #[serde(default)]
     pub updated: Option<String>,
+    /// Galeri görselleri (önce öne çıkan)
+    #[serde(default)]
+    pub gallery: Vec<String>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -188,7 +191,7 @@ mod tests {
         ContentHit {
             source: src, id: title.into(), slug: title.into(), title: title.into(), description: String::new(), author: String::new(),
             icon: None, downloads: 0, kind: Kind::Mod, categories: vec![], url: String::new(), also_on: None,
-            client_side: None, server_side: None, versions: vec![], loaders: vec![], updated: None,
+            client_side: None, server_side: None, versions: vec![], loaders: vec![], updated: None, gallery: vec![],
         }
     }
     #[test]

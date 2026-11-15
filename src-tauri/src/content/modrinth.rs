@@ -82,6 +82,9 @@ struct Hit {
     server_side: Option<String>,
     date_modified: Option<String>,
     #[serde(default)]
+    gallery: Vec<String>,
+    featured_gallery: Option<String>,
+    #[serde(default)]
     display_categories: Vec<String>,
 }
 
@@ -159,6 +162,7 @@ pub async fn search(http: &Http, q: &SearchQuery) -> Result<(Vec<ContentHit>, u6
                 server_side: h.server_side,
                 versions: h.versions,
                 updated: h.date_modified,
+                gallery: h.featured_gallery.iter().cloned().chain(h.gallery.into_iter().filter(|g| Some(g) != h.featured_gallery.as_ref())).take(6).collect(),
             }
         })
         .collect();
@@ -233,4 +237,31 @@ pub async fn best_version(http: &Http, project_id: &str, game_version: &str, loa
         .or_else(|| versions.first())
         .cloned()
         .ok_or_else(|| AppError::NotFound(format!("{game_version}{} için uyumlu sürüm", loader.map(|l| format!(" / {l}")).unwrap_or_default())))
+}
+
+
+/// Keşfet ayrıntı sayfası: proje (açıklama, galeri, bağlantılar) ve sahip bilgisi.
+pub async fn project_detail(http: &Http, id: &str) -> Result<serde_json::Value> {
+    if id.is_empty() || id.contains(['/', '?', '#', '.']) {
+        return Err(AppError::msg("Geçersiz proje"));
+    }
+    let mut p: serde_json::Value = http.json(&format!("{API}/project/{id}")).await?;
+    if let Some(team) = p["team"].as_str().map(String::from) {
+        if let Ok(members) = http.json::<Vec<serde_json::Value>>(&format!("{API}/team/{team}/members")).await {
+            let owner = members.iter().find(|m| m["role"].as_str().map(|r| r.eq_ignore_ascii_case("owner")).unwrap_or(false)).or(members.first());
+            if let Some(o) = owner {
+                p["ownerName"] = o["user"]["username"].clone();
+                p["ownerAvatar"] = o["user"]["avatar_url"].clone();
+            }
+        }
+    }
+    Ok(p)
+}
+
+/// Sürüm geçmişi (en yeniden eskiye), her sürümün değişiklik notlarıyla.
+pub async fn project_versions(http: &Http, id: &str) -> Result<serde_json::Value> {
+    if id.is_empty() || id.contains(['/', '?', '#', '.']) {
+        return Err(AppError::msg("Geçersiz proje"));
+    }
+    http.json(&format!("{API}/project/{id}/version")).await
 }

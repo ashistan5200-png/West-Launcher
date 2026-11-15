@@ -8,11 +8,13 @@ import clsx from "clsx";
 import { api, isTauri } from "@/lib/ipc";
 import type { ContentHit, ContentKind, ContentTags, Instance, SearchQuery } from "@/lib/types";
 import { useInstances } from "@/stores/instances";
-import { useContent, contentKey } from "@/stores/content";
 import { ContentIcon } from "@/components/ContentIcon";
-import { InstanceIcon } from "@/components/InstanceIcon";
 import { Menu } from "@/components/instance/Menu";
+import { InstallMenu } from "@/components/InstallMenu";
+import { ModDetail } from "@/components/ModDetail";
+import { AnimatePresence } from "framer-motion";
 import { LOADER_LABEL, formatCount, formatRelative } from "@/lib/format";
+import { catLabel } from "@/lib/categories";
 
 const KINDS: { id: ContentKind; label: string }[] = [
   { id: "mod", label: "Modlar" },
@@ -36,21 +38,6 @@ const SORTS: { id: NonNullable<SearchQuery["sort"]>; label: string }[] = [
   { id: "updated", label: "Son güncellenen" },
 ];
 
-/** Modrinth kategori adlarının Türkçesi (bilinmeyenler olduğu gibi gösterilir). */
-const CAT_TR: Record<string, string> = {
-  adventure: "Macera", cursed: "Tuhaf", decoration: "Dekorasyon", economy: "Ekonomi", equipment: "Ekipman", food: "Yemek",
-  "game-mechanics": "Oyun mekaniği", library: "Kütüphane", magic: "Büyü", management: "Yönetim", minigame: "Mini oyun",
-  mobs: "Yaratıklar", optimization: "Optimizasyon", social: "Sosyal", storage: "Depolama", technology: "Teknoloji",
-  transportation: "Ulaşım", utility: "Araçlar", worldgen: "Dünya üretimi", challenging: "Zorlayıcı", combat: "Dövüş",
-  "kitchen-sink": "Her şeyden biraz", lightweight: "Hafif", multiplayer: "Çok oyunculu", quests: "Görevler",
-  atmosphere: "Atmosfer", bloom: "Parlama", "cartoon": "Çizgi film", "colored-lighting": "Renkli ışık", fantasy: "Fantastik",
-  foliage: "Bitki örtüsü", "path-tracing": "Işın izleme", pbr: "PBR", reflections: "Yansımalar", "semi-realistic": "Yarı gerçekçi",
-  shadows: "Gölgeler", realistic: "Gerçekçi", vanilla: "Vanilla benzeri", "vanilla-like": "Vanilla benzeri", simplistic: "Sade",
-  themed: "Temalı", tweaks: "İnce ayar", audio: "Ses", blocks: "Bloklar", core_shaders: "Çekirdek shader", entities: "Varlıklar",
-  environment: "Çevre", fonts: "Yazı tipleri", gui: "Arayüz", items: "Eşyalar", locale: "Dil", models: "Modeller",
-  modded: "Modlu", "high": "Yüksek", "medium": "Orta", "low": "Düşük", potato: "Patates PC", screenshot: "Ekran görüntüsü",
-};
-const catLabel = (c: string) => CAT_TR[c] ?? c.replace(/[-_]/g, " ").replace(/^\w/, (m) => m.toUpperCase());
 
 const PAGE = 24;
 
@@ -69,16 +56,6 @@ const versionRange = (v: string[] | undefined) => {
   return rel.length === 1 ? rel[0] : `${rel[0]} – ${rel[rel.length - 1]}`;
 };
 
-function compatible(hit: ContentHit, inst: Instance): string | null {
-  if (hit.versions?.length && !hit.versions.includes(inst.mcVersion)) return `Minecraft ${inst.mcVersion} desteklenmiyor`;
-  if (hit.kind === "mod") {
-    if (inst.loader.kind === "vanilla") return "Vanilla instance'a mod kurulamaz";
-    const l = hit.loaders ?? [];
-    const ok = !l.length || l.includes(inst.loader.kind) || (inst.loader.kind === "quilt" && l.includes("fabric"));
-    if (!ok) return `${LOADER_LABEL[inst.loader.kind]} desteklenmiyor`;
-  }
-  return null;
-}
 
 export function BrowsePage() {
   const [params, setParams] = useSearchParams();
@@ -100,6 +77,7 @@ export function BrowsePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const reqId = useRef(0);
+  const [detail, setDetail] = useState<ContentHit | null>(null);
 
   useEffect(() => {
     if (isTauri()) api.contentTags().then(setTags).catch(() => {});
@@ -256,7 +234,7 @@ export function BrowsePage() {
         {error && <div className="banner banner-error">{error}</div>}
 
         <div className="bresults">
-          {hits.map((h) => <ResultCard key={h.id} hit={h} instances={instances} preferred={fromInstance} />)}
+          {hits.map((h) => <ResultCard key={h.id} hit={h} instances={instances} preferred={fromInstance} onOpen={() => setDetail(h)} />)}
         </div>
 
         {loading && hits.length === 0 && <div className="center pad muted"><Loader2 className="spin" size={18} /></div>}
@@ -267,24 +245,19 @@ export function BrowsePage() {
           </button>
         )}
       </div>
+      <AnimatePresence>
+        {detail && <ModDetail hit={detail} instances={instances} preferred={fromInstance} onClose={() => setDetail(null)} />}
+      </AnimatePresence>
     </div>
   );
 }
 
-function ResultCard({ hit, instances, preferred }: { hit: ContentHit; instances: Instance[]; preferred: Instance | null }) {
-  const installing = useContent((s) => !!s.installing[contentKey(hit)]);
-  const install = useContent((s) => s.install);
-  const [done, setDone] = useState<string | null>(null);
+function ResultCard({ hit, instances, preferred, onOpen }: { hit: ContentHit; instances: Instance[]; preferred: Instance | null; onOpen: () => void }) {
   const side = sideLabel(hit);
   const range = versionRange(hit.versions);
-
-  const doInstall = async (inst: Instance | null) => {
-    await install(hit, inst?.id ?? null);
-    setDone(inst?.name ?? "yeni instance");
-  };
-
+  const shots = hit.gallery ?? [];
   return (
-    <article className="rcard">
+    <article className="rcard clickable" onClick={onOpen} title="Ayrıntılar, galeri ve sürüm notları">
       <ContentIcon key={hit.icon ?? hit.id} src={hit.icon} title={hit.title} kind={hit.kind} size={64} />
       <div className="rcard-main">
         <div className="rcard-title">
@@ -299,41 +272,18 @@ function ResultCard({ hit, instances, preferred }: { hit: ContentHit; instances:
           {hit.categories.slice(0, 3).map((c) => <span key={c} className="rtag cat">{catLabel(c)}</span>)}
         </div>
       </div>
-      <div className="rcard-side">
+      {shots.length > 0 && (
+        <div className="rcard-shots" aria-label="Görseller">
+          {shots.slice(0, 3).map((g) => <img key={g} src={g} alt="" loading="lazy" referrerPolicy="no-referrer" />)}
+        </div>
+      )}
+      <div className="rcard-side" onClick={(e) => e.stopPropagation()}>
         <span className="rstat"><Download size={13} /> {formatCount(hit.downloads)}</span>
         {hit.updated && <span className="rstat muted">{formatRelative(hit.updated)}</span>}
         <div className="row" style={{ gap: 6 }}>
           <button className="icon-btn" title="Modrinth sayfası" onClick={() => void openUrl(hit.url)}><ExternalLink size={16} /></button>
-          {hit.kind === "modpack" ? (
-            <button className="btn btn-primary" disabled={installing} onClick={() => void doInstall(null)}>
-              {installing ? <Loader2 size={15} className="spin" /> : done ? <Check size={15} /> : <Download size={15} />} {done ? "Kuruldu" : "Kur"}
-            </button>
-          ) : (
-            <Menu
-              trigger={() => (
-                <button className="btn btn-primary" disabled={installing}>
-                  {installing ? <Loader2 size={15} className="spin" /> : done ? <Check size={15} /> : <Download size={15} />} {done ? "Eklendi" : "Ekle"} <ChevronDown size={14} />
-                </button>
-              )}
-              items={
-                instances.length === 0
-                  ? [{ label: "Önce bir instance oluştur", disabled: true, onClick: () => {} }]
-                  : [...instances]
-                      .sort((a, b) => (a.id === preferred?.id ? -1 : b.id === preferred?.id ? 1 : Number(!!compatible(hit, a)) - Number(!!compatible(hit, b))))
-                      .map((inst) => {
-                        const why = compatible(hit, inst);
-                        return {
-                          label: why ? `${inst.name} — ${why}` : `${inst.name} · ${LOADER_LABEL[inst.loader.kind]} ${inst.mcVersion}`,
-                          icon: <InstanceIcon instance={inst} size={18} />,
-                          disabled: !!why,
-                          onClick: () => void doInstall(inst),
-                        };
-                      })
-              }
-            />
-          )}
+          <InstallMenu hit={hit} instances={instances} preferred={preferred} />
         </div>
-        {done && <span className="tiny muted truncate" title={done}>→ {done}</span>}
       </div>
     </article>
   );
