@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import type {
+  ContentTags, WestStatus, WestAccount, WestSignupResult,
   ContentFile, UpdateReport, World, LogFile, FileEntry, ExportReport,
   AshiEvent, AshiSkin, HuntPlan,
   PatchNote, ModUpdate, AssetDiff,
@@ -70,6 +71,13 @@ export const api = {
 
   // İçerik motoru
   searchContent: (query: SearchQuery) => invoke<SearchResult>("search_content", { query }),
+  contentTags: () => invoke<ContentTags>("content_tags"),
+  westStatus: () => invoke<WestStatus>("west_status"),
+  westUsernameAvailable: (username: string) => invoke<boolean>("west_username_available", { username }),
+  westSignup: (username: string, email: string, password: string) => invoke<WestSignupResult>("west_signup", { username, email, password }),
+  westLogin: (email: string, password: string) => invoke<WestAccount>("west_login", { email, password }),
+  westLogout: () => invoke<void>("west_logout"),
+  westResetPassword: (email: string) => invoke<void>("west_reset_password", { email }),
   installContent: (instanceId: string, source: ContentSource, projectId: string, kind: ContentKind) =>
     invoke<InstallReport>("install_content", { instanceId, source, projectId, kind }),
   installModpack: (hit: ContentHit) => invoke<Instance>("install_modpack", { source: hit.source, projectId: hit.id }),

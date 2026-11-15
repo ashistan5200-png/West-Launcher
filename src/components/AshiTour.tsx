@@ -31,7 +31,7 @@ const STEPS: Step[] = [
   {
     target: "/browse",
     title: "Keşfet",
-    text: "Modrinth ve CurseForge'u aynı anda ararım. Mod, modpack, shader ve resource pack tek tıkla kurulur.",
+    text: "Modrinth'teki on binlerce içeriği sürüme, yükleyiciye ve kategoriye göre süzerim. Mod, modpack, shader ve resource pack tek tıkla kurulur.",
     more: "Bir modun ihtiyaç duyduğu kütüphaneleri (Fabric API, Architectury…) kendim bulup kurarım; zaten kuruluysa atlarım.",
     mood: "search",
   },

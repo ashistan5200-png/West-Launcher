@@ -228,6 +228,7 @@ pub(crate) async fn run_tool(ctx: &Ctx<'_>, st: &mut ToolState, name: &str, inpu
                 limit: Some(SEARCH_LIMIT),
                 offset: None,
                 sources: None,
+                ..Default::default()
             };
             st.searches.push(q.query.clone());
             match content::search(ctx.http, ctx.cf_key, &q).await {
@@ -387,7 +388,7 @@ async fn keyword_assist(ctx: &Ctx<'_>, history: Vec<Value>, text: &str) -> Resul
         (Some(i), Kind::Shader | Kind::Resourcepack) => (Some(i.mc_version.clone()), None),
         _ => (None, None),
     };
-    let q = SearchQuery { query: query.clone(), kind: Some(kind), game_version: gv, loader, sort: None, limit: Some(6), offset: None, sources: None };
+    let q = SearchQuery { query: query.clone(), kind: Some(kind), game_version: gv, loader, sort: None, limit: Some(6), offset: None, sources: None, ..Default::default() };
     let r = content::search(ctx.http, ctx.cf_key, &q).await?;
     let picks: Vec<Pick> = r
         .hits

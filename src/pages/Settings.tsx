@@ -243,13 +243,6 @@ function KeysSection() {
         placeholder="sk-ant-…"
         set={secrets?.anthropic ?? false}
       />
-      <KeyField
-        name="curseforge"
-        title="CurseForge API anahtarı"
-        hint="CurseForge araması ve modpack'leri için. console.curseforge.com adresinden ücretsiz alınır."
-        placeholder="$2a$10$…"
-        set={secrets?.curseforge ?? false}
-      />
     </section>
   );
 }

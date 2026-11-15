@@ -24,6 +24,11 @@ pub async fn search_content(state: State<'_, AppState>, query: SearchQuery) -> R
 }
 
 #[tauri::command]
+pub async fn content_tags(state: State<'_, AppState>) -> Result<content::modrinth::Tags> {
+    content::modrinth::tags(&state.http, &state.paths.cache()).await
+}
+
+#[tauri::command]
 pub async fn install_content(app: AppHandle, state: State<'_, AppState>, instance_id: String, source: Source, project_id: String, kind: Kind) -> Result<InstallReport> {
     if state.running.lock().contains_key(&instance_id) || state.hunts.lock().contains_key(&instance_id) {
         return Err(AppError::msg("Instance çalışırken içerik kurulamaz"));

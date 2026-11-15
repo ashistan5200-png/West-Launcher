@@ -1,6 +1,7 @@
 pub mod accounts;
 pub mod assistant;
 pub mod commands;
+pub mod cloud;
 pub mod companion;
 pub mod content;
 pub mod core;
@@ -89,6 +90,13 @@ pub fn run() {
             commands::content::install_content,
             commands::content::install_modpack,
             commands::content::installed_content,
+            commands::content::content_tags,
+            commands::cloud::west_status,
+            commands::cloud::west_username_available,
+            commands::cloud::west_signup,
+            commands::cloud::west_login,
+            commands::cloud::west_logout,
+            commands::cloud::west_reset_password,
             commands::content::list_content,
             commands::content::refresh_content,
             commands::content::set_content_enabled,

@@ -97,7 +97,7 @@ export function AshiChat() {
             {messages.length === 0 && (
               <div className="chat-empty">
                 <AshiHead size={56} />
-                <p>Selam, ben Ashi! Ne tür bir oyun istediğini anlat; Modrinth ve CurseForge'u tarayıp en uygun modları, modpack'leri ve shader'ları bulayım.</p>
+                <p>Selam, ben Ashi! Ne tür bir oyun istediğini anlat; Modrinth'i tarayıp en uygun modları, modpack'leri ve shader'ları bulayım.</p>
                 {!smart && (
                   <p className="muted tiny">
                     Şu an basit arama modundayım.{" "}

@@ -5,6 +5,41 @@ use serde::Deserialize;
 
 pub const API: &str = "https://api.modrinth.com/v2";
 
+const LOADERS: &[&str] = &["fabric", "forge", "neoforge", "quilt", "liteloader", "modloader", "rift", "iris", "optifine", "canvas", "vanilla", "minecraft", "datapack", "bukkit", "paper", "spigot", "purpur", "folia", "sponge", "velocity", "bungeecord", "waterfall"];
+
+#[derive(Debug, Clone, serde::Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Category {
+    pub name: String,
+    pub project_type: String,
+    pub header: String,
+    #[serde(default)]
+    pub icon: String,
+}
+
+#[derive(Debug, Clone, serde::Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GameVersion {
+    pub version: String,
+    pub version_type: String,
+    #[serde(default)]
+    pub major: bool,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Tags {
+    pub categories: Vec<Category>,
+    pub game_versions: Vec<GameVersion>,
+}
+
+/// Keşfet filtreleri için Modrinth kategori ve sürüm listeleri (diskte önbelleklenir).
+pub async fn tags(http: &Http, cache: &std::path::Path) -> Result<Tags> {
+    let categories: Vec<Category> = http.json_cached(&format!("{API}/tag/category"), &cache.join("modrinth-categories.json"), None).await?;
+    let game_versions: Vec<GameVersion> = http.json_cached(&format!("{API}/tag/game_version"), &cache.join("modrinth-game-versions.json"), None).await?;
+    Ok(Tags { categories, game_versions })
+}
+
 fn project_type(k: Kind) -> &'static str {
     match k {
         Kind::Mod => "mod",
@@ -40,6 +75,13 @@ struct Hit {
     downloads: u64,
     project_type: String,
     #[serde(default)]
+    categories: Vec<String>,
+    #[serde(default)]
+    versions: Vec<String>,
+    client_side: Option<String>,
+    server_side: Option<String>,
+    date_modified: Option<String>,
+    #[serde(default)]
     display_categories: Vec<String>,
 }
 
@@ -47,6 +89,24 @@ pub async fn search(http: &Http, q: &SearchQuery) -> Result<(Vec<ContentHit>, u6
     let mut facets: Vec<Vec<String>> = vec![vec![format!("project_type:{}", project_type(q.kind.unwrap_or(Kind::Mod)))]];
     if let Some(v) = q.game_version.as_deref().filter(|v| !v.is_empty()) {
         facets.push(vec![format!("versions:{v}")]);
+    }
+    for c in q.categories.iter().flatten().filter(|c| !c.is_empty()) {
+        facets.push(vec![format!("categories:{c}")]);
+    }
+    match q.environment.as_deref() {
+        Some("client") => {
+            facets.push(vec!["client_side:required".into(), "client_side:optional".into()]);
+            facets.push(vec!["server_side:unsupported".into()]);
+        }
+        Some("server") => {
+            facets.push(vec!["server_side:required".into(), "server_side:optional".into()]);
+            facets.push(vec!["client_side:unsupported".into()]);
+        }
+        Some("both") => {
+            facets.push(vec!["client_side:required".into()]);
+            facets.push(vec!["server_side:required".into()]);
+        }
+        _ => {}
     }
     // Loader yalnızca mod ve modpack için anlamlı
     if matches!(q.kind.unwrap_or(Kind::Mod), Kind::Mod | Kind::Modpack) {
@@ -57,6 +117,8 @@ pub async fn search(http: &Http, q: &SearchQuery) -> Result<(Vec<ContentHit>, u6
     let index = match q.sort.as_deref() {
         Some("downloads") => "downloads",
         Some("updated") => "updated",
+        Some("newest") => "newest",
+        Some("follows") => "follows",
         _ => "relevance",
     };
     let resp: SearchResp = http
@@ -90,8 +152,13 @@ pub async fn search(http: &Http, q: &SearchQuery) -> Result<(Vec<ContentHit>, u6
                 icon: h.icon_url.filter(|s| !s.is_empty()),
                 downloads: h.downloads,
                 kind,
-                categories: h.display_categories,
+                loaders: h.categories.iter().filter(|c| LOADERS.contains(&c.as_str())).cloned().collect(),
+                categories: h.display_categories.into_iter().filter(|c| !LOADERS.contains(&c.as_str())).collect(),
                 also_on: None,
+                client_side: h.client_side,
+                server_side: h.server_side,
+                versions: h.versions,
+                updated: h.date_modified,
             }
         })
         .collect();

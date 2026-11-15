@@ -1,6 +1,7 @@
 //! Tauri IPC katmanı — iş mantığı core/instance/java modüllerinde kalır.
 
 pub mod accounts;
+pub mod cloud;
 pub mod ashi;
 pub mod assistant;
 pub mod content;

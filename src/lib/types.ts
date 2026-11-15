@@ -185,17 +185,32 @@ export interface ContentHit {
   categories: string[];
   url: string;
   alsoOn: ContentSource | null;
+  clientSide?: "required" | "optional" | "unsupported" | "unknown" | null;
+  serverSide?: "required" | "optional" | "unsupported" | "unknown" | null;
+  versions?: string[];
+  loaders?: string[];
+  updated?: string | null;
 }
+
+export interface WestAccount { username: string; email: string; emailConfirmed: boolean }
+export interface WestStatus { configured: boolean; account: WestAccount | null }
+export interface WestSignupResult { needsConfirmation: boolean; account: WestAccount | null }
+
+export interface ModrinthCategory { name: string; projectType: string; header: string; icon: string }
+export interface GameVersionTag { version: string; versionType: "release" | "snapshot" | "alpha" | "beta" | string; major: boolean }
+export interface ContentTags { categories: ModrinthCategory[]; gameVersions: GameVersionTag[] }
 
 export interface SearchQuery {
   query: string;
   kind?: ContentKind;
   gameVersion?: string | null;
   loader?: string | null;
-  sort?: "relevance" | "downloads" | "updated";
+  sort?: "relevance" | "downloads" | "updated" | "newest" | "follows";
   limit?: number;
   offset?: number;
   sources?: ContentSource[] | null;
+  categories?: string[] | null;
+  environment?: "client" | "server" | "both" | null;
 }
 
 export interface SearchResult {

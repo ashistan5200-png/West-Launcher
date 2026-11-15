@@ -57,6 +57,19 @@ pub struct ContentHit {
     pub url: String,
     /// Aynı proje diğer kaynakta da varsa
     pub also_on: Option<Source>,
+    /// "required" | "optional" | "unsupported" | "unknown"
+    #[serde(default)]
+    pub client_side: Option<String>,
+    #[serde(default)]
+    pub server_side: Option<String>,
+    /// Desteklenen Minecraft sürümleri (yeniden eskiye değil, Modrinth sırasıyla)
+    #[serde(default)]
+    pub versions: Vec<String>,
+    /// Desteklenen yükleyiciler (fabric, forge…)
+    #[serde(default)]
+    pub loaders: Vec<String>,
+    #[serde(default)]
+    pub updated: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -73,6 +86,12 @@ pub struct SearchQuery {
     pub offset: Option<u32>,
     /// Boşsa iki kaynak birden
     pub sources: Option<Vec<Source>>,
+    /// Modrinth kategori adları (hepsi eşleşmeli)
+    #[serde(default)]
+    pub categories: Option<Vec<String>>,
+    /// "client" (yalnız istemci) | "server" (yalnız sunucu) | "both" (ikisinde de gerekli)
+    #[serde(default)]
+    pub environment: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -112,44 +131,10 @@ pub fn merge(modrinth: Vec<ContentHit>, curseforge: Vec<ContentHit>) -> Vec<Cont
     out
 }
 
-pub async fn search(http: &crate::core::http::Http, cf_key: Option<&str>, q: &SearchQuery) -> Result<SearchResult> {
-    let want = |s: Source| q.sources.as_ref().map(|v| v.contains(&s)).unwrap_or(true);
-    let mr = async {
-        if want(Source::Modrinth) {
-            Some(modrinth::search(http, q).await)
-        } else {
-            None
-        }
-    };
-    let cf = async {
-        match (want(Source::Curseforge), cf_key) {
-            (true, Some(k)) => Some(curseforge::search(http, k, q).await),
-            _ => None,
-        }
-    };
-    let (mr, cf) = tokio::join!(mr, cf);
-    let mut notices = Vec::new();
-    let (mut total, mut mr_hits, mut cf_hits) = (0, vec![], vec![]);
-    match mr {
-        Some(Ok((h, t))) => {
-            mr_hits = h;
-            total += t;
-        }
-        Some(Err(e)) => notices.push(format!("Modrinth: {e}")),
-        None => {}
-    }
-    match cf {
-        Some(Ok((h, t))) => {
-            cf_hits = h;
-            total += t;
-        }
-        Some(Err(e)) => notices.push(format!("CurseForge: {e}")),
-        None if want(Source::Curseforge) => {
-            notices.push("CurseForge sonuçları için Ayarlar → Hesaplar ve anahtarlar bölümünden bir CurseForge API anahtarı ekleyin.".into())
-        }
-        None => {}
-    }
-    Ok(SearchResult { hits: merge(mr_hits, cf_hits), total, notices })
+/// Keşfet araması: yalnızca Modrinth (CurseForge kaldırıldı).
+pub async fn search(http: &crate::core::http::Http, _cf_key: Option<&str>, q: &SearchQuery) -> Result<SearchResult> {
+    let (hits, total) = modrinth::search(http, q).await?;
+    Ok(SearchResult { hits, total, notices: vec![] })
 }
 
 // ───────── Instance içerik dizini ─────────
@@ -203,6 +188,7 @@ mod tests {
         ContentHit {
             source: src, id: title.into(), slug: title.into(), title: title.into(), description: String::new(), author: String::new(),
             icon: None, downloads: 0, kind: Kind::Mod, categories: vec![], url: String::new(), also_on: None,
+            client_side: None, server_side: None, versions: vec![], loaders: vec![], updated: None,
         }
     }
     #[test]

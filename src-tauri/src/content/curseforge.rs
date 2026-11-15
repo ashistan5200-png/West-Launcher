@@ -117,6 +117,11 @@ impl Mod {
             kind,
             categories: self.categories.into_iter().take(3).map(|c| c.name).collect(),
             also_on: None,
+            client_side: None,
+            server_side: None,
+            versions: vec![],
+            loaders: vec![],
+            updated: None,
         }
     }
 }

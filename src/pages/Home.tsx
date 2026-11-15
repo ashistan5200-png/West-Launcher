@@ -87,7 +87,7 @@ export function HomePage() {
         <Stat icon={Timer} label="Toplam oyun süresi" value={formatDuration(totalSecs)} />
         <Stat icon={Boxes} label="Instance" value={String(playable.length)} onClick={() => navigate("/library")} />
         <Stat icon={UserRound} label="Hesap" value={account?.username ?? "Ekle"} sub={account ? (account.kind === "microsoft" ? "Microsoft" : "Offline") : undefined} onClick={() => navigate("/skins")} />
-        <Stat icon={Download} label="İçerik bul" value="Keşfet" sub="Modrinth + CurseForge" onClick={() => navigate("/browse")} />
+        <Stat icon={Download} label="İçerik bul" value="Keşfet" sub="Modrinth" onClick={() => navigate("/browse")} />
       </section>
 
       {playable.length > 1 && (
