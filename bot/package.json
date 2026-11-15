@@ -1,0 +1,16 @@
+{
+  "name": "west-bot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "West Client Discord sunucusunun güvenlik, moderasyon ve güncelleme botu",
+  "type": "module",
+  "main": "src/index.js",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env src/index.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "discord.js": "14.27.0"
+  }
+}
