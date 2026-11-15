@@ -7,7 +7,7 @@ import type {
   AshiEvent, AshiSkin, HuntPlan,
   PatchNote, ModUpdate, AssetDiff,
   Screenshot, FoundInstance, CompanionConfig, CompanionInfo, UpdateStatus,
-  AccountView, Cape, DeviceCode, MsLoginEvent, Skin, OllamaStatus, PullProgress,
+  AccountView, Cape, DeviceCode, MsLoginEvent, Skin, AiStatus, AiSetupProgress,
   ChatOutcome, ContentHit, ContentKind, ContentSource, InstallReport, InstalledContent, SearchQuery, SearchResult, SecretStatus,
   GameExit, GameLog, Hardware, Instance, JavaInstall, JvmProfile, LoaderKind,
   LoaderVersion, ManifestEntry, NewInstance, Progress, RunningInfo, Settings,
@@ -114,9 +114,9 @@ export const api = {
   setLauncherPassword: (password: string | null) => invoke<{ hasPassword: boolean }>("set_launcher_password", { password }),
   verifyLauncherPassword: (password: string) => invoke<boolean>("verify_launcher_password", { password }),
   resetLauncherLock: () => invoke<void>("reset_launcher_lock"),
-  ollamaStatus: () => invoke<OllamaStatus>("ollama_status"),
-  ollamaPull: () => invoke<void>("ollama_pull"),
-  setSecret: (name: "anthropic" | "curseforge", value: string) => invoke<SecretStatus>("set_secret", { name, value }),
+  ollamaStatus: () => invoke<AiStatus>("ollama_status"),
+  /** Ollama'yı (gerekiyorsa) ve modeli tek seferde kurar */
+  ollamaSetup: (model?: string) => invoke<void>("ollama_setup", { model: model ?? null }),
 
   // Hesaplar (token'lar asla UI'a gelmez)
   listAccounts: () => invoke<AccountView[]>("list_accounts"),
@@ -165,7 +165,7 @@ export const events = {
   onGameLog: (cb: (l: GameLog) => void): Promise<UnlistenFn> => listen<GameLog>("game-log", (e) => cb(e.payload)),
   onGameExit: (cb: (x: GameExit) => void): Promise<UnlistenFn> => listen<GameExit>("game-exit", (e) => cb(e.payload)),
   onAshi: (cb: (x: AshiEvent) => void): Promise<UnlistenFn> => listen<AshiEvent>("ashi", (e) => cb(e.payload)),
-  onOllamaPull: (cb: (x: PullProgress) => void): Promise<UnlistenFn> => listen<PullProgress>("ollama-pull", (e) => cb(e.payload)),
+  onOllamaSetup: (cb: (x: AiSetupProgress) => void): Promise<UnlistenFn> => listen<AiSetupProgress>("ollama-setup", (e) => cb(e.payload)),
   onThumb: (cb: (x: { path: string; thumb: string | null }) => void): Promise<UnlistenFn> =>
     listen<{ path: string; thumb: string | null }>("screenshot-thumb", (e) => cb(e.payload)),
   onScreenshotTaken: (cb: (x: { instanceId: string }) => void): Promise<UnlistenFn> =>

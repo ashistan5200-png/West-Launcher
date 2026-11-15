@@ -126,7 +126,7 @@ pub fn run() {
             commands::assistant::verify_launcher_password,
             commands::assistant::reset_launcher_lock,
             commands::assistant::ollama_status,
-            commands::assistant::ollama_pull,
+            commands::assistant::ollama_setup,
             // Hesaplar + skin yöneticisi
             commands::accounts::list_accounts,
             commands::accounts::add_offline_account,

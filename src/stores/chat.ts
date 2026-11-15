@@ -1,12 +1,14 @@
 import { create } from "zustand";
-import { api, isTauri } from "@/lib/ipc";
-import type { Pick, SecretStatus } from "@/lib/types";
+import { api } from "@/lib/ipc";
+import type { Pick } from "@/lib/types";
 
 export interface ChatMessage {
   id: number;
   role: "user" | "ashi";
   text: string;
   picks?: Pick[];
+  /** Basit modda Ashi'nin mesajdan yakaladığı anahtar kelimeler */
+  keywords?: string[];
   error?: boolean;
 }
 
@@ -16,13 +18,11 @@ interface ChatState {
   messages: ChatMessage[];
   /** Ham API geçmişi (tool_use / thinking blokları dahil) — opak */
   history: unknown[];
-  mode: "ollama" | "claude" | "keyword" | null;
+  mode: "ollama" | "keyword" | null;
   activeInstance: string | null;
-  secrets: SecretStatus | null;
   setOpen: (v: boolean) => void;
   toggle: () => void;
   setActiveInstance: (id: string | null) => void;
-  loadSecrets: () => Promise<void>;
   send: (text: string) => Promise<void>;
   reset: () => void;
 }
@@ -36,15 +36,10 @@ export const useChat = create<ChatState>((set, get) => ({
   history: [],
   mode: null,
   activeInstance: null,
-  secrets: null,
 
   setOpen: (open) => set({ open }),
   toggle: () => set((s) => ({ open: !s.open })),
   setActiveInstance: (activeInstance) => set({ activeInstance }),
-
-  loadSecrets: async () => {
-    if (isTauri()) set({ secrets: await api.secretStatus().catch(() => null) });
-  },
 
   send: async (text) => {
     const msg = text.trim();
@@ -55,7 +50,7 @@ export const useChat = create<ChatState>((set, get) => ({
       set((s) => ({
         history: out.history,
         mode: out.mode,
-        messages: [...s.messages, { id: ++mid, role: "ashi", text: out.reply, picks: out.picks }],
+        messages: [...s.messages, { id: ++mid, role: "ashi", text: out.reply, picks: out.picks, keywords: out.mode === "keyword" ? out.searches.flatMap((q) => q.split(" ")).filter(Boolean) : undefined }],
       }));
     } catch (e) {
       set((s) => ({ messages: [...s.messages, { id: ++mid, role: "ashi", text: String(e), error: true }] }));

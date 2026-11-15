@@ -74,12 +74,15 @@ Bir modlu instance çöktüğünde sağ altta maskot Ashi çıkar ve suçlu modu
 - CurseForge araması için bir API anahtarı gerekir; anahtar Ayarlar'dan girilir.
 
 ### Ashi asistanı
-Ayarlar'dan üç sağlayıcıdan biri seçilir:
-- **Yerel model (Ollama, varsayılan, ücretsiz):** Model kullanıcının bilgisayarında çalışır; API ücreti ve anahtar gerekmez. Önerilen model `qwen2.5:7b`, düşük RAM'li bilgisayarlar için `qwen2.5:3b`. Model Ayarlar'dan tek tıkla indirilir. Ollama çalışmıyorsa Ashi kendiliğinden basit aramaya geçer.
-- **Claude Haiku 5.5 (isteğe bağlı):** Kullanıcının kendi anahtarıyla çalışır. Token kullanımı kısıtlıdır: efor `low`, en fazla 2048 çıktı token'ı, en fazla 4 araç turu, aramada 8 sonuç ve kısaltılmış açıklamalar. Ücret yalnızca anahtar sahibinin hesabına yansır.
-- **Kapalı:** Yapay zeka kullanılmaz; Ashi Türkçe anahtar kelimelerle arar.
+Ashi'nin iki modu var, ikisi de ücretsiz ve hiçbir anahtar ya da hesap istemez:
+- **Akıllı mod (Ollama):** Model kullanıcının bilgisayarında çalışır. "Ashi'yi akıllandır" düğmesi Ollama'yı ve modeli **tek seferde** kurar (`assistant/setup.rs`):
+  - Windows: resmî kurulum dosyası sessiz modda çalışır, yönetici izni istemez.
+  - macOS: Ollama.app `/Applications` klasörüne (yazılamazsa `~/Applications`) kopyalanır.
+  - Linux: resmî paket launcher'ın veri klasörüne açılır, sudo gerekmez.
+  - Model RAM'e göre önerilir: 12 GB altı `qwen2.5:3b`, üstü `qwen2.5:7b`. Ollama kapalıysa ilk mesajda kendiliğinden başlatılır.
+- **Basit mod:** Yapay zeka kullanılmaz; Ashi mesajdaki anahtar kelimeleri yakalayıp (Türkçe → İngilizce) arar ve yakaladığı kelimeleri yanıtın altında gösterir. Ollama kurulu ya da açık değilse Ashi sessizce bu moda geçer.
 
-Ashi'nin araçları her sağlayıcıda aynıdır: `search_content`, `list_instances`, `present_recommendations`. Ashi yalnızca aramada gerçekten bulduğu projeleri kurulabilir kart olarak gösterebilir. Anahtarlar `secrets.json` dosyasında tutulur ve arayüze hiç gönderilmez.
+Ashi yalnızca aramada gerçekten bulduğu projeleri kurulabilir kart olarak gösterebilir.
 
 ### Skin ve hesaplar
 - **Hesaplar** (`accounts/`):

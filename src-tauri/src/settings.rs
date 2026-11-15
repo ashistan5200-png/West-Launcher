@@ -45,7 +45,7 @@ pub struct Settings {
     pub close_on_launch: bool,
     /// Mojang onaylı Azure uygulama kimliği (Microsoft girişi için)
     pub microsoft_client_id: Option<String>,
-    /// Ashi'nin yapay zekası: "ollama" (ücretsiz, yerel) | "claude" (kendi anahtarınla) | "off"
+    /// Ashi'nin yapay zekası: "ollama" (ücretsiz, yerel) | "off" (anahtar kelime modu)
     pub ai_provider: String,
     pub ollama_url: String,
     pub ollama_model: String,
@@ -88,7 +88,14 @@ impl Settings {
     pub fn load(path: &Path) -> Self {
         std::fs::read(path)
             .ok()
-            .and_then(|b| serde_json::from_slice(&b).ok())
+            .and_then(|b| serde_json::from_slice::<Self>(&b).ok())
+            .map(|mut s| {
+                // Claude seçeneği kaldırıldı → yerel modele geç (yoksa anahtar kelime moduna düşer)
+                if s.ai_provider != "off" {
+                    s.ai_provider = "ollama".into();
+                }
+                s
+            })
             .unwrap_or_default()
     }
 

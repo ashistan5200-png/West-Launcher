@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowUp, RotateCcw, Sparkles, X } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { ArrowUp, Brain, RotateCcw, Sparkles, X } from "lucide-react";
 import { useChat } from "@/stores/chat";
 import { useInstances } from "@/stores/instances";
 import { useContent } from "@/stores/content";
-import { useSettings } from "@/stores/settings";
+import { aiReady, useAi } from "@/stores/ai";
+import { AiSetupBadge } from "./AiSetup";
 import { AshiHead } from "./AshiHead";
 import { ContentRow } from "./ContentRow";
 import { LOADER_LABEL } from "@/lib/format";
@@ -19,8 +19,8 @@ const SUGGESTIONS = [
 
 /** Sağdan açılan Ashi sohbet paneli. */
 export function AshiChat() {
-  const navigate = useNavigate();
-  const { open, setOpen, busy, messages, send, reset, mode, activeInstance, setActiveInstance, secrets, loadSecrets } = useChat();
+  const { open, setOpen, busy, messages, send, reset, mode, activeInstance, setActiveInstance } = useChat();
+  const ai = useAi();
   const allInstances = useInstances((s) => s.instances);
   const instances = useMemo(() => allInstances.filter((i) => !i.isTemplate), [allInstances]);
   const loadInstalled = useContent((s) => s.loadInstalled);
@@ -30,7 +30,7 @@ export function AshiChat() {
 
   useEffect(() => {
     if (!open) return;
-    void loadSecrets();
+    void ai.refresh();
     if (!activeInstance && instances[0]) setActiveInstance(instances[0].id);
     window.setTimeout(() => inputRef.current?.focus(), 180);
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -49,12 +49,9 @@ export function AshiChat() {
     void send(text);
   };
 
-  const provider = useSettings((s) => s.settings.aiProvider);
-  const modeLabel =
-    mode === "keyword" || provider === "off" || (provider === "claude" && secrets && !secrets.anthropic)
-      ? "Basit arama modu"
-      : provider === "claude" ? "Claude Haiku · kendi anahtarınla" : "Yerel model · ücretsiz";
-  const smart = modeLabel !== "Basit arama modu";
+  // Son yanıt hangi modda geldiyse o; henüz yanıt yoksa kurulum durumuna bak
+  const smart = mode ? mode === "ollama" : aiReady(ai.status);
+  const modeLabel = smart ? "Akıllı mod · bilgisayarında çalışır" : "Basit mod · anahtar kelimeler";
 
   return (
     <AnimatePresence>
@@ -83,6 +80,15 @@ export function AshiChat() {
             </button>
           </header>
 
+          <AiSetupBadge />
+          {!smart && !ai.progress && (
+            <button className="chat-upgrade" onClick={() => ai.ask(true)}>
+              <Brain size={15} />
+              <span className="grow"><strong>Ashi'yi akıllandır</strong><span className="muted tiny">Ücretsiz · tek tıkla kurulur</span></span>
+              <Sparkles size={14} className="accent" />
+            </button>
+          )}
+
           <div className="chat-target">
             <span className="muted tiny">Hedef</span>
             <select className="select-sm grow" value={activeInstance ?? ""} onChange={(e) => setActiveInstance(e.target.value || null)}>
@@ -98,13 +104,7 @@ export function AshiChat() {
               <div className="chat-empty">
                 <AshiHead size={56} />
                 <p>Selam, ben Ashi! Ne tür bir oyun istediğini anlat; Modrinth'i tarayıp en uygun modları, modpack'leri ve shader'ları bulayım.</p>
-                {!smart && (
-                  <p className="muted tiny">
-                    Şu an basit arama modundayım.{" "}
-                    <button className="link" onClick={() => { setOpen(false); navigate("/settings#ai"); }}>Ücretsiz yerel yapay zekayı aç</button>{" "}
-                    ve isteğini gerçekten anlayan moda geç.
-                  </p>
-                )}
+                {!smart && <p className="muted tiny">Şu an basit moddayım: mesajındaki önemli kelimeleri yakalayıp arıyorum.</p>}
                 <div className="chat-suggest">
                   {SUGGESTIONS.map((s) => (
                     <button key={s} className="suggest" onClick={() => submit(s)}>{s}</button>
@@ -124,6 +124,12 @@ export function AshiChat() {
                 {m.role === "ashi" && <AshiHead size={22} className="chat-avatar" />}
                 <div className="chat-body">
                   <p className={`chat-bubble ${m.error ? "error" : ""}`}>{m.text}</p>
+                  {m.keywords && m.keywords.length > 0 && (
+                    <div className="chat-keywords" title="Basit modda Ashi bu kelimelerle aradı">
+                      <span className="muted tiny">Yakaladığım kelimeler</span>
+                      {m.keywords.map((k) => <mark key={k}>{k}</mark>)}
+                    </div>
+                  )}
                   {m.picks && m.picks.length > 0 && (
                     <div className="chat-picks">
                       {m.picks.map((p) => (

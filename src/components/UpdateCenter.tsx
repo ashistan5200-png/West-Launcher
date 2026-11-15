@@ -1,6 +1,6 @@
 import { useEffect, type ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowUpCircle, Check, ExternalLink, Loader2, RefreshCw } from "lucide-react";
+import { ArrowUpCircle, Check, ExternalLink, Loader2 } from "lucide-react";
 import { open as openUrl } from "@tauri-apps/plugin-shell";
 import { Modal } from "./Modal";
 import { useUpdate } from "@/stores/update";
@@ -117,30 +117,3 @@ export function UpdateModal() {
 }
 
 /** Ayarlar'daki "Güncellemeler" kartı. */
-export function UpdateSettings({ autoUpdate, onToggle }: { autoUpdate: boolean; onToggle: (v: boolean) => void }) {
-  const { status, check, checking, setOpen, error } = useUpdate();
-  const info = status?.info;
-  return (
-    <section className="card stack">
-      <h3>Güncellemeler</h3>
-      <div className="row">
-        <span className="grow small">
-          West Client <strong>v{status?.current ?? "…"}</strong>
-          {info ? <> · <span className="accent">v{info.version} hazır</span></> : status && !checking ? " · en güncel sürüm" : ""}
-        </span>
-        {info ? (
-          <button className="btn btn-primary btn-sm" onClick={() => setOpen(true)}><ArrowUpCircle size={14} /> Güncelle</button>
-        ) : (
-          <button className="btn btn-ghost btn-sm" disabled={checking} onClick={() => void check()}>
-            <RefreshCw size={14} className={checking ? "spin" : ""} /> Denetle
-          </button>
-        )}
-      </div>
-      <label className="check">
-        <input type="checkbox" checked={autoUpdate} onChange={(e) => onToggle(e.target.checked)} />
-        Yeni sürümleri arka planda indir (kurulum için yine onayın istenir)
-      </label>
-      {error && <p className="hint error">{error}</p>}
-    </section>
-  );
-}

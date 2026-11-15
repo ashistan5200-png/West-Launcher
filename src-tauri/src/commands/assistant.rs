@@ -1,5 +1,5 @@
 use super::content::loader_slug;
-use crate::assistant::ollama::{self, OllamaStatus, PullProgress};
+use crate::assistant::{ollama, setup};
 use crate::assistant::{chat, ChatOutcome, Ctx, InstanceBrief, Provider};
 use crate::error::Result;
 use crate::instance::InstanceManager;
@@ -28,11 +28,11 @@ pub async fn ashi_chat(state: State<'_, AppState>, history: Vec<Value>, message:
         let s = state.settings.read();
         (s.ai_provider.clone(), s.ollama_url.clone(), s.ollama_model.clone())
     };
-    let claude_key = secrets.anthropic_api_key.clone().filter(|k| !k.trim().is_empty());
-    let provider = match (provider_name.as_str(), claude_key) {
-        ("claude", Some(key)) => Provider::Claude { key },
-        ("ollama", _) => Provider::Ollama { url, model },
-        _ => Provider::Off,
+    // Kurulu ama kapalıysa Ollama'yı sessizce aç; değilse anahtar kelime moduna düşülür
+    let provider = if provider_name == "ollama" && setup::ensure_running(&state.http, &url, &state.paths.root).await {
+        Provider::Ollama { url, model }
+    } else {
+        Provider::Off
     };
     let ctx = Ctx {
         http: &state.http,
@@ -49,13 +49,12 @@ pub fn secret_status(state: State<'_, AppState>) -> SecretStatus {
     Secrets::load(&state.paths.root).status()
 }
 
-/// `name`: "anthropic" | "curseforge". Boş değer anahtarı siler.
+/// `name`: "curseforge". Boş değer anahtarı siler.
 #[tauri::command]
 pub fn set_secret(state: State<'_, AppState>, name: String, value: String) -> Result<SecretStatus> {
     let mut s = Secrets::load(&state.paths.root);
     let v = Some(value.trim().to_string()).filter(|v| !v.is_empty());
     match name.as_str() {
-        "anthropic" => s.anthropic_api_key = v,
         "curseforge" => s.curseforge_api_key = v,
         _ => return Err(crate::error::AppError::msg("bilinmeyen anahtar")),
     }
@@ -63,29 +62,53 @@ pub fn set_secret(state: State<'_, AppState>, name: String, value: String) -> Re
     Ok(s.status())
 }
 
+/// Ashi'nin yerel yapay zekasının durumu (kurulum ekranı için).
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AiStatus {
+    /// Ollama bilgisayarda kurulu mu (çalışmasa bile)
+    pub installed: bool,
+    pub running: bool,
+    pub model: String,
+    pub model_installed: bool,
+    /// Bu bilgisayarın RAM'ine göre önerilen model ve indirme boyutu (GB)
+    pub recommended: String,
+    pub download_gb: f32,
+}
+
 #[tauri::command]
-pub async fn ollama_status(state: State<'_, AppState>) -> Result<OllamaStatus> {
+pub async fn ollama_status(state: State<'_, AppState>) -> Result<AiStatus> {
     let (url, model) = {
         let s = state.settings.read();
         (s.ollama_url.clone(), s.ollama_model.clone())
     };
-    Ok(ollama::status(&state.http, &url, &model).await)
+    let st = ollama::status(&state.http, &url, &model).await;
+    let installed = st.running || setup::find_binary(&state.paths.root).is_some();
+    // Ollama'nın kendisi ≈1.5 GB; kuruluysa yalnızca model indirilir
+    let download_gb = if st.model_installed { 0.0 } else { setup::model_size_gb(&model) } + if installed { 0.0 } else { 1.5 };
+    Ok(AiStatus { installed, running: st.running, model_installed: st.model_installed, model, recommended: setup::recommended_model().into(), download_gb })
 }
 
-/// Seçili yerel modeli indirir; ilerleme "ollama-pull" olayıyla gelir.
+/// Ollama'yı ve modeli tek seferde kurar; ilerleme "ollama-setup" olayıyla gelir.
+/// `model` verilirse önce ayarlara yazılır.
 #[tauri::command]
-pub async fn ollama_pull(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
+pub async fn ollama_setup(app: AppHandle, state: State<'_, AppState>, model: Option<String>) -> Result<()> {
     let (url, model) = {
-        let s = state.settings.read();
+        let mut s = state.settings.write();
+        if let Some(m) = model.filter(|m| !m.trim().is_empty()) {
+            s.ollama_model = m;
+        }
+        s.ai_provider = "ollama".into();
+        let _ = s.save(&state.paths.settings_file());
         (s.ollama_url.clone(), s.ollama_model.clone())
     };
     let emitter = app.clone();
-    let res = ollama::pull(&state.http, &url, &model, move |p| {
-        let _ = emitter.emit("ollama-pull", p);
+    let res = setup::run(&state.http, &state.paths.root, &url, &model, move |p| {
+        let _ = emitter.emit("ollama-setup", p);
     })
     .await;
     if let Err(e) = &res {
-        let _ = app.emit("ollama-pull", PullProgress { status: "error".into(), completed: 0, total: 0, done: true, error: Some(e.to_string()) });
+        let _ = app.emit("ollama-setup", setup::SetupProgress { stage: "error", label: "Kurulum durdu".into(), completed: 0, total: 0, error: Some(e.to_string()) });
     }
     res
 }

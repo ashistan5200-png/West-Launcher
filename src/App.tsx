@@ -27,6 +27,7 @@ import { AshiTour } from "@/components/AshiTour";
 import { ImportWizard } from "@/components/ImportWizard";
 import { useAccounts } from "@/stores/accounts";
 import { AshiChat } from "@/components/AshiChat";
+import { AiSetupModal } from "@/components/AiSetup";
 import { ContentToasts } from "@/components/ContentToasts";
 import { useSettings } from "@/stores/settings";
 import { useInstances } from "@/stores/instances";
@@ -101,6 +102,7 @@ export default function App() {
           <ProgressDock />
         </div>
         <AshiConfirmModal />
+        <AiSetupModal />
         <ImportWizard />
         <AshiTour />
         <UpdateModal />

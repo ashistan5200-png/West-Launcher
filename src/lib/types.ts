@@ -55,8 +55,8 @@ export interface Settings {
   backupKeep: number;
   closeOnLaunch: boolean;
   microsoftClientId: string | null;
-  /** Ashi'nin yapay zekası: ücretsiz yerel model, kendi Claude anahtarın veya kapalı */
-  aiProvider: "ollama" | "claude" | "off";
+  /** Ashi'nin yapay zekası: ücretsiz yerel model (Ollama) veya anahtar kelime modu */
+  aiProvider: "ollama" | "off";
   ollamaUrl: string;
   ollamaModel: string;
   onboardingDone: boolean;
@@ -270,25 +270,28 @@ export interface ChatOutcome {
   reply: string;
   picks: Pick[];
   searches: string[];
-  mode: "ollama" | "claude" | "keyword";
+  mode: "ollama" | "keyword";
 }
 
-export interface OllamaStatus {
+/** Ashi'nin yerel yapay zekası (Ollama) */
+export interface AiStatus {
+  installed: boolean;
   running: boolean;
-  models: string[];
+  model: string;
   modelInstalled: boolean;
+  recommended: string;
+  downloadGb: number;
 }
 
-export interface PullProgress {
-  status: string;
+export interface AiSetupProgress {
+  stage: "download" | "install" | "start" | "model" | "done" | "error";
+  label: string;
   completed: number;
   total: number;
-  done: boolean;
   error: string | null;
 }
 
 export interface SecretStatus {
-  anthropic: boolean;
   curseforge: boolean;
 }
 
