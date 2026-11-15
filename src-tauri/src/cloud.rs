@@ -153,7 +153,13 @@ async fn post(http: &Http, path: &str, body: serde_json::Value, bearer: Option<&
         .timeout(std::time::Duration::from_secs(25))
         .header("apikey", &c.supabase_anon_key)
         .json(&body);
-    req = req.bearer_auth(bearer.unwrap_or(&c.supabase_anon_key));
+    // Yeni "sb_publishable_" anahtarları JWT değildir: yalnızca `apikey` başlığında gider.
+    // Eski "anon" (JWT) anahtarı Authorization'da da beklenir.
+    if let Some(t) = bearer {
+        req = req.bearer_auth(t);
+    } else if !c.supabase_anon_key.starts_with("sb_") {
+        req = req.bearer_auth(&c.supabase_anon_key);
+    }
     let resp = req.send().await.map_err(|e| AppError::msg(format!("West hesap sunucusuna ulaşılamadı: {e}")))?;
     let status = resp.status();
     let text = resp.text().await.unwrap_or_default();
@@ -198,12 +204,15 @@ pub async fn username_available(http: &Http, username: &str) -> Result<bool> {
     if !USERNAME.is_match(username) {
         return Ok(false);
     }
-    let rows: Vec<serde_json::Value> = http
+    let mut req = http
         .client
         .get(format!("{}/rest/v1/profiles", c.supabase_url))
         .timeout(std::time::Duration::from_secs(15))
-        .header("apikey", &c.supabase_anon_key)
-        .bearer_auth(&c.supabase_anon_key)
+        .header("apikey", &c.supabase_anon_key);
+    if !c.supabase_anon_key.starts_with("sb_") {
+        req = req.bearer_auth(&c.supabase_anon_key);
+    }
+    let rows: Vec<serde_json::Value> = req
         .query(&[("select", "username"), ("username", &format!("ilike.{username}"))])
         .send()
         .await?
