@@ -2,121 +2,324 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>West Client</title>
-<meta name="description" content="Sade ve hızlı Minecraft launcher'ı. Modrinth + CurseForge, Ashi asistanı, skin yöneticisi, ekran görüntüsü stüdyosu.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='10.25' fill='none' stroke='%23c9ced6' stroke-width='1.5'/%3E%3Cg transform='rotate(-35 12 12)'%3E%3Cpath d='M12 4.6 14.6 12H9.4Z' fill='%237fa7c9'/%3E%3Cpath d='M12 19.4 9.4 12h5.2Z' fill='%236b7078'/%3E%3C/g%3E%3C/svg%3E">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>West Client — Minecraft'ı kendi rotanda oyna</title>
+<meta name="description" content="West Client: ücretsiz ve açık kaynak Minecraft launcher. Fabric, NeoForge, Forge ve Quilt; Modrinth'ten tek tıkla mod; çöken paketin suçlusunu bulan Ashi; skinler, galeri ve West sosyal ağı.">
+<meta property="og:title" content="West Client — Minecraft'ı kendi rotanda oyna">
+<meta property="og:description" content="Ücretsiz, açık kaynak, modern Minecraft launcher. Windows, macOS ve Linux.">
+<meta property="og:image" content="assets/shots/home.webp">
+<meta name="theme-color" content="#0a0b0e">
+<link rel="icon" href="assets/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
-<style>
-  /* Tek sütun, ortalanmış ürün sayfası: üstte pusula + ad, altında indirme düğmeleri ve özellikler */
-  :root {
-    --bg: #131416; --surface: #1e1f23; --surface-2: #26282c; --line: rgba(255,255,255,.07);
-    --text: #e2e4e7; --muted: #8b9098; --accent: #7fa7c9; --accent-hover: #91b4d2; --on-accent: #101215;
-    --font: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
-    color-scheme: dark;
-  }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; }
-  body {
-    font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; letter-spacing: .005em;
-    padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right));
-    -webkit-font-smoothing: antialiased;
-  }
-  main { max-width: 860px; margin: 0 auto; padding-block: 72px 56px; display: flex; flex-direction: column; gap: 56px; }
-  .hero { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 18px; }
-  .compass { width: 84px; height: 84px; }
-  .needle { transform-origin: 12px 12px; animation: settle 1.6s cubic-bezier(.12,.85,.16,1) both .1s; }
-  @keyframes settle { from { transform: rotate(-1115deg); } to { transform: rotate(-35deg); } }
-  @media (prefers-reduced-motion: reduce) { .needle { animation: none; transform: rotate(-35deg); } }
-  h1 { margin: 0; font-size: clamp(32px, 6vw, 46px); font-weight: 600; letter-spacing: -.012em; text-wrap: balance; }
-  .lead { margin: 0; max-width: 56ch; color: var(--muted); font-size: 17px; }
-  .downloads { display: flex; flex-direction: column; align-items: center; gap: 14px; }
-  .primary {
-    display: inline-flex; align-items: center; gap: 12px; padding: 16px 28px; border-radius: 14px;
-    background: var(--accent); color: var(--on-accent); font-weight: 600; font-size: 17px; text-decoration: none;
-    box-shadow: 0 2px 4px rgba(0,0,0,.2), 0 12px 30px rgba(0,0,0,.28); transition: background .15s ease, transform .15s ease;
-  }
-  .primary:hover { background: var(--accent-hover); transform: translateY(-1px); }
-  .primary:focus-visible, .alt a:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
-  .primary small { display: block; font-weight: 500; font-size: 12.5px; opacity: .75; }
-  .alt { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
-  .alt a {
-    padding: 8px 14px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line);
-    color: var(--text); text-decoration: none; font-size: 14px; transition: background .15s ease;
-  }
-  .alt a:hover { background: var(--surface-2); }
-  .note { margin: 0; font-size: 13px; color: var(--muted); max-width: 60ch; text-align: center; }
-  .note b { color: var(--text); font-weight: 600; }
-  .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
-  .feature { padding: 18px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); min-width: 0; }
-  .feature h2 { margin: 0 0 4px; font-size: 15px; font-weight: 600; }
-  .feature p { margin: 0; font-size: 14px; color: var(--muted); }
-  footer { text-align: center; font-size: 12.5px; color: var(--muted); }
-  footer a { color: var(--muted); }
-</style>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<main>
-  <section class="hero">
-    <svg class="compass" viewBox="0 0 24 24" aria-hidden="true">
-      <g opacity=".55" fill="none" stroke="#c9ced6" stroke-width="1.3" stroke-linecap="round">
-        <circle cx="12" cy="12" r="10.3"/><path d="M12 1.7v2.1M12 20.2v2.1M1.7 12h2.1M20.2 12h2.1"/>
-      </g>
-      <g class="needle">
-        <path d="M12 4.6 14.6 12H9.4L12 4.6Z" fill="#7fa7c9"/>
-        <path d="M12 19.4 9.4 12h5.2L12 19.4Z" fill="#6b7078"/>
-      </g>
-      <circle cx="12" cy="12" r="1.35" fill="#131416" stroke="#c9ced6" stroke-opacity=".7"/>
-    </svg>
-    <h1>West Client</h1>
-    <p class="lead">Sade ve hızlı bir Minecraft launcher'ı. Modları tek yerden bul, çöken paketin suçlusunu Ashi bulsun, skinini ve ekran görüntülerini launcher'dan yönet.</p>
 
-    <div class="downloads">
-      <a id="primary" class="primary" href="https://github.com/ashistan5200-png/West-Launcher/releases/latest/download/West-Client-Setup.exe">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 19h16"/></svg>
-        <span><span id="primary-label">Windows için indir</span><small id="primary-sub">64-bit · Windows 10 ve 11</small></span>
-      </a>
-      <div class="alt" id="alt">
-        <a data-os="windows" href="https://github.com/ashistan5200-png/West-Launcher/releases/latest/download/West-Client-Setup.exe">Windows (.exe)</a>
-        <a data-os="mac" href="https://github.com/ashistan5200-png/West-Launcher/releases/latest/download/West-Client-macOS.dmg">macOS (.dmg)</a>
-        <a data-os="linux" href="https://github.com/ashistan5200-png/West-Launcher/releases/latest/download/West-Client-Linux.deb">Linux (.deb)</a>
-        <a data-os="linux-appimage" href="https://github.com/ashistan5200-png/West-Launcher/releases/latest/download/West-Client-Linux.AppImage">Linux (AppImage)</a>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-dl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 5-5m-5 5-5-5M4 21h16"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+  <symbol id="i-gh" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.25.45-2.28 1.18-3.08-.12-.29-.51-1.46.11-3.04 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.62 1.58.23 2.75.11 3.04.74.8 1.18 1.83 1.18 3.08 0 4.41-2.69 5.38-5.25 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></symbol>
+  <symbol id="i-win" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5 10 4.5v7H3zm8-1.15L21 3v8.5H11zM3 12.5h7v7l-7-1zm8 0h10V21l-10-1.4z"/></symbol>
+  <symbol id="i-mac" viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 12.6c0-2.4 2-3.6 2.1-3.6a4.5 4.5 0 0 0-3.5-1.9c-1.5-.2-2.9.9-3.7.9-.8 0-2-.9-3.2-.8A4.8 4.8 0 0 0 4 9.6c-1.7 3-.4 7.4 1.2 9.8.8 1.2 1.8 2.5 3 2.4 1.2 0 1.7-.8 3.1-.8 1.5 0 1.9.8 3.2.8 1.3 0 2.2-1.2 3-2.4a10 10 0 0 0 1.3-2.8 4.3 4.3 0 0 1-2.4-4ZM14.1 5.5a4.3 4.3 0 0 0 1-3.1 4.4 4.4 0 0 0-2.9 1.5 4.1 4.1 0 0 0-1 3c1.1.1 2.2-.6 2.9-1.4Z"/></symbol>
+  <symbol id="i-linux" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c-2.2 0-3.6 1.9-3.6 4.6 0 1.4.4 2.3-.5 3.9-1 1.8-2.9 3.8-2.9 6.6 0 .6.1 1.2.3 1.7-.9.4-1.7 1-1.7 1.8 0 1.3 2 1.4 3.3 1.4 1 0 2-.4 2.6-1 .8.3 1.6.4 2.5.4s1.7-.1 2.5-.4c.6.6 1.6 1 2.6 1 1.3 0 3.3-.1 3.3-1.4 0-.8-.8-1.4-1.7-1.8.2-.5.3-1.1.3-1.7 0-2.8-1.9-4.8-2.9-6.6-.9-1.6-.5-2.5-.5-3.9C15.6 3.9 14.2 2 12 2Zm-1.6 5.3a.8.8 0 1 1 0 1.6.8.8 0 0 1 0-1.6Zm3.2 0a.8.8 0 1 1 0 1.6.8.8 0 0 1 0-1.6ZM12 9.6c.8 0 1.7.4 1.7.9 0 .4-.9 1-1.7 1s-1.7-.6-1.7-1c0-.5.9-.9 1.7-.9Z"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></symbol>
+</svg>
+
+<div class="motes" id="motes"></div>
+
+<header class="nav" id="nav">
+  <div class="wrap">
+    <a class="brand" href="#top"><img src="assets/icon-256.png" alt=""> West <b>Client</b></a>
+    <nav class="nav-links" id="navLinks">
+      <a href="#ozellikler">Özellikler</a>
+      <a href="#ashi">Ashi</a>
+      <a href="#sosyal">Sosyal</a>
+      <a href="#ekranlar">Ekranlar</a>
+      <a href="#hikaye">Hikâye</a>
+      <a href="#guncellemeler">Güncellemeler</a>
+      <a href="#sss">SSS</a>
+      <a href="https://github.com/ashistan5200-png/West-Launcher" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+    <a class="btn btn-primary nav-dl" href="#indir"><svg width="18" height="18"><use href="#i-dl"/></svg> İndir</a>
+    <button class="nav-burger" id="burger" aria-label="Menü"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  </div>
+</header>
+
+<main id="top">
+  <!-- ───────── Hero ───────── -->
+  <section class="hero">
+    <canvas id="sky"></canvas>
+    <div class="wrap hero-inner">
+      <svg class="compass" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <g stroke="#eef0f2" stroke-opacity=".75" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10.25"/><path d="M12 1.75v2.1M12 20.15v2.1M1.75 12h2.1M20.15 12h2.1"/></g>
+        <g class="needle"><path d="M12 4.6 14.6 12H9.4L12 4.6Z" fill="#e8a25c"/><path d="M12 19.4 9.4 12h5.2L12 19.4Z" fill="#eef0f2" fill-opacity=".55"/></g>
+        <circle cx="12" cy="12" r="1.35" fill="#0a0b0e" stroke="#eef0f2" stroke-width="1"/>
+      </svg>
+      <a class="pill" href="#guncellemeler"><span class="tag" id="verTag">YENİ</span> <span id="verText">Son sürüm yayında</span> <svg width="14" height="14"><use href="#i-arrow"/></svg></a>
+      <h1>Minecraft'ı <span class="grad">kendi rotanda</span> oyna.</h1>
+      <p class="lead">West Client; modlarını, paketlerini, dünyalarını ve arkadaşlarını tek, hızlı ve güzel bir yerde toplayan ücretsiz Minecraft launcher'ı. Çöken bir paketin suçlusunu bile senin yerine bulur.</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" id="heroDl" href="#indir"><svg width="20" height="20"><use href="#i-dl"/></svg> <span id="heroDlText">Ücretsiz indir</span></a>
+        <a class="btn btn-ghost" href="#ozellikler">Neler yapabilir? <svg width="18" height="18"><use href="#i-arrow"/></svg></a>
       </div>
-      <p class="note" id="note">Windows <b>"Windows bilgisayarınızı korudu"</b> uyarısı gösterirse <b>Ek bilgi → Yine de çalıştır</b>'a tıkla. Uygulama henüz dijital olarak imzalanmadığı için bu uyarı çıkar.</p>
+      <div class="hero-meta">
+        <span>✦ Tamamen ücretsiz</span><span>✦ Açık kaynak</span><span>✦ Windows · macOS · Linux</span><span>✦ Türkçe</span>
+      </div>
+    </div>
+    <div class="scroll-hint" aria-hidden="true"></div>
+  </section>
+
+  <!-- Eğik uygulama penceresi -->
+  <div class="wrap showcase">
+    <div class="window" id="tiltWindow">
+      <div class="glow-ring"></div>
+      <img src="assets/shots/home.webp" alt="West Client ana sayfası" fetchpriority="high">
+    </div>
+    <div class="stats">
+      <div class="stat reveal"><b data-count="100" data-suffix="%">0</b><span>ücretsiz, reklamsız</span></div>
+      <div class="stat reveal" style="--d:.08s"><b data-count="4">0</b><span>mod yükleyici</span></div>
+      <div class="stat reveal" style="--d:.16s"><b data-count="100" data-suffix="B+">0</b><span>Modrinth içeriği</span></div>
+      <div class="stat reveal" style="--d:.24s"><b data-count="3">0</b><span>işletim sistemi</span></div>
+    </div>
+  </div>
+
+  <!-- ───────── Özellikler ───────── -->
+  <section class="section" id="ozellikler">
+    <div class="wrap center">
+      <span class="eyebrow reveal">Özellikler</span>
+      <h2 class="title reveal">İhtiyacın olan her şey. <span class="grad">Fazlası da.</span></h2>
+      <p class="sub reveal">Bir launcher'dan beklediğin her şeyi yapar; sonra çok daha fazlasını. Kurulumdan oyuna, moddan arkadaşlarına kadar.</p>
+      <div class="features" style="text-align:left">
+        <div class="feature reveal"><div class="ico"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div><h3>İzole instance'lar</h3><p>Her paket kendi klasöründe: Vanilla, Fabric, NeoForge, Forge ve Quilt. Klonla, şablon yap, kendi kapağını ve simgesini koy.</p></div>
+        <div class="feature reveal" style="--d:.06s"><div class="ico blue"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m16.2 7.8-2.1 6.3-6.3 2.1 2.1-6.3z"/></svg></div><h3>Keşfet: Modrinth</h3><p>On binlerce mod, modpack, shader ve resource pack. Sürüme, yükleyiciye, istemci/sunucuya ve kategoriye göre süz; galeriye ve sürüm notlarına bak.</p></div>
+        <div class="feature reveal" style="--d:.12s"><div class="ico pink"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3M11 8v3l2 2"/></svg></div><h3>Ashi: suçlu avcısı</h3><p>Oyun çöküyor ama hangi mod? Ashi oyunu kendisi açıp kapatarak birkaç turda suçluyu bulur. Kütüphanelere dokunmaz.</p></div>
+        <div class="feature reveal"><div class="ico green"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg></div><h3>Tek tıkla güncelle</h3><p>Yüklü modlarını Modrinth'te tanır, güncellemeleri gösterir. "Tümünü güncelle" eski dosyaları önce yedekler.</p></div>
+        <div class="feature reveal" style="--d:.06s"><div class="ico"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><h3>West sosyal</h3><p>Gönderi, fotoğraf, anket, hikâye, mesaj, takip. Minecraft arkadaşlarınla West Client'ın içinde buluş.</p></div>
+        <div class="feature reveal" style="--d:.12s"><div class="ico blue"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.4 14.5 16 10 4 20"/><rect x="2" y="3" width="20" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/></svg></div><h3>Skin ve galeri</h3><p>3D skin önizleme, skin arşivi, hesabına tek tıkla uygulama. Ekran görüntülerini düzenle, kırp, paylaş.</p></div>
+        <div class="feature reveal"><div class="ico green"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h14a2 2 0 0 0 2-2V7.5L14.5 2H6a2 2 0 0 0-2 2v4"/><path d="M14 2v6h6M2 15h10M9 18l3-3-3-3"/></svg></div><h3>Her yerden aktar</h3><p>Modrinth App, CurseForge, Prism, MultiMC ve resmi launcher'daki paketlerini bulur, orijinallerine dokunmadan taşır.</p></div>
+        <div class="feature reveal" style="--d:.06s"><div class="ico"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></div><h3>Otomatik Java + JVM</h3><p>Doğru Java sürümünü kendisi indirir; belleği ve çöp toplayıcıyı donanımına ve mod sayına göre ayarlar.</p></div>
+        <div class="feature reveal" style="--d:.12s"><div class="ico pink"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg></div><h3>Haberler</h3><p>Minecraft sürüm notları, popüler mod güncellemeleri ve her sürümde gelen yeni blok dokuları ile sesleri; indirilebilir.</p></div>
+        <div class="feature reveal"><div class="ico blue"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg></div><h3>Güvenli giriş</h3><p>Microsoft şifren yalnızca Microsoft'un kendi sayfasına girilir. İstersen launcher'ı şifreyle kilitle.</p></div>
+        <div class="feature reveal" style="--d:.06s"><div class="ico"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><h3>Discord'da göster</h3><p>Arkadaşların hangi paketi, hangi sürümde ve ne kadar süredir oynadığını Discord profilinde görür.</p></div>
+        <div class="feature reveal" style="--d:.12s"><div class="ico green"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5"/></svg></div><h3>Kendini günceller</h3><p>Yeni sürüm çıkınca haber verir, arka planda indirir, SHA-256 ile doğrular ve tek tıkla kurar.</p></div>
+      </div>
     </div>
   </section>
 
-  <section class="features" aria-label="Özellikler">
-    <div class="feature"><h2>Tek yerden mod</h2><p>Modrinth ve CurseForge'da birlikte ara. Gerekli kütüphaneler kendiliğinden kurulur.</p></div>
-    <div class="feature"><h2>Ashi</h2><p>Ne istediğini yaz, uygun modları önersin. Paket çökerse suçlu modu bulsun.</p></div>
-    <div class="feature"><h2>Oyun içi West menüsü</h2><p>Özel ana menü, FullBright ve FPS göstergesi. Essential gibi modlarla çakışmaz.</p></div>
-    <div class="feature"><h2>Skin ve galeri</h2><p>Skinini 3D önizle ve değiştir. Ekran görüntülerini kırp, filtrele, paylaş.</p></div>
-    <div class="feature"><h2>Kolay geçiş</h2><p>Modrinth App, CurseForge, Prism ve MultiMC'deki paketlerini tek tıkla aktar.</p></div>
-    <div class="feature"><h2>Hafif</h2><p>Kurulum yaklaşık 5 MB. Arka planda bilgisayarını yormaz.</p></div>
+  <!-- ───────── Keşfet ───────── -->
+  <section class="wrap spot" id="kesfet">
+    <div class="spot-text reveal left">
+      <span class="eyebrow">Keşfet</span>
+      <h2 class="title">Aradığın mod bir tık uzakta.</h2>
+      <p class="sub">Modrinth'teki içeriğin tamamı West Client'ın içinde. Bir moda tıkla; ne işe yaradığını, ekran görüntülerini ve her sürümde neyin değiştiğini oku.</p>
+      <ul class="spot-list">
+        <li>Minecraft sürümü, yükleyici ve kategoriye göre süzme</li>
+        <li>"Yalnız istemci", "Yalnız sunucu", "İkisinde de" ayrımı</li>
+        <li>Galeri, tam açıklama ve sürüm sürüm değişiklik notları</li>
+        <li>"Ekle ▾" ile istediğin instance'a kur; uyumsuz olanlar nedeniyle birlikte gösterilir</li>
+        <li>Gereken bağımlılıklar kendiliğinden kurulur</li>
+      </ul>
+    </div>
+    <div class="spot-img reveal right">
+      <div class="frame"><img src="assets/shots/browse.webp" alt="Keşfet sayfası" loading="lazy"></div>
+      <div class="frame small"><img src="assets/shots/gallery.webp" alt="Mod galerisi" loading="lazy"></div>
+    </div>
   </section>
 
-  <footer>
-    <a href="https://github.com/ashistan5200-png/West-Launcher/releases">Tüm sürümler</a> ·
-    <a href="https://github.com/ashistan5200-png/West-Launcher">Kaynak kod</a> ·
-    West Client, Mojang veya Microsoft ile bağlantılı değildir.
-  </footer>
+  <!-- ───────── Instance yönetimi ───────── -->
+  <section class="wrap spot flip blue">
+    <div class="spot-text reveal right">
+      <span class="eyebrow">Instance yönetimi</span>
+      <h2 class="title">Her paket, kendi dünyası.</h2>
+      <p class="sub">Modlarını, resource pack'lerini ve shader'larını tek tabloda yönet. Aç-kapat, güncelle, sil; hepsi bir dokunuş.</p>
+      <ul class="spot-list">
+        <li>Mod simgesi, yazarı ve sürümü otomatik tanınır</li>
+        <li>Dünyaları tek tıkla zip olarak yedekle</li>
+        <li>Canlı konsol, eski loglar ve çökme raporları</li>
+        <li>Paketini .mrpack olarak arkadaşınla paylaş</li>
+        <li>Kendi banner'ın ve simgen, ya da hazır piksel manzaralar</li>
+      </ul>
+    </div>
+    <div class="spot-img reveal left">
+      <div class="frame"><img src="assets/shots/instance.webp" alt="Instance sayfası" loading="lazy"></div>
+    </div>
+  </section>
+
+  <!-- ───────── Ashi ───────── -->
+  <section class="section" id="ashi">
+    <div class="wrap spot" style="padding:0">
+      <div class="spot-text reveal left">
+        <span class="eyebrow">Ashi · Otomatik Suçlu Avcısı</span>
+        <h2 class="title">“Hangi mod oyunu çökertiyor?”<br><span class="grad">Ashi bulur.</span></h2>
+        <p class="sub">200 modlu bir paketi elle tek tek denemek saatler sürer. Ashi, modları akıllıca ikiye bölerek yalnızca birkaç turda suçluyu yakalar; sen kahveni içerken.</p>
+        <ul class="spot-list">
+          <li>Her çökmenin “parmak izini” alır; başka bir hatayı asıl hatayla karıştırmaz</li>
+          <li>Fabric API, Kotlin, Cloth Config gibi kütüphaneleri asla tek başına kapatmaz</li>
+          <li>Gizli bağımlılıkları hatadan çıkarıp otomatik açık tutar</li>
+          <li>Bitince bütün modlarını eski haline getirir; hiçbir şey silinmez</li>
+        </ul>
+      </div>
+      <div class="reveal right">
+        <div class="hunt" id="hunt">
+          <div class="hunt-head"><img src="assets/ashi.png" alt="Ashi"><div class="hunt-bubble" id="huntText">Önce çökmeyi kendi gözümle göreyim…</div></div>
+          <div class="mods" id="mods"></div>
+          <div class="hunt-progress"><i id="huntBar"></i></div>
+          <div class="hunt-legend"><span><i style="background:#3a4a62"></i>Kütüphane (hep açık)</span><span><i style="background:#e8a25c"></i>Bu turda açık</span><span><i style="background:#2a2c36;opacity:.4"></i>Masum</span><span><i style="background:#ec5a82"></i>Suçlu</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────── Sosyal ───────── -->
+  <section class="wrap spot flip" id="sosyal">
+    <div class="spot-text reveal right">
+      <span class="eyebrow">West sosyal</span>
+      <h2 class="title">Arkadaşların da burada.</h2>
+      <p class="sub">West hesabınla bir profil oluştur, gönderi paylaş, hikâye at, mesajlaş. Launcher'dan çıkmadan Minecraft topluluğuyla bağlantıda kal.</p>
+      <ul class="spot-list">
+        <li>Gönderiler: metin, 4 fotoğrafa kadar, anket, #etiket ve @bahsetme</li>
+        <li>Beğeni, yanıt, yeniden paylaşma, alıntı ve yer imleri</li>
+        <li>24 saatlik hikâyeler ve birebir mesajlar</li>
+        <li>Profil: biyografi, avatar, banner, bağlantılar</li>
+        <li>Gizli hesap, engelleme, sessize alma ve şikâyet</li>
+      </ul>
+    </div>
+    <div class="spot-img reveal left">
+      <div class="frame"><img src="assets/shots/social.webp" alt="West sosyal akış" loading="lazy"></div>
+      <div class="frame small"><img src="assets/shots/messages.webp" alt="Mesajlar" loading="lazy"></div>
+    </div>
+  </section>
+
+  <!-- ───────── Ekranlar ───────── -->
+  <section class="section" id="ekranlar">
+    <div class="wrap center">
+      <span class="eyebrow reveal">Ekranlar</span>
+      <h2 class="title reveal">Göz atmak bedava.</h2>
+      <p class="sub reveal">Derin gece zemini, West gün batımı amberi ve her instance'a özel piksel manzaralar. İstersen vurgu rengini kendin seç.</p>
+      <div class="gallery-tabs reveal" id="gTabs"></div>
+      <div class="gallery-stage reveal zoom" id="gStage"></div>
+      <div class="gallery-cap" id="gCap"></div>
+    </div>
+  </section>
+
+  <!-- ───────── Uzun anlatım ───────── -->
+  <section class="section" id="hikaye" style="padding-top:40px">
+    <div class="wrap">
+      <div class="center"><span class="eyebrow reveal">West Client'ın hikâyesi</span><h2 class="title reveal">Neden bir launcher daha?</h2></div>
+      <article class="story">
+        <p class="reveal">Minecraft'ı modlarla oynayan herkes aynı döngüyü bilir: bir launcher'da paketini kurarsın, başka bir sitede mod ararsın, bir klasöre jar dosyası atarsın, oyun açılmaz, bir forumda hata kodunu ararsın, saatler sonra hangi modun suçlu olduğunu bulursun. <strong>West Client bu döngüyü kırmak için yapıldı.</strong> Amacı basit: Minecraft'ın oyun dışındaki bütün işini tek, hızlı ve güzel bir yere toplamak ki sen yalnızca oynamaya odaklan.</p>
+
+        <h3 class="reveal">Rotanı sen belirle</h3>
+        <p class="reveal">Adındaki “West” ve logosundaki pusula tesadüf değil. West Client sana bir yol dayatmaz; vanilla bir survival'dan 300 modlu bir teknoloji paketine kadar her rota için doğru araçları önüne koyar. Her paket kendi izole klasöründe yaşar; birinin modları ötekini bozmaz. Fabric, NeoForge, Forge ve Quilt'i kendisi kurar; doğru Java sürümünü kendisi indirir; belleği ve çöp toplayıcıyı bilgisayarına ve mod sayına göre kendisi ayarlar.</p>
+
+        <h3 class="reveal">Mod bulmak artık bir arama kadar kolay</h3>
+        <p class="reveal">Keşfet sayfası Modrinth'teki on binlerce içeriği launcher'ın içine getirir. Bir modun yalnızca istemcide mi çalıştığını, sunucuya da kurulması gerekip gerekmediğini, hangi sürümleri desteklediğini tek bakışta görürsün. Bir moda tıkladığında tam açıklamasını, ekran görüntülerini ve her güncellemede neyin değiştiğini okursun. “Ekle” dediğinde West Client gereken bağımlılıkları da kendiliğinden kurar; uyumsuz bir instance'a kurmana zaten izin vermez ve nedenini söyler.</p>
+
+        <div class="quote reveal">“Oyun çöktü” ile “suçlu bu mod” arasındaki saatleri, Ashi birkaç dakikaya indirir.</div>
+
+        <h3 class="reveal">Ashi: maskottan fazlası</h3>
+        <p class="reveal">West Client'ın maskotu Ashi, ilk açılışta seni karşılayan, kurulumu birlikte yapan ve launcher'ı sana gezdiren piksel bir kaşif. Ama asıl yeteneği, çöken bir paketin suçlusunu bulmak. Ashi modlarını gruplara ayırır, oyunu kendisi açıp kapatır ve her turda şüphelileri yarıya indirir. Her çökmenin parmak izini aldığı için, bir modu kapattığında ona gizlice bağlı başka bir modun çıkardığı farklı hatayı asıl hatayla karıştırmaz. Fabric API ya da Kotlin gibi kütüphaneleri asla tek başına kapatmaz. İş bittiğinde bütün modlarını eski haline getirir ve sonucu sade bir dille anlatır.</p>
+
+        <h3 class="reveal">Oyunun dışında da bir topluluk</h3>
+        <p class="reveal">West sosyal, launcher'ın içinde yaşayan bir sosyal ağ. Bir West hesabıyla profilini oluşturur, kurduğun dev üssün fotoğrafını paylaşır, “hangi yükleyiciyi kullanıyorsunuz?” diye anket açar, arkadaşına mesaj atar, gün içinde hikâye paylaşırsın. Gizli hesap, engelleme ve şikâyet gibi araçlar en başından içinde; çünkü güvenli bir topluluk sonradan eklenecek bir özellik değil.</p>
+
+        <h3 class="reveal">Gizliliğin ve güvenliğin önce gelir</h3>
+        <p class="reveal">Microsoft şifren yalnızca Microsoft'un kendi giriş sayfasına girilir; West Client onu görmez ve saklamaz. API anahtarları ve oturum bilgileri bilgisayarında, arayüze hiç gönderilmeden tutulur. İstersen launcher'ı bir şifreyle kilitleyebilirsin; şifren geri çözülemeyen bir özet olarak saklanır. Kendini güncellediğinde indirdiği dosyayı kurmadan önce SHA-256 ile doğrular. Kodun tamamı GitHub'da açıktır ve her sürüm GitHub'ın kendi sunucularında otomatik derlenir.</p>
+
+        <h3 class="reveal">Ücretsiz. Gerçekten.</h3>
+        <p class="reveal">West Client'ın ücretli bir sürümü, reklamı ya da gizli aboneliği yok. Ashi'nin yapay zekâ sohbeti bile varsayılan olarak bilgisayarında çalışan ücretsiz bir modelle (Ollama) çalışır; kimsenin hesabından para gitmez. West Client gönüllü olarak geliştirilen, topluluğu için yapılmış bir proje.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- ───────── Güncellemeler ───────── -->
+  <section class="section" id="guncellemeler" style="padding-top:40px">
+    <div class="wrap center">
+      <span class="eyebrow reveal">Güncelleme notları</span>
+      <h2 class="title reveal">Hızla gelişiyor.</h2>
+      <p class="sub reveal">Her sürümde neyin geldiğini buradan takip et. Uygulama da yeni sürümü kendiliğinden bulur ve haber verir.</p>
+    </div>
+    <div class="wrap">
+      <div class="timeline" id="timeline"><p class="muted center">Güncellemeler yükleniyor…</p></div>
+      <div class="rel-more"><a class="btn btn-ghost" href="https://github.com/ashistan5200-png/West-Launcher/releases" target="_blank" rel="noopener"><svg width="18" height="18"><use href="#i-gh"/></svg> Tüm sürümler GitHub'da</a></div>
+    </div>
+  </section>
+
+  <!-- ───────── İndir ───────── -->
+  <section class="section" id="indir">
+    <div class="wrap center">
+      <span class="eyebrow reveal">İndir</span>
+      <h2 class="title reveal">Hazırsan, yola çıkalım.</h2>
+      <p class="sub reveal">Ücretsiz. Kurulumu bir dakika sürer; ilk açılışta Ashi seni karşılar ve kalan her şeyi birlikte ayarlarsınız.</p>
+      <div class="downloads">
+        <div class="dl reveal" data-os="win">
+          <div class="os"><svg width="28" height="28"><use href="#i-win"/></svg></div>
+          <h3>Windows</h3><p class="muted">Windows 10 ve 11 · 64-bit</p>
+          <a class="btn btn-primary" href="https://github.com/ashistan5200-png/West-Launcher/releases/latest/download/West-Client-Setup.exe"><svg width="18" height="18"><use href="#i-dl"/></svg> Kurulum (.exe)</a>
+        </div>
+        <div class="dl reveal" style="--d:.08s" data-os="mac">
+          <div class="os"><svg width="28" height="28"><use href="#i-mac"/></svg></div>
+          <h3>macOS</h3><p class="muted">Apple Silicon ve Intel</p>
+          <a class="btn btn-primary" href="https://github.com/ashistan5200-png/West-Launcher/releases/latest/download/West-Client-macOS.dmg"><svg width="18" height="18"><use href="#i-dl"/></svg> Disk görüntüsü (.dmg)</a>
+        </div>
+        <div class="dl reveal" style="--d:.16s" data-os="linux">
+          <div class="os"><svg width="28" height="28"><use href="#i-linux"/></svg></div>
+          <h3>Linux</h3><p class="muted">Ubuntu, Debian ve diğerleri</p>
+          <a class="btn btn-primary" href="https://github.com/ashistan5200-png/West-Launcher/releases/latest/download/West-Client-Linux.AppImage"><svg width="18" height="18"><use href="#i-dl"/></svg> AppImage</a>
+          <p class="alt">ya da <a href="https://github.com/ashistan5200-png/West-Launcher/releases/latest/download/West-Client-Linux.deb">.deb paketi</a></p>
+        </div>
+      </div>
+      <div class="safety reveal" style="text-align:left">
+        <svg width="26" height="26"><use href="#i-shield"/></svg>
+        <div><strong>Windows “bilgisayarınızı korudu” derse:</strong> Bu, yeni ve henüz dijital imzası olmayan programlarda çıkan bir “tanımıyorum” uyarısıdır, virüs tespiti değildir. <em>Ek bilgi → Yine de çalıştır</em> ile kurabilirsin. Dosyayı yalnızca bu sayfadan ya da GitHub Releases'tan indir; kodun tamamı <a class="amber" href="https://github.com/ashistan5200-png/West-Launcher" target="_blank" rel="noopener">GitHub'da açık</a>.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────── SSS ───────── -->
+  <section class="section" id="sss" style="padding-top:20px">
+    <div class="wrap center">
+      <span class="eyebrow reveal">Sık sorulanlar</span>
+      <h2 class="title reveal">Aklına takılanlar</h2>
+    </div>
+    <div class="wrap faq">
+      <details class="q reveal"><summary>West Client ücretsiz mi?</summary><div class="a"><p>Evet, tamamen. Reklam, ücretli sürüm ya da abonelik yok. Kaynak kodu da GitHub'da açık.</p></div></details>
+      <details class="q reveal"><summary>Minecraft'ı satın almam gerekiyor mu?</summary><div class="a"><p>Microsoft hesabınla giriş yaparak satın aldığın Minecraft: Java Edition'ı oynarsın. West Client, Minecraft'ı ücretsiz yapan bir program değildir; resmi oyun dosyalarını Mojang'ın sunucularından indirir.</p></div></details>
+      <details class="q reveal"><summary>Microsoft hesabımla giriş yapmak güvenli mi?</summary><div class="a"><p>Şifren yalnızca Microsoft'un kendi giriş penceresine girilir; West Client şifreni görmez ve saklamaz. Bilgisayarında yalnızca Microsoft'un verdiği oturum anahtarı tutulur.</p></div></details>
+      <details class="q reveal"><summary>Antivirüsüm uyarı veriyor, virüs mü?</summary><div class="a"><p>Hayır. West Client henüz dijital imzalı olmadığı için Windows SmartScreen ve bazı antivirüsler “tanınmayan uygulama” uyarısı gösterebilir. Ayrıca launcher'lar internetten oyun dosyaları indirip başka programlar çalıştırdığı için bazı antivirüsler tahmine dayalı alarm verebilir.</p><p>Kodun tamamı GitHub'da açıktır ve her sürüm GitHub'ın sunucularında otomatik derlenir. Dosyayı yalnızca bu siteden ya da GitHub Releases'tan indir.</p></div></details>
+      <details class="q reveal"><summary>Diğer launcher'lardaki paketlerimi taşıyabilir miyim?</summary><div class="a"><p>Evet. İlk açılışta West Client; Modrinth App, CurseForge, Prism Launcher, MultiMC ve resmi launcher'daki paketlerini bulur ve orijinallerine dokunmadan kopyalar.</p></div></details>
+      <details class="q reveal"><summary>Hangi Minecraft sürümlerini destekliyor?</summary><div class="a"><p>Mojang'ın yayınladığı bütün Java Edition sürümlerini; Fabric, NeoForge, Forge ve Quilt yükleyicileriyle. Oyun içi West Paneli (FullBright, FPS göstergesi) şimdilik 1.21.1 Fabric ve NeoForge'da çalışıyor.</p></div></details>
+      <details class="q reveal"><summary>West hesabı ne işe yarıyor?</summary><div class="a"><p>West sosyal ağında profil açmak, gönderi ve hikâye paylaşmak ve arkadaşlarınla mesajlaşmak için. Oyunu oynamak için gerekmez; istersen hiç açmadan da West Client'ı kullanabilirsin.</p></div></details>
+      <details class="q reveal"><summary>Ashi'nin yapay zekâsı ücretli mi?</summary><div class="a"><p>Hayır. Varsayılan olarak bilgisayarında çalışan ücretsiz bir model (Ollama) kullanır. İstersen kendi anahtarınla Claude'u da seçebilirsin; o zaman ücret senin hesabına yansır.</p></div></details>
+      <details class="q reveal"><summary>Bir hata buldum ya da önerim var.</summary><div class="a"><p>Harika! GitHub'daki <a class="amber" href="https://github.com/ashistan5200-png/West-Launcher/issues" target="_blank" rel="noopener">Issues</a> sayfasından bildirebilirsin.</p></div></details>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <div class="cta-final reveal zoom">
+      <h2>Rotanı belirle. <span class="grad">Oynamaya başla.</span></h2>
+      <p>Bir dakikada kur, Ashi gerisini halleder.</p>
+      <div class="hero-cta"><a class="btn btn-primary" href="#indir"><svg width="20" height="20"><use href="#i-dl"/></svg> West Client'ı indir</a><a class="btn btn-ghost" href="https://github.com/ashistan5200-png/West-Launcher" target="_blank" rel="noopener"><svg width="18" height="18"><use href="#i-gh"/></svg> GitHub</a></div>
+    </div>
+  </div>
 </main>
-<script>
-  // Ziyaretçinin işletim sistemine göre ana düğmeyi seç
-  (function () {
-    var ua = navigator.userAgent || "";
-    var os = /Windows/i.test(ua) ? "windows" : /Mac/i.test(ua) && !/iPhone|iPad/i.test(ua) ? "mac" : /Linux|X11/i.test(ua) && !/Android/i.test(ua) ? "linux" : null;
-    if (!os || os === "windows") return;
-    var link = document.querySelector('#alt a[data-os="' + os + '"]');
-    var p = document.getElementById("primary");
-    p.href = link.href;
-    document.getElementById("primary-label").textContent = os === "mac" ? "macOS için indir" : "Linux için indir";
-    document.getElementById("primary-sub").textContent = os === "mac" ? "Apple Silicon ve Intel" : ".deb · Ubuntu, Debian, Mint";
-    document.getElementById("note").innerHTML = os === "mac"
-      ? 'macOS açmayı reddederse uygulamaya <b>sağ tıkla → Aç</b>. Uygulama henüz imzalı olmadığı için bu adım gerekir.'
-      : 'Diğer dağıtımlar için AppImage sürümünü indirip çalıştırma izni ver.';
-  })();
-</script>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div><a class="brand" href="#top" style="margin-bottom:12px"><img src="assets/icon-256.png" alt=""> West <b>Client</b></a><p>Ücretsiz ve açık kaynak Minecraft launcher'ı. Rotanı belirle.</p></div>
+      <div><h4>Ürün</h4><a href="#ozellikler">Özellikler</a><a href="#ashi">Ashi</a><a href="#sosyal">West sosyal</a><a href="#guncellemeler">Güncellemeler</a></div>
+      <div><h4>İndir</h4><a href="https://github.com/ashistan5200-png/West-Launcher/releases/latest/download/West-Client-Setup.exe">Windows</a><a href="https://github.com/ashistan5200-png/West-Launcher/releases/latest/download/West-Client-macOS.dmg">macOS</a><a href="https://github.com/ashistan5200-png/West-Launcher/releases/latest/download/West-Client-Linux.AppImage">Linux</a></div>
+      <div><h4>Topluluk</h4><a href="https://github.com/ashistan5200-png/West-Launcher" target="_blank" rel="noopener">GitHub</a><a href="https://github.com/ashistan5200-png/West-Launcher/issues" target="_blank" rel="noopener">Hata bildir</a><a href="https://github.com/ashistan5200-png/West-Launcher/releases" target="_blank" rel="noopener">Tüm sürümler</a></div>
+    </div>
+    <p class="legal">Minecraft, Mojang AB'nin ticari markasıdır. West Client resmi bir Minecraft ürünü değildir; Mojang ya da Microsoft tarafından onaylanmamış veya onlarla ilişkili değildir.</p>
+  </div>
+</footer>
+
+<div class="lightbox" id="lightbox"><img alt=""></div>
+<script src="app.js"></script>
 </body>
 </html>

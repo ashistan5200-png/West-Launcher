@@ -7,7 +7,7 @@ name: Sürüm yayınla
 on:
   push:
     branches: [main]
-    paths: ["src/**", "src-tauri/**", "package.json", "site/**", ".github/workflows/**"]
+    paths: ["src/**", "src-tauri/**", "package.json", ".github/workflows/release.yml"]
   workflow_dispatch:
 
 concurrency:
@@ -88,26 +88,3 @@ jobs:
           # Yeni adlı kopyalar (indirme sayfası); eski adlar eski sürümlerin otomatik güncellemesi için kalır
           for f in $F; do cp "$f" "${f/West-Launcher/West-Client}"; F="$F ${f/West-Launcher/West-Client}"; done
           gh release upload "$TAG" $F --clobber
-
-  # İndirme sayfasını GitHub Pages'e yayınla
-  pages:
-    needs: build
-    runs-on: ubuntu-latest
-    # Repo ayarlarında Pages açılana kadar bu adım başarısız olur; sürümü etkilemesin
-    continue-on-error: true
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v5
-        with:
-          enablement: true
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: site
-      - id: deploy
-        uses: actions/deploy-pages@v4

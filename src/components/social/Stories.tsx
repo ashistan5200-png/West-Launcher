@@ -30,7 +30,7 @@ export function StoriesBar() {
       <div className="stories">
         {me && myProfile && (
           <button className="story-chip" onClick={() => (mineIdx >= 0 ? setOpen(mineIdx) : setCreate(true))}>
-            <span className={clsx("story-ring", mineIdx >= 0 && !groups[mineIdx].seen && "new", mineIdx < 0 && "empty")}>
+            <span className={clsx("story-ring", mineIdx >= 0 && !groups[mineIdx].seen && "new", mineIdx < 0 && "no-story")}>
               <Avatar url={myProfile.avatar_url} name={myProfile.username} size={58} />
               <span className="story-plus" onClick={(e) => { e.stopPropagation(); setCreate(true); }}><Plus size={13} /></span>
             </span>

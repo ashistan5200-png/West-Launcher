@@ -1357,7 +1357,7 @@ body {
 .story-chip .tiny { max-width: 70px; }
 .story-ring { position: relative; padding: 3px; border-radius: 50%; background: rgb(var(--border) / 0.18); }
 .story-ring.new { background: conic-gradient(from 210deg, rgb(var(--accent)), rgb(236 90 130), rgb(var(--accent-2)), rgb(var(--accent))); }
-.story-ring.empty { background: transparent; }
+.story-ring.no-story { background: transparent; }
 .story-ring .s-avatar { border: 3px solid rgb(var(--surface)); display: block; }
 .story-plus { position: absolute; right: 0; bottom: 0; width: 22px; height: 22px; border-radius: 11px; display: grid; place-items: center; background: rgb(var(--accent)); color: rgb(var(--on-accent)); border: 2px solid rgb(var(--surface)); }
 .story-view { position: fixed; inset: 0; z-index: 140; background: rgb(0 0 0 / 0.92); display: grid; place-items: center; }
