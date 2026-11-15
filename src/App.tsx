@@ -1,3 +1,4 @@
+import { BookmarksPage, NotificationsPage, PostPage, ProfilePage, SocialFeedPage, SocialSearchPage, TagPage } from "@/pages/Social";
 import { useEffect } from "react";
 import { Route, Routes, useLocation } from "react-router-dom";
 import { AnimatePresence, MotionConfig, motion } from "framer-motion";
@@ -77,6 +78,13 @@ export default function App() {
                   <Route path="/skins" element={<SkinsPage />} />
                   <Route path="/gallery" element={<GalleryPage />} />
                   <Route path="/news" element={<NewsPage />} />
+                  <Route path="/social" element={<SocialFeedPage />} />
+                  <Route path="/social/notifications" element={<NotificationsPage />} />
+                  <Route path="/social/bookmarks" element={<BookmarksPage />} />
+                  <Route path="/social/search" element={<SocialSearchPage />} />
+                  <Route path="/social/tag/:tag" element={<TagPage />} />
+                  <Route path="/u/:username" element={<ProfilePage />} />
+                  <Route path="/post/:id" element={<PostPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                 </Routes>
               </motion.div>

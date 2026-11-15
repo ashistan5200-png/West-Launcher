@@ -9,6 +9,10 @@ export interface Instance {
   id: string;
   name: string;
   icon: string | null;
+  /** Özel banner görseli (yerel dosya yolu) */
+  banner?: string | null;
+  /** Prosedürel manzara tohumu */
+  coverSeed?: string | null;
   group: string | null;
   mcVersion: string;
   loader: Loader;
@@ -211,7 +215,7 @@ export interface ProjectVersion {
   files: { filename: string; size: number; primary: boolean }[];
 }
 
-export interface WestAccount { username: string; email: string; emailConfirmed: boolean }
+export interface WestAccount { userId: string; username: string; email: string; emailConfirmed: boolean }
 export interface WestStatus { configured: boolean; account: WestAccount | null }
 export interface WestSignupResult { needsConfirmation: boolean; account: WestAccount | null }
 

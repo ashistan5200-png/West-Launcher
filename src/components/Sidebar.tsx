@@ -1,5 +1,6 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { Home, Library, Settings, Plus, Play, Compass, Shirt, Images, Newspaper } from "lucide-react";
+import { Home, Library, Settings, Plus, Play, Compass, Shirt, Images, Newspaper, MessagesSquare } from "lucide-react";
+import { useSocial } from "@/stores/social";
 import { useChat } from "@/stores/chat";
 import { AshiHead } from "./AshiHead";
 import clsx from "clsx";
@@ -10,6 +11,7 @@ const NAV = [
   { to: "/", icon: Home, label: "Ana Sayfa", short: "Ana" },
   { to: "/library", icon: Library, label: "Kütüphane", short: "Kütüphane" },
   { to: "/browse", icon: Compass, label: "Keşfet", short: "Keşfet" },
+  { to: "/social", icon: MessagesSquare, label: "West sosyal", short: "Sosyal" },
   { to: "/skins", icon: Shirt, label: "Skin ve hesaplar", short: "Skin" },
   { to: "/gallery", icon: Images, label: "Ekran görüntüleri", short: "Galeri" },
   { to: "/news", icon: Newspaper, label: "Haberler ve güncellemeler", short: "Haberler" },
@@ -20,12 +22,13 @@ export function Sidebar() {
   const { instances, running } = useInstances();
   const recent = instances.filter((i) => !i.isTemplate).slice(0, 6);
   const { open: chatOpen, toggle: toggleChat } = useChat();
+  const unread = useSocial((s) => s.unread.notifications + s.unread.messages);
 
   return (
     <nav className="sidebar">
       {NAV.map(({ to, icon: Icon, label, short }) => (
-        <NavLink key={to} to={to} end data-tour={to} className={({ isActive }) => clsx("nav-item labeled", isActive && "active")} title={label}>
-          <span className="nav-ico"><Icon size={19} /></span>
+        <NavLink key={to} to={to} end={to === "/"} data-tour={to} className={({ isActive }) => clsx("nav-item labeled", isActive && "active")} title={label}>
+          <span className="nav-ico"><Icon size={19} />{to === "/social" && unread > 0 && <em className="nav-badge">{unread > 9 ? "9+" : unread}</em>}</span>
           <span className="nav-label">{short}</span>
         </NavLink>
       ))}

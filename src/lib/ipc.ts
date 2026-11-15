@@ -73,6 +73,7 @@ export const api = {
   // İçerik motoru
   searchContent: (query: SearchQuery) => invoke<SearchResult>("search_content", { query }),
   contentTags: () => invoke<ContentTags>("content_tags"),
+  setInstanceImage: (id: string, kind: "icon" | "banner", path: string | null) => invoke<Instance>("set_instance_image", { id, kind, path }),
   contentProject: (id: string) => invoke<ProjectDetail>("content_project", { id }),
   contentVersions: (id: string) => invoke<ProjectVersion[]>("content_versions", { id }),
   westStatus: () => invoke<WestStatus>("west_status"),
@@ -81,6 +82,9 @@ export const api = {
   westLogin: (email: string, password: string) => invoke<WestAccount>("west_login", { email, password }),
   westLogout: () => invoke<void>("west_logout"),
   westResetPassword: (email: string) => invoke<void>("west_reset_password", { email }),
+  westApi: <T = unknown>(method: "GET" | "POST" | "PATCH" | "DELETE", path: string, opts: { query?: [string, string][]; body?: unknown; prefer?: string } = {}) =>
+    invoke<T>("west_api", { method, path, query: opts.query ?? null, body: opts.body ?? null, prefer: opts.prefer ?? null }),
+  westUpload: (path: string, folder: "avatars" | "banners" | "posts" | "stories" | "messages") => invoke<string>("west_upload", { path, folder }),
   installContent: (instanceId: string, source: ContentSource, projectId: string, kind: ContentKind) =>
     invoke<InstallReport>("install_content", { instanceId, source, projectId, kind }),
   installModpack: (hit: ContentHit) => invoke<Instance>("install_modpack", { source: hit.source, projectId: hit.id }),

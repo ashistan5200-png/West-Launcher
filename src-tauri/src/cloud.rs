@@ -59,6 +59,7 @@ struct Session {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WestAccount {
+    pub user_id: String,
     pub username: String,
     pub email: String,
     pub email_confirmed: bool,
@@ -99,7 +100,7 @@ fn save(root: &Path, s: &Session) -> Result<()> {
 }
 
 fn view(s: &Session) -> WestAccount {
-    WestAccount { username: s.username.clone(), email: s.email.clone(), email_confirmed: s.email_confirmed }
+    WestAccount { user_id: s.user_id.clone(), username: s.username.clone(), email: s.email.clone(), email_confirmed: s.email_confirmed }
 }
 
 #[derive(Deserialize)]
@@ -295,6 +296,114 @@ pub async fn reset_password(http: &Http, email: &str) -> Result<()> {
     }
     post(http, "/auth/v1/recover", serde_json::json!({ "email": email }), None).await?;
     Ok(())
+}
+
+// ───────── Sosyal ağ: kısıtlı veri kapısı ─────────
+
+/// Geçerli (gerekirse yenilenmiş) oturum anahtarı; giriş yoksa None.
+async fn token(http: &Http, root: &Path) -> Option<(String, String)> {
+    let s = load(root)?;
+    if s.expires_at > Utc::now() {
+        return Some((s.access_token, s.user_id));
+    }
+    refresh(http, root, &s).await.ok().map(|f| (f.access_token, f.user_id))
+}
+
+/// Arayüzün veritabanına tek kapısı. Yalnızca `/rest/v1/` (tablolar, görünümler, fonksiyonlar)
+/// adreslerine izin verilir; erişimi Supabase'teki satır güvenliği kuralları belirler.
+pub async fn api(http: &Http, root: &Path, method: &str, path: &str, query: &[(String, String)], body: Option<serde_json::Value>, prefer: Option<&str>) -> Result<serde_json::Value> {
+    let c = cfg()?;
+    if !path.starts_with("/rest/v1/") || path.contains("..") || path.contains('?') || path.contains('#') {
+        return Err(AppError::msg("Geçersiz istek"));
+    }
+    let m = match method {
+        "GET" => reqwest::Method::GET,
+        "POST" => reqwest::Method::POST,
+        "PATCH" => reqwest::Method::PATCH,
+        "DELETE" => reqwest::Method::DELETE,
+        _ => return Err(AppError::msg("Geçersiz istek")),
+    };
+    let tok = token(http, root).await;
+    if m != reqwest::Method::GET && tok.is_none() && !path.starts_with("/rest/v1/rpc/") {
+        return Err(AppError::msg("Bunun için West hesabına giriş yapmalısın."));
+    }
+    let mut req = http
+        .client
+        .request(m, format!("{}{path}", c.supabase_url))
+        .timeout(std::time::Duration::from_secs(25))
+        .header("apikey", &c.supabase_anon_key)
+        .query(query);
+    if let Some((t, _)) = &tok {
+        req = req.bearer_auth(t);
+    } else if !c.supabase_anon_key.starts_with("sb_") {
+        req = req.bearer_auth(&c.supabase_anon_key);
+    }
+    if let Some(p) = prefer {
+        req = req.header("Prefer", p);
+    }
+    if let Some(b) = body {
+        req = req.json(&b);
+    }
+    let resp = req.send().await.map_err(|e| AppError::msg(format!("West sunucusuna ulaşılamadı: {e}")))?;
+    let status = resp.status();
+    let range = resp.headers().get("content-range").and_then(|v| v.to_str().ok()).map(String::from);
+    let text = resp.text().await.unwrap_or_default();
+    if !status.is_success() {
+        let v: serde_json::Value = serde_json::from_str(&text).unwrap_or_default();
+        let msg = v["message"].as_str().or(v["msg"].as_str()).unwrap_or(&text).to_string();
+        if msg.contains("does not exist") || msg.contains("schema cache") {
+            return Err(AppError::msg("Sosyal özellikler için Supabase'te supabase/social.sql dosyası henüz çalıştırılmamış."));
+        }
+        return Err(AppError::msg(msg));
+    }
+    let data: serde_json::Value = if text.trim().is_empty() { serde_json::Value::Null } else { serde_json::from_str(&text)? };
+    // Sayfalama için toplam sayı (Prefer: count=exact)
+    if let Some(total) = range.and_then(|r| r.rsplit('/').next().and_then(|n| n.parse::<u64>().ok())) {
+        return Ok(serde_json::json!({ "data": data, "total": total }));
+    }
+    Ok(data)
+}
+
+/// Görsel yükler (avatar, banner, gönderi, hikâye, mesaj) ve herkese açık adresini döner.
+pub async fn upload(http: &Http, root: &Path, local: &Path, folder: &str) -> Result<String> {
+    let c = cfg()?;
+    if !["avatars", "banners", "posts", "stories", "messages"].contains(&folder) {
+        return Err(AppError::msg("Geçersiz klasör"));
+    }
+    let (tok, uid) = token(http, root).await.ok_or_else(|| AppError::msg("Bunun için West hesabına giriş yapmalısın."))?;
+    let ext = local.extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();
+    let mime = match ext.as_str() {
+        "png" => "image/png",
+        "jpg" | "jpeg" => "image/jpeg",
+        "webp" => "image/webp",
+        "gif" => "image/gif",
+        _ => return Err(AppError::msg("Yalnızca PNG, JPG, WEBP veya GIF yüklenebilir")),
+    };
+    let bytes = tokio::fs::read(local).await?;
+    if bytes.len() > 8 * 1024 * 1024 {
+        return Err(AppError::msg("Görsel en fazla 8 MB olabilir"));
+    }
+    let name = format!("{uid}/{folder}/{}.{ext}", uuid::Uuid::new_v4());
+    let resp = http
+        .client
+        .post(format!("{}/storage/v1/object/media/{name}", c.supabase_url))
+        .timeout(std::time::Duration::from_secs(60))
+        .header("apikey", &c.supabase_anon_key)
+        .bearer_auth(&tok)
+        .header("Content-Type", mime)
+        .header("x-upsert", "false")
+        .body(bytes)
+        .send()
+        .await
+        .map_err(|e| AppError::msg(format!("Yükleme başarısız: {e}")))?;
+    if !resp.status().is_success() {
+        let t = resp.text().await.unwrap_or_default();
+        if t.contains("Bucket not found") {
+            return Err(AppError::msg("Görsel deposu yok: Supabase'te supabase/social.sql dosyasını çalıştır."));
+        }
+        return Err(AppError::msg(format!("Yükleme başarısız: {}", t.chars().take(200).collect::<String>())));
+    }
+    Ok(format!("{}/storage/v1/object/public/media/{name}", c.supabase_url))
 }
 
 #[cfg(test)]

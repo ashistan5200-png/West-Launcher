@@ -7,6 +7,7 @@ import { useSettings } from "@/stores/settings";
 import { useAccounts } from "@/stores/accounts";
 import { InstanceCard } from "@/components/InstanceCard";
 import { CoverArt } from "@/components/CoverArt";
+import { InstanceBanner, coverSeedOf } from "@/components/InstanceBanner";
 import { Logo } from "@/components/Logo";
 import { api, isTauri } from "@/lib/ipc";
 import type { PatchNote } from "@/lib/types";
@@ -55,8 +56,9 @@ export function HomePage() {
 
   return (
     <div className="home">
+      <HomeAmbient seed={coverSeedOf(hero)} />
       <motion.section className="hero2" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
-        <CoverArt seed={hero.id} className="hero2-art" wide />
+        <InstanceBanner instance={hero} className="hero2-art" wide />
         <div className="hero2-shade" />
         <div className="hero2-body">
           <span className="eyebrow2">{greet()}{account ? `, ${account.username}` : ""} · kaldığın yerden devam et</span>
@@ -134,5 +136,23 @@ function Stat({ icon: Icon, label, value, sub, onClick }: { icon: typeof Timer; 
         {sub && <span className="tiny muted">{sub}</span>}
       </span>
     </Tag>
+  );
+}
+
+/** Ana sayfa arka planı: üstteki instance'ın manzarası bulanık ve geniş, üzerinde süzülen pikseller. */
+function HomeAmbient({ seed }: { seed: string }) {
+  const motes = useMemo(
+    () => Array.from({ length: 26 }, (_, i) => ({ left: (i * 37 + 11) % 100, delay: (i * 1.7) % 14, dur: 14 + ((i * 7) % 12), size: 3 + (i % 3) * 2, top: 30 + ((i * 53) % 70) })),
+    [],
+  );
+  return (
+    <div className="home-ambient" aria-hidden>
+      <CoverArt seed={seed} className="home-ambient-art" wide />
+      <CoverArt seed={seed + "·2"} className="home-ambient-art bottom" wide sun={false} />
+      <div className="home-ambient-fade" />
+      {motes.map((m, i) => (
+        <span key={i} className="mote" style={{ left: `${m.left}%`, top: `${m.top}%`, width: m.size, height: m.size, animationDelay: `${m.delay}s`, animationDuration: `${m.dur}s` }} />
+      ))}
+    </div>
   );
 }

@@ -7,7 +7,7 @@ import { useInstances } from "@/stores/instances";
 import { useSettings } from "@/stores/settings";
 import { useHuntRunning } from "@/stores/ashi";
 import { InstanceIcon } from "./InstanceIcon";
-import { CoverArt } from "./CoverArt";
+import { InstanceBanner } from "./InstanceBanner";
 
 /** Kapak görselli instance kartı; üzerine gelince oyna düğmesi belirir. */
 export function InstanceCard({ instance }: { instance: Instance }) {
@@ -27,7 +27,7 @@ export function InstanceCard({ instance }: { instance: Instance }) {
   return (
     <motion.div layout className={`icard ${isRunning ? "running" : ""}`} onClick={() => navigate(`/instance/${instance.id}`)} whileHover={{ y: -3 }} transition={{ type: "spring", stiffness: 400, damping: 30 }}>
       <div className="icard-cover">
-        <CoverArt seed={instance.id} className="icard-art" />
+        <InstanceBanner instance={instance} className="icard-art" />
         <span className={`loader-badge ${instance.loader.kind}`}>{LOADER_LABEL[instance.loader.kind]}</span>
         {isRunning && <span className="live-badge"><span /> Oynanıyor</span>}
       </div>

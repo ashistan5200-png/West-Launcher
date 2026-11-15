@@ -11,6 +11,7 @@ import { useInstances } from "@/stores/instances";
 import { ContentIcon } from "@/components/ContentIcon";
 import { Menu } from "@/components/instance/Menu";
 import { InstallMenu } from "@/components/InstallMenu";
+import { Pagination } from "@/components/Pagination";
 import { ModDetail } from "@/components/ModDetail";
 import { AnimatePresence } from "framer-motion";
 import { LOADER_LABEL, formatCount, formatRelative } from "@/lib/format";
@@ -39,7 +40,9 @@ const SORTS: { id: NonNullable<SearchQuery["sort"]>; label: string }[] = [
 ];
 
 
-const PAGE = 24;
+const PAGE = 25;
+/** Modrinth aramasında ulaşılabilecek en derin kayıt (daha ötesi boş döner) */
+const MAX_OFFSET = 10_000;
 
 const sideLabel = (h: ContentHit) => {
   const c = h.clientSide, s = h.serverSide;
@@ -74,6 +77,8 @@ export function BrowsePage() {
   const [tags, setTags] = useState<ContentTags | null>(null);
   const [hits, setHits] = useState<ContentHit[]>([]);
   const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const topRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const reqId = useRef(0);
@@ -110,13 +115,16 @@ export function BrowsePage() {
     [query, kind, version, loader, sort, cats, env],
   );
 
+  // Filtre değişince ilk sayfaya dön
+  useEffect(() => setPage(1), [baseQuery]);
+
   useEffect(() => {
     if (!isTauri()) return;
     const id = ++reqId.current;
     setLoading(true);
     const t = window.setTimeout(async () => {
       try {
-        const r = await api.searchContent({ ...baseQuery, offset: 0 });
+        const r = await api.searchContent({ ...baseQuery, offset: (page - 1) * PAGE });
         if (id !== reqId.current) return;
         setHits(r.hits);
         setTotal(r.total);
@@ -126,19 +134,14 @@ export function BrowsePage() {
       } finally {
         if (id === reqId.current) setLoading(false);
       }
-    }, 300);
+    }, page === 1 ? 300 : 0);
     return () => window.clearTimeout(t);
-  }, [baseQuery]);
+  }, [baseQuery, page]);
 
-  const loadMore = async () => {
-    setLoading(true);
-    try {
-      const r = await api.searchContent({ ...baseQuery, offset: hits.length });
-      const seen = new Set(hits.map((h) => h.id));
-      setHits((prev) => [...prev, ...r.hits.filter((h) => !seen.has(h.id))]);
-    } finally {
-      setLoading(false);
-    }
+  const pages = Math.max(1, Math.ceil(Math.min(total, MAX_OFFSET) / PAGE));
+  const changePage = (p: number) => {
+    setPage(p);
+    topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const activeFilters = (version ? 1 : 0) + (loader ? 1 : 0) + (env !== "all" ? 1 : 0) + cats.length;
@@ -206,7 +209,7 @@ export function BrowsePage() {
         {!tags && <p className="muted tiny"><Loader2 size={12} className="spin" /> Kategoriler yükleniyor…</p>}
       </aside>
 
-      <div className="bmain">
+      <div className="bmain" ref={topRef}>
         <div className="ctab-bar">
           <label className="ctab-search">
             <Search size={16} />
@@ -226,24 +229,20 @@ export function BrowsePage() {
         </nav>
 
         <div className="bmeta muted small">
-          {loading && hits.length === 0 ? "Aranıyor…" : `${formatCount(total)} sonuç`}
+          {loading && hits.length === 0 ? "Aranıyor…" : `${formatCount(total)} sonuç · sayfa ${page} / ${pages.toLocaleString("tr-TR")}`}
           {fromInstance && <span> · <strong>{fromInstance.name}</strong> için filtreler önceden seçildi</span>}
           {kind === "modpack" && <span> · Modpack'ler kendi sürümüyle yeni bir instance olarak kurulur</span>}
         </div>
 
         {error && <div className="banner banner-error">{error}</div>}
 
-        <div className="bresults">
+        <div className={`bresults ${loading && hits.length ? "dim" : ""}`}>
           {hits.map((h) => <ResultCard key={h.id} hit={h} instances={instances} preferred={fromInstance} onOpen={() => setDetail(h)} />)}
         </div>
 
         {loading && hits.length === 0 && <div className="center pad muted"><Loader2 className="spin" size={18} /></div>}
         {!loading && hits.length === 0 && !error && <p className="muted center pad">Sonuç yok. Filtreleri gevşetmeyi dene.</p>}
-        {hits.length > 0 && hits.length < total && (
-          <button className="btn btn-ghost" style={{ alignSelf: "center" }} disabled={loading} onClick={loadMore}>
-            {loading ? <Loader2 size={14} className="spin" /> : null} Daha fazla göster
-          </button>
-        )}
+        <Pagination page={page} pages={pages} onChange={changePage} disabled={loading} />
       </div>
       <AnimatePresence>
         {detail && <ModDetail hit={detail} instances={instances} preferred={fromInstance} onClose={() => setDetail(null)} />}

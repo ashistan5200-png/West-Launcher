@@ -61,3 +61,49 @@ pub fn delete_instance(state: State<'_, AppState>, id: String) -> Result<()> {
 pub fn instance_path(state: State<'_, AppState>, id: String) -> String {
     state.paths.instance_game_dir(&id).display().to_string()
 }
+
+/// Instance simgesi veya banner'ı: seçilen görsel instance klasörüne kopyalanır.
+/// `path = None` → kaldır (prosedürel görünüme dön).
+#[tauri::command]
+pub fn set_instance_image(state: State<'_, AppState>, id: String, kind: String, path: Option<String>) -> Result<Instance> {
+    let mgr = InstanceManager::new(&state.paths);
+    let mut inst = mgr.get(&id)?;
+    let dir = state.paths.instance_dir(&id);
+    let prefix = match kind.as_str() {
+        "icon" => "icon",
+        "banner" => "banner",
+        _ => return Err(AppError::msg("Geçersiz görsel türü")),
+    };
+    // Eski kopyaları temizle
+    if let Ok(rd) = std::fs::read_dir(&dir) {
+        for e in rd.flatten() {
+            if e.file_name().to_string_lossy().starts_with(&format!("{prefix}-")) {
+                let _ = std::fs::remove_file(e.path());
+            }
+        }
+    }
+    let stored = match path {
+        None => None,
+        Some(p) => {
+            let src = std::path::PathBuf::from(&p);
+            let ext = src.extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();
+            if !["png", "jpg", "jpeg", "webp", "gif"].contains(&ext.as_str()) {
+                return Err(AppError::msg("Yalnızca PNG, JPG, WEBP veya GIF görseller kullanılabilir"));
+            }
+            if std::fs::metadata(&src)?.len() > 12 * 1024 * 1024 {
+                return Err(AppError::msg("Görsel en fazla 12 MB olabilir"));
+            }
+            // Dosya adına zaman damgası: arayüz önbelleği eski görseli göstermesin
+            let dest = dir.join(format!("{prefix}-{}.{ext}", chrono::Utc::now().timestamp_millis()));
+            std::fs::copy(&src, &dest)?;
+            Some(dest.display().to_string())
+        }
+    };
+    if prefix == "icon" {
+        inst.icon = stored;
+    } else {
+        inst.banner = stored;
+    }
+    mgr.save(&inst)?;
+    Ok(inst)
+}

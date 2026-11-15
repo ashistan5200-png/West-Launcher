@@ -8,7 +8,7 @@ export function InstanceIcon({ instance, size = 48 }: { instance: Instance; size
   if (instance.icon) {
     return <img className="instance-icon" style={style} src={convertFileSrc(instance.icon)} alt="" draggable={false} />;
   }
-  const p = paletteFor(instance.id);
+  const p = paletteFor(instance.coverSeed || instance.id);
   return (
     <div
       className="instance-icon"

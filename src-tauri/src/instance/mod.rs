@@ -32,6 +32,12 @@ pub struct Instance {
     pub id: String,
     pub name: String,
     pub icon: Option<String>,
+    /// Özel banner görseli (instance klasöründe); yoksa prosedürel manzara
+    #[serde(default)]
+    pub banner: Option<String>,
+    /// Prosedürel manzaranın tohumu ("Manzarayı değiştir")
+    #[serde(default)]
+    pub cover_seed: Option<String>,
     pub group: Option<String>,
     pub mc_version: String,
     pub loader: Loader,
@@ -124,6 +130,8 @@ impl<'a> InstanceManager<'a> {
             id,
             name: req.name,
             icon: req.icon,
+            banner: None,
+            cover_seed: None,
             group: req.group,
             mc_version: req.mc_version,
             loader: req.loader,

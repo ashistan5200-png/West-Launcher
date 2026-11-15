@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { open as openPath } from "@tauri-apps/plugin-shell";
-import { Boxes, Clock, Copy, FileText, FolderOpen, Globe2, LayoutTemplate, Loader2, MoreVertical, Play, Settings2, Share2, Square, Tag, Timer, Trash2, Folder } from "lucide-react";
+import { Paintbrush, Pencil, Boxes, Clock, Copy, FileText, FolderOpen, Globe2, LayoutTemplate, Loader2, MoreVertical, Play, Settings2, Share2, Square, Tag, Timer, Trash2, Folder } from "lucide-react";
 import clsx from "clsx";
 import { useInstances } from "@/stores/instances";
 import { useSettings } from "@/stores/settings";
 import { useAshi, useHuntRunning } from "@/stores/ashi";
 import { InstanceIcon } from "@/components/InstanceIcon";
-import { CoverArt } from "@/components/CoverArt";
+import { InstanceBanner } from "@/components/InstanceBanner";
+import { AppearanceModal } from "@/components/AppearanceModal";
 import { Modal } from "@/components/Modal";
 import { ContentTab } from "@/components/instance/ContentTab";
 import { FilesTab, LogsTab, ShareTab, WorldsTab } from "@/components/instance/OtherTabs";
@@ -35,6 +36,7 @@ export function InstancePage() {
   const openAshi = useAshi((s) => s.openConfirm);
   const [tab, setTab] = useState<Tab>("content");
   const [cloneOpen, setCloneOpen] = useState(false);
+  const [appearOpen, setAppearOpen] = useState(false);
 
   if (!inst) return <p className="muted pad">Instance bulunamadı.</p>;
 
@@ -52,8 +54,9 @@ export function InstancePage() {
   return (
     <div className="stack ipage">
       <header className="ihead">
-        <CoverArt seed={inst.id} className="ihead-art" wide />
+        <InstanceBanner instance={inst} className="ihead-art" wide />
         <div className="ihead-shade" />
+        <button className="ihead-edit" onClick={() => setAppearOpen(true)} title="Profil fotoğrafı, banner ve ad"><Pencil size={14} /> Görünümü düzenle</button>
         <InstanceIcon instance={inst} size={76} />
         <div className="grow ihead-text">
           <h1 className="truncate">{inst.name}</h1>
@@ -83,6 +86,7 @@ export function InstancePage() {
           <Menu
             trigger={() => <button className="icon-btn" aria-label="Daha fazla"><MoreVertical size={20} /></button>}
             items={[
+              { label: "Görünümü düzenle", icon: <Paintbrush size={14} />, onClick: () => setAppearOpen(true) },
               { label: "Klasörü aç", icon: <FolderOpen size={14} />, onClick: async () => openPath(await api.instancePath(id)) },
               { label: "Klonla", icon: <Copy size={14} />, onClick: () => setCloneOpen(true) },
               { label: "Şablon oluştur", icon: <LayoutTemplate size={14} />, onClick: async () => { await api.makeTemplate(id, `${inst.name} şablonu`); await refresh(); } },
@@ -119,6 +123,7 @@ export function InstancePage() {
       {tab === "share" && <ShareTab instance={inst} />}
       {tab === "settings" && <InstanceSettings instance={inst} onDelete={() => void del()} />}
 
+      <AppearanceModal instance={inst} open={appearOpen} onClose={() => setAppearOpen(false)} />
       <CloneModal open={cloneOpen} onClose={() => setCloneOpen(false)} name={inst.name} onConfirm={(n, w) => clone(id, n, w)} />
     </div>
   );
