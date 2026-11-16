@@ -59,6 +59,14 @@ public final class WestHud {
         return new MenuScreen();
     }
 
+    public static WestScreen home() {
+        return new dev.west.hud.screen.HomeScreen();
+    }
+
+    public static boolean customTitle() {
+        return config != null && config.data.customTitle;
+    }
+
     public static WestScreen editor(WestScreen back) {
         return new EditorScreen(back);
     }

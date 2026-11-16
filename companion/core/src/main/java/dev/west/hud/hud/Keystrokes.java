@@ -63,9 +63,7 @@ public final class Keystrokes extends HudElement {
 
     private void fillKey(Gfx g, Theme t, int x, int y, int w, int h, float a) {
         int bg = background ? Theme.mix(0x8C0B0B10, Theme.alpha(t.accent, 230), a) : Theme.alpha(t.accent, (int) (a * 230));
-        g.fill(x + 1, y, x + w - 1, y + h, bg);
-        g.fill(x, y + 1, x + 1, y + h - 1, bg);
-        g.fill(x + w - 1, y + 1, x + w, y + h - 1, bg);
+        if ((bg >>> 24) > 0) dev.west.hud.ui.Ui.round(g, x, y, w, h, 4, bg);
     }
 
     private void key(Gfx g, Theme t, int x, int y, int w, int h, String label, Game.Key k) {

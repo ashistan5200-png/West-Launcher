@@ -37,6 +37,10 @@ public final class Config {
         public int accent = 0xE8A25C;
         public boolean animations = true;
         public boolean snapping = true;
+        /** Menü ve HUD yazıları pürüzsüz (TrueType) yazı tipiyle; kapalıysa Minecraft yazı tipi */
+        public boolean smoothFont = true;
+        /** Minecraft'ın başlık ekranı yerine West ana menüsü */
+        public boolean customTitle = true;
         public Map<String, Element> elements = new LinkedHashMap<>();
     }
 

@@ -106,6 +106,46 @@ final class Game121 implements Game {
     }
 
     @Override
+    public void open(Target t) {
+        Minecraft m = mc();
+        var parent = m.screen;
+        switch (t) {
+            case SINGLEPLAYER -> m.setScreen(new net.minecraft.client.gui.screens.worldselection.SelectWorldScreen(parent));
+            case MULTIPLAYER -> m.setScreen(new net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen(parent));
+            case OPTIONS -> m.setScreen(new net.minecraft.client.gui.screens.options.OptionsScreen(parent, m.options));
+            case LANGUAGE -> m.setScreen(new net.minecraft.client.gui.screens.options.LanguageSelectScreen(parent, m.options, m.getLanguageManager()));
+            case QUIT -> m.stop();
+        }
+    }
+
+    private net.minecraft.client.multiplayer.ServerList serverList() {
+        var l = new net.minecraft.client.multiplayer.ServerList(mc());
+        l.load();
+        return l;
+    }
+
+    @Override
+    public List<ServerInfo> servers(int max) {
+        var l = serverList();
+        List<ServerInfo> out = new ArrayList<>();
+        for (int i = 0; i < Math.min(max, l.size()); i++) out.add(new ServerInfo(l.get(i).name, l.get(i).ip));
+        return out;
+    }
+
+    @Override
+    public void joinServer(int index) {
+        var l = serverList();
+        if (index < 0 || index >= l.size()) return;
+        ServerData d = l.get(index);
+        net.minecraft.client.gui.screens.ConnectScreen.startConnecting(mc().screen, mc(), net.minecraft.client.multiplayer.resolver.ServerAddress.parseString(d.ip), d, false, null);
+    }
+
+    @Override
+    public String playerName() {
+        return mc().getUser().getName();
+    }
+
+    @Override
     public void closeScreen() {
         mc().setScreen(null);
     }

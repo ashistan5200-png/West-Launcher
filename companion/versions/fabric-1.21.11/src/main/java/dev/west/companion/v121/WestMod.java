@@ -23,6 +23,11 @@ public final class WestMod implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         WestHud.init(new Game121());
+        // Tüm Minecraft yazılarını pürüzsüz yapan dahili kaynak paketi (Kaynak Paketleri'nden kapatılabilir)
+        net.fabricmc.loader.api.FabricLoader.getInstance().getModContainer("west_companion").ifPresent(c ->
+                net.fabricmc.fabric.api.resource.v1.ResourceLoader.registerBuiltinPack(Identifier.fromNamespaceAndPath("west_companion", "smooth_ui"), c,
+                        net.minecraft.network.chat.Component.literal("West pürüzsüz yazı"),
+                        net.fabricmc.fabric.api.resource.v1.pack.PackActivationType.DEFAULT_ENABLED));
         KeyBindingHelper.registerKeyBinding(MENU);
         KeyBindingHelper.registerKeyBinding(EDITOR);
         ClientTickEvents.END_CLIENT_TICK.register(WestMod::tick);
@@ -32,6 +37,10 @@ public final class WestMod implements ClientModInitializer {
 
     private static void tick(Minecraft mc) {
         WestHud.tick();
+        // Minecraft'ın başlık ekranı açıldıysa West ana menüsüyle değiştir
+        if (mc.screen instanceof net.minecraft.client.gui.screens.TitleScreen && WestHud.customTitle()) {
+            mc.setScreen(new WestHost(WestHud.home()));
+        }
         while (MENU.consumeClick()) {
             if (mc.screen == null) WestHud.game.openWestScreen(false);
         }

@@ -98,9 +98,10 @@ public final class MenuScreen implements WestScreen {
         Theme t = ui.t;
         ui.rect(x, y, w, h, t.side, t.radius + 2);
         Gfx g = ui.g;
-        g.text("◆", x + 10, y + 12, t.accent, false);
-        g.text("West", x + 20, y + 12, t.text, false);
-        g.text("Companion", x + 20 + g.textWidth("West "), y + 12, t.accent, false);
+        g.textBold("◆", x + 10, y + 12, t.accent, false);
+        g.textBold("West", x + 20, y + 12, t.text, false);
+        if (20 + g.textBoldWidth("West Companion") < w - 6) g.textBold("Companion", x + 20 + g.textBoldWidth("West "), y + 12, t.accent, false);
+        else g.textBold("Client", x + 20 + g.textBoldWidth("West "), y + 12, t.accent, false);
 
         int by = y + 32;
         // Öne çıkan eylem: HUD düzenleyici
@@ -276,6 +277,10 @@ public final class MenuScreen implements WestScreen {
         boolean on = ui.toggle(d.animations, x + w - 24, y + 4);
         if (on != d.animations) { d.animations = on; changed = true; }
         y = ny;
+        ny = row("Pürüzsüz yazı tipi", "Kapatırsan Minecraft'ın piksel yazı tipi kullanılır.", x, y, w);
+        on = ui.toggle(d.smoothFont, x + w - 24, y + 4);
+        if (on != d.smoothFont) { d.smoothFont = on; changed = true; }
+        y = ny;
         ny = row("Mıknatıslı hizalama", "Düzenleyicide öğeler kenarlara ve birbirine yapışır.", x, y, w);
         on = ui.toggle(d.snapping, x + w - 24, y + 4);
         if (on != d.snapping) { d.snapping = on; changed = true; }
@@ -290,6 +295,10 @@ public final class MenuScreen implements WestScreen {
         int ny = row("FullBright", "Mağarada bile her yer aydınlık. Bazı sunucular buna izin vermez.", x, y, w);
         boolean on = ui.toggle(d.fullbright, x + w - 24, y + 4);
         if (on != d.fullbright) { d.fullbright = on; WestHud.save(); WestHud.game.click(); }
+        y = ny;
+        ny = row("West ana menüsü", "Minecraft'ın başlık ekranı yerine West Client ana menüsü.", x, y, w);
+        on = ui.toggle(d.customTitle, x + w - 24, y + 4);
+        if (on != d.customTitle) { d.customTitle = on; WestHud.save(); WestHud.game.click(); }
         y = ny;
         ny = row("Menü tuşu", "Kontroller → West Companion'dan değiştirebilirsin. Varsayılan: Sağ Shift", x, y, w);
         y = ny;

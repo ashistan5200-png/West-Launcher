@@ -39,4 +39,21 @@ public interface Gfx {
 
     /** Zırh yuvası (0 = kask … 3 = bot) ya da eldeki eşya (4 = ana el, 5 = ikinci el). Boşsa false. */
     default boolean item(int slot, int x, int y) { return false; }
+
+    /** Bir GUI pikselinin kaç ekran pikseli olduğu (GUI ölçeği). Pürüzsüz köşeler için. */
+    default int guiScale() { return 1; }
+
+    /** Yazılar pürüzsüz (TrueType) yazı tipiyle mi çizilsin; text/textWidth bunu kullanır. */
+    default void smoothText(boolean on) {}
+
+    /** Ana menü için Minecraft'ın dönen panorama arka planı (yoksa hiçbir şey yapmaz). */
+    default void panorama(float delta) {}
+
+    /** Oyuncunun skin yüzü (kafa + şapka katmanı) */
+    default void playerFace(int x, int y, int size) {}
+
+    /** Kalın pürüzsüz yazı (başlıklar için); desteklenmiyorsa normal yazı */
+    default void textBold(String s, int x, int y, int argb, boolean shadow) { text(s, x, y, argb, shadow); }
+
+    default int textBoldWidth(String s) { return textWidth(s); }
 }

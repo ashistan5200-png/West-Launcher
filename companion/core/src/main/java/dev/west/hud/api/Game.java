@@ -58,5 +58,22 @@ public interface Game {
     /** Panoya kopyala */
     default void copy(String text) {}
 
+    // ───────── Ana menü ─────────
+
+    enum Target { SINGLEPLAYER, MULTIPLAYER, OPTIONS, LANGUAGE, QUIT }
+
+    /** Minecraft'ın kendi ekranını aç; geri dönülünce West ana menüsüne gelinir. */
+    default void open(Target t) {}
+
+    /** Kayıtlı sunucular (çok oyunculu listesi), en fazla `max` tane */
+    default List<ServerInfo> servers(int max) { return List.of(); }
+
+    /** Listedeki sunucuya doğrudan bağlan */
+    default void joinServer(int index) {}
+
+    default String playerName() { return "Oyuncu"; }
+
     record ModInfo(String id, String name, String version, String description) {}
+
+    record ServerInfo(String name, String address) {}
 }

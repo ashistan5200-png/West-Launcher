@@ -69,9 +69,6 @@ public abstract class HudElement {
 
     /** Ortak kutu arka planı */
     protected void box(Gfx g, int w, int h) {
-        if (!background) return;
-        g.fill(1, 0, w - 1, h, 0x8C0B0B10);
-        g.fill(0, 1, 1, h - 1, 0x8C0B0B10);
-        g.fill(w - 1, 1, w, h - 1, 0x8C0B0B10);
+        if (background) dev.west.hud.ui.Ui.round(g, 0, 0, w, h, 4, 0x8C0B0B10);
     }
 }

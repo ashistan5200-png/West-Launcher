@@ -20,7 +20,7 @@ final class WestHost extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float delta) {
-        WestHud.safe("screen", () -> inner.render(new Gfx121(g), mouseX, mouseY, delta));
+        WestHud.safe("screen", () -> inner.render(new Gfx121(g, d -> renderPanorama(g, d)), mouseX, mouseY, delta));
     }
 
     /** Vanilla'nın karartma/bulanıklaştırma arka planı yerine kendi arka planımız çizilir. */

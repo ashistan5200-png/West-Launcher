@@ -68,32 +68,87 @@ public final class Ui {
     public void rect(int x, int y, int w, int h, int color, int r) {
         if (w <= 0 || h <= 0) return;
         r = Math.min(r, Math.min(w, h) / 2);
-        if (r <= 1) {
+        if (r <= 0 || t.pixel) {
             g.fill(x, y, x + w, y + h, color);
             return;
         }
-        g.fill(x + r, y, x + w - r, y + h, color);
-        g.fill(x, y + r, x + r, y + h - r, color);
-        g.fill(x + w - r, y + r, x + w, y + h - r, color);
-        // Köşeler: her satırda dairenin genişliği kadar
+        round(g, x, y, w, h, r, color);
+    }
+
+    /**
+     * GUI koordinatlarında pürüzsüz yuvarlak dikdörtgen. Ekranın gerçek pikselleriyle çizilir:
+     * GUI ölçeği 3 ise köşe 3 kat daha ince adımlı ve kenarları yumuşatılmış olur.
+     */
+    public static void round(Gfx g, int x, int y, int w, int h, int r, int color) {
+        r = Math.min(r, Math.min(w, h) / 2);
+        if (w <= 0 || h <= 0) return;
+        int k = Math.max(1, g.guiScale());
+        g.push();
+        g.scale(1f / k);
+        smoothRect(g, x * k, y * k, w * k, h * k, r * k, color);
+        g.pop();
+    }
+
+    /** Fiziksel piksellerde, köşeleri kenar yumuşatmalı (anti-aliased) yuvarlak dikdörtgen. */
+    private static void smoothRect(Gfx g, int x, int y, int w, int h, int r, int color) {
+        g.fill(x, y + r, x + w, y + h - r, color);
+        int a = color >>> 24;
         for (int i = 0; i < r; i++) {
+            // Bu satırın merkezinde dairenin kenarı nerede (köşe içinden ölçülerek)
             double dy = r - i - 0.5;
-            int dx = (int) Math.round(r - Math.sqrt(Math.max(0, r * r - dy * dy)));
-            g.fill(x + dx, y + i, x + r, y + i + 1, color);
-            g.fill(x + w - r, y + i, x + w - dx, y + i + 1, color);
-            g.fill(x + dx, y + h - i - 1, x + r, y + h - i, color);
-            g.fill(x + w - r, y + h - i - 1, x + w - dx, y + h - i, color);
+            double edge = r - Math.sqrt(Math.max(0, (double) r * r - dy * dy));
+            int full = (int) Math.ceil(edge);
+            float cover = (float) (full - edge);
+            int top = y + i, bot = y + h - i - 1;
+            g.fill(x + full, top, x + w - full, top + 1, color);
+            g.fill(x + full, bot, x + w - full, bot + 1, color);
+            // Kenardaki yarım piksel: kapladığı kadar saydam
+            if (full > 0 && cover > 0.02f) {
+                int c = Theme.alpha(color, Math.round(a * cover));
+                g.fill(x + full - 1, top, x + full, top + 1, c);
+                g.fill(x + w - full, top, x + w - full + 1, top + 1, c);
+                g.fill(x + full - 1, bot, x + full, bot + 1, c);
+                g.fill(x + w - full, bot, x + w - full + 1, bot + 1, c);
+            }
         }
     }
 
-    /** İnce kenarlık (piksel temada kalın ve keskin). */
+    /** İnce kenarlık: pürüzsüz temada 1 ekran pikseli, piksel temada kalın ve keskin. */
     public void border(int x, int y, int w, int h, int color) {
-        int s = t.pixel ? 2 : 1;
-        int r = t.pixel ? 0 : Math.min(t.radius, 3);
-        g.fill(x + r, y, x + w - r, y + s, color);
-        g.fill(x + r, y + h - s, x + w - r, y + h, color);
-        g.fill(x, y + r, x + s, y + h - r, color);
-        g.fill(x + w - s, y + r, x + w, y + h - r, color);
+        if (t.pixel) {
+            g.fill(x, y, x + w, y + 2, color);
+            g.fill(x, y + h - 2, x + w, y + h, color);
+            g.fill(x, y + 2, x + 2, y + h - 2, color);
+            g.fill(x + w - 2, y + 2, x + w, y + h - 2, color);
+            return;
+        }
+        outline(g, x, y, w, h, Math.min(t.radius, Math.min(w, h) / 2), color);
+    }
+
+    /** Yuvarlak köşeli 1 ekran pikseli kalınlığında çerçeve (r GUI pikseli). */
+    public static void outline(Gfx g, int x, int y, int w, int h, int rr, int color) {
+        int k = Math.max(1, g.guiScale());
+        int r = rr * k;
+        int X = x * k, Y = y * k, W = w * k, H = h * k;
+        g.push();
+        g.scale(1f / k);
+        g.fill(X + r, Y, X + W - r, Y + 1, color);
+        g.fill(X + r, Y + H - 1, X + W - r, Y + H, color);
+        g.fill(X, Y + r, X + 1, Y + H - r, color);
+        g.fill(X + W - 1, Y + r, X + W, Y + H - r, color);
+        // Köşe yayları: dış daire (r) ile 1 piksel içerideki daire (r-1) arasındaki halka
+        for (int i = 0; i < r; i++) {
+            double dy = r - i - 0.5;
+            int eo = (int) Math.round(r - Math.sqrt(Math.max(0, (double) r * r - dy * dy)));
+            double ri = r - 1;
+            int ei = ri * ri > dy * dy ? (int) Math.round(r - Math.sqrt(ri * ri - dy * dy)) : r;
+            int len = Math.max(1, ei - eo);
+            g.fill(X + eo, Y + i, X + eo + len, Y + i + 1, color);
+            g.fill(X + W - eo - len, Y + i, X + W - eo, Y + i + 1, color);
+            g.fill(X + eo, Y + H - i - 1, X + eo + len, Y + H - i, color);
+            g.fill(X + W - eo - len, Y + H - i - 1, X + W - eo, Y + H - i, color);
+        }
+        g.pop();
     }
 
     public void text(String s, int x, int y, int color) {
