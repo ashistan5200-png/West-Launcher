@@ -162,6 +162,9 @@ function AppearanceTab() {
         <Row title="Animasyonları azalt" desc="Geçişleri sadeleştirir; eski bilgisayarlarda daha akıcı.">
           <Toggle label="Animasyonları azalt" on={t.reduceMotion} onChange={(reduceMotion) => updateTheme({ reduceMotion })} />
         </Row>
+        <Row title="İmleç parçacıkları" desc="Fare geçtiği yerde, altındaki renge göre parlayan küçük pikseller bırakır.">
+          <Toggle label="İmleç parçacıkları" on={t.cursorTrail ?? true} onChange={(cursorTrail) => updateTheme({ cursorTrail })} />
+        </Row>
       </Group>
 
       <Group title="Pencere">
@@ -192,6 +195,17 @@ function GameTab() {
         </Row>
         <Row title="West Companion" desc="Oyun içi panel, FullBright ve FPS göstergesi (1.21.1 Fabric/NeoForge).">
           <Toggle label="West Companion" on={settings.companionEnabled} onChange={(v) => void update({ companionEnabled: v })} />
+        </Row>
+      </Group>
+
+      <Group title="West Overlay">
+        <Row title="Oyun üstü panel" desc="Oyun açıkken kısayolla oyunun üstünde West Client paneli açılır: modlar, oyun modları, tuşlar, performans. Her Minecraft sürümünde çalışır.">
+          <Toggle label="West Overlay" on={settings.overlayEnabled} onChange={(v) => void update({ overlayEnabled: v })} />
+        </Row>
+        <Row title="Açma kısayolu" desc="Pencereli ya da kenarlıksız modda en iyi çalışır.">
+          <select className="set-input" style={{ width: 140 }} value={settings.overlayHotkey} disabled={!settings.overlayEnabled} onChange={(e) => void update({ overlayHotkey: e.target.value })}>
+            {["F6", "F7", "F8", "F9", "F10", "F12", "Alt+W", "Ctrl+Tab"].map((k) => <option key={k} value={k}>{k}</option>)}
+          </select>
         </Row>
       </Group>
 

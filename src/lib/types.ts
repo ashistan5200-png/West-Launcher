@@ -43,6 +43,8 @@ export interface ThemeSettings {
   windowEffect: "mica" | "acrylic" | "none";
   density: "compact" | "comfortable";
   reduceMotion: boolean;
+  /** İmlecin arkasında, altındaki rengi alan piksel parçacıklar */
+  cursorTrail: boolean;
 }
 
 export interface Settings {
@@ -64,6 +66,10 @@ export interface Settings {
   discordRpc: boolean;
   discordClientId: string | null;
   autoUpdate: boolean;
+  /** West Overlay: oyun açıkken kısayolla oyunun üstünde açılan panel */
+  overlayEnabled: boolean;
+  overlayHotkey: string;
+  overlayTheme: "night" | "day" | "pixel-night" | "pixel-day";
 }
 
 export interface ManifestEntry {
@@ -487,3 +493,6 @@ export interface PortItem {
 }
 export interface PortReport { ported: string[]; removed: string[]; keptDisabled: string[]; dependencies: string[]; failed: string[] }
 export interface PortResult { instance: Instance; report: PortReport }
+
+// ───────── West Overlay ─────────
+export interface GameStats { cpu: number; memoryMb: number; systemUsedMb: number; systemTotalMb: number; uptimeSecs: number }

@@ -4,7 +4,7 @@ import { applyTheme, DEFAULT_ACCENT, LEGACY_DEFAULT_ACCENT } from "@/lib/theme";
 import type { Settings, ThemeSettings } from "@/lib/types";
 
 const DEFAULT: Settings = {
-  theme: { accent: DEFAULT_ACCENT, blur: 14, opacity: 0.96, windowEffect: "mica", density: "compact", reduceMotion: false },
+  theme: { accent: DEFAULT_ACCENT, blur: 14, opacity: 0.96, windowEffect: "mica", density: "compact", reduceMotion: false, cursorTrail: true },
   defaultMemoryMb: null,
   autoJava: true,
   maxConcurrentDownloads: 24,
@@ -21,6 +21,9 @@ const DEFAULT: Settings = {
   discordRpc: true,
   discordClientId: null,
   autoUpdate: true,
+  overlayEnabled: true,
+  overlayHotkey: "F7",
+  overlayTheme: "night",
 };
 
 interface SettingsState {

@@ -968,6 +968,8 @@ body {
 .menu-pop.wide { min-width: 300px; max-height: 320px; }
 /* Gövdeye çizilen menü: kartların taşma gizlemesinden etkilenmez, pencerelerin de üstünde durur */
 .menu-pop.floating { top: auto; z-index: 200; overflow-y: auto; }
+/* İmleç parçacıkları: her şeyin üstünde ama tıklamaları engellemez */
+.cursor-trail { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 400; image-rendering: pixelated; }
 .menu-item .instance-icon { flex: none; }
 .menu-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 900px) { .browse { grid-template-columns: 1fr; } .bfilters { position: static; max-height: none; } }

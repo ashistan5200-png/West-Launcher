@@ -1,4 +1,5 @@
 pub mod accounts;
+mod overlay;
 pub mod assistant;
 pub mod commands;
 pub mod cloud;
@@ -41,6 +42,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(overlay::plugin())
         .manage(state)
         .setup(move |app| {
             remove_old_install();
@@ -52,6 +54,10 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             // ayarlar & sistem
             commands::settings::get_settings,
+            overlay::overlay_toggle,
+            overlay::overlay_hide,
+            overlay::overlay_check_hotkey,
+            overlay::game_stats,
             commands::settings::save_settings,
             commands::settings::get_hardware,
             commands::settings::get_data_dir,

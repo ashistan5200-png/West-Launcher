@@ -16,6 +16,8 @@ pub struct ThemeSettings {
     /// "compact" | "comfortable"
     pub density: String,
     pub reduce_motion: bool,
+    /// Fare imlecinin arkasında, altındaki rengi alan piksel parçacıklar
+    pub cursor_trail: bool,
 }
 
 impl Default for ThemeSettings {
@@ -27,6 +29,7 @@ impl Default for ThemeSettings {
             window_effect: "mica".into(),
             density: "compact".into(),
             reduce_motion: false,
+            cursor_trail: true,
         }
     }
 }
@@ -58,6 +61,12 @@ pub struct Settings {
     pub discord_client_id: Option<String>,
     /// Yeni sürüm bulununca arka planda indir (kurulum yine kullanıcı onayıyla)
     pub auto_update: bool,
+    /// West Overlay: oyun açıkken kısayolla oyunun üstünde açılan West Client paneli
+    pub overlay_enabled: bool,
+    /// Overlay kısayolu (ör. "F7")
+    pub overlay_hotkey: String,
+    /// Overlay teması: "night" | "day" | "pixel-night" | "pixel-day"
+    pub overlay_theme: String,
 }
 
 impl Default for Settings {
@@ -80,6 +89,9 @@ impl Default for Settings {
             discord_rpc: true,
             discord_client_id: None,
             auto_update: true,
+            overlay_enabled: true,
+            overlay_hotkey: "F7".into(),
+            overlay_theme: "night".into(),
         }
     }
 }

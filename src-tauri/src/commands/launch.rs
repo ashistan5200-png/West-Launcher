@@ -178,6 +178,9 @@ pub async fn start_game(app: &AppHandle, id: &str, auth: AuthSession, join_serve
         if mode == LaunchMode::Play && st.running.lock().is_empty() {
             st.discord.send(crate::discord::Presence::Idle);
         }
+        if st.running.lock().is_empty() {
+            crate::overlay::on_games_stopped(&exit_app);
+        }
         let _ = exit_app.emit(
             EV_GAME_EXIT,
             ExitEvent {
@@ -214,6 +217,9 @@ pub async fn start_game(app: &AppHandle, id: &str, auth: AuthSession, join_serve
             detail: format!("{} {} · {} mod", loader, inst.mc_version, mod_count),
             started_unix: chrono::Utc::now().timestamp(),
         });
+    }
+    if mode == LaunchMode::Play {
+        crate::overlay::on_game_started(&app);
     }
     if mode == LaunchMode::Play && state.settings.read().close_on_launch {
         if let Some(w) = app.get_webview_window("main") {
