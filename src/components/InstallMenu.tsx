@@ -47,6 +47,7 @@ export function InstallMenu({ hit, instances, preferred, direct }: { hit: Conten
   }
   return (
     <Menu
+      wide
       trigger={() => (
         <button className="btn btn-primary" disabled={installing} title={done ? `→ ${done}` : undefined}>
           {installing ? <Loader2 size={15} className="spin" /> : done ? <Check size={15} /> : <Download size={15} />} {done ? "Eklendi" : "Ekle"} <ChevronDown size={14} />
