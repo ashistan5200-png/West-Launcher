@@ -69,4 +69,52 @@ public final class Skin {
         Ui.round(g, X, Y, W, H, 5, 0xF00C0C11);
         Ui.outline(g, X, Y, W, H, 5, Theme.alpha(t.accent, 0x66));
     }
+
+    /** Dünya / sunucu listesindeki bir satırın kartı */
+    public static void listRow(Gfx g, int x, int y, int w, int h, boolean hovered) {
+        x -= 4; w += 8; y -= 1; h += 2;
+        int r = Math.min(7, h / 3);
+        Ui.round(g, x, y, w, h, r, hovered ? 0xB0202029 : 0x8013131A);
+        Ui.outline(g, x, y, w, h, r, hovered ? 0x33FFFFFF : 0x18FFFFFF);
+    }
+
+    /** Seçili satır: turuncu tonlu kart ve çerçeve (vanilla beyaz kutunun yerine) */
+    public static void listSelected(Gfx g, int x, int y, int w, int h, boolean focused) {
+        x -= 4; w += 8; y -= 1; h += 2;
+        Theme t = WestHud.theme();
+        int r = Math.min(7, h / 3);
+        Ui.round(g, x, y, w, h, r, Theme.alpha(t.accent, focused ? 0x30 : 0x20));
+        Ui.outline(g, x, y, w, h, r, Theme.alpha(t.accent, focused ? 0xE0 : 0x80));
+        g.fill(x + 1, y + r, x + 3, y + h - r, Theme.alpha(t.accent, 0xF0));
+    }
+
+    public static void scrollTrack(Gfx g, int x, int y, int w, int h) {
+        int cx = x + w / 2 - 1;
+        Ui.round(g, cx, y + 2, 3, h - 4, 1, 0x30FFFFFF);
+    }
+
+    public static void scrollHandle(Gfx g, int x, int y, int w, int h) {
+        int cx = x + w / 2 - 2;
+        Ui.round(g, cx, y + 1, 5, h - 2, 2, 0xC8FFFFFF);
+    }
+
+    /** Dünya ikonunun üstündeki "oyna" düğmesi: koyu katman ve pürüzsüz üçgen */
+    public static void playIcon(Gfx g, int x, int y, int w, int h, boolean highlighted) {
+        Theme t = WestHud.theme();
+        g.fill(x, y, x + w, y + h, highlighted ? 0x80000000 : 0x60000000);
+        int d = Math.min(w, h) - 10;
+        int cx = x + w / 2, cy = y + h / 2;
+        Ui.round(g, cx - d / 2, cy - d / 2, d, d, d / 2, highlighted ? t.accent | 0xFF000000 : 0xE6FFFFFF);
+        int k = Math.max(1, g.guiScale());
+        int tri = d * k * 2 / 5;
+        int tx = cx * k - tri / 3, ty = cy * k - tri / 2;
+        int col = highlighted ? t.onAccent : 0xFF16161C;
+        g.push();
+        g.scale(1f / k);
+        for (int i = 0; i < tri; i++) {
+            int len = (int) Math.round((tri / 2.0 - Math.abs(i + 0.5 - tri / 2.0)) * 1.7);
+            if (len > 0) g.fill(tx, ty + i, tx + len, ty + i + 1, col);
+        }
+        g.pop();
+    }
 }

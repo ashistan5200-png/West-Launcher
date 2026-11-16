@@ -1,0 +1,3 @@
+classTweaker v1 official
+# Liste satırlarını West kartı olarak çizebilmek için
+accessible class net/minecraft/client/gui/components/AbstractSelectionList$Entry

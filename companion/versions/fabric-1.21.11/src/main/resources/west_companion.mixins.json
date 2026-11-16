@@ -1,8 +1,8 @@
 {
-  "required": true,
+  "required": false,
   "minVersion": "0.8",
   "package": "dev.west.companion.v121.mixin",
   "compatibilityLevel": "JAVA_21",
-  "client": ["OptionInstanceMixin", "ButtonSkinMixin", "SliderTrackMixin", "SliderHandleMixin", "EditBoxSkinMixin", "TabSkinMixin", "TooltipSkinMixin"],
+  "client": ["OptionInstanceMixin", "ButtonSkinMixin", "SliderTrackMixin", "SliderHandleMixin", "EditBoxSkinMixin", "TabSkinMixin", "TooltipSkinMixin", "ListSkinMixin", "ScrollSkinMixin", "WorldEntrySkinMixin"],
   "injectors": { "defaultRequire": 0 }
 }

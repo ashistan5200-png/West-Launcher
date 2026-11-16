@@ -1,0 +1,3 @@
+accessWidener v2 named
+# Liste satırlarını West kartı olarak çizebilmek için
+accessible class net/minecraft/client/gui/components/AbstractSelectionList$Entry

@@ -26,3 +26,7 @@ java {
     sourceCompatibility = JavaVersion.VERSION_25
     targetCompatibility = JavaVersion.VERSION_25
 }
+
+loom {
+    accessWidenerPath = file("src/main/resources/west_companion.accesswidener")
+}

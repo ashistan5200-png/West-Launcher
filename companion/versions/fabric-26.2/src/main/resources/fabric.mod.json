@@ -10,6 +10,7 @@
   "environment": "client",
   "entrypoints": { "client": ["dev.west.companion.v26.WestMod"] },
   "mixins": ["west_companion.mixins.json"],
+  "accessWidener": "west_companion.accesswidener",
   "depends": {
     "fabricloader": ">=0.18.0",
     "minecraft": "~26.2",
