@@ -4,6 +4,7 @@ import clsx from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
 import { api } from "@/lib/ipc";
 import { useInstances } from "@/stores/instances";
+import { askConfirm } from "@/components/ConfirmDialog";
 
 /** Uygulama içinde düzenlenebilen metin dosyaları */
 export const EDITABLE = /\.(txt|json|json5|toml|cfg|conf|properties|ini|ya?ml|snbt|md|js|mcmeta)$/i;
@@ -76,8 +77,8 @@ export function FileEditor({ instanceId, path, onClose }: { instanceId: string; 
     } catch (e) { setError(err(e)); } finally { setBusy(false); }
   };
 
-  const close = () => {
-    if (dirty && !confirm("Kaydedilmemiş değişiklikler kaybolacak. Kapatılsın mı?")) return;
+  const close = async () => {
+    if (dirty && !await askConfirm("Kaydedilmemiş değişiklikler kaybolacak. Kapatılsın mı?")) return;
     onClose();
   };
 

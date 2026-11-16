@@ -11,6 +11,7 @@ import { useWest } from "@/stores/west";
 import { useSocial } from "@/stores/social";
 import { Modal } from "@/components/Modal";
 import { Avatar, ago } from "./PostCard";
+import { askConfirm } from "@/components/ConfirmDialog";
 
 const DURATION = 6000;
 
@@ -131,7 +132,7 @@ function StoryViewer({ groups, start, onClose }: { groups: S.StoryGroup[]; start
             <span className="tiny" style={{ opacity: 0.75 }}>{ago(story.created_at)}</span>
           </button>
           <span className="grow" />
-          {mine && <button className="icon-btn" title="Sil" onClick={async () => { if (!confirm("Bu hikâye silinsin mi?")) return; await S.deleteStory(story.id); onClose(); }}><Trash2 size={17} /></button>}
+          {mine && <button className="icon-btn" title="Sil" onClick={async () => { if (!await askConfirm("Bu hikâye silinsin mi?")) return; await S.deleteStory(story.id); onClose(); }}><Trash2 size={17} /></button>}
           <button className="icon-btn" onClick={onClose}><X size={20} /></button>
         </div>
         <img src={story.media_url} alt="" referrerPolicy="no-referrer" draggable={false}

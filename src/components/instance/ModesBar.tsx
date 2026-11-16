@@ -5,6 +5,7 @@ import { api } from "@/lib/ipc";
 import type { GameModes } from "@/lib/types";
 import { Modal } from "@/components/Modal";
 import { Menu } from "./Menu";
+import { askConfirm } from "@/components/ConfirmDialog";
 
 const ICONS = ["🏗️", "⚔️", "⛏️", "🌲", "🎥", "🏹", "🧪", "🌙", "🏆", "🎮"];
 const err = (e: unknown) => String(e).replace(/^Error: /, "");
@@ -42,7 +43,7 @@ export function ModesBar({ instanceId, locked, onApplied, onNotice }: {
 
   const recapture = async (id: string) => {
     const m = data?.modes.find((x) => x.id === id);
-    if (!m || !confirm(`"${m.name}" şu anki açık/kapalı içeriklerle${m.hasOptions ? " ve şu anki tuş atamalarıyla" : ""} güncellensin mi?`)) return;
+    if (!m || !await askConfirm(`"${m.name}" şu anki açık/kapalı içeriklerle${m.hasOptions ? " ve şu anki tuş atamalarıyla" : ""} güncellensin mi?`)) return;
     try {
       await api.saveMode(instanceId, id, m.name, m.icon, m.hasOptions);
       onNotice({ ok: true, text: `${m.name} güncellendi.` });
@@ -52,7 +53,7 @@ export function ModesBar({ instanceId, locked, onApplied, onNotice }: {
 
   const remove = async (id: string) => {
     const m = data?.modes.find((x) => x.id === id);
-    if (!m || !confirm(`"${m.name}" silinsin mi? Modların ve dosyaların silinmez; yalnızca bu kayıt kaldırılır.`)) return;
+    if (!m || !await askConfirm(`"${m.name}" silinsin mi? Modların ve dosyaların silinmez; yalnızca bu kayıt kaldırılır.`)) return;
     await api.deleteMode(instanceId, id).catch((e) => onNotice({ ok: false, text: err(e) }));
     await load();
   };

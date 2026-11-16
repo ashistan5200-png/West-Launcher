@@ -118,6 +118,7 @@ pub fn run() {
             commands::content::delete_content,
             commands::content::update_content,
             commands::content::add_content_files,
+            commands::content::set_content_version,
             commands::content::list_worlds,
             commands::content::backup_world,
             commands::content::delete_world,

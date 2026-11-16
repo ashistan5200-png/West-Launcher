@@ -139,6 +139,13 @@ pub async fn update_content(app: AppHandle, state: State<'_, AppState>, instance
     r
 }
 
+/// İçeriği seçilen sürümle değiştirir.
+#[tauri::command]
+pub async fn set_content_version(state: State<'_, AppState>, instance_id: String, id: String, version_id: String) -> Result<String> {
+    not_running(&state, &instance_id)?;
+    manage::set_version(&state.http, &state.paths.instance_dir(&instance_id), &state.paths.instance_game_dir(&instance_id), &backups_root(&state, &instance_id), &id, &version_id).await
+}
+
 #[tauri::command]
 pub fn add_content_files(state: State<'_, AppState>, instance_id: String, paths: Vec<String>) -> Result<Vec<String>> {
     not_running(&state, &instance_id)?;

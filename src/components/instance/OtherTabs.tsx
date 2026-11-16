@@ -6,6 +6,7 @@ import { api } from "@/lib/ipc";
 import { formatRelative } from "@/lib/format";
 import type { ExportReport, FileEntry, Instance, LogFile, World } from "@/lib/types";
 import { EDITABLE, FileEditor } from "./FileEditor";
+import { askConfirm } from "@/components/ConfirmDialog";
 
 const fmtSize = (b: number) => (b >= 1 << 30 ? `${(b / (1 << 30)).toFixed(1)} GB` : b >= 1 << 20 ? `${(b / (1 << 20)).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
 const fromUnix = (s: number | null) => (s ? new Date(s * 1000).toISOString() : null);
@@ -31,7 +32,7 @@ export function WorldsTab({ instanceId, locked }: { instanceId: string; locked: 
     }
   };
   const remove = async (w: World) => {
-    if (!confirm(`"${w.folder}" dünyası çöp kutusuna taşınsın mı? Önce yedek almanı öneririm.`)) return;
+    if (!await askConfirm(`"${w.folder}" dünyası çöp kutusuna taşınsın mı? Önce yedek almanı öneririm.`)) return;
     try {
       await api.deleteWorld(instanceId, w.folder);
       await load();

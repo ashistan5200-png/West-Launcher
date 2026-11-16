@@ -13,6 +13,7 @@ import * as S from "@/lib/social";
 import type { Post } from "@/lib/social";
 import { useSocial } from "@/stores/social";
 import { useWest } from "@/stores/west";
+import { askConfirm } from "@/components/ConfirmDialog";
 
 /** "3 dk", "2 sa", "5 g", tarih */
 export const ago = (iso: string) => {
@@ -167,12 +168,12 @@ export function PostCard({ post: initial, onChanged, onDeleted, onOpenMedia, det
                     ? [
                         { label: "Düzenle", icon: <Pencil size={14} />, onClick: () => setEditing(post.body ?? "") },
                         { label: myProfile?.pinned_post_id === post.id ? "Sabitlemeyi kaldır" : "Profilime sabitle", icon: <Pin size={14} />, onClick: async () => { const r = await S.pinPost(me!.userId, myProfile?.pinned_post_id === post.id ? null : post.id); if (r[0]) useSocial.getState().setMe(r[0]); } },
-                        { label: "Sil", icon: <Trash2 size={14} />, danger: true, onClick: async () => { if (!confirm("Bu gönderi silinsin mi?")) return; await S.deletePost(post.id); setGone(true); onDeleted?.(post.id); } },
+                        { label: "Sil", icon: <Trash2 size={14} />, danger: true, onClick: async () => { if (!await askConfirm("Bu gönderi silinsin mi?")) return; await S.deletePost(post.id); setGone(true); onDeleted?.(post.id); } },
                       ]
                     : me
                       ? [
                           { label: `@${post.username} adlı kişiyi sessize al`, icon: <VolumeX size={14} />, onClick: async () => { await S.setMute(me.userId, post.author_id, true); setMsg("Sessize alındı; gönderileri akışında görünmeyecek."); } },
-                          { label: `@${post.username} adlı kişiyi engelle`, icon: <UserX size={14} />, danger: true, onClick: async () => { if (!confirm(`@${post.username} engellensin mi? Birbirinizi göremeyeceksiniz.`)) return; await S.setBlock(me.userId, post.author_id, true); setGone(true); } },
+                          { label: `@${post.username} adlı kişiyi engelle`, icon: <UserX size={14} />, danger: true, onClick: async () => { if (!await askConfirm(`@${post.username} engellensin mi? Birbirinizi göremeyeceksiniz.`)) return; await S.setBlock(me.userId, post.author_id, true); setGone(true); } },
                           { label: "Gönderiyi şikâyet et", icon: <Flag size={14} />, danger: true, onClick: async () => { const r = prompt("Şikâyet nedeni (ör. hakaret, spam, uygunsuz içerik):"); if (r?.trim()) { await S.report("post", post.id, r.trim()); setMsg("Şikâyetin alındı. Teşekkürler."); } } },
                         ]
                       : []),

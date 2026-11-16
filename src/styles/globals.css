@@ -1515,7 +1515,7 @@ body {
 
 /* Başlık çubuğu: çalışan instance rozeti */
 .titlebar { position: relative; }
-.tb-running { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: inline-flex; align-items: center; gap: 8px; height: 26px; max-width: 34vw; padding: 0 12px; border-radius: 999px; font-size: var(--fs-xs); font-weight: var(--fw-semibold); background: rgb(var(--border) / 0.06); border: 1px solid rgb(var(--border) / 0.08); color: rgb(var(--text-muted)); }
+.tb-running { display: inline-flex; margin-right: 10px; align-items: center; gap: 8px; height: 26px; max-width: 260px; padding: 0 12px; border-radius: 999px; font-size: var(--fs-xs); font-weight: var(--fw-semibold); background: rgb(var(--border) / 0.06); border: 1px solid rgb(var(--border) / 0.08); color: rgb(var(--text-muted)); }
 .tb-dot { width: 8px; height: 8px; border-radius: 50%; background: rgb(var(--text-muted) / 0.6); flex: none; }
 .tb-running.live { color: rgb(var(--text)); background: rgb(var(--success) / 0.12); border-color: rgb(var(--success) / 0.35); cursor: pointer; }
 .tb-running.live:hover { background: rgb(var(--success) / 0.2); }
@@ -1525,3 +1525,31 @@ body {
 .tb-more { padding: 0 6px; border-radius: 999px; background: rgb(var(--border) / 0.1); }
 @media (max-width: 760px) { .tb-running { display: none; } }
 .fedit-table .ctab-search { flex: none; }
+
+/* ───────── Onay penceresi (confirm yerine) ───────── */
+.confirm-backdrop { z-index: 180; }
+.confirm { width: min(420px, calc(100vw - 32px)); display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; padding: 20px; border-radius: 18px; background: rgb(var(--surface-2)); border: 1px solid rgb(var(--border) / 0.09); box-shadow: var(--shadow-lg); }
+.confirm-ico { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: rgb(var(--accent) / 0.14); color: rgb(var(--accent)); }
+.confirm-ico.danger { background: rgb(var(--danger) / 0.14); color: rgb(var(--danger)); }
+.confirm-text { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.confirm-text strong { font-size: 16px; }
+.confirm-text p { margin: 0; font-size: var(--fs-sm); color: rgb(var(--text-muted)); line-height: 1.5; white-space: pre-line; overflow-wrap: anywhere; }
+.confirm-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+
+/* Mod adı → Keşfet sayfası */
+.crow-name { font-weight: var(--fw-semibold); text-align: left; padding: 0; min-width: 0; }
+.crow-name:hover { color: rgb(var(--accent)); text-decoration: underline; text-underline-offset: 3px; }
+
+/* Sürüm seçici */
+.vpick-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.vpick-list { display: flex; flex-direction: column; gap: 6px; max-height: 52vh; overflow-y: auto; padding-right: 2px; }
+.vpick-row { display: flex; align-items: flex-start; gap: 12px; padding: 10px 12px; border-radius: 12px; background: rgb(var(--bg)); border: 1px solid rgb(var(--border) / 0.06); }
+.vpick-row.cur { border-color: rgb(var(--success) / 0.4); background: rgb(var(--success) / 0.06); }
+.vpick-row.bad { opacity: .7; }
+.vpick-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.vtype { font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: rgb(var(--success) / 0.14); color: rgb(var(--success)); }
+.vtype.beta { background: rgb(var(--accent) / 0.16); color: rgb(var(--accent)); }
+.vtype.alpha { background: rgb(var(--danger) / 0.14); color: rgb(var(--danger)); }
+.vpick-notes { margin: 2px 0 0; align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; }
+.rot180 { transform: rotate(180deg); }
+.vpick-changelog { font-size: 13px; padding: 8px 10px; border-radius: 8px; background: rgb(var(--surface-2)); max-height: 220px; overflow-y: auto; }

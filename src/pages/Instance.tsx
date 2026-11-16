@@ -15,6 +15,7 @@ import { Menu } from "@/components/instance/Menu";
 import { api } from "@/lib/ipc";
 import { LOADER_LABEL, formatDuration, formatRelative } from "@/lib/format";
 import type { CompanionConfig, CompanionInfo, Instance, JvmProfile, LoaderKind, LoaderVersion, ManifestEntry } from "@/lib/types";
+import { askConfirm } from "@/components/ConfirmDialog";
 
 type Tab = "content" | "files" | "worlds" | "logs" | "share" | "settings";
 const TABS: { id: Tab; label: string; icon: typeof Boxes }[] = [
@@ -44,7 +45,7 @@ export function InstancePage() {
   const exit = lastExit[id];
   const locked = isRunning || isLaunching || hunting;
   const del = async () => {
-    if (confirm(`"${inst.name}" ve tüm dünyaları silinsin mi?`)) {
+    if (await askConfirm(`"${inst.name}" ve tüm dünyaları silinsin mi?`)) {
       await remove(id);
       navigate("/library");
     }
@@ -285,7 +286,7 @@ function VersionCard({ instance }: { instance: Instance }) {
 
   const save = async () => {
     const mcChanged = mc !== instance.mcVersion || kind !== instance.loader.kind;
-    if (mcChanged && !confirm(`Sürüm ${LOADER_LABEL[instance.loader.kind]} ${instance.mcVersion} → ${LOADER_LABEL[kind]} ${mc} olarak değişecek.\n\nBazı modlar yeni sürümle uyumsuz olabilir. Önemli dünyaların varsa önce yedek al. Devam edilsin mi?`)) return;
+    if (mcChanged && !await askConfirm(`Sürüm ${LOADER_LABEL[instance.loader.kind]} ${instance.mcVersion} → ${LOADER_LABEL[kind]} ${mc} olarak değişecek.\n\nBazı modlar yeni sürümle uyumsuz olabilir. Önemli dünyaların varsa önce yedek al. Devam edilsin mi?`)) return;
     setBusy(true);
     try {
       await api.updateInstance({ ...instance, mcVersion: mc, loader: { kind, version: kind === "vanilla" ? null : lv } });

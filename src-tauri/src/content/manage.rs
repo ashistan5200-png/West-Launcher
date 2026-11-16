@@ -493,6 +493,47 @@ pub async fn update(http: &Http, instance_dir: &Path, game_dir: &Path, backups: 
     Ok(rep)
 }
 
+/// Bir içeriği belirli bir Modrinth sürümüyle değiştirir (eski sürüme dönme ya da yükseltme).
+/// Eski dosya yedeklenir; açık/kapalı durumu korunur. Yeni dosyanın adını döndürür.
+pub async fn set_version(http: &Http, instance_dir: &Path, game_dir: &Path, backups: &Path, id: &str, version_id: &str) -> Result<String> {
+    if version_id.is_empty() || version_id.contains(['/', '?', '#', '.']) {
+        return Err(AppError::msg("Geçersiz sürüm"));
+    }
+    let item = list(instance_dir, game_dir).into_iter().find(|c| c.id == id).ok_or_else(|| AppError::msg("İçerik bulunamadı"))?;
+    let v: serde_json::Value = http.json(&format!("{MODRINTH}/version/{version_id}")).await?;
+    if let (Some(want), Some(got)) = (item.project_id.as_deref(), v["project_id"].as_str()) {
+        if want != got {
+            return Err(AppError::msg("Bu sürüm başka bir projeye ait"));
+        }
+    }
+    let files = v["files"].as_array().cloned().unwrap_or_default();
+    let f = files.iter().find(|f| f["primary"].as_bool() == Some(true)).or(files.first()).ok_or_else(|| AppError::msg("Sürümde dosya yok"))?;
+    let name = f["filename"].as_str().unwrap_or_default().to_string();
+    let url = f["url"].as_str().unwrap_or_default().to_string();
+    if name.is_empty() || name.contains(['/', '\\']) || name.contains("..") || !url.starts_with("https://") {
+        return Err(AppError::msg("Geçersiz dosya"));
+    }
+    let folder = id.split_once('/').ok_or_else(|| AppError::msg("Geçersiz içerik"))?.0;
+    let (old, enabled) = resolve(game_dir, id)?;
+    let stamp = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
+    let backup = backups.join(format!("content-{stamp}")).join(folder);
+    std::fs::create_dir_all(&backup)?;
+    std::fs::copy(&old, backup.join(old.file_name().unwrap()))?;
+    let target = game_dir.join(folder).join(if enabled { name.clone() } else { format!("{name}{DISABLED}") });
+    http.download(&DownloadTask { url, path: target.clone(), sha1: f["hashes"]["sha1"].as_str().map(String::from), size: f["size"].as_u64() }).await?;
+    if old != target {
+        std::fs::remove_file(&old)?;
+    }
+    let mut index = load_index(instance_dir);
+    let base = id.split_once('/').unwrap().1;
+    if let Some(i) = index.iter_mut().find(|i| i.file == base) {
+        i.file = name.clone();
+        i.version_id = version_id.to_string();
+    }
+    let _ = save_index(instance_dir, &index);
+    Ok(format!("{folder}/{name}"))
+}
+
 /// Kullanıcının seçtiği dosyaları doğru klasöre kopyalar.
 pub fn add_files(game_dir: &Path, paths: &[String]) -> Result<Vec<String>> {
     let mut added = vec![];

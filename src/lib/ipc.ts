@@ -87,6 +87,8 @@ export const api = {
   deleteMode: (id: string, modeId: string) => invoke<void>("delete_mode", { id, modeId }),
   contentProject: (id: string) => invoke<ProjectDetail>("content_project", { id }),
   contentVersions: (id: string) => invoke<ProjectVersion[]>("content_versions", { id }),
+  /** İçeriği seçilen Modrinth sürümüyle değiştirir; yeni içerik kimliğini döndürür */
+  setContentVersion: (instanceId: string, id: string, versionId: string) => invoke<string>("set_content_version", { instanceId, id, versionId }),
   westStatus: () => invoke<WestStatus>("west_status"),
   westUsernameAvailable: (username: string) => invoke<boolean>("west_username_available", { username }),
   westSignup: (username: string, email: string, password: string) => invoke<WestSignupResult>("west_signup", { username, email, password }),

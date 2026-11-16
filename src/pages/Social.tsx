@@ -21,6 +21,7 @@ import { MessagesView } from "@/components/social/Messages";
 import { Modal } from "@/components/Modal";
 import { Menu } from "@/components/instance/Menu";
 import { formatCount } from "@/lib/format";
+import { askConfirm } from "@/components/ConfirmDialog";
 
 const err = (e: unknown) => String(e).replace(/^Error: /, "");
 
@@ -469,7 +470,7 @@ export function ProfilePage() {
                   trigger={() => <button className="round-btn sm" aria-label="Daha fazla"><MoreHorizontal size={18} /></button>}
                   items={[
                     { label: muted ? "Sessizden çıkar" : "Sessize al", icon: <VolumeX size={14} />, onClick: async () => { await S.setMute(account.userId, p.id, !muted); setMuted(!muted); } },
-                    { label: blocked ? "Engeli kaldır" : "Engelle", icon: <UserX size={14} />, danger: !blocked, onClick: async () => { if (!blocked && !confirm(`@${p.username} engellensin mi?`)) return; await S.setBlock(account.userId, p.id, !blocked); setBlocked(!blocked); setRel({ following: null, followsMe: false }); } },
+                    { label: blocked ? "Engeli kaldır" : "Engelle", icon: <UserX size={14} />, danger: !blocked, onClick: async () => { if (!blocked && !await askConfirm(`@${p.username} engellensin mi?`)) return; await S.setBlock(account.userId, p.id, !blocked); setBlocked(!blocked); setRel({ following: null, followsMe: false }); } },
                     { label: "Şikâyet et", icon: <Flag size={14} />, danger: true, onClick: async () => { const r = prompt("Şikâyet nedeni:"); if (r?.trim()) { await S.report("profile", p.id, r.trim()); setNotice("Şikâyetin alındı."); } } },
                   ]}
                 />

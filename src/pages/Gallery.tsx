@@ -8,6 +8,7 @@ import { useInstances } from "@/stores/instances";
 import { api, isTauri } from "@/lib/ipc";
 import type { Screenshot } from "@/lib/types";
 import { ScreenshotEditor } from "@/components/ScreenshotEditor";
+import { askConfirm } from "@/components/ConfirmDialog";
 
 const src = (p: string) => (isTauri() ? convertFileSrc(p) : p);
 const fmtSize = (b: number) => (b > 1_048_576 ? `${(b / 1_048_576).toFixed(1)} MB` : `${Math.round(b / 1024)} KB`);
@@ -109,7 +110,7 @@ function Actions({ s, dark = false }: { s: Screenshot; dark?: boolean }) {
       <button title="Düzenle" onClick={stop(() => g.edit(s.path))}><Pencil size={14} /></button>
       <button title="Panoya kopyala / paylaş" onClick={stop(() => g.copy(s))}><Copy size={14} /></button>
       <button title="Dışa aktar" onClick={stop(() => g.exportTo(s))}><Download size={14} /></button>
-      <button title="Sil (çöp kutusuna)" className="danger" onClick={stop(() => confirm(`${s.file} çöp kutusuna taşınsın mı?`) && g.remove(s))}><Trash2 size={14} /></button>
+      <button title="Sil (çöp kutusuna)" className="danger" onClick={stop(async () => await askConfirm(`${s.file} çöp kutusuna taşınsın mı?`) && g.remove(s))}><Trash2 size={14} /></button>
     </div>
   );
 }

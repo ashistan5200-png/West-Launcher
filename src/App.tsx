@@ -30,6 +30,7 @@ import { AshiChat } from "@/components/AshiChat";
 import { AiSetupModal } from "@/components/AiSetup";
 import { ImageCropperHost } from "@/components/ImageCropper";
 import { AmbientSky } from "@/components/AmbientSky";
+import { ConfirmHost } from "@/components/ConfirmDialog";
 import { ContentToasts } from "@/components/ContentToasts";
 import { useSettings } from "@/stores/settings";
 import { useInstances } from "@/stores/instances";
@@ -107,6 +108,7 @@ export default function App() {
         <AshiConfirmModal />
         <AiSetupModal />
         <ImageCropperHost />
+        <ConfirmHost />
         <ImportWizard />
         <AshiTour />
         <UpdateModal />

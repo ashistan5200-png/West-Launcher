@@ -91,6 +91,31 @@ export function BrowsePage() {
   const reqId = useRef(0);
   const [detail, setDetail] = useState<ContentHit | null>(null);
 
+  // Instance'taki bir modun adına tıklanınca: ?project=… ile doğrudan o modun sayfası açılır
+  const projectParam = params.get("project");
+  useEffect(() => {
+    if (!projectParam || !isTauri()) return;
+    let alive = true;
+    api.contentProject(projectParam).then((p) => {
+      if (!alive) return;
+      setDetail({
+        source: "modrinth", id: p.id, slug: p.slug, title: p.title, description: p.description, author: p.ownerName ?? "",
+        icon: p.icon_url, downloads: p.downloads, kind: (p.project_type as ContentKind) ?? "mod", categories: p.categories,
+        url: `https://modrinth.com/${p.project_type}/${p.slug}`, alsoOn: null, versions: p.game_versions, loaders: p.loaders,
+        updated: p.updated, clientSide: p.client_side as ContentHit["clientSide"], serverSide: p.server_side as ContentHit["serverSide"],
+      });
+    }).catch((e) => setError(String(e)));
+    return () => { alive = false; };
+  }, [projectParam]);
+  const closeDetail = () => {
+    setDetail(null);
+    if (projectParam) {
+      const next = new URLSearchParams(params);
+      next.delete("project");
+      setParams(next, { replace: true });
+    }
+  };
+
   useEffect(() => {
     if (isTauri()) api.contentTags().then(setTags).catch(() => {});
   }, []);
@@ -266,7 +291,7 @@ export function BrowsePage() {
         <Pagination page={page} pages={pages} onChange={changePage} disabled={loading} />
       </div>
       <AnimatePresence>
-        {detail && <ModDetail hit={detail} instances={instances} preferred={fromInstance} onClose={() => setDetail(null)} />}
+        {detail && <ModDetail hit={detail} instances={instances} preferred={fromInstance} onClose={closeDetail} />}
       </AnimatePresence>
     </div>
   );

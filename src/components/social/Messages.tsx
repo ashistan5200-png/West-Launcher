@@ -9,6 +9,7 @@ import { useWest } from "@/stores/west";
 import { useSocial } from "@/stores/social";
 import { Modal } from "@/components/Modal";
 import { Avatar, RichText, ago } from "./PostCard";
+import { askConfirm } from "@/components/ConfirmDialog";
 
 const err = (e: unknown) => String(e).replace(/^Error: /, "");
 const dayLabel = (iso: string) => {
@@ -145,7 +146,7 @@ function Chat({ conv, onActivity }: { conv: S.Conversation; onActivity: () => vo
           <Avatar url={other?.avatar_url} name={other?.username ?? "?"} size={36} />
           <span style={{ minWidth: 0 }}><strong className="truncate" style={{ display: "block" }}>{other?.display_name || other?.username}</strong><span className="muted tiny">@{other?.username}</span></span>
         </button>
-        <button className="icon-btn" title="Sohbetten ayrıl" onClick={async () => { if (!confirm("Bu sohbet listenden kaldırılsın mı?")) return; await S.leaveConversation(conv.id, me.userId); onActivity(); navigate("/social/messages"); }}><LogOut size={17} /></button>
+        <button className="icon-btn" title="Sohbetten ayrıl" onClick={async () => { if (!await askConfirm("Bu sohbet listenden kaldırılsın mı?")) return; await S.leaveConversation(conv.id, me.userId); onActivity(); navigate("/social/messages"); }}><LogOut size={17} /></button>
       </header>
       <div className="dm-msgs" ref={scroller}>
         {older && msgs && msgs.length >= 50 && <button className="btn btn-ghost btn-sm" style={{ alignSelf: "center" }} onClick={() => void loadOlder()}>Daha eski mesajlar</button>}

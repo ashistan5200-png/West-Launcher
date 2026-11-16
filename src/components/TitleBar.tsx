@@ -25,8 +25,8 @@ export function TitleBar() {
         <Logo size={20} />
         <span className="wordmark" data-tauri-drag-region>West<b>Client</b></span>
       </div>
-      <RunningPill />
       <div className="titlebar-actions">
+        <RunningPill />
         <UpdateButton />
         <button className="tb-account" onClick={() => navigate("/skins")} title="Hesap ve skin">
           <span className="tb-avatar">{(name ?? "?").slice(0, 1).toUpperCase()}</span>

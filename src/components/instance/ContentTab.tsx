@@ -4,16 +4,19 @@ import { useNavigate } from "react-router-dom";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { open as openUrl } from "@tauri-apps/plugin-shell";
 import {
-  ArrowDownAZ, ArrowUpCircle, Box, Check, ChevronDown, Compass, Download, ExternalLink, Filter, FolderOpen, FolderUp, Loader2,
+  ArrowDownAZ, ArrowUpCircle, Box, Check, ChevronDown, Compass, Download, ExternalLink, Filter, FolderOpen, History, FolderUp, Loader2,
   MoreVertical, Paintbrush, Plus, RefreshCw, Search, Sparkles, Trash2, X,
 } from "lucide-react";
 import clsx from "clsx";
 import { ContentIcon } from "@/components/ContentIcon";
 import { Menu, Switch } from "./Menu";
+import { VersionPicker } from "./VersionPicker";
+import { useInstances } from "@/stores/instances";
 import { api, isTauri } from "@/lib/ipc";
 import { Modal } from "@/components/Modal";
 import { ModesBar } from "./ModesBar";
 import type { ContentFile } from "@/lib/types";
+import { askConfirm } from "@/components/ConfirmDialog";
 
 type KindFilter = "all" | "mod" | "resourcepack" | "shader";
 type Extra = "updates" | "disabled" | "deps";
@@ -38,6 +41,8 @@ export function ContentTab({ instanceId, locked }: { instanceId: string; locked:
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState<Set<string>>(new Set());
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
+  const instance = useInstances((s) => s.instances.find((i) => i.id === instanceId) ?? null);
+  const [picking, setPicking] = useState<ContentFile | null>(null);
 
   const refresh = useCallback(async () => {
     setRefreshing(true);
@@ -97,7 +102,7 @@ export function ContentTab({ instanceId, locked }: { instanceId: string; locked:
 
   const remove = async (list: ContentFile[]) => {
     const msg = list.length === 1 ? `"${list[0].title}" kaldırılsın mı? Dosya çöp kutusuna taşınır.` : `${list.length} içerik kaldırılsın mı? Dosyalar çöp kutusuna taşınır.`;
-    if (!confirm(msg)) return;
+    if (!await askConfirm(msg)) return;
     const ids = list.map((i) => i.id);
     try {
       await api.deleteContent(instanceId, ids);
@@ -273,7 +278,9 @@ export function ContentTab({ instanceId, locked }: { instanceId: string; locked:
                 <div className="crow-meta">
                   <div className="crow-title">
                     <KIcon size={16} className="muted" aria-label={KIND_LABEL[c.kind]} />
-                    <strong className="truncate" title={c.file}>{c.title}</strong>
+                    {c.projectId && c.source === "modrinth" ? (
+                      <button className="crow-name truncate" title={`${c.file} · Keşfet'te aç`} onClick={() => navigate(`/browse?instance=${encodeURIComponent(instanceId)}&kind=${c.kind}&project=${encodeURIComponent(c.projectId!)}`)}>{c.title}</button>
+                    ) : <strong className="truncate" title={c.file}>{c.title}</strong>}
                     {c.dependencyOf && <span className="chip" title={`${c.dependencyOf} için kuruldu`}>bağımlılık</span>}
                   </div>
                   <div className="crow-sub">
@@ -294,12 +301,16 @@ export function ContentTab({ instanceId, locked }: { instanceId: string; locked:
                       {working ? <Loader2 size={18} className="spin" /> : <ArrowUpCircle size={19} />}
                     </button>
                   ) : <span className="icon-btn ghost-slot" />}
+                  {c.projectId && c.source === "modrinth" ? (
+                    <button className="icon-btn" disabled={locked} title="Sürümü değiştir" onClick={() => setPicking(c)}><History size={18} /></button>
+                  ) : <span className="icon-btn ghost-slot" />}
                   <Switch on={c.enabled} disabled={locked} label={c.enabled ? "Kapat" : "Aç"} onChange={(v) => void toggle([c.id], v)} />
                   <button className="icon-btn" disabled={locked} title="Kaldır" onClick={() => void remove([c])}><Trash2 size={18} /></button>
                   <Menu
                     trigger={() => <button className="icon-btn" aria-label="Daha fazla"><MoreVertical size={18} /></button>}
                     items={[
                       ...(c.url ? [{ label: "Modrinth sayfasını aç", icon: <ExternalLink size={14} />, onClick: () => void openUrl(c.url!) }] : []),
+                      ...(c.projectId && c.source === "modrinth" ? [{ label: "Sürümü değiştir", icon: <History size={14} />, disabled: locked, onClick: () => setPicking(c) }] : []),
                       { label: "Klasörde göster", icon: <FolderOpen size={14} />, onClick: () => void reveal(c) },
                       { label: c.enabled ? "Kapat" : "Aç", icon: <span className="menu-gap" />, disabled: locked, onClick: () => void toggle([c.id], !c.enabled) },
                       { label: "Kaldır", icon: <Trash2 size={14} />, danger: true, disabled: locked, onClick: () => void remove([c]) },
@@ -311,6 +322,7 @@ export function ContentTab({ instanceId, locked }: { instanceId: string; locked:
           })
         )}
       </div>
+      {instance && <VersionPicker instance={instance} item={picking} onClose={() => setPicking(null)} onChanged={(text) => { setNotice({ ok: true, text }); void refresh(); }} />}
       {dragging && !locked && (
         <div className="drop-overlay"><FolderUp size={34} /><strong>Bırak, bu instance'a ekleyelim</strong><span className="muted small">.jar modlar · .zip resource pack ve shader'lar</span></div>
       )}

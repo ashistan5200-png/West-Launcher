@@ -10,6 +10,7 @@ import { WestAccountCard } from "@/components/WestAccountCard";
 import type { PreviewAnim } from "@/components/SkinPreview3D";
 import type { AccountView, Cape } from "@/lib/types";
 import { api, isTauri } from "@/lib/ipc";
+import { askConfirm } from "@/components/ConfirmDialog";
 
 const SkinPreview3D = lazy(() => import("@/components/SkinPreview3D"));
 
@@ -85,7 +86,7 @@ export function SkinsPage() {
                 <button className={clsx("icon-btn", preview.favorite && "fav")} title="Favori" onClick={() => st.toggleFavorite(preview)}>
                   <Star size={16} fill={preview.favorite ? "currentColor" : "none"} />
                 </button>
-                <button className="icon-btn" title="Arşivden sil" onClick={() => confirm(`"${preview.name}" arşivden silinsin mi?`) && st.removeSkin(preview)}>
+                <button className="icon-btn" title="Arşivden sil" onClick={async () => await askConfirm(`"${preview.name}" arşivden silinsin mi?`) && st.removeSkin(preview)}>
                   <Trash2 size={16} />
                 </button>
               </div>
@@ -176,7 +177,7 @@ function AccountCard() {
       ) : (
         <ul className="account-list">
           {accounts.map((a) => (
-            <AccountRow key={a.uuid} a={a} onSelect={() => setActive(a.uuid)} onRemove={() => confirm(`${a.username} hesabı kaldırılsın mı?`) && remove(a.uuid)} />
+            <AccountRow key={a.uuid} a={a} onSelect={() => setActive(a.uuid)} onRemove={async () => await askConfirm(`${a.username} hesabı kaldırılsın mı?`) && remove(a.uuid)} />
           ))}
         </ul>
       )}
