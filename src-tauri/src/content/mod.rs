@@ -6,6 +6,7 @@ pub mod install;
 pub mod modpack;
 pub mod manage;
 pub mod modrinth;
+pub mod port;
 
 use crate::error::Result;
 use crate::util::write_json_atomic;

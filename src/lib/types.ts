@@ -473,3 +473,17 @@ export interface ModeApplyReport {
   optionsRestored: boolean;
   missing: number;
 }
+
+// ───────── Ashi Taşıyıcı ─────────
+export interface PortItem {
+  id: string;
+  title: string;
+  kind: "mod" | "resourcepack" | "shader";
+  icon: string | null;
+  enabled: boolean;
+  fromVersion: string | null;
+  status: "ok" | "same" | "missing" | "unknown";
+  toVersion: string | null;
+}
+export interface PortReport { ported: string[]; removed: string[]; keptDisabled: string[]; dependencies: string[]; failed: string[] }
+export interface PortResult { instance: Instance; report: PortReport }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Paintbrush, Pencil, Boxes, Clock, Copy, FileText, FolderOpen, Globe2, LayoutTemplate, Loader2, MoreVertical, Play, Settings2, Share2, Square, Tag, Timer, Trash2, Folder } from "lucide-react";
+import { Paintbrush, Pencil, Boxes, Clock, Copy, FileText, FolderOpen, Globe2, LayoutTemplate, Loader2, MoreVertical, Play, Settings2, Share2, Square, Tag, Timer, Trash2, Folder, Truck } from "lucide-react";
 import clsx from "clsx";
 import { useInstances } from "@/stores/instances";
 import { useSettings } from "@/stores/settings";
@@ -12,6 +12,7 @@ import { Modal } from "@/components/Modal";
 import { ContentTab } from "@/components/instance/ContentTab";
 import { FilesTab, LogsTab, ShareTab, WorldsTab } from "@/components/instance/OtherTabs";
 import { Menu } from "@/components/instance/Menu";
+import { AshiPorter } from "@/components/instance/AshiPorter";
 import { api } from "@/lib/ipc";
 import { LOADER_LABEL, formatDuration, formatRelative } from "@/lib/format";
 import type { CompanionConfig, CompanionInfo, Instance, JvmProfile, LoaderKind, LoaderVersion, ManifestEntry } from "@/lib/types";
@@ -37,6 +38,7 @@ export function InstancePage() {
   const [tab, setTab] = useState<Tab>("content");
   const [cloneOpen, setCloneOpen] = useState(false);
   const [appearOpen, setAppearOpen] = useState(false);
+  const [portOpen, setPortOpen] = useState(false);
 
   if (!inst) return <p className="muted pad">Instance bulunamadı.</p>;
 
@@ -88,6 +90,7 @@ export function InstancePage() {
             items={[
               { label: "Görünümü düzenle", icon: <Paintbrush size={14} />, onClick: () => setAppearOpen(true) },
               { label: "Klasörü aç", icon: <FolderOpen size={14} />, onClick: async () => api.openPath(await api.instancePath(id)) },
+              { label: "Ashi Taşıyıcı: başka sürüme taşı", icon: <Truck size={14} />, disabled: locked, onClick: () => setPortOpen(true) },
               { label: "Klonla", icon: <Copy size={14} />, onClick: () => setCloneOpen(true) },
               { label: "Şablon oluştur", icon: <LayoutTemplate size={14} />, onClick: async () => { await api.makeTemplate(id, `${inst.name} şablonu`); await refresh(); } },
               { label: "Instance'ı sil", icon: <Trash2 size={14} />, danger: true, disabled: locked, onClick: () => void del() },
@@ -124,6 +127,7 @@ export function InstancePage() {
       {tab === "settings" && <InstanceSettings instance={inst} onDelete={() => void del()} />}
 
       <AppearanceModal instance={inst} open={appearOpen} onClose={() => setAppearOpen(false)} />
+      <AshiPorter instance={inst} open={portOpen} onClose={() => setPortOpen(false)} />
       <CloneModal open={cloneOpen} onClose={() => setCloneOpen(false)} name={inst.name} onConfirm={(n, w) => clone(id, n, w)} />
     </div>
   );
@@ -328,6 +332,7 @@ function VersionCard({ instance }: { instance: Instance }) {
         </label>
       )}
       {running && <p className="muted tiny">Oyun açıkken sürüm değiştirilemez.</p>}
+      <p className="muted tiny">Modlarınla birlikte başka sürüme geçmek mi istiyorsun? Üstteki ⋮ menüsünden <strong>Ashi Taşıyıcı</strong>'yı kullan: her modun yeni sürümünü bulur ve eski instance'a dokunmaz.</p>
       {msg && <p className={clsx("hint", !msg.ok && "error")}>{msg.text}</p>}
       <button className="btn btn-primary" style={{ alignSelf: "flex-start" }} disabled={!changed || loaderMissing || busy || running} onClick={() => void save()}>
         {busy && <Loader2 size={15} className="spin" />} Sürümü değiştir

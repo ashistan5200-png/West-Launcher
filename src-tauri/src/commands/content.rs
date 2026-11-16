@@ -220,3 +220,82 @@ pub async fn export_mrpack(state: State<'_, AppState>, instance_id: String, dest
     })
     .await
 }
+
+// ───────── Ashi Taşıyıcı: instance'ı başka Minecraft sürümüne taşı ─────────
+
+use crate::content::port::{self, PortItem, PortReport};
+
+/// Taşıma planı: her içeriğin hedef sürümde uyumlu karşılığı var mı.
+#[tauri::command]
+pub async fn port_plan(state: State<'_, AppState>, instance_id: String, mc: String, loader: LoaderKind) -> Result<Vec<PortItem>> {
+    port::plan(&state.http, &state.paths.instance_dir(&instance_id), &state.paths.instance_game_dir(&instance_id), &mc, loader_slug(loader).as_deref()).await
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PortResult {
+    pub instance: Instance,
+    pub report: PortReport,
+}
+
+/// Instance'ın yeni sürümde bir kopyasını oluşturur ve içerikleri o sürüme taşır.
+/// Eski instance'a dokunulmaz.
+#[tauri::command]
+#[allow(clippy::too_many_arguments)]
+pub async fn port_instance(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    instance_id: String,
+    mc: String,
+    loader: LoaderKind,
+    loader_version: Option<String>,
+    name: String,
+    include_worlds: bool,
+    keep_disabled: Vec<String>,
+) -> Result<PortResult> {
+    not_running(&state, &instance_id)?;
+    let name = name.trim();
+    if name.is_empty() {
+        return Err(AppError::msg("Yeni instance için bir ad gir"));
+    }
+    let loader_version = match (loader, loader_version.filter(|v| !v.trim().is_empty())) {
+        (LoaderKind::Vanilla, _) => None,
+        (_, Some(v)) => Some(v),
+        (k, None) => {
+            let list = crate::instance::loaders::list_versions(&state.http, k, &mc).await?;
+            let pick = list.iter().find(|v| v.stable).or(list.first()).map(|v| v.version.clone());
+            Some(pick.ok_or_else(|| AppError::msg(format!("Minecraft {mc} için bu yükleyicinin sürümü yok")))?)
+        }
+    };
+    let mgr = InstanceManager::new(&state.paths);
+    let old = mgr.get(&instance_id)?;
+    let mut inst = mgr.clone_instance(&instance_id, name, include_worlds)?;
+    inst.mc_version = mc.clone();
+    inst.loader = crate::instance::Loader { kind: loader, version: loader_version };
+    inst.version_id = None;
+    inst.imported_from = Some(format!("Ashi Taşıyıcı · {}", old.mc_version));
+    mgr.save(&inst)?;
+
+    let cf = Secrets::load(&state.paths.root).curseforge_api_key;
+    let keep: std::collections::HashSet<String> = keep_disabled.into_iter().collect();
+    let res = port::apply(
+        &state.http,
+        cf.as_deref(),
+        &inst.id,
+        &state.paths.instance_dir(&inst.id),
+        &state.paths.instance_game_dir(&inst.id),
+        &mc,
+        loader_slug(loader),
+        &keep,
+        progress_emitter(&app),
+    )
+    .await;
+    match res {
+        Ok(report) => Ok(PortResult { instance: inst, report }),
+        Err(e) => {
+            // Yarım kalan kopyayı bırakma
+            let _ = mgr.delete(&inst.id);
+            Err(e)
+        }
+    }
+}

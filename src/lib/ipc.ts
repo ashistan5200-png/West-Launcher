@@ -7,7 +7,7 @@ import type {
   AshiEvent, AshiSkin, HuntPlan,
   PatchNote, ModUpdate, AssetDiff,
   Screenshot, FoundInstance, CompanionConfig, CompanionInfo, UpdateStatus,
-  AccountView, Cape, DeviceCode, MsLoginEvent, Skin, AiStatus, AiSetupProgress, GameMode, GameModes, ModeApplyReport,
+  AccountView, Cape, DeviceCode, MsLoginEvent, Skin, AiStatus, AiSetupProgress, PortItem, PortResult, GameMode, GameModes, ModeApplyReport,
   ChatOutcome, ContentHit, ContentKind, ContentSource, InstallReport, InstalledContent, SearchQuery, SearchResult, SecretStatus,
   GameExit, GameLog, Hardware, Instance, JavaInstall, JvmProfile, LoaderKind,
   LoaderVersion, ManifestEntry, NewInstance, Progress, RunningInfo, Settings,
@@ -89,6 +89,11 @@ export const api = {
   contentVersions: (id: string) => invoke<ProjectVersion[]>("content_versions", { id }),
   /** İçeriği seçilen Modrinth sürümüyle değiştirir; yeni içerik kimliğini döndürür */
   setContentVersion: (instanceId: string, id: string, versionId: string) => invoke<string>("set_content_version", { instanceId, id, versionId }),
+  /** Ashi Taşıyıcı: hedef sürümde her içeriğin karşılığı var mı */
+  portPlan: (instanceId: string, mc: string, loader: LoaderKind) => invoke<PortItem[]>("port_plan", { instanceId, mc, loader }),
+  /** Instance'ın hedef sürümde bir kopyasını oluşturup içerikleri taşır */
+  portInstance: (instanceId: string, mc: string, loader: LoaderKind, loaderVersion: string | null, name: string, includeWorlds: boolean, keepDisabled: string[]) =>
+    invoke<PortResult>("port_instance", { instanceId, mc, loader, loaderVersion, name, includeWorlds, keepDisabled }),
   westStatus: () => invoke<WestStatus>("west_status"),
   westUsernameAvailable: (username: string) => invoke<boolean>("west_username_available", { username }),
   westSignup: (username: string, email: string, password: string) => invoke<WestSignupResult>("west_signup", { username, email, password }),
