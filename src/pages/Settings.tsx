@@ -3,7 +3,7 @@ import clsx from "clsx";
 import { useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  ArrowUpCircle, Brain, Check, Coffee, Cpu, Download, Gamepad2, KeyRound, Loader2, Palette, RefreshCw, Shield, SlidersHorizontal, Sparkles, Trash2,
+  Accessibility as AccessIcon, ArrowUpCircle, Brain, Check, Coffee, Cpu, Download, Gamepad2, KeyRound, Loader2, Palette, RefreshCw, Shield, SlidersHorizontal, Sparkles, Trash2,
 } from "lucide-react";
 import type { Hardware, JavaInstall } from "@/lib/types";
 import { api, isTauri } from "@/lib/ipc";
@@ -19,6 +19,7 @@ const TABS = [
   { id: "genel", label: "Genel", icon: SlidersHorizontal },
   { id: "gorunum", label: "Görünüm", icon: Palette },
   { id: "oyun", label: "Oyun", icon: Gamepad2 },
+  { id: "erisim", label: "Erişilebilirlik", icon: AccessIcon },
   { id: "java", label: "Java", icon: Coffee },
   { id: "ai", label: "Ashi", icon: Brain },
   { id: "guvenlik", label: "Güvenlik", icon: Shield },
@@ -47,6 +48,7 @@ export function SettingsPage() {
           {tab === "genel" && <GeneralTab />}
           {tab === "gorunum" && <AppearanceTab />}
           {tab === "oyun" && <GameTab />}
+          {tab === "erisim" && <AccessibilityTab />}
           {tab === "java" && <JavaTab />}
           {tab === "ai" && <AiTab />}
           {tab === "guvenlik" && <SecurityTab />}
@@ -167,6 +169,15 @@ function AppearanceTab() {
         </Row>
       </Group>
 
+      <Group title="Ses">
+        <Row title="Arka plan müziği" desc="West'e özel sakin bir müzik. Launcher açıkken ve oyunun menülerinde çalar.">
+          <Toggle label="Arka plan müziği" on={settings.music} onChange={(v) => void useSettings.getState().update({ music: v })} />
+        </Row>
+        <Row title="Oyun içinde de çal" desc="Dünyadayken Minecraft'ın kendi müziğinin yerine West müziği çalar. Ses düzeyi: Minecraft → Müzik.">
+          <Toggle label="Oyun içinde de çal" on={settings.musicInGame} onChange={(v) => void useSettings.getState().update({ musicInGame: v })} />
+        </Row>
+      </Group>
+
       <Group title="Pencere">
         <Row title="Pencere efekti">
           <Seg value={t.windowEffect} options={[["mica", "Mica"], ["acrylic", "Acrylic"], ["none", "Düz"]]} onChange={(windowEffect) => updateTheme({ windowEffect })} />
@@ -178,6 +189,58 @@ function AppearanceTab() {
           <input className="set-range" type="range" min={60} max={100} value={Math.round(t.opacity * 100)} onChange={(e) => updateTheme({ opacity: Number(e.target.value) / 100 })} />
         </Row>
       </Group>
+    </>
+  );
+}
+
+function AccessibilityTab() {
+  const { settings, update, updateTheme } = useSettings();
+  const a = settings.accessibility;
+  const set = (patch: Partial<typeof a>) => void update({ accessibility: { ...a, ...patch } });
+  const setPerf = (on: boolean) => {
+    // Ana anahtar: tüm hafifletmeleri birlikte açar/kapatır; sonra tek tek değiştirilebilir
+    void update({
+      accessibility: {
+        ...a,
+        performanceMode: on,
+        gameAnimations: !on,
+        perfMods: on,
+        lowGraphics: on,
+        launcherEffects: !on,
+      },
+    });
+    updateTheme({ cursorTrail: !on, reduceMotion: on });
+  };
+  const items: { key: keyof typeof a; title: string; desc: string; invert?: boolean }[] = [
+    { key: "perfMods", title: "Optimizasyon modlarını kur", desc: "Oyna'ya basınca Sodium, Lithium, FerriteCore, EntityCulling, ImmediatelyFast ve ModernFix uyumluysa kurulur (Fabric/Quilt)." },
+    { key: "lowGraphics", title: "Grafikleri hafiflet", desc: "Görüş mesafesi en fazla 8, parçacıklar en az, bulut ve gölgeler kapalı, hızlı grafik. Daha düşük ayarların korunur." },
+    { key: "westHud", title: "West HUD", desc: "Oyundaki FPS, tuş göstergesi, koordinat gibi West öğeleri." },
+    { key: "westMenus", title: "West menüleri", desc: "West ana menüsü, duraklatma menüsü ve West görünümlü Minecraft ekranları. Kapalıyken vanilla menüler." },
+    { key: "gameAnimations", title: "Oyun içi animasyonlar", desc: "West menülerindeki geçişler ve parıltılar." },
+    { key: "smoothFont", title: "Pürüzsüz yazı tipi", desc: "Oyundaki West yazıları pürüzsüz yazı tipiyle." },
+    { key: "launcherEffects", title: "Launcher efektleri", desc: "Bulanık cam yüzeyler ve geçiş animasyonları." },
+  ];
+  return (
+    <>
+      <Group>
+        <Row
+          title={<>Performans modu {a.performanceMode && <span className="accent">· açık</span>}</>}
+          desc="Bilgisayarı zorlananlar için. Sade West ana menüsü gelir, imleç parçacıkları ve ağır efektler kapanır, oyunu hızlandıran ayarlar açılır. Aşağıdan tek tek de değiştirebilirsin."
+        >
+          <Toggle label="Performans modu" on={a.performanceMode} onChange={setPerf} />
+        </Row>
+      </Group>
+      <Group title="Tek tek">
+        <Row title="İmleç parçacıkları" desc="Launcher'da farenin arkasındaki renkli pikseller.">
+          <Toggle label="İmleç parçacıkları" on={settings.theme.cursorTrail ?? true} onChange={(cursorTrail) => updateTheme({ cursorTrail })} />
+        </Row>
+        {items.map((it) => (
+          <Row key={it.key} title={it.title} desc={it.desc}>
+            <Toggle label={it.title} on={!!a[it.key]} onChange={(v) => set({ [it.key]: v })} />
+          </Row>
+        ))}
+      </Group>
+      <p className="hint set-note">Oyun ayarları bir sonraki "Oyna"da uygulanır.</p>
     </>
   );
 }

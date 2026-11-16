@@ -309,6 +309,11 @@ async fn token(http: &Http, root: &Path) -> Option<(String, String)> {
     refresh(http, root, &s).await.ok().map(|f| (f.access_token, f.user_id))
 }
 
+/// Giriş yapmış West hesabının kimliği (oturum gerekirse yenilenir); giriş yoksa None.
+pub async fn current_user(http: &Http, root: &Path) -> Option<String> {
+    token(http, root).await.map(|(_, id)| id)
+}
+
 /// Arayüzün veritabanına tek kapısı. Yalnızca `/rest/v1/` (tablolar, görünümler, fonksiyonlar)
 /// adreslerine izin verilir; erişimi Supabase'teki satır güvenliği kuralları belirler.
 pub async fn api(http: &Http, root: &Path, method: &str, path: &str, query: &[(String, String)], body: Option<serde_json::Value>, prefer: Option<&str>) -> Result<serde_json::Value> {

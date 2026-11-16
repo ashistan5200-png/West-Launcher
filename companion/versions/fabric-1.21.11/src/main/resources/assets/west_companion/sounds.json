@@ -1,0 +1,6 @@
+{
+  "music.lobby": {
+    "category": "music",
+    "sounds": [ { "name": "west_companion:music/west_lobby", "stream": true } ]
+  }
+}

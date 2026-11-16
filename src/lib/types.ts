@@ -47,6 +47,18 @@ export interface ThemeSettings {
   cursorTrail: boolean;
 }
 
+export interface Accessibility {
+  /** Zayıf bilgisayarlar için ana anahtar */
+  performanceMode: boolean;
+  westMenus: boolean;
+  westHud: boolean;
+  gameAnimations: boolean;
+  smoothFont: boolean;
+  perfMods: boolean;
+  lowGraphics: boolean;
+  launcherEffects: boolean;
+}
+
 export interface Settings {
   theme: ThemeSettings;
   defaultMemoryMb: number | null;
@@ -66,6 +78,10 @@ export interface Settings {
   discordRpc: boolean;
   discordClientId: string | null;
   autoUpdate: boolean;
+  /** West arka plan müziği (launcher ve oyun menüleri) */
+  music: boolean;
+  musicInGame: boolean;
+  accessibility: Accessibility;
 }
 
 export interface ManifestEntry {

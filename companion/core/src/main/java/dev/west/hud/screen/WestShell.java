@@ -50,28 +50,61 @@ abstract class WestShell implements WestScreen {
      * @return ilk sekmeye tıklandıysa true
      */
     protected boolean topBar(int sw, float in, String[] tabs, int[] pages, boolean full) {
+        return topBar(sw, in, tabs, pages, full, null) == 0;
+    }
+
+    /**
+     * map verilirse: pages[i] == -1 olan sekmeye tıklanınca map[i] döner (ekranın kendi alt sayfası);
+     * aksi halde West menüsü sayfası açılır ve -1 döner.
+     */
+    protected int topBar(int sw, float in, String[] tabs, int[] pages, boolean full, int[] map) {
         Gfx g = ui.g;
         Theme t = ui.t;
         int y = Math.round((1 - in) * -10);
         int cy = y + TOP / 2;
-        boolean firstClicked = false;
+        int hit = -1;
+
+        // Dar ekranda sığdırma: önce marka yazısı, sonra isim gizlenir; sekme aralığı daralır; en son sondaki sekmeler düşer
+        int s = 18;
+        String name = WestHud.game.playerName();
+        int nw = g.textBoldWidth(name);
+        int rightW = (full ? 2 * (s + 4) + 6 : 0) + s + 7 + nw + 12 + s + (s + 4) + (full ? s + 4 : 0);
+        int brandW = 31 + Math.round(textSpaced(g, "WEST CLIENT", 1.6f));
+        int[] tw = new int[tabs.length];
+        for (int i = 0; i < tabs.length; i++) tw[i] = g.textBoldWidth(tabs[i]);
+        boolean showBrand = true, showName = true;
+        int gap = 18, count = tabs.length;
+        for (int attempt = 0; attempt < 12; attempt++) {
+            int total = 0;
+            for (int i = 0; i < count; i++) total += tw[i];
+            total += gap * (count - 1);
+            int left = (showBrand ? brandW : 30) + 14;
+            int right = sw - 10 - (rightW - (showName ? 0 : nw + 7)) - 12;
+            if (left + total <= right) break;
+            if (gap > 12) gap = 12;
+            else if (showBrand) showBrand = false;
+            else if (showName) showName = false;
+            else if (gap > 8) gap = 8;
+            else if (count > 1) count--;
+            else break;
+        }
 
         Icons.draw(g, Icon.LOGO, 12, cy - 7, 14, t.accent | 0xFF000000);
-        int bx = brand(g, "WEST CLIENT", 31, cy - 4, 0xFFFFFFFF, 1.6f);
+        int bx = showBrand ? brand(g, "WEST CLIENT", 31, cy - 4, 0xFFFFFFFF, 1.6f) : 30;
 
-        int s = 18, x = sw - 10 - s;
+        int x = sw - 10 - s;
         if (full) {
             if (iconButton("quit", Icon.CLOSE, x, cy - s / 2, s, "Oyundan çık", 0xFFE5566E)) WestHud.game.open(Game.Target.QUIT);
             x -= s + 4;
             if (iconButton("fs", Icon.FULLSCREEN, x, cy - s / 2, s, WestHud.game.fullscreen() ? "Pencere" : "Tam ekran", 0)) WestHud.game.toggleFullscreen();
             x -= 10 + s;
         }
-        String name = WestHud.game.playerName();
-        int nw = g.textBoldWidth(name);
         Ui.round(g, x - 1, cy - s / 2 - 1, s + 2, s + 2, 5, Theme.alpha(t.accent, 0xCC));
         g.playerFace(x, cy - s / 2, s);
-        x -= nw + 7;
-        g.textBold(name, x, cy - 4, 0xFFFFFFFF, false);
+        if (showName) {
+            x -= nw + 7;
+            g.textBold(name, x, cy - 4, 0xFFFFFFFF, false);
+        }
         x -= 12 + s;
         if (iconButton("opt", Icon.GEAR, x, cy - s / 2, s, "Minecraft ayarları", 0)) WestHud.game.open(Game.Target.OPTIONS);
         x -= s + 4;
@@ -82,13 +115,14 @@ abstract class WestShell implements WestScreen {
         }
         int rightStart = x - 12;
 
-        int gap = 18, total = 0;
-        for (String tab : tabs) total += g.textBoldWidth(tab);
-        total += gap * (tabs.length - 1);
-        int tx = Math.max(sw / 2 - total / 2, bx + 16);
-        if (tx + total <= rightStart) {
-            for (int i = 0; i < tabs.length; i++) {
-                int w = g.textBoldWidth(tabs[i]);
+        int total = 0;
+        for (int i = 0; i < count; i++) total += tw[i];
+        total += gap * (count - 1);
+        int tx = Math.max(sw / 2 - total / 2, bx + 14);
+        if (tx + total > rightStart) tx = Math.max(bx + 14, rightStart - total);
+        if (tx + total <= rightStart + 2) {
+            for (int i = 0; i < count; i++) {
+                int w = tw[i];
                 boolean active = i == 0;
                 boolean on = ui.hover(tx - 4, y + 4, w + 8, TOP - 8);
                 float h = hov("tab" + i, on || active);
@@ -97,13 +131,19 @@ abstract class WestShell implements WestScreen {
                 else if (h > 0.05f) Ui.round(g, tx + w / 2 - Math.round(5 * h), cy + 7, Math.max(1, Math.round(10 * h)), 2, 1, Theme.alpha(0xFFFFFFFF, (int) (120 * h)));
                 if (ui.clicked(tx - 4, y + 4, w + 8, TOP - 8)) {
                     WestHud.game.click();
-                    if (active) firstClicked = true;
+                    if (active || pages[i] < 0) hit = map != null ? map[i] : 0;
                     else WestHud.game.openWestScreenPage(pages[i]);
                 }
                 tx += w + gap;
             }
         }
-        return firstClicked;
+        return hit;
+    }
+
+    private static float textSpaced(Gfx g, String s, float spacing) {
+        float w = 0;
+        for (int i = 0; i < s.length(); i++) w += g.textBoldWidth(String.valueOf(s.charAt(i))) + spacing;
+        return w;
     }
 
     /** Harf aralıklı kalın marka yazısı; bittiği x'i döndürür. */
@@ -244,10 +284,10 @@ abstract class WestShell implements WestScreen {
         int lift = Math.round(hv);
         Ui.round(g, x, y + 2, w, h, 8, Theme.alpha(Theme.mix(base, 0xFF000000, 0.5f), 0xAA));
         Ui.round(g, x, y - lift, w, h, 8, Theme.mix(base, Theme.mix(base, 0xFFFFFFFF, 0.18f), hv));
-        String l = ui.fit(label, w - (icon != null ? 30 : 12));
+        String l = label.isEmpty() ? "" : ui.fit(label, w - (icon != null ? 30 : 12));
         int lw = g.textBoldWidth(l);
         int is = Math.min(12, h - 10);
-        int total = (icon != null ? is + 6 : 0) + lw;
+        int total = (icon != null ? is + (l.isEmpty() ? 0 : 6) : 0) + lw;
         int lx = x + (w - total) / 2;
         if (icon != null) {
             Icons.draw(g, icon, lx, y + (h - is) / 2 - lift, is, t.onAccent);
@@ -268,9 +308,9 @@ abstract class WestShell implements WestScreen {
         float hv = hov(id, on);
         Ui.round(g, x, y, w, h, 6, tinted ? Theme.mix(Theme.alpha(t.accent, 0x30), Theme.alpha(t.accent, 0x60), hv) : Theme.mix(0x14FFFFFF, 0x2AFFFFFF, hv));
         Ui.outline(g, x, y, w, h, 6, tinted ? Theme.alpha(t.accent, 0xCC) : 0x40FFFFFF);
-        String l = ui.fit(label, w - (icon != null ? 24 : 8));
+        String l = label.isEmpty() ? "" : ui.fit(label, w - (icon != null ? 24 : 8));
         int lw = g.textBoldWidth(l);
-        int total = (icon != null ? 14 : 0) + lw;
+        int total = (icon != null ? (l.isEmpty() ? 8 : 14) : 0) + lw;
         int lx = x + (w - total) / 2;
         if (icon != null) {
             Icons.draw(g, icon, lx, y + (h - 8) / 2, 8, 0xFFFFFFFF);
@@ -351,5 +391,19 @@ abstract class WestShell implements WestScreen {
     @Override
     public void mouseClicked(double x, double y, int button) {
         ui.click((int) x, (int) y, button);
+    }
+
+    private WestScreen pendingNext;
+
+    /** Bu kareden sonra başka bir West ekranına geç */
+    protected void go(WestScreen s) {
+        pendingNext = s;
+    }
+
+    @Override
+    public WestScreen next() {
+        WestScreen n = pendingNext;
+        pendingNext = null;
+        return n;
     }
 }

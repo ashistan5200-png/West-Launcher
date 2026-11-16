@@ -22,6 +22,8 @@ final class WestHost extends Screen {
     @Override
     public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float delta) {
         WestHud.safe("screen", () -> inner.render(new Gfx26(g, d -> extractPanorama(g, d)), mouseX, mouseY, delta));
+        WestScreen n = inner.next();
+        if (n != null) inner = n;
     }
 
     /** Vanilla'nın karartma/bulanıklaştırma arka planı yerine kendi arka planımız çizilir. */
@@ -33,6 +35,7 @@ final class WestHost extends Screen {
         var m = Gfx26.model;
         modelDrag = m != null && System.currentTimeMillis() - Gfx26.modelShown < 250 && m.isMouseOver(e.x(), e.y());
         if (modelDrag) {
+            Gfx26.dragging = true;
             m.mouseClicked(e, doubleClick);
             return true;
         }
@@ -44,6 +47,7 @@ final class WestHost extends Screen {
     public boolean mouseReleased(MouseButtonEvent e) {
         if (modelDrag && Gfx26.model != null) Gfx26.model.mouseReleased(e);
         modelDrag = false;
+        Gfx26.dragging = false;
         WestHud.safe("release", () -> inner.mouseReleased(e.x(), e.y(), e.button()));
         return true;
     }

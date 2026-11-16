@@ -34,6 +34,43 @@ impl Default for ThemeSettings {
     }
 }
 
+/// Erişilebilirlik / performans. Performans modu ana anahtardır; altındaki seçenekler tek tek de açılıp kapatılabilir.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct Accessibility {
+    /// Zayıf bilgisayarlar için: sade West ana menüsü ve aşağıdaki hafifletmeler
+    pub performance_mode: bool,
+    /// Oyunda West ana menüsü, duraklatma menüsü ve West görünümlü Minecraft ekranları
+    pub west_menus: bool,
+    /// Oyun içi West HUD öğeleri (FPS, tuşlar, koordinatlar …)
+    pub west_hud: bool,
+    /// Oyun içi menü animasyonları
+    pub game_animations: bool,
+    /// Oyunda pürüzsüz yazı tipi
+    pub smooth_font: bool,
+    /// Oyna'ya basınca uyumlu optimizasyon modlarını kur (Sodium, Lithium, FerriteCore …)
+    pub perf_mods: bool,
+    /// Oyunun grafik ayarlarını hafiflet (parçacık, bulut, gölge, görüş mesafesi)
+    pub low_graphics: bool,
+    /// Launcher'da bulanıklık, saydamlık ve geçiş animasyonları
+    pub launcher_effects: bool,
+}
+
+impl Default for Accessibility {
+    fn default() -> Self {
+        Self {
+            performance_mode: false,
+            west_menus: true,
+            west_hud: true,
+            game_animations: true,
+            smooth_font: true,
+            perf_mods: false,
+            low_graphics: false,
+            launcher_effects: true,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct Settings {
@@ -61,6 +98,11 @@ pub struct Settings {
     pub discord_client_id: Option<String>,
     /// Yeni sürüm bulununca arka planda indir (kurulum yine kullanıcı onayıyla)
     pub auto_update: bool,
+    /// West arka plan müziği (launcher'da ve oyunun menülerinde)
+    pub music: bool,
+    /// Müzik oyunun içinde de çalsın (Minecraft'ın kendi müziğinin yerine)
+    pub music_in_game: bool,
+    pub accessibility: Accessibility,
 }
 
 impl Default for Settings {
@@ -83,6 +125,9 @@ impl Default for Settings {
             discord_rpc: true,
             discord_client_id: None,
             auto_update: true,
+            music: true,
+            music_in_game: true,
+            accessibility: Accessibility::default(),
         }
     }
 }

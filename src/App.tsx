@@ -32,6 +32,8 @@ import { ImageCropperHost } from "@/components/ImageCropper";
 import { AmbientSky } from "@/components/AmbientSky";
 import { ConfirmHost } from "@/components/ConfirmDialog";
 import { CursorTrail } from "@/components/CursorTrail";
+import { BackgroundMusic } from "@/components/BackgroundMusic";
+import { startPresence } from "@/stores/west";
 import { ContentToasts } from "@/components/ContentToasts";
 import { useSettings } from "@/stores/settings";
 import { useInstances } from "@/stores/instances";
@@ -48,6 +50,7 @@ export default function App() {
     void refresh();
     void loadSkin();
     void useAccounts.getState().load();
+    startPresence();
     const un = bindEvents();
     const nameOf = (id: string) => useInstances.getState().instances.find((i) => i.id === id)?.name ?? id;
     const unAshi = bindAshi(nameOf);
@@ -111,6 +114,7 @@ export default function App() {
         <ImageCropperHost />
         <ConfirmHost />
         <CursorTrail />
+        <BackgroundMusic />
         <ImportWizard />
         <AshiTour />
         <UpdateModal />

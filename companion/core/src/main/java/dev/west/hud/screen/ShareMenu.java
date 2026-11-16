@@ -1,0 +1,310 @@
+package dev.west.hud.screen;
+
+import dev.west.hud.WestHud;
+import dev.west.hud.api.Game;
+import dev.west.hud.api.Gfx;
+import dev.west.hud.net.Upnp;
+import dev.west.hud.social.SocialClient;
+import dev.west.hud.social.SocialClient.Person;
+import dev.west.hud.ui.Icons;
+import dev.west.hud.ui.Icons.Icon;
+import dev.west.hud.ui.Theme;
+import dev.west.hud.ui.Ui;
+
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+
+/** Dünyayı arkadaşlarla paylaş: dünya ayarları + davet edilecek arkadaşlar. */
+public final class ShareMenu extends WestShell {
+    private static final String[] MODES = { "Hayatta kalma", "Yaratıcı", "Macera", "İzleyici" };
+    private static final String[] VIS = { "Arkadaşlar", "Yalnızca davetliler" };
+
+    private final WestScreen back;
+    private final SocialClient c = SocialClient.INSTANCE;
+    private int vis, mode, tab = 1;
+    private boolean cheats, upnp = true, notify = true;
+    private final Set<String> picked = new LinkedHashSet<>();
+    private String search = "";
+    private boolean searchFocus;
+    private String result;
+    private boolean busy;
+
+    public ShareMenu(WestScreen back) {
+        this.back = back;
+    }
+
+    @Override
+    public void render(Gfx g, int mx, int my, float delta) {
+        beginFrame(g, mx, my);
+        Theme t = ui.t;
+        c.poll(null);
+        int sw = g.width(), sh = g.height();
+        float in = appear();
+        g.blurBehind();
+        g.fill(0, 0, sw, sh, (int) (0x8C * in) << 24 | 0x06070B);
+
+        int pw = Math.min(560, sw - 16), ph = Math.min(330, sh - 16);
+        int px = (sw - pw) / 2, py = (sh - ph) / 2 + Math.round((1 - in) * 10);
+        Ui.round(g, px - 1, py + 3, pw + 2, ph + 2, 14, 0x50000000);
+        Ui.round(g, px, py, pw, ph, 13, 0xF20E1016);
+        Ui.outline(g, px, py, pw, ph, 13, 0x1FFFFFFF);
+        int lw = Math.max(150, Math.min(210, pw * 36 / 100));
+        g.fill(px + lw, py + 8, px + lw + 1, py + ph - 8, 0x1AFFFFFF);
+
+        left(px, py, lw, ph);
+        right(px + lw + 1, py, pw - lw - 1, ph);
+        ui.end();
+    }
+
+    private void left(int x, int y, int w, int h) {
+        Gfx g = ui.g;
+        Theme t = ui.t;
+        // Profil
+        Ui.round(g, x + 10, y + 10, 26, 26, 7, Theme.alpha(t.accent, 0xCC));
+        g.playerFace(x + 12, y + 12, 22);
+        Ui.round(g, x + 30, y + 30, 8, 8, 4, 0xFF101114);
+        Ui.round(g, x + 31, y + 31, 6, 6, 3, 0xFF4CC38A);
+        g.textBold(ui.fit(WestHud.game.playerName(), w - 70), x + 42, y + 12, 0xFFFFFFFF, false);
+        smallText(g, c.available() ? "Çevrimiçi" : "West hesabı bağlı değil", x + 42, y + 24, 0xAAFFFFFF);
+        if (iconButton("lx", Icon.CLOSE, x + w - 26, y + 12, 18, null, 0)) close();
+
+        // Arama
+        int sy = y + 44;
+        boolean on = ui.hover(x + 10, sy, w - 20, 18);
+        Ui.round(g, x + 10, sy, w - 20, 18, 6, searchFocus ? 0x99000000 : on ? 0x80000000 : 0x66000000);
+        Ui.outline(g, x + 10, sy, w - 20, 18, 6, searchFocus ? Theme.alpha(t.accent, 0xCC) : 0x26FFFFFF);
+        Icons.draw(g, Icon.SEARCH, x + 15, sy + 5, 8, 0x99FFFFFF);
+        String shown = search.isEmpty() && !searchFocus ? "Arkadaş ara" : search + (searchFocus && ((int) (ui.time * 2)) % 2 == 0 ? "|" : "");
+        g.text(ui.fit(shown, w - 44), x + 27, sy + 5, search.isEmpty() && !searchFocus ? 0x77FFFFFF : 0xFFFFFFFF, false);
+        if (ui.clicked(x + 10, sy, w - 20, 18)) searchFocus = true;
+        else if (!on && ui.pressedAt(0, 0, 99999, 99999)) searchFocus = false;
+
+        // Dünya durumu kartı
+        int cy = sy + 24;
+        int port = WestHud.game.publishedPort();
+        Ui.round(g, x + 10, cy, w - 20, 22, 7, 0x14FFFFFF);
+        Ui.outline(g, x + 10, cy, w - 20, 22, 7, port > 0 ? Theme.alpha(t.accent, 0xCC) : 0x22FFFFFF);
+        Icons.draw(g, Icon.GLOBE, x + 17, cy + 6, 10, 0xFFFFFFFF);
+        g.textBold("Dünya", x + 32, cy + 7, 0xFFFFFFFF, false);
+        String st = port > 0 ? "Paylaşılıyor" : "Özel";
+        smallText(g, st, x + 36 + g.textBoldWidth("Dünya"), cy + 8, port > 0 ? 0xFF8EE6B6 : 0xAAFFFFFF);
+
+        // Sekmeler
+        int ty = cy + 28;
+        String[] tabs = { "Sohbetler", "Arkadaşlar" };
+        int half = (w - 20) / 2;
+        Ui.round(g, x + 10, ty, w - 20, 18, 6, 0x66000000);
+        for (int i = 0; i < 2; i++) {
+            int bx = x + 10 + i * half;
+            if (tab == i) Ui.round(g, bx + 1, ty + 1, half - 2, 16, 5, t.accent | 0xFF000000);
+            g.textBold(tabs[i], bx + (half - g.textBoldWidth(tabs[i])) / 2, ty + 5, tab == i ? t.onAccent : 0xCCFFFFFF, false);
+            if (ui.clicked(bx, ty, half, 18)) tab = i;
+        }
+
+        int ly = ty + 24;
+        if (!c.available()) {
+            List<String> lines = wrap(g, "Arkadaşlarını davet etmek için oyunu West Client launcher'ından, West hesabına giriş yapmışken başlat.", (int) ((w - 24) / 0.8f));
+            for (String l : lines) {
+                smallText(g, l, x + 12, ly, 0xAAFFFFFF);
+                ly += 9;
+            }
+            return;
+        }
+        String q = search.toLowerCase(Locale.ROOT).trim();
+        g.scissor(x, ly, x + w, y + h - 8);
+        if (tab == 1) {
+            List<Person> list = new ArrayList<>();
+            for (Person p : c.friends) if (q.isEmpty() || p.display().toLowerCase(Locale.ROOT).contains(q)) list.add(p);
+            if (list.isEmpty()) smallText(g, c.loaded ? "Henüz arkadaş yok" : "Yükleniyor…", x + 12, ly + 2, 0x99FFFFFF);
+            for (Person p : list) {
+                if (ly + 24 > y + h - 8) break;
+                boolean sel = picked.contains(p.id());
+                boolean hv = ui.hover(x + 8, ly, w - 16, 24);
+                if (hv || sel) Ui.round(g, x + 8, ly, w - 16, 24, 6, sel ? Theme.alpha(t.accent, 0x2A) : 0x14FFFFFF);
+                letter(g, p.display(), x + 12, ly + 4, 16, p.online());
+                g.textBold(ui.fit(p.display(), w - 70), x + 33, ly + 4, 0xFFFFFFFF, false);
+                smallText(g, p.online() ? "Çevrimiçi" : "Çevrimdışı", x + 33, ly + 14, p.online() ? 0xCC8EE6B6 : 0x88FFFFFF);
+                check(g, x + w - 24, ly + 6, sel);
+                if (ui.clicked(x + 8, ly, w - 16, 24)) {
+                    WestHud.game.click();
+                    if (!picked.remove(p.id())) picked.add(p.id());
+                }
+                ly += 26;
+            }
+        } else {
+            for (SocialClient.Conversation cv : c.conversations) {
+                if (ly + 26 > y + h - 8) break;
+                if (!q.isEmpty() && !cv.title().toLowerCase(Locale.ROOT).contains(q)) continue;
+                letter(g, cv.title(), x + 12, ly + 4, 16, cv.members().stream().anyMatch(Person::online));
+                g.textBold(ui.fit(cv.title(), w - 50), x + 33, ly + 3, 0xFFFFFFFF, false);
+                smallText(g, ui.fit(cv.last(), (int) ((w - 50) / 0.8f)), x + 33, ly + 14, cv.unread() ? 0xFFFFFFFF : 0x88FFFFFF);
+                if (cv.unread()) Ui.round(g, x + w - 16, ly + 9, 5, 5, 3, t.accent | 0xFF000000);
+                ly += 28;
+            }
+        }
+        g.noScissor();
+    }
+
+    private void right(int x, int y, int w, int h) {
+        Gfx g = ui.g;
+        Theme t = ui.t;
+        Game.Session s = WestHud.game.session();
+        String head = "Dünya ayarlarını yapılandır";
+        float hs = Math.min(1.25f, (w - 50) / (float) Math.max(1, g.textBoldWidth(head)));
+        bigText(g, head, x + 14, y + 12, 0xFFFFFFFF, hs);
+        g.text(ui.fit(s.title(), w - 50), x + 14, y + 27, 0xBBFFFFFF, false);
+        if (iconButton("rx", Icon.CLOSE, x + w - 26, y + 10, 18, null, 0)) close();
+        g.fill(x + 1, y + 42, x + w - 1, y + 43, 0x1AFFFFFF);
+        smallText(g, ui.fit("Bu dünyanın arkadaşların için nasıl açılacağını seç.", (int) ((w - 28) / 0.8f)), x + 14, y + 50, 0x88FFFFFF);
+
+        int ry = y + 64, rh = 24, ctlW = Math.min(170, w / 2);
+        int cx = x + w - 14 - ctlW;
+        boolean published = WestHud.game.publishedPort() > 0;
+        row("Kime açık", ry, x);
+        if (pill("vis", "Görünürlük", VIS[vis], cx, ry, ctlW, rh, true)) vis = (vis + 1) % VIS.length;
+        ry += rh + 6;
+        row("Oyun modu", ry, x);
+        if (!published && pill("mode", "Mod", MODES[mode], cx, ry, ctlW, rh, true)) mode = (mode + 1) % MODES.length;
+        if (published) pill("mode", "Mod", MODES[mode], cx, ry, ctlW, rh, false);
+        ry += rh + 6;
+        row("Hileler", ry, x);
+        if (toggle("cheats", "Hilelere izin ver", cheats, cx, ry, ctlW, rh) && !published) cheats = !cheats;
+        ry += rh + 6;
+        row("İnternet", ry, x);
+        if (toggle("upnp", "Modem portunu aç", upnp, cx, ry, ctlW, rh) && !published) upnp = !upnp;
+        ry += rh + 6;
+        row("Davet", ry, x);
+        if (toggle("notify", picked.isEmpty() ? "Arkadaş seç (solda)" : picked.size() + " arkadaşa gönder", notify, cx, ry, ctlW, rh)) notify = !notify;
+        ry += rh + 6;
+
+        if (result != null) {
+            List<String> lines = wrap(g, result, (int) ((w - 28) / 0.8f));
+            for (String l : lines) {
+                if (ry > y + h - 40) break;
+                smallText(g, l, x + 14, ry, 0xDDFFFFFF);
+                ry += 9;
+            }
+        }
+
+        int by = y + h - 32, bw = (w - 28 - 8) / 2;
+        if (outlineButton("close", "Kapat", Icon.CLOSE, x + 14, by, bw, 22, false)) close();
+        String label = busy ? "Açılıyor…" : published ? "Davet gönder" : "Paylaş";
+        if (accentButton("share", label, Icon.CHEVRON_RIGHT, x + 14 + bw + 8, by, w - 28 - bw - 8, 22) && !busy) share(published);
+    }
+
+    private void share(boolean already) {
+        Game game = WestHud.game;
+        int port = already ? game.publishedPort() : game.publishWorld(mode, cheats);
+        if (port <= 0) {
+            result = "Dünya açılamadı. Tek oyunculu bir dünyada olduğundan emin ol.";
+            return;
+        }
+        String world = game.session().title();
+        if (!upnp) {
+            String lan = Upnp.localIp(null) + ":" + port;
+            result = "Dünya aynı ağdakilere açıldı: " + lan;
+            sendInvites(world, lan);
+            return;
+        }
+        busy = true;
+        result = "Modemde port açılıyor…";
+        Upnp.open(port, "West Client: " + world).thenAccept(r -> {
+            busy = false;
+            String address = (r.ok() ? r.externalIp() : r.localIp()) + ":" + port;
+            result = (r.ok() ? "Dünya internete açıldı: " : r.message() + " Adres: ") + address;
+            sendInvites(world, address);
+        });
+    }
+
+    private void sendInvites(String world, String address) {
+        if (!notify || picked.isEmpty() || !c.available()) return;
+        List<String> users = new ArrayList<>(picked);
+        c.invite(users, world, address, n -> result = result + " · " + n + " arkadaşa davet gönderildi.");
+    }
+
+    private void row(String label, int y, int x) {
+        ui.g.textBold(label, x + 14, y + 8, 0xFFFFFFFF, false);
+    }
+
+    private boolean pill(String id, String key, String value, int x, int y, int w, int h, boolean enabled) {
+        Gfx g = ui.g;
+        boolean on = enabled && ui.hover(x, y, w, h);
+        float hv = hov(id, on);
+        Ui.round(g, x, y, w, h, 7, Theme.mix(0x80000000, 0xA0101218, hv));
+        Ui.outline(g, x, y, w, h, 7, Theme.alpha(0xFFFFFFFF, (int) (0x22 + 0x30 * hv)));
+        smallText(g, key, x + 8, y + (h - 7) / 2, 0x88FFFFFF);
+        String v = ui.fit(value, w - 30 - small(g, key));
+        g.textBold(v, x + w - 20 - g.textBoldWidth(v), y + (h - 8) / 2, enabled ? 0xFFFFFFFF : 0x88FFFFFF, false);
+        Icons.draw(g, Icon.CHEVRON_DOWN, x + w - 15, y + (h - 8) / 2, 8, 0xAAFFFFFF);
+        if (enabled && ui.clicked(x, y, w, h)) {
+            WestHud.game.click();
+            return true;
+        }
+        return false;
+    }
+
+    private boolean toggle(String id, String label, boolean value, int x, int y, int w, int h) {
+        Gfx g = ui.g;
+        boolean on = ui.hover(x, y, w, h);
+        float hv = hov(id, on);
+        Ui.round(g, x, y, w, h, 7, Theme.mix(0x80000000, 0xA0101218, hv));
+        Ui.outline(g, x, y, w, h, 7, Theme.alpha(0xFFFFFFFF, (int) (0x22 + 0x30 * hv)));
+        g.text(ui.fit(label, w - 34), x + 8, y + (h - 8) / 2, 0xFFFFFFFF, false);
+        check(g, x + w - 20, y + (h - 12) / 2, value);
+        if (ui.clicked(x, y, w, h)) {
+            WestHud.game.click();
+            return true;
+        }
+        return false;
+    }
+
+    private void check(Gfx g, int x, int y, boolean on) {
+        Theme t = ui.t;
+        if (on) {
+            Ui.round(g, x, y, 12, 12, 3, t.accent | 0xFF000000);
+            Icons.draw(g, Icon.CHECK, x + 2, y + 2, 8, t.onAccent);
+        } else {
+            Ui.round(g, x, y, 12, 12, 3, 0x33000000);
+            Ui.outline(g, x, y, 12, 12, 3, 0x55FFFFFF);
+        }
+    }
+
+    private static void letter(Gfx g, String name, int x, int y, int s, boolean online) {
+        String ch = name.isEmpty() ? "?" : name.substring(0, 1).toUpperCase(Locale.ROOT);
+        int[] colors = { 0xFF6EA8D6, 0xFF70C48E, 0xFFE8A25C, 0xFFEC5A82, 0xFFA08CB8, 0xFFF2C14E };
+        Ui.round(g, x, y, s, s, 5, colors[Math.abs(name.hashCode()) % colors.length]);
+        g.textBold(ch, x + (s - g.textBoldWidth(ch)) / 2, y + (s - 8) / 2, 0xFF101114, false);
+        if (online) Ui.round(g, x + s - 5, y + s - 5, 6, 6, 3, 0xFF4CC38A);
+    }
+
+    private void close() {
+        WestHud.game.click();
+        go(back);
+    }
+
+    @Override
+    public boolean keyPressed(int key) {
+        if (!searchFocus) return false;
+        if (key == 259 && !search.isEmpty()) search = search.substring(0, search.length() - 1);
+        else if (key == 256 || key == 257) searchFocus = false;
+        return true;
+    }
+
+    @Override
+    public void charTyped(char ch) {
+        if (searchFocus && ch >= 32 && search.length() < 30) search += ch;
+    }
+
+    @Override
+    public WestScreen escape() {
+        return back;
+    }
+
+    @Override
+    public boolean pausesGame() {
+        return true;
+    }
+}

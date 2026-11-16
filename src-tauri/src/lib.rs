@@ -2,6 +2,7 @@ pub mod accounts;
 pub mod assistant;
 pub mod commands;
 pub mod cloud;
+pub mod bridge;
 pub mod companion;
 pub mod content;
 pub mod core;

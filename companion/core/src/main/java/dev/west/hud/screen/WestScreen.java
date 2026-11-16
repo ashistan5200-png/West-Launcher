@@ -30,4 +30,7 @@ public interface WestScreen {
 
     /** Oyun bu ekran açıkken duraklasın mı (tek oyunculuda) */
     default boolean pausesGame() { return false; }
+
+    /** Her kareden sonra sorulur: başka bir West ekranına geçilecekse o ekran, yoksa null */
+    default WestScreen next() { return null; }
 }

@@ -22,11 +22,13 @@ public final class HomeScreen extends WestShell {
     private static final String[] TABS = { "Oyna", "Modlar", "Görünüm", "Genel" };
     private static final int[] PAGES = { -1, 3, 1, 2 };
 
-    private enum Page { HOME, WORLDS, SERVERS }
+    enum Page { HOME, WORLDS, SERVERS, STATS, SOCIAL }
+
+    final SocialPage social = new SocialPage();
 
     private Page page = Page.HOME;
-    private List<Game.ServerInfo> servers;
-    private List<Game.WorldInfo> worlds = List.of();
+    List<Game.ServerInfo> servers;
+    List<Game.WorldInfo> worlds = List.of();
     private int worldsTries;
     private static int selWorld, selServer;
     private long lastRowClick;
@@ -46,51 +48,434 @@ public final class HomeScreen extends WestShell {
         if (++worldsTries % 120 == 0) servers = game.servers(64);
         int sw = g.width(), sh = g.height();
         float in = appear();
+        if (transition != null) ui.mx = ui.my = -9999; // geçiş sırasında tıklama yok
 
-        g.panorama(delta);
-        boolean sub = page != Page.HOME;
-        if (sub) {
-            g.blurBehind();
-            g.fill(0, 0, sw, sh, 0x8C080A10);
-        } else {
-            g.gradient(0, 0, sw, TOP + 30, 0x99080A10, 0x00080A10);
-            g.gradient(0, sh / 2, sw, sh, 0x00060709, 0xB0060709);
+        // Geçiş: karaktere yakınlaş + beyaz ışık
+        float tp = 0;
+        boolean zoomed = transition != null;
+        if (zoomed) {
+            tp = Math.min(1, (System.nanoTime() - transitionStart) / 1e9f / 1.1f);
+            float z = 1 + ease(tp) * 0.85f;
+            g.push();
+            g.translate(pivotX, pivotY);
+            g.scale(z);
+            g.translate(-pivotX, -pivotY);
         }
 
-        int cw = clamp(Math.round(sw * 0.32f), 158, 218);
-        int cardX = sw - cw - 10;
-        if (!sub) playerModel(sw, sh, cardX, in);
-        int cardY = playCard(cardX, sh, cw, in);
-        if (sub) listPage(cardX, cardY, cw, sw, sh, in);
-        chips(sh, cardX - 12, in, !sub);
-        if (topBar(sw, in, TABS, PAGES, true)) goHome();
-        footer(sw, sh);
-        if (!sub && !WestHud.config.data.titleTipSeen) tip(sw, cw, in);
+        photo(g, sw, sh, mx, my);
+        if (page == Page.HOME && perf()) {
+            home(sw, sh, in);
+        } else if (page == Page.HOME) {
+            classic(sw, sh, in);
+        } else {
+            g.blurBehind();
+            g.fill(0, 0, sw, sh, 0x8C080A10);
+            int cw = clamp(Math.round(sw * 0.32f), 158, 218);
+            int cardX = sw - cw - 10;
+            int cardY = playCard(cardX, sh, cw, in);
+            if (page == Page.STATS) StatsPage.render(this, 10, TOP + 4, cardX - 20, sh - 18 - 26 - 8 - (TOP + 4), cardX, cardY, cw);
+            else if (page == Page.SOCIAL) social.render(this, 10, TOP + 4, cardX - 20, sh - 18 - 26 - 8 - (TOP + 4), cardX, cardY, cw);
+            else listPage(cardX, cardY, cw, sw, sh, in);
+            chips(sh, cardX - 12, in, false);
+            int tab = page == Page.STATS ? 1 : page == Page.SOCIAL ? 2 : 0;
+            int clicked = topTabs(sw, in, tab);
+            if (clicked == 0) open(Page.WORLDS);
+            else if (clicked == 1) open(Page.STATS);
+            else if (clicked == 2) open(Page.SOCIAL);
+            footer(sw, sh);
+        }
+
+        if (zoomed) {
+            g.pop();
+            int a = (int) (255 * Math.max(0, Math.min(1, (tp - 0.35f) / 0.5f)));
+            g.nextLayer();
+            g.fill(0, 0, sw, sh, (a << 24) | 0xFFFFFF);
+            if (tp >= 1 && !transitionFired) {
+                transitionFired = true;
+                transition.run();
+            }
+        }
         ui.end();
     }
 
-    private void goHome() {
+    // ───────── Arka plan fotoğrafı ─────────
+
+    private float parX, parY;
+    private static final float[][] MOTES = new float[34][];
+
+    static {
+        java.util.Random r = new java.util.Random(11);
+        for (int i = 0; i < MOTES.length; i++) MOTES[i] = new float[] { r.nextFloat(), r.nextFloat(), 0.6f + r.nextFloat() * 1.6f, r.nextFloat() * 6.28f, 0.4f + r.nextFloat() };
+    }
+
+    /** Fotoğrafın ekrana yerleşimi (paralaks dahil): x, y, ölçek */
+    float photoX, photoY, photoScale;
+
+    /** Performans modu: fotoğraf + sade düzen; normal: blok üstünde karakterli sahne */
+    static boolean perf() {
+        return WestHud.config.data.performanceMode;
+    }
+
+    String photoId() {
+        return perf() ? "home" : "scene";
+    }
+
+    void photo(Gfx g, int sw, int sh, int mx, int my) {
+        int[] size = g.imageSize(photoId());
+        float tx = transition != null ? parX : (mx - sw / 2f) / (sw / 2f) * 9;
+        float ty = transition != null ? parY : (my - sh / 2f) / (sh / 2f) * 5;
+        parX += (tx - parX) * Math.min(1, dt * 4);
+        parY += (ty - parY) * Math.min(1, dt * 4);
+        if (size == null) {
+            g.panorama(0);
+            return;
+        }
+        photoScale = Math.max(sw / (float) size[0], sh / (float) size[1]) * 1.07f;
+        float dw = size[0] * photoScale, dh = size[1] * photoScale;
+        photoX = (sw - dw) / 2 - parX;
+        photoY = (sh - dh) / 2 - parY;
+        g.image(photoId(), photoX, photoY, dw, dh, 0, 0, size[0], size[1], 0xFFFFFFFF);
+        // Havada süzülen sıcak ışık zerreleri (öndeki katman: daha çok kayar)
+        float time = ui.time;
+        for (float[] m : MOTES) {
+            float y = (m[1] - time * 0.012f * m[4]) % 1f;
+            if (y < 0) y += 1;
+            float x = m[0] + 0.015f * (float) Math.sin(time * 0.6f * m[4] + m[3]);
+            int px = Math.round(x * sw - parX * 1.8f), py = Math.round(y * sh - parY * 1.8f);
+            float tw = 0.5f + 0.5f * (float) Math.sin(time * 1.7f * m[4] + m[3]);
+            int s = Math.max(1, Math.round(m[2]));
+            int a = (int) (40 + 110 * tw * Math.min(1, y * 3));
+            Ui.round(g, px, py, s + 1, s + 1, (s + 1) / 2, (a << 24) | 0xFFE2B0);
+        }
+        g.fill(0, 0, sw, sh, 0x1A05060A);
+    }
+
+    // ───────── Normal ana sayfa: sahnede blok üstünde duran karakter ─────────
+
+    /** Sahne fotoğrafında bloğun üst yüzeyi (fotoğraf oranları) ve oyuncu boyu */
+    private static final float FEET_X = 0.4651f, FEET_Y = 0.6175f, PLAYER_H = 0.2046f;
+    private float lookYaw, lookTarget;
+    private float nextLook = 2.5f;
+
+    private void classic(int sw, int sh, float in) {
+        Gfx g = ui.g;
+        int[] size = g.imageSize("scene");
+        // Ara sıra etrafa bak: birkaç saniyede bir yeni bir yöne yumuşakça dön
+        if (ui.time > nextLook) {
+            double r = Math.random();
+            lookTarget = r < 0.35 ? 0 : (float) ((Math.random() * 2 - 1) * 50);
+            nextLook = ui.time + 2.5f + (float) Math.random() * 3.5f;
+        }
+        lookYaw += (lookTarget - lookYaw) * Math.min(1, dt * 2.2f);
+        if (size != null && photoScale > 0) {
+            float fx = photoX + FEET_X * size[0] * photoScale;
+            float fy = photoY + FEET_Y * size[1] * photoScale;
+            int ph = Math.round(PLAYER_H * size[1] * photoScale);
+            g.playerStanding(Math.round(fx), Math.round(fy), ph, lookYaw);
+            g.nextLayer();
+            pivotDefaultX = fx;
+            pivotDefaultY = fy - ph * 0.6f;
+            // Bloğun çevresinde zeminden yükselen küçük ışıltılar
+            for (int i = 0; i < 7; i++) {
+                float ph2 = (ui.time * 0.35f + i / 7f) % 1f;
+                float ax = fx + (float) Math.sin(i * 2.4f + ui.time * 0.8f) * ph * 0.35f;
+                float ay = fy - ph2 * ph * 0.9f;
+                int a = (int) (180 * Math.sin(ph2 * Math.PI));
+                Ui.round(g, Math.round(ax), Math.round(ay), 2, 2, 1, (a << 24) | 0xFFF0C8);
+            }
+            nameTag(Math.round(fx), Math.round(fy - ph - 6), WestHud.game.playerName(), null);
+        }
+        g.gradient(0, 0, sw, TOP + 30, 0x99080A10, 0x00080A10);
+        g.gradient(0, sh * 2 / 3, sw, sh, 0x00060709, 0x99060709);
+        int cw = clamp(Math.round(sw * 0.32f), 158, 218);
+        int cardX = sw - cw - 10;
+        playCard(cardX, sh, cw, in);
+        chips(sh, cardX - 12, in, true);
+        int clicked = topTabs(sw, in, 0);
+        if (clicked == 1) open(Page.STATS);
+        else if (clicked == 2) open(Page.SOCIAL);
+        footer(sw, sh);
+        // Müzik düğmesi (sol üstte, markanın yanında değil: sağ kümeye yer kalmadığında da görünsün)
+        boolean musicOn = WestHud.config.data.music;
+        if (iconButton("music", musicOn ? Icon.NOTE : Icon.NOTE_OFF, 10, sh - 18 - 26 - 26, 20, musicOn ? "Müziği kapat" : "Müziği aç", 0)) {
+            WestHud.config.data.music = !musicOn;
+            WestHud.save();
+        }
+    }
+
+    // ───────── Performans modu ana sayfası ─────────
+
+    private boolean quickOpen = true;
+
+    private void home(int sw, int sh, float in) {
+        Gfx g = ui.g;
+        Theme t = ui.t;
+        Game game = WestHud.game;
+        g.gradient(0, sh * 2 / 3, sw, sh, 0x00000000, 0x80000000);
+        g.gradient(0, 0, sw, 60, 0x55000000, 0x00000000);
+
+        int bh = clamp(Math.round(sh * 0.062f), 18, 34);
+        int gap = Math.max(4, bh / 5);
+        int colW = clamp(Math.round(sw * 0.34f), 160, 330);
+        int cx = sw / 2;
+
+        // Logo + yazı
+        int L = clamp(Math.round(sh * 0.11f), 22, 70);
+        float ws = Math.max(1.4f, Math.min(4.2f, sh / 150f));
+        int wordH = Math.round(9 * ws);
+        int blockH = L + 8 + wordH + 16 + 4 * bh + 3 * gap;
+        int top = Math.max(18, (sh - blockH) / 2 - Math.round(sh * 0.03f)) + Math.round((1 - in) * 10);
+        Icons.draw(g, Icon.LOGO, cx - L / 2, top, L, 0xFFFFFFFF);
+        String word = "WEST CLIENT";
+        float sp = 1.1f;
+        int ww = 0;
+        for (char c : word.toCharArray()) ww += g.textBoldWidth(String.valueOf(c));
+        float total = (ww + sp * (word.length() - 1)) * ws;
+        g.push();
+        g.translate(cx - total / 2f, top + L + 8);
+        g.scale(ws);
+        brand(g, word, 0, 0, 0xFFFFFFFF, sp);
+        g.pop();
+
+        int by = top + L + 8 + wordH + 16;
+        int bx = cx - colW / 2;
+        if (slate("sp", Icon.USER, "Tek oyunculu", bx, by, colW, bh, false)) open(Page.WORLDS);
+        if (slate("mp", Icon.USERS, "Çok oyunculu", bx, by + (bh + gap), colW, bh, false)) open(Page.SERVERS);
+        if (slate("st", Icon.STATS, "İstatistikler", bx, by + 2 * (bh + gap), colW, bh, false)) open(Page.STATS);
+        int half = (colW - gap) / 2;
+        if (slate("op", Icon.GEAR, "Ayarlar", bx, by + 3 * (bh + gap), half, bh, false)) game.open(Game.Target.OPTIONS);
+        if (slate("md", Icon.SLIDERS, "Modlar", bx + half + gap, by + 3 * (bh + gap), colW - half - gap, bh, false)) game.openWestScreenPage(3);
+
+        // Sol: hızlı oyna
+        int sideW = clamp(Math.round(sw * 0.23f), 130, 250);
+        int lx = 12 - Math.round((1 - in) * 20);
+        int ly = Math.round(sh * 0.19f);
+        if (slate("qp", Icon.SHARE, "Hızlı oyna", lx, ly, sideW, bh, false)) quickOpen = !quickOpen;
+        Icons.draw(g, quickOpen ? Icon.CHEVRON_DOWN : Icon.CHEVRON_RIGHT, lx + sideW - bh / 2 - 5, ly + bh / 2 - 4, 8, 0xCCFFFFFF);
+        if (quickOpen) {
+            int ry = ly + bh + gap;
+            int shown = 0;
+            for (int i = 0; i < worlds.size() && shown < 2; i++, shown++) {
+                Game.WorldInfo wi = worlds.get(i);
+                String id = wi.id();
+                if (quickRow("qw" + i, wi.name(), "Tek oyunculu · " + mode(wi), wi, null, lx, ry, sideW, Math.round(bh * 1.5f)))
+                    startTransition(() -> WestHud.game.joinWorld(id), sw - 12 - sideW / 2f, sh * 0.35f);
+                ry += Math.round(bh * 1.5f) + gap;
+            }
+            for (int i = 0; i < servers.size() && shown < 3; i++, shown++) {
+                Game.ServerInfo si = servers.get(i);
+                int idx = i;
+                if (quickRow("qs" + i, si.name(), "Çok oyunculu · " + si.address(), null, si, lx, ry, sideW, Math.round(bh * 1.5f)))
+                    startTransition(() -> WestHud.game.joinServer(idx), sw - 12 - sideW / 2f, sh * 0.35f);
+                ry += Math.round(bh * 1.5f) + gap;
+            }
+            if (shown == 0) {
+                smallText(g, "Henüz dünya ya da sunucu yok", lx + 8, ry + 2, 0xAAFFFFFF);
+            }
+        }
+
+        // Sağ: dönen yarım gövde, hesap, paylaş, sosyal, gardırop
+        int rx = sw - 12 - sideW + Math.round((1 - in) * 20);
+        int accY = by;
+        int bustTop = Math.max(36, Math.round(sh * 0.15f));
+        int bustH = accY - 8 - bustTop;
+        if (bustH > 30) {
+            float yaw = ui.time * 38f;
+            int bw = Math.min(sideW, Math.round(bustH * 1.05f));
+            int bxx = rx + (sideW - bw) / 2;
+            g.playerBust(bxx, bustTop, bw, bustH, yaw);
+            g.nextLayer();
+            pivotDefaultX = bxx + bw / 2f;
+            pivotDefaultY = bustTop + bustH * 0.4f;
+            // Alt kenarı fotoğrafa doğru yumuşakça erit
+            fadeIntoPhoto(g, bxx - 2, bustTop + bustH - Math.max(10, bustH / 4), bw + 4, Math.max(10, bustH / 4) + 1);
+        }
+        String name = game.playerName();
+        boolean accOn = ui.hover(rx, accY, sideW, bh);
+        float ah = hov("acc", accOn);
+        slateBg(rx, accY, sideW, bh, ah);
+        int fs = bh - 8;
+        Ui.round(g, rx + 4, accY + 4, fs, fs, 4, Theme.alpha(t.accent, 0xCC));
+        g.playerFace(rx + 5, accY + 5, fs - 2);
+        g.textBold(ui.fit(name, sideW - fs - 40), rx + (sideW - g.textBoldWidth(name)) / 2, accY + (bh - 8) / 2, 0xFFFFFFFF, false);
+        Icons.draw(g, Icon.CHEVRON_DOWN, rx + sideW - bh / 2 - 5, accY + bh / 2 - 4, 8, 0xCCFFFFFF);
+        if (ui.clicked(rx, accY, sideW, bh)) {
+            game.click();
+            open(Page.SOCIAL);
+        }
+        if (slate("host", Icon.SHARE, "Dünyayı paylaş", rx, by + (bh + gap), sideW, bh, false)) open(Page.WORLDS);
+        boolean pending = social.pendingCount() > 0;
+        if (slate("soc", Icon.CHAT, "Sosyal", rx, by + 2 * (bh + gap), sideW, bh, false)) open(Page.SOCIAL);
+        if (pending) Ui.round(g, rx + sideW - 14, by + 2 * (bh + gap) + bh / 2 - 3, 6, 6, 3, t.accent | 0xFF000000);
+        if (slate("wd", Icon.GEM, "Gardırop", rx, by + 3 * (bh + gap), sideW, bh, false)) game.open(Game.Target.WARDROBE);
+
+        // Sağ üst simgeler
+        int s = clamp(bh, 18, 30), x = sw - 10 - s, y = 10;
+        if (topIcon("quit", Icon.CLOSE, x, y, s, "Oyundan çık", 0xFFE5566E)) game.open(Game.Target.QUIT);
+        x -= s + 6;
+        if (topIcon("fs", Icon.FULLSCREEN, x, y, s, game.fullscreen() ? "Pencere" : "Tam ekran", 0)) game.toggleFullscreen();
+        x -= s + 6;
+        if (topIcon("bell", Icon.BELL, x, y, s, "Bildirimler", 0)) open(Page.SOCIAL);
+        if (pending) Ui.round(g, x + s - 7, y + 3, 5, 5, 3, t.accent | 0xFF000000);
+        x -= s + 6;
+        boolean musicOn = WestHud.config.data.music;
+        if (topIcon("music", musicOn ? Icon.NOTE : Icon.NOTE_OFF, x, y, s, musicOn ? "Müziği kapat" : "Müziği aç", 0)) {
+            WestHud.config.data.music = !musicOn;
+            WestHud.save();
+        }
+        x -= s + 6;
+        if (topIcon("lang", Icon.GLOBE, x, y, s, "Dil", 0)) game.open(Game.Target.LANGUAGE);
+        x -= s + 6;
+        if (topIcon("west", Icon.LOGO, x, y, s, "West menüsü", 0)) game.openWestScreen(false);
+
+        // Alt orta: yüklü modlar
+        int cs = s;
+        if (topIcon("mods", Icon.BOX, cx - cs / 2, sh - cs - 8, cs, "Yüklü modlar", 0)) game.openWestScreenPage(4);
+
+        // Alt köşeler
+        int fy = sh - 13;
+        Icons.draw(g, Icon.LOGO, 10, fy - 2, 10, 0xFFFFFFFF);
+        int e = brand(g, "WEST CLIENT", 24, fy, 0xFFFFFFFF, 0.6f);
+        g.text(game.loaderName() + " " + game.minecraftVersion(), e + 8, fy, 0xAAFFFFFF, false);
+        String legal = "Copyright Mojang AB. Do not distribute!";
+        g.push();
+        g.translate(sw - 10 - small(g, legal), fy + 1);
+        g.scale(0.8f);
+        g.text(legal, 0, 0, 0xAAFFFFFF, false);
+        g.pop();
+    }
+
+    /** Modelin alt kenarını, aynı fotoğraf parçasını giderek opaklaşan şeritlerle üstüne çizerek eritir */
+    private void fadeIntoPhoto(Gfx g, int x, int y, int w, int h) {
+        int[] size = g.imageSize(photoId());
+        if (size == null || photoScale <= 0) return;
+        int strips = Math.max(6, h / 2);
+        for (int i = 0; i < strips; i++) {
+            float y0 = y + h * i / (float) strips, y1 = y + h * (i + 1) / (float) strips;
+            int a = (int) (255 * Math.pow((i + 1) / (float) strips, 1.4));
+            float sx = (x - photoX) / photoScale, sy = (y0 - photoY) / photoScale;
+            g.image(photoId(), x, y0, w, y1 - y0, sx, sy, w / photoScale, (y1 - y0) / photoScale, (a << 24) | 0xFFFFFF);
+        }
+        // Genel karartma ve zerreler bu bölgede de aynı kalsın
+        g.fill(x, y, x + w, y + h, 0x1A05060A);
+    }
+
+    private void slateBg(int x, int y, int w, int h, float hv) {
+        Theme t = ui.t;
+        Ui.round(ui.g, x, y, w, h, 6, Theme.mix(0xE6151A22, 0xF0222935, hv));
+        Ui.outline(ui.g, x, y, w, h, 6, Theme.mix(0x26FFFFFF, Theme.alpha(t.accent, 0xAA), hv));
+    }
+
+    /** Ana sayfanın koyu "arduvaz" düğmesi */
+    private boolean slate(String id, Icon icon, String label, int x, int y, int w, int h, boolean accent) {
+        Gfx g = ui.g;
+        boolean on = ui.hover(x, y, w, h);
+        float hv = hov(id, on);
+        slateBg(x, y, w, h, hv);
+        String l = ui.fit(label, w - 40);
+        int is = Math.min(14, h - 8);
+        int total = is + 7 + g.textBoldWidth(l);
+        int lx = x + (w - total) / 2;
+        Icons.draw(g, icon, lx, y + (h - is) / 2, is, 0xFFFFFFFF);
+        g.textBold(l, lx + is + 7, y + (h - 8) / 2, 0xFFFFFFFF, false);
+        if (ui.clicked(x, y, w, h)) {
+            WestHud.game.click();
+            return true;
+        }
+        return false;
+    }
+
+    private boolean quickRow(String id, String title, String sub, Game.WorldInfo wi, Game.ServerInfo si, int x, int y, int w, int h) {
+        Gfx g = ui.g;
+        boolean on = ui.hover(x, y, w, h);
+        float hv = hov(id, on);
+        Ui.round(g, x, y, w, h, 6, Theme.mix(0xB3151A22, 0xE0222935, hv));
+        Ui.outline(g, x, y, w, h, 6, Theme.mix(0x1AFFFFFF, 0x40FFFFFF, hv));
+        int is = h - 10;
+        if (wi != null) worldIcon(wi, x + 5, y + 5, is);
+        else serverBadge(si, x + 5, y + 5, is, true);
+        int tx = x + 5 + is + 8, tw = w - (tx - x) - 18;
+        g.textBold(ui.fit(title, tw), tx, y + h / 2 - 10, 0xFFFFFFFF, false);
+        smallText(g, ui.fit(sub, (int) (tw / 0.8f)), tx, y + h / 2 + 2, 0xAAFFFFFF);
+        Icons.draw(g, Icon.CHEVRON_RIGHT, x + w - 14, y + h / 2 - 4, 8, Theme.mix(0x99FFFFFF, 0xFFFFFFFF, hv));
+        if (ui.clicked(x, y, w, h)) {
+            WestHud.game.click();
+            return true;
+        }
+        return false;
+    }
+
+    private boolean topIcon(String id, Icon icon, int x, int y, int s, String tip, int danger) {
+        Gfx g = ui.g;
+        boolean on = ui.hover(x, y, s, s);
+        float hv = hov(id, on);
+        Ui.round(g, x, y, s, s, 6, danger != 0 ? Theme.mix(0xE6151A22, Theme.alpha(danger, 0xE6), hv) : Theme.mix(0xE6151A22, 0xF0262E3A, hv));
+        Ui.outline(g, x, y, s, s, 6, Theme.alpha(0xFFFFFFFF, (int) (0x22 + 0x30 * hv)));
+        int pad = Math.max(4, s / 4);
+        Icons.draw(g, icon, x + pad, y + pad, s - 2 * pad, 0xFFFFFFFF);
+        if (on && tip != null) {
+            int w = g.textWidth(tip) + 10;
+            int tx = Math.min(g.width() - w - 4, Math.max(4, x + s / 2 - w / 2));
+            int ty = y + s + 4 > g.height() - 20 ? y - 18 : y + s + 4;
+            Ui.round(g, tx, ty, w, 14, 5, 0xF00C0D12);
+            Ui.outline(g, tx, ty, w, 14, 5, 0x22FFFFFF);
+            g.text(tip, tx + 5, ty + 3, 0xFFFFFFFF, false);
+        }
+        if (ui.clicked(x, y, s, s)) {
+            WestHud.game.click();
+            return true;
+        }
+        return false;
+    }
+
+    /** Alt sayfalardaki üst çubuk; tıklanan sekmenin sırası ya da -1 */
+    private int topTabs(int sw, float in, int active) {
+        String[] tabs = { "Oyna", "İstatistikler", "Sosyal", "Modlar", "Görünüm" };
+        int[] pages = { -1, -1, -1, 3, 1 };
+        // WestShell.topBar ilk sekmeyi etkin sayar; sekmeleri etkin olan başta olacak şekilde döndür
+        String[] order = new String[tabs.length];
+        int[] map = new int[tabs.length];
+        order[0] = tabs[active];
+        map[0] = active;
+        for (int i = 0, k = 1; i < tabs.length; i++) if (i != active) { order[k] = tabs[i]; map[k++] = i; }
+        int[] pg = new int[tabs.length];
+        for (int i = 0; i < tabs.length; i++) pg[i] = pages[map[i]];
+        int hit = topBar(sw, in, order, pg, true, map);
+        return hit;
+    }
+
+    // ───────── Geçiş ─────────
+
+    private Runnable transition;
+    private long transitionStart;
+    private boolean transitionFired;
+    private float pivotX, pivotY, pivotDefaultX, pivotDefaultY;
+
+    void startTransition(Runnable action, float px, float py) {
+        if (transition != null) return;
+        transition = action;
+        transitionStart = System.nanoTime();
+        transitionFired = false;
+        pivotX = page == Page.HOME && pivotDefaultX > 0 ? pivotDefaultX : px;
+        pivotY = page == Page.HOME && pivotDefaultY > 0 ? pivotDefaultY : py;
+    }
+
+    @Override
+    public void removed() {
+        transition = null;
+    }
+
+    void goHome() {
         page = Page.HOME;
         searchFocus = false;
     }
 
-    private void open(Page p) {
+    void open(Page p) {
         page = p;
         search = "";
         searchFocus = false;
         scroll = scrollTarget = 0;
-        WestHud.config.data.homeTab = p == Page.SERVERS ? 1 : 0;
-    }
-
-    // ───────── Ana sayfa ─────────
-
-    private void playerModel(int sw, int sh, int cardX, float in) {
-        int mh = clamp(Math.round(sh * 0.46f), 70, 210);
-        int mw = Math.round(mh * 0.62f);
-        int cx = Math.max(Math.min(sw / 2, cardX - mw / 2 - 16), mw / 2 + 10);
-        int top = TOP + Math.max(24, (sh - TOP - 40 - mh) / 2) + Math.round((1 - in) * 12);
-        ui.g.playerModel(cx - mw / 2, top, mw, mh);
-        nameTag(cx, top - 6, WestHud.game.playerName(), null);
+        if (p == Page.WORLDS || p == Page.SERVERS) WestHud.config.data.homeTab = p == Page.SERVERS ? 1 : 0;
     }
 
     /** Sağ alttaki oyna kartı; kartın üst y'sini döndürür. */
@@ -152,11 +537,11 @@ public final class HomeScreen extends WestShell {
         } else if (sp) {
             Game.WorldInfo wi = worlds.get(Math.min(selWorld, count - 1));
             label = "Oyna";
-            action = () -> game.joinWorld(wi.id());
+            action = () -> startTransition(() -> game.joinWorld(wi.id()), g.width() / 2f, g.height() / 2f);
         } else {
             int si = Math.min(selServer, count - 1);
             label = "Katıl";
-            action = () -> game.joinServer(si);
+            action = () -> startTransition(() -> game.joinServer(si), g.width() / 2f, g.height() / 2f);
         }
         if (accentButton("play", label, count == 0 ? Icon.PLUS : Icon.PLAY, x + 6, cy, w - 12, 26)) action.run();
         cy += 26 + 6;
@@ -241,8 +626,7 @@ public final class HomeScreen extends WestShell {
             String act = sp ? "Oyna" : "Katıl";
             int bw = g.textBoldWidth(act) + 30;
             if (accentButton(ns + "act" + i, act, Icon.PLAY, x + w - bw - 6, y + (h - 18) / 2, bw, 18)) {
-                if (sp) WestHud.game.joinWorld(worlds.get(i).id());
-                else WestHud.game.joinServer(i);
+                joinRow(sp, i);
                 return;
             }
             tw -= bw + 6;
@@ -257,14 +641,21 @@ public final class HomeScreen extends WestShell {
             WestHud.game.click();
             if (sp) selWorld = i;
             else selServer = i;
-            if (dbl) {
-                if (sp) WestHud.game.joinWorld(worlds.get(i).id());
-                else WestHud.game.joinServer(i);
-            }
+            if (dbl) joinRow(sp, i);
         }
     }
 
-    private void worldIcon(Game.WorldInfo wi, int x, int y, int s) {
+    private void joinRow(boolean sp, int i) {
+        Gfx g = ui.g;
+        if (sp) {
+            String id = worlds.get(i).id();
+            startTransition(() -> WestHud.game.joinWorld(id), g.width() / 2f, g.height() / 2f);
+        } else {
+            startTransition(() -> WestHud.game.joinServer(i), g.width() / 2f, g.height() / 2f);
+        }
+    }
+
+    void worldIcon(Game.WorldInfo wi, int x, int y, int s) {
         Gfx g = ui.g;
         if (!g.worldIcon(wi.id(), wi.iconPath(), x, y, s)) {
             Ui.round(g, x, y, s, s, 5, 0x50000000);
@@ -273,7 +664,7 @@ public final class HomeScreen extends WestShell {
         Ui.outline(g, x, y, s, s, 4, 0x26FFFFFF);
     }
 
-    private void serverBadge(Game.ServerInfo si, int x, int y, int s, boolean selected) {
+    void serverBadge(Game.ServerInfo si, int x, int y, int s, boolean selected) {
         Gfx g = ui.g;
         Theme t = ui.t;
         String ch = si.name().isEmpty() ? "?" : si.name().substring(0, 1).toUpperCase(Locale.ROOT);
@@ -430,44 +821,10 @@ public final class HomeScreen extends WestShell {
         }
         int by = y + h - pad - 20;
         int half = (w - pad * 2 - 6) / 2;
-        if (accentButton("dplay", sp ? "Oyna" : "Katıl", Icon.PLAY, x + pad, by, half, 20)) {
-            if (sp) WestHud.game.joinWorld(worlds.get(i).id());
-            else WestHud.game.joinServer(i);
-        }
+        if (accentButton("dplay", sp ? "Oyna" : "Katıl", Icon.PLAY, x + pad, by, half, 20)) joinRow(sp, i);
         if (outlineButton("dedit", "Düzenle", Icon.EDIT, x + pad + half + 6, by, w - pad * 2 - half - 6, 20, false)) {
             WestHud.game.open(sp ? Game.Target.SINGLEPLAYER : Game.Target.MULTIPLAYER);
         }
-    }
-
-    // ───────── İlk açılış kartı ─────────
-
-    private void tip(int sw, int cw, float in) {
-        Gfx g = ui.g;
-        int w = Math.min(220, sw - cw - 40);
-        if (w < 150) return;
-        int x = 10 - Math.round((1 - in) * 20), y = TOP + 6;
-        String title = "Vanilla menüyü mü tercih edersin?";
-        String body = "Minecraft'ın kendi ana menüsüne dönebilirsin. Geri gelmek için başlık ekranının sağ üstündeki West düğmesine bas.";
-        List<String> lines = wrap(g, body, (int) ((w - 20) / 0.8f));
-        int h = 10 + 10 + 6 + lines.size() * 9 + 8 + 18 + 9;
-        Ui.round(g, x, y, w, h, 10, 0xE60D0E15);
-        Ui.outline(g, x, y, w, h, 10, 0x26FFFFFF);
-        g.textBold(ui.fit(title, w - 34), x + 10, y + 10, 0xFFFFFFFF, false);
-        boolean close = iconButton("tipx", Icon.CLOSE, x + w - 20, y + 6, 14, null, 0);
-        int ly = y + 26;
-        for (String l : lines) {
-            smallText(g, l, x + 10, ly, 0xBBFFFFFF);
-            ly += 9;
-        }
-        ly += 8;
-        int bw = (w - 26) / 2;
-        boolean keep = outlineButton("tipk", "West'te kal", null, x + 10, ly, bw, 18, true);
-        boolean vanilla = outlineButton("tipv", "Vanilla kullan", null, x + 16 + bw, ly, bw, 18, false);
-        if (close || keep || vanilla) {
-            WestHud.config.data.titleTipSeen = true;
-            WestHud.save();
-        }
-        if (vanilla) WestHud.game.openVanillaTitle();
     }
 
     private static String ago(long millis) {
@@ -484,11 +841,13 @@ public final class HomeScreen extends WestShell {
 
     @Override
     public void mouseScrolled(double x, double y, double amount) {
-        if (page != Page.HOME) scrollTarget -= (float) amount * 30;
+        if (page == Page.SOCIAL) social.scroll(amount);
+        else if (page != Page.HOME) scrollTarget -= (float) amount * 30;
     }
 
     @Override
     public boolean keyPressed(int key) {
+        if (page == Page.SOCIAL && social.keyPressed(key)) return true;
         if (!searchFocus) return false;
         if (key == 259 && !search.isEmpty()) search = search.substring(0, search.length() - 1);
         else if (key == 256 || key == 257) searchFocus = false;
@@ -498,6 +857,7 @@ public final class HomeScreen extends WestShell {
 
     @Override
     public void charTyped(char c) {
+        if (page == Page.SOCIAL && social.charTyped(c)) return;
         if (searchFocus && c >= 32 && search.length() < 40) {
             search += c;
             scrollTarget = 0;

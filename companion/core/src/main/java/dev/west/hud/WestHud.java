@@ -22,6 +22,7 @@ public final class WestHud {
     public static Game game;
     public static final Hud HUD = new Hud();
     public static Config config;
+    public static Stats stats;
     private static int ticks;
     private static Theme theme;
     /** Düzenleyici açıkken oyun HUD'u ayrıca çizilmez */
@@ -33,6 +34,7 @@ public final class WestHud {
         game = g;
         config = new Config(g.configDir().resolve("west-companion.json"));
         config.load(HUD);
+        stats = new Stats(g.configDir().resolve("west-stats.json"));
         LOG.info("West Companion {} hazır ({} {})", VERSION, g.loaderName(), g.minecraftVersion());
     }
 
@@ -49,9 +51,12 @@ public final class WestHud {
     public static void tick() {
         // Launcher'ın yaptığı ayar değişikliklerini ~2 sn'de bir yakala
         if (++ticks % 40 == 0) safe("config", () -> config.reloadIfChanged(HUD));
+        safe("stats", () -> stats.tick(game));
+        if (ticks % 20 == 0) safe("presence", () -> dev.west.hud.social.SocialClient.INSTANCE.heartbeat(game.inWorld() ? "Oynuyor · " + game.session().title() : "Menüde"));
     }
 
     public static void renderHud(Gfx g) {
+        if (config != null && !config.data.hudEnabled && !editorOpen) return;
         safe("hud", () -> HUD.render(g, game, theme(), editorOpen));
     }
 

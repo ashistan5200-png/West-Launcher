@@ -556,6 +556,14 @@ public final class MenuScreen implements WestScreen {
         on = ui.toggle(d.customTitle, x + w - 24, y + 4);
         if (on != d.customTitle) { d.customTitle = on; WestHud.save(); WestHud.game.click(); }
         y = ny;
+        ny = row("Arka plan müziği", "West müziği menülerde çalar. Ses düzeyi: Minecraft → Müzik.", x, y, w);
+        on = ui.toggle(d.music, x + w - 24, y + 4);
+        if (on != d.music) { d.music = on; WestHud.save(); WestHud.game.click(); }
+        y = ny;
+        ny = row("Oyunda da çal", "Dünyadayken Minecraft'ın kendi müziğinin yerine.", x, y, w);
+        on = ui.toggle(d.musicInGame, x + w - 24, y + 4);
+        if (on != d.musicInGame) { d.musicInGame = on; WestHud.save(); WestHud.game.click(); }
+        y = ny;
         ny = row("Menü tuşu", "Kontroller → West Companion'dan değiştirebilirsin. Varsayılan: Sağ Shift", x, y, w);
         y = ny;
         ny = row("Tüm HUD'u sıfırla", "Bütün öğeleri varsayılan konum ve boyuta döndürür.", x, y, w);

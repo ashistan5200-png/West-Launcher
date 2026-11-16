@@ -37,7 +37,7 @@ public final class PauseMenu extends WestShell {
         // Sağ sütun
         int colW = clamp(Math.round(sw * 0.30f), 150, 240);
         int cx = sw - colW - 16 + Math.round((1 - in) * 20);
-        int items = s.singleplayer() ? 6 : 5;
+        int items = s.singleplayer() ? 7 : 5;
         int fixed = 9 + 17 + 11 + (s.singleplayer() ? 11 : 0) + 6 + 26 + 6 + 4 + 5 + 20;
         int avail = sh - 8 - (TOP + 4);
         int itemH = clamp((avail - fixed) / items, 12, 18);
@@ -70,7 +70,9 @@ public final class PauseMenu extends WestShell {
         if (item("opt", Icon.GEAR, "Ayarlar", cx, y, colW, itemH)) game.open(Game.Target.OPTIONS);
         y += itemH;
         if (s.singleplayer()) {
-            if (item("lan", Icon.SHARE, s.canShare() ? "Dünyayı paylaş" : "Dünya paylaşılıyor", cx, y, colW, itemH) && s.canShare()) game.open(Game.Target.SHARE_LAN);
+            if (item("wopt", Icon.GLOBE, "Dünya seçenekleri", cx, y, colW, itemH)) go(new ShareMenu(this));
+            y += itemH;
+            if (item("lan", Icon.SHARE, s.canShare() ? "Dünyayı paylaş" : "Dünya paylaşılıyor · davet et", cx, y, colW, itemH)) go(new ShareMenu(this));
             y += itemH;
         }
         if (item("adv", Icon.STAR, "Gelişimler", cx, y, colW, itemH)) game.open(Game.Target.ADVANCEMENTS);
@@ -84,19 +86,21 @@ public final class PauseMenu extends WestShell {
         g.fill(cx, y, cx + colW, y + 1, 0x1FFFFFFF);
         y += 5;
         if (danger("quit", s.singleplayer() ? "Kaydet ve ana menüye dön" : "Bağlantıyı kes", cx, y, colW, 20)) {
+            dev.west.hud.net.Upnp.close();
             game.open(Game.Target.DISCONNECT);
             ui.end();
             return;
         }
 
-        // Oyuncu
+        // Oyuncu: kendi etrafında dönen yarım gövde (kafa + gövdenin yarısı)
         int left = cx - 20;
-        int mh = clamp(Math.round(sh * 0.5f), 70, 220);
-        int mw = Math.round(mh * 0.62f);
-        int pcx = Math.max(mw / 2 + 12, Math.min(left / 2 + 10, left - mw / 2 - 10));
-        int top = TOP + Math.max(28, (sh - TOP - 40 - mh) / 2) + Math.round((1 - in) * 12);
-        if (left > mw + 20) {
-            g.playerModel(pcx - mw / 2, top, mw, mh);
+        int bh = clamp(Math.round(sh * 0.52f), 60, 260);
+        int bw = Math.round(bh * 1.05f);
+        int pcx = Math.max(bw / 2 + 12, Math.min(left / 2 + 10, left - bw / 2 - 10));
+        int top = TOP + Math.max(34, (sh - TOP - 40 - bh) / 2) + Math.round((1 - in) * 12);
+        if (left > bw / 2 + 40) {
+            g.playerBust(pcx - bw / 2, top, bw, bh, ui.time * 38f);
+            g.nextLayer();
             nameTag(pcx, top - 6, game.playerName(), s.title());
         }
 

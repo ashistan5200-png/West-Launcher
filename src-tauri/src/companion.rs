@@ -156,6 +156,64 @@ pub fn write_config(game_dir: &Path, cfg: &CompanionConfig) -> Result<()> {
     write_json_atomic(&p, &v)
 }
 
+/// Launcher ayarlarını (müzik, performans modu, West menüleri …) oyunun West Companion ayarına işler.
+/// Yalnızca bu alanlar değişir; HUD düzeni ve oyunda yapılan diğer ayarlar korunur.
+pub fn apply_prefs(game_dir: &Path, s: &crate::settings::Settings) -> Result<()> {
+    let p = config_path(game_dir);
+    if let Some(dir) = p.parent() {
+        std::fs::create_dir_all(dir)?;
+    }
+    let mut v: serde_json::Value = std::fs::read(&p).ok().and_then(|b| serde_json::from_slice(&b).ok()).unwrap_or_else(|| serde_json::json!({}));
+    if !v.is_object() {
+        v = serde_json::json!({});
+    }
+    let a = &s.accessibility;
+    let o = v.as_object_mut().unwrap();
+    o.insert("music".into(), s.music.into());
+    o.insert("musicInGame".into(), s.music_in_game.into());
+    o.insert("performanceMode".into(), a.performance_mode.into());
+    o.insert("customTitle".into(), a.west_menus.into());
+    o.insert("hudEnabled".into(), a.west_hud.into());
+    o.insert("animations".into(), a.game_animations.into());
+    o.insert("smoothFont".into(), a.smooth_font.into());
+    write_json_atomic(&p, &v)
+}
+
+/// Oyunun grafik ayarlarını hafifletir (options.txt). Var olan değerler yalnızca daha ağırsa düşürülür.
+pub fn apply_low_graphics(game_dir: &Path) -> Result<()> {
+    let p = game_dir.join("options.txt");
+    let text = std::fs::read_to_string(&p).unwrap_or_default();
+    let mut lines: Vec<String> = text.lines().map(String::from).collect();
+    let mut set = |key: &str, val: &str, only_if_higher: Option<u32>| {
+        let prefix = format!("{key}:");
+        if let Some(l) = lines.iter_mut().find(|l| l.starts_with(&prefix)) {
+            if let Some(max) = only_if_higher {
+                let cur: u32 = l[prefix.len()..].trim().parse().unwrap_or(u32::MAX);
+                if cur <= max {
+                    return;
+                }
+            }
+            *l = format!("{prefix}{val}");
+        } else {
+            lines.push(format!("{prefix}{val}"));
+        }
+    };
+    set("renderDistance", "8", Some(8));
+    set("simulationDistance", "6", Some(6));
+    set("particles", "2", None); // en az
+    set("renderClouds", "\"false\"", None);
+    set("entityShadows", "false", None);
+    set("biomeBlendRadius", "0", None);
+    set("graphicsMode", "0", None); // hızlı
+    set("enableVsync", "false", None);
+    set("entityDistanceScaling", "0.75", None);
+    std::fs::write(&p, lines.join("\n") + "\n")?;
+    Ok(())
+}
+
+/// Performans modunda kurulan optimizasyon modları (Modrinth). Sürüme uymayanlar sessizce atlanır.
+pub const PERF_MODS: &[&str] = &["sodium", "lithium", "ferrite-core", "entityculling", "immediatelyfast", "modernfix"];
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -180,6 +238,30 @@ mod tests {
         assert_eq!(v["fullbright"], true);
         assert_eq!(v["theme"], "pixel-night");
         assert_eq!(v["elements"]["fps"]["x"], 0.5);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn prefs_keep_hud_and_low_graphics_lowers_only() {
+        let dir = std::env::temp_dir().join(format!("west-prefs-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(dir.join("config")).unwrap();
+        std::fs::write(dir.join("config/west-companion.json"), r#"{"elements":{"fps":{"x":0.5}},"music":true}"#).unwrap();
+        let mut s = crate::settings::Settings::default();
+        s.music = false;
+        s.accessibility.performance_mode = true;
+        apply_prefs(&dir, &s).unwrap();
+        let v: serde_json::Value = serde_json::from_slice(&std::fs::read(dir.join("config/west-companion.json")).unwrap()).unwrap();
+        assert_eq!(v["music"], false);
+        assert_eq!(v["performanceMode"], true);
+        assert_eq!(v["elements"]["fps"]["x"], 0.5);
+
+        std::fs::write(dir.join("options.txt"), "renderDistance:4\nparticles:0\nfov:0.0\n").unwrap();
+        apply_low_graphics(&dir).unwrap();
+        let o = std::fs::read_to_string(dir.join("options.txt")).unwrap();
+        assert!(o.contains("renderDistance:4"), "düşük değer korunmalı");
+        assert!(o.contains("particles:2"));
+        assert!(o.contains("fov:0.0"));
+        assert!(o.contains("simulationDistance:6"));
         let _ = std::fs::remove_dir_all(&dir);
     }
 

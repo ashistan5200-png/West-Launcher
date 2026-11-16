@@ -109,6 +109,96 @@ public final class Gfx121 implements Gfx {
         g.blurBeforeThisStratum();
     }
 
+    // ───── Görseller (arka plan fotoğrafı) ─────
+    private static final java.util.Map<String, Identifier> IMAGES = new java.util.HashMap<>();
+    private static final java.util.Map<String, int[]> IMAGE_SIZES = new java.util.HashMap<>();
+
+    private static Identifier loadImage(String id) {
+        if (IMAGES.containsKey(id)) return IMAGES.get(id);
+        Identifier loc = null;
+        try (var in = Gfx121.class.getResourceAsStream("/assets/west_companion/background/" + id + ".png")) {
+            if (in != null) {
+                var img = com.mojang.blaze3d.platform.NativeImage.read(in);
+                IMAGE_SIZES.put(id, new int[] { img.getWidth(), img.getHeight() });
+                loc = Identifier.fromNamespaceAndPath("west_companion", "bg_" + id);
+                Minecraft.getInstance().getTextureManager().register(loc, new net.minecraft.client.renderer.texture.DynamicTexture(() -> "west bg", img));
+            }
+        } catch (Exception e) {
+            WestHud.LOG.warn("West görseli yüklenemedi ({}): {}", id, e.toString());
+        }
+        IMAGES.put(id, loc);
+        return loc;
+    }
+
+    @Override
+    public int[] imageSize(String id) {
+        return loadImage(id) == null ? null : IMAGE_SIZES.get(id);
+    }
+
+    @Override
+    public void image(String id, float x, float y, float w, float h, float sx, float sy, float sw, float sh, int color) {
+        Identifier loc = loadImage(id);
+        if (loc == null) return;
+        int[] size = IMAGE_SIZES.get(id);
+        int ix = Math.round(x), iy = Math.round(y), iw = Math.round(x + w) - ix, ih = Math.round(y + h) - iy;
+        if (iw <= 0 || ih <= 0) return;
+        g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, loc, ix, iy, sx, sy, iw, ih, Math.max(1, Math.round(sw)), Math.max(1, Math.round(sh)), size[0], size[1], color);
+    }
+
+    /** Sağdaki dönen yarım gövde (ayrı model) */
+    private static net.minecraft.client.gui.components.PlayerSkinWidget bust;
+
+    @Override
+    public void playerBust(int x, int y, int w, int h, float yaw) {
+        Minecraft mc = Minecraft.getInstance();
+        if (skin == null) skin = mc.getSkinManager().createLookup(mc.getGameProfile(), false);
+        // Model, widget yüksekliğinin %91,3'ü kadar ve dikeyde ortalı çizilir. Görünen kısım: kafa + gövdenin yarısı (~%45)
+        float modelPx = h / 0.45f;
+        int full = Math.round(modelPx / 0.913f);
+        int ww = Math.round(modelPx * 0.75f);
+        if (bust == null) bust = new net.minecraft.client.gui.components.PlayerSkinWidget(ww, full, mc.getEntityModels(), skin);
+        bust.setX(x + w / 2 - ww / 2);
+        bust.setY(y - Math.round(full * 0.0435f) + 2);
+        bust.setWidth(ww);
+        bust.setHeight(full);
+        var acc = (dev.west.companion.v121.mixin.PlayerSkinWidgetAccessor) bust;
+        acc.west$setRotationY(yaw % 360f);
+        acc.west$setRotationX(-4f);
+        g.enableScissor(x, y, x + w, y + h);
+        bust.render(g, -1, -1, 0);
+        g.disableScissor();
+    }
+
+    /** Ana menü sahnesindeki tam boy karakter (fareyle de döndürülebilir) */
+    @Override
+    public void playerStanding(int cx, int feetY, int height, float yaw) {
+        Minecraft mc = Minecraft.getInstance();
+        if (skin == null) skin = mc.getSkinManager().createLookup(mc.getGameProfile(), false);
+        int full = Math.round(height / 0.913f);
+        int ww = Math.round(full * 0.6f);
+        if (model == null) model = new net.minecraft.client.gui.components.PlayerSkinWidget(ww, full, mc.getEntityModels(), skin);
+        model.setX(cx - ww / 2);
+        model.setY(feetY - Math.round(full * 0.9565f));
+        model.setWidth(ww);
+        model.setHeight(full);
+        // Kullanıcı sürüklemiyorsa bakış yönünü sahne belirler
+        if (!dragging) {
+            var acc = (dev.west.companion.v121.mixin.PlayerSkinWidgetAccessor) model;
+            acc.west$setRotationY(yaw);
+            acc.west$setRotationX(-3f);
+        }
+        model.render(g, -1, -1, 0);
+        modelShown = System.currentTimeMillis();
+    }
+
+    /** WestHost sürükleme sırasında true yapar */
+    public static boolean dragging;
+
+    @Override
+    public void nextLayer() {
+        g.nextStratum();
+    }
+
     @Override public void smoothText(boolean on) { smooth = on; }
     @Override public int guiScale() { return Math.max(1, Minecraft.getInstance().getWindow().getGuiScale()); }
     @Override public void panorama(float delta) { if (panorama != null) panorama.accept(delta); }

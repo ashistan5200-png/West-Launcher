@@ -60,7 +60,7 @@ public interface Game {
 
     // ───────── Ana menü ─────────
 
-    enum Target { SINGLEPLAYER, MULTIPLAYER, OPTIONS, LANGUAGE, QUIT, CREATE_WORLD, ADD_SERVER, ADVANCEMENTS, STATS, SHARE_LAN, DISCONNECT }
+    enum Target { SINGLEPLAYER, MULTIPLAYER, OPTIONS, LANGUAGE, QUIT, CREATE_WORLD, ADD_SERVER, ADVANCEMENTS, STATS, SHARE_LAN, DISCONNECT, WARDROBE }
 
     /** Minecraft'ın kendi ekranını aç; geri dönülünce West ana menüsüne gelinir. */
     default void open(Target t) {}
@@ -99,4 +99,13 @@ public interface Game {
     record Session(boolean singleplayer, String title, String detail, boolean canShare) {}
 
     default Session session() { return new Session(true, "Dünya", "", false); }
+
+    /** Tek oyunculu dünyayı ağa aç; açılan port ya da -1. mode: 0-3 oyun modu */
+    default int publishWorld(int mode, boolean cheats) { return -1; }
+
+    /** Dünya açıksa portu, değilse -1 */
+    default int publishedPort() { return -1; }
+
+    /** Bir sunucu adresine doğrudan bağlan (davetle katılma) */
+    default void connect(String name, String address) {}
 }

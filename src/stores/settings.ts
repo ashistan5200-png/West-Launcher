@@ -21,6 +21,12 @@ const DEFAULT: Settings = {
   discordRpc: true,
   discordClientId: null,
   autoUpdate: true,
+  music: true,
+  musicInGame: true,
+  accessibility: {
+    performanceMode: false, westMenus: true, westHud: true, gameAnimations: true,
+    smoothFont: true, perfMods: false, lowGraphics: false, launcherEffects: true,
+  },
 };
 
 interface SettingsState {
@@ -52,12 +58,15 @@ export const useSettings = create<SettingsState>((set, get) => ({
       settings = { ...settings, theme: { ...settings.theme, accent: DEFAULT_ACCENT } };
       if (isTauri()) void api.saveSettings(settings);
     }
+    settings = { ...DEFAULT, ...settings, accessibility: { ...DEFAULT.accessibility, ...(settings.accessibility ?? {}) } };
     applyTheme(settings.theme);
+    document.documentElement.dataset.effects = settings.accessibility.launcherEffects ? "on" : "off";
     set({ settings, loaded: true });
   },
 
   update: async (patch) => {
     const settings = { ...get().settings, ...patch };
+    document.documentElement.dataset.effects = settings.accessibility.launcherEffects ? "on" : "off";
     set({ settings });
     if (isTauri()) await api.saveSettings(settings);
   },

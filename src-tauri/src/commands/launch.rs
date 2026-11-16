@@ -102,6 +102,42 @@ pub async fn start_game(app: &AppHandle, id: &str, auth: AuthSession, join_serve
         for n in rep.notes {
             tracing::info!("companion: {n}");
         }
+        let prefs = state.settings.read().clone();
+        let gd = state.paths.instance_game_dir(id);
+        if enabled {
+            if let Err(e) = crate::companion::apply_prefs(&gd, &prefs) {
+                tracing::warn!("companion ayarları yazılamadı: {e}");
+            }
+        }
+        if prefs.accessibility.low_graphics {
+            if let Err(e) = crate::companion::apply_low_graphics(&gd) {
+                tracing::warn!("grafik ayarları hafifletilemedi: {e}");
+            }
+        }
+        // Optimizasyon modları: yalnızca Fabric/Quilt; uyumsuz olanlar atlanır, hata oyunu durdurmaz
+        let loader = crate::commands::content::loader_slug(inst.loader.kind);
+        if prefs.accessibility.perf_mods && matches!(loader.as_deref(), Some("fabric") | Some("quilt")) {
+            let ctx = crate::content::install::InstallCtx {
+                http: &state.http,
+                cf_key: None,
+                instance_id: id,
+                instance_dir: state.paths.instance_dir(id),
+                game_dir: gd.clone(),
+                mc_version: inst.mc_version.clone(),
+                loader,
+                progress: progress.clone(),
+            };
+            for slug in crate::companion::PERF_MODS {
+                match crate::content::install::install(&ctx, crate::content::Source::Modrinth, slug, crate::content::Kind::Mod).await {
+                    Ok(r) => {
+                        for i in r.installed {
+                            tracing::info!("performans modu kuruldu: {}", i.title);
+                        }
+                    }
+                    Err(e) => tracing::info!("performans modu atlandı ({slug}): {e}"),
+                }
+            }
+        }
     } else {
         crate::companion::remove(&state.paths.instance_game_dir(id));
     }
@@ -132,7 +168,16 @@ pub async fn start_game(app: &AppHandle, id: &str, auth: AuthSession, join_serve
         natives_dir: natives,
         memory_mb: profile.memory_mb,
         jvm_flags: profile.flags.clone(),
-        extra_jvm_args: inst.extra_jvm_args.clone(),
+        extra_jvm_args: {
+            let mut a = inst.extra_jvm_args.clone();
+            // Oyun içi Sosyal için launcher köprüsü (yalnızca West hesabı açıksa)
+            if mode == LaunchMode::Play && crate::cloud::current_user(&state.http, &state.paths.root).await.is_some() {
+                if let Ok(b) = crate::bridge::ensure(&state.http, &state.paths.root).await {
+                    a.extend(crate::bridge::jvm_args(b));
+                }
+            }
+            a
+        },
         resolution: inst.resolution,
         auth,
         join_server,

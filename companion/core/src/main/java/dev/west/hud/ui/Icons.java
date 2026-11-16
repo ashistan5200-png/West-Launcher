@@ -11,7 +11,8 @@ public final class Icons {
     private Icons() {}
 
     public enum Icon { GLOBE, GEAR, SLIDERS, FULLSCREEN, CLOSE, PLUS, ARROW, USER, USER_PLUS, CHART, PLAY, KEYBOARD, LOGO, CHECK, CLOCK, SERVER, WORLD,
-        BACK, SEARCH, SHARE, STAR, STATS, LIST, EXIT, PAUSE, MOUSE, PIN, SIGNAL, GAUGE, CHIP, SHIELD, COMPASS, SUN, TEXT, MAGNET, HUD, BOX, EDIT, FOLDER }
+        BACK, SEARCH, SHARE, STAR, STATS, LIST, EXIT, PAUSE, MOUSE, PIN, SIGNAL, GAUGE, CHIP, SHIELD, COMPASS, SUN, TEXT, MAGNET, HUD, BOX, EDIT, FOLDER,
+        USERS, NOTE, NOTE_OFF, BELL, CHEVRON_DOWN, CHEVRON_RIGHT, GEM, CHAT, MOON }
 
     @FunctionalInterface
     private interface Sdf {
@@ -194,6 +195,20 @@ public final class Icons {
             };
             case EDIT -> (u, v) -> min(seg(u, v, -0.55, 0.55, 0.45, -0.45, T * 1.6), seg(u, v, -0.75, 0.75, -0.6, 0.6, T));
             case FOLDER -> (u, v) -> min(boxRing(u, v, 0, 0.12, 0.82, 0.58, 0.12, T), seg(u, v, -0.75, -0.48, -0.15, -0.48, T), seg(u, v, -0.15, -0.48, 0.05, -0.3, T));
+            case USERS -> (u, v) -> min(ring(u, v, -0.25, -0.38, 0.3, T), Math.max(ring(u, v, -0.25, 0.85, 0.6, T), v - 0.75),
+                    Math.max(ring(u, v, 0.42, -0.42, 0.24, T), -u + 0.25), Math.max(Math.max(ring(u, v, 0.45, 0.75, 0.48, T), v - 0.68), -u + 0.42));
+            case NOTE -> (u, v) -> min(circle(u, v, -0.38, 0.5, 0.24), seg(u, v, -0.16, 0.5, -0.16, -0.72, T), seg(u, v, -0.16, -0.72, 0.5, -0.5, T), seg(u, v, 0.5, -0.5, 0.5, 0.0, T));
+            case NOTE_OFF -> (u, v) -> min(circle(u, v, -0.38, 0.5, 0.24), seg(u, v, -0.16, 0.5, -0.16, -0.72, T), seg(u, v, -0.16, -0.72, 0.5, -0.5, T),
+                    seg(u, v, -0.8, -0.8, 0.8, 0.8, T));
+            case BELL -> (u, v) -> min(Math.max(ring(u, v, 0, 0.0, 0.55, T), v - 0.0), seg(u, v, -0.55, 0.0, -0.62, 0.48, T), seg(u, v, 0.55, 0.0, 0.62, 0.48, T),
+                    seg(u, v, -0.72, 0.5, 0.72, 0.5, T), seg(u, v, -0.15, 0.75, 0.15, 0.75, T), seg(u, v, 0, -0.55, 0, -0.72, T));
+            case CHEVRON_DOWN -> (u, v) -> Math.min(seg(u, v, -0.5, -0.22, 0, 0.28, T * 1.1), seg(u, v, 0, 0.28, 0.5, -0.22, T * 1.1));
+            case CHEVRON_RIGHT -> (u, v) -> Math.min(seg(u, v, -0.22, -0.5, 0.28, 0, T * 1.1), seg(u, v, 0.28, 0, -0.22, 0.5, T * 1.1));
+            case GEM -> (u, v) -> min(seg(u, v, -0.75, -0.25, -0.4, -0.65, T), seg(u, v, -0.4, -0.65, 0.4, -0.65, T), seg(u, v, 0.4, -0.65, 0.75, -0.25, T),
+                    seg(u, v, -0.75, -0.25, 0, 0.75, T), seg(u, v, 0.75, -0.25, 0, 0.75, T), seg(u, v, -0.75, -0.25, 0.75, -0.25, T),
+                    seg(u, v, -0.2, -0.25, 0, 0.75, T * 0.8), seg(u, v, 0.2, -0.25, 0, 0.75, T * 0.8));
+            case CHAT -> (u, v) -> min(boxRing(u, v, 0.05, -0.12, 0.72, 0.5, 0.25, T), seg(u, v, -0.35, 0.36, -0.55, 0.72, T), seg(u, v, -0.55, 0.72, -0.05, 0.38, T));
+            case MOON -> (u, v) -> Math.abs(Math.max(circle(u, v, 0, 0, 0.72), -circle(u, v, 0.38, -0.3, 0.6))) - T / 2;
             case WORLD -> (u, v) -> min(boxRing(u, v, 0, 0, 0.8, 0.8, 0.2, T),
                     seg(u, v, -0.55, 0.45, -0.1, -0.1, T), seg(u, v, -0.1, -0.1, 0.15, 0.2, T), seg(u, v, 0.15, 0.2, 0.55, -0.3, T));
         };

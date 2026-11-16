@@ -45,6 +45,14 @@ public final class Config {
         public boolean titleTipSeen = false;
         /** Ana menü oyna kartında son seçilen sekme: 0 tek oyunculu, 1 çok oyunculu */
         public int homeTab = 0;
+        /** West arka plan müziği (menüde) */
+        public boolean music = true;
+        /** Müzik oyun içinde de çalsın (Minecraft'ın kendi müziğinin yerine) */
+        public boolean musicInGame = true;
+        /** Performans modu (launcher'daki Erişilebilirlik sekmesinden): sade ana menü, daha az efekt */
+        public boolean performanceMode = false;
+        /** West HUD öğeleri gösterilsin mi (launcher'daki Erişilebilirlik'ten) */
+        public boolean hudEnabled = true;
         public Map<String, Element> elements = new LinkedHashMap<>();
     }
 

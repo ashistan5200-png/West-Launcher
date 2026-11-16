@@ -60,6 +60,24 @@ public interface Gfx {
     /** Oyuncunun 3B modeli (fareyle sürükleyerek döndürülebilir) */
     default void playerModel(int x, int y, int w, int h) {}
 
+    /**
+     * Modun içindeki bir görseli (assets/west_companion/background/{id}.png) çizer.
+     * (x,y,w,h) hedef GUI alanı; (sx,sy,sw,sh) görseldeki kaynak piksel alanı; color ARGB (saydamlık için).
+     */
+    default void image(String id, float x, float y, float w, float h, float sx, float sy, float sw, float sh, int color) {}
+
+    /** Görselin piksel boyutu {genişlik, yükseklik}; yüklenemediyse null */
+    default int[] imageSize(String id) { return null; }
+
+    /** Oyuncunun tam boy 3B modeli; ayakları (cx, feetY) noktasında, boyu height. yaw derece. */
+    default void playerStanding(int cx, int feetY, int height, float yaw) {}
+
+    /** Oyuncunun kafa + gövdesinin üst yarısı; yaw derece cinsinden döndürme */
+    default void playerBust(int x, int y, int w, int h, float yaw) {}
+
+    /** Bir sonraki çizimler öncekilerin (3B model dahil) üstünde kalsın */
+    default void nextLayer() {}
+
     /** Dünyanın küçük resmi; yoksa false */
     default boolean worldIcon(String id, String iconPath, int x, int y, int size) { return false; }
 }

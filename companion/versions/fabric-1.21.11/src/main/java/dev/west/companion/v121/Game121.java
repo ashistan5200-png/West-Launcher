@@ -121,6 +121,7 @@ final class Game121 implements Game {
             case STATS -> { if (m.player != null) m.setScreen(new net.minecraft.client.gui.screens.achievement.StatsScreen(parent, m.player.getStats())); }
             case SHARE_LAN -> m.setScreen(new net.minecraft.client.gui.screens.ShareToLanScreen(parent));
             case DISCONNECT -> { refreshWorlds(); m.disconnectFromWorld(net.minecraft.client.multiplayer.ClientLevel.DEFAULT_QUIT_MESSAGE); }
+            case WARDROBE -> m.setScreen(new net.minecraft.client.gui.screens.options.SkinCustomizationScreen(parent, m.options));
             case ADD_SERVER -> m.setScreen(new net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen(parent));
         }
     }
@@ -145,6 +146,28 @@ final class Game121 implements Game {
         if (index < 0 || index >= l.size()) return;
         ServerData d = l.get(index);
         net.minecraft.client.gui.screens.ConnectScreen.startConnecting(mc().screen, mc(), net.minecraft.client.multiplayer.resolver.ServerAddress.parseString(d.ip), d, false, null);
+    }
+
+    @Override
+    public int publishWorld(int mode, boolean cheats) {
+        var srv = mc().getSingleplayerServer();
+        if (srv == null) return -1;
+        if (srv.isPublished()) return srv.getPort();
+        int port = net.minecraft.util.HttpUtil.getAvailablePort();
+        return srv.publishServer(net.minecraft.world.level.GameType.byId(mode), cheats, port) ? port : -1;
+    }
+
+    @Override
+    public int publishedPort() {
+        var srv = mc().getSingleplayerServer();
+        return srv != null && srv.isPublished() ? srv.getPort() : -1;
+    }
+
+    @Override
+    public void connect(String name, String address) {
+        if (address == null || address.isBlank()) return;
+        ServerData d = new ServerData(name == null || name.isBlank() ? address : name, address, ServerData.Type.OTHER);
+        net.minecraft.client.gui.screens.ConnectScreen.startConnecting(mc().screen, mc(), net.minecraft.client.multiplayer.resolver.ServerAddress.parseString(address), d, false, null);
     }
 
     @Override

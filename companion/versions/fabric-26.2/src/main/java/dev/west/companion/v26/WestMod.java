@@ -33,9 +33,7 @@ public final class WestMod implements ClientModInitializer {
             net.fabricmc.fabric.api.resource.v1.ResourceLoader.registerBuiltinPack(Identifier.fromNamespaceAndPath("west_companion", "village_day"), c,
                     net.minecraft.network.chat.Component.literal("West köy arka planı (gündüz)"),
                     net.fabricmc.fabric.api.resource.v1.pack.PackActivationType.DEFAULT_ENABLED);
-            net.fabricmc.fabric.api.resource.v1.ResourceLoader.registerBuiltinPack(Identifier.fromNamespaceAndPath("west_companion", "village_sunset"), c,
-                    net.minecraft.network.chat.Component.literal("West köy arka planı (gün batımı)"),
-                    net.fabricmc.fabric.api.resource.v1.pack.PackActivationType.NORMAL);
+            // (gün batımı paketi kaldırıldı: ana menü artık fotoğraf arka plan kullanıyor)
         });
         KeyMappingHelper.registerKeyMapping(MENU);
         KeyMappingHelper.registerKeyMapping(EDITOR);
@@ -55,6 +53,7 @@ public final class WestMod implements ClientModInitializer {
 
     private static void tick(Minecraft mc) {
         WestHud.tick();
+        WestHud.safe("music", () -> WestMusic.tick(mc));
         // Minecraft'ın başlık ekranı açıldıysa West ana menüsüyle değiştir
         if (mc.gui.screen() instanceof net.minecraft.client.gui.screens.TitleScreen && WestHud.customTitle()) {
             Game26.refreshWorlds();
