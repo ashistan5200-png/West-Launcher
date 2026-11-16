@@ -60,7 +60,7 @@ public interface Game {
 
     // ───────── Ana menü ─────────
 
-    enum Target { SINGLEPLAYER, MULTIPLAYER, OPTIONS, LANGUAGE, QUIT }
+    enum Target { SINGLEPLAYER, MULTIPLAYER, OPTIONS, LANGUAGE, QUIT, CREATE_WORLD, ADD_SERVER, ADVANCEMENTS, STATS, SHARE_LAN, DISCONNECT }
 
     /** Minecraft'ın kendi ekranını aç; geri dönülünce West ana menüsüne gelinir. */
     default void open(Target t) {}
@@ -76,4 +76,27 @@ public interface Game {
     record ModInfo(String id, String name, String version, String description) {}
 
     record ServerInfo(String name, String address) {}
+
+    /** Tek oyunculu dünya özeti. mode: 0 hayatta kalma, 1 yaratıcı, 2 macera, 3 izleyici */
+    record WorldInfo(String id, String name, long lastPlayed, int mode, boolean hardcore, String iconPath) {}
+
+    /** Son oynanana göre sıralı dünyalar (arka planda yüklenir; ilk çağrıda boş olabilir) */
+    default List<WorldInfo> worlds(int max) { return List.of(); }
+
+    default void joinWorld(String id) {}
+
+    default boolean fullscreen() { return false; }
+
+    default void toggleFullscreen() {}
+
+    /** West ana menüsünü kapatıp Minecraft'ın kendi başlık ekranına geç */
+    default void openVanillaTitle() {}
+
+    /** West menüsünü belirli sayfasıyla aç (0 HUD, 1 Görünüm, 2 Genel, 3 Modlar) */
+    default void openWestScreenPage(int page) { openWestScreen(false); }
+
+    /** Oynanan oturum: tek oyunculu mu, dünya/sunucu adı, "Yaratıcı · Normal" gibi ayrıntı, LAN'a açılabilir mi */
+    record Session(boolean singleplayer, String title, String detail, boolean canShare) {}
+
+    default Session session() { return new Session(true, "Dünya", "", false); }
 }

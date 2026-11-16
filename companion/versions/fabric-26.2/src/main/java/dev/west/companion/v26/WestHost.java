@@ -12,6 +12,7 @@ import net.minecraft.network.chat.Component;
 /** Sürümden bağımsız West ekranını 26.x Screen olarak taşır; olayları ona iletir. */
 final class WestHost extends Screen {
     private WestScreen inner;
+    private boolean modelDrag;
 
     WestHost(WestScreen inner) {
         super(Component.literal("West"));
@@ -29,18 +30,30 @@ final class WestHost extends Screen {
 
     @Override
     public boolean mouseClicked(MouseButtonEvent e, boolean doubleClick) {
+        var m = Gfx26.model;
+        modelDrag = m != null && System.currentTimeMillis() - Gfx26.modelShown < 250 && m.isMouseOver(e.x(), e.y());
+        if (modelDrag) {
+            m.mouseClicked(e, doubleClick);
+            return true;
+        }
         WestHud.safe("click", () -> inner.mouseClicked(e.x(), e.y(), e.button()));
         return true;
     }
 
     @Override
     public boolean mouseReleased(MouseButtonEvent e) {
+        if (modelDrag && Gfx26.model != null) Gfx26.model.mouseReleased(e);
+        modelDrag = false;
         WestHud.safe("release", () -> inner.mouseReleased(e.x(), e.y(), e.button()));
         return true;
     }
 
     @Override
     public boolean mouseDragged(MouseButtonEvent e, double dx, double dy) {
+        if (modelDrag && Gfx26.model != null) {
+            Gfx26.model.mouseDragged(e, dx, dy);
+            return true;
+        }
         WestHud.safe("drag", () -> inner.mouseDragged(e.x(), e.y(), e.button()));
         return true;
     }
@@ -81,6 +94,6 @@ final class WestHost extends Screen {
 
     @Override
     public boolean isPauseScreen() {
-        return false;
+        return inner.pausesGame();
     }
 }

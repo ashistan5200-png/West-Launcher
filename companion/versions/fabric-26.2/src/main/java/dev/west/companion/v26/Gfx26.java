@@ -62,6 +62,53 @@ public final class Gfx26 implements Gfx {
         net.minecraft.client.gui.components.PlayerFaceExtractor.extractRenderState(g, skin.get(), x, y, size);
     }
 
+    /** Ana menüdeki 3B oyuncu modeli (fareyle döndürülür) */
+    public static net.minecraft.client.gui.components.PlayerSkinWidget model;
+    public static long modelShown;
+
+    @Override
+    public void playerModel(int x, int y, int w, int h) {
+        Minecraft mc = Minecraft.getInstance();
+        if (skin == null) skin = mc.getSkinManager().createLookup(mc.getGameProfile(), false);
+        if (model == null) model = new net.minecraft.client.gui.components.PlayerSkinWidget(w, h, mc.getEntityModels(), skin);
+        model.setX(x);
+        model.setY(y);
+        model.setWidth(w);
+        model.setHeight(h);
+        model.extractRenderState(g, -1, -1, 0);
+        modelShown = System.currentTimeMillis();
+        // Sonraki çizimler (isim etiketi, kartlar) modelin üstünde kalsın
+        g.nextStratum();
+    }
+
+    private static final java.util.Map<String, net.minecraft.client.gui.screens.FaviconTexture> ICONS = new java.util.HashMap<>();
+    private static final java.util.Set<String> NO_ICON = new java.util.HashSet<>();
+
+    @Override
+    public boolean worldIcon(String id, String iconPath, int x, int y, int size) {
+        if (iconPath == null || NO_ICON.contains(id)) return false;
+        var tex = ICONS.get(id);
+        if (tex == null) {
+            try (var in = java.nio.file.Files.newInputStream(java.nio.file.Path.of(iconPath))) {
+                var img = com.mojang.blaze3d.platform.NativeImage.read(in);
+                tex = net.minecraft.client.gui.screens.FaviconTexture.forWorld(Minecraft.getInstance().getTextureManager(), id);
+                tex.upload(img);
+                ICONS.put(id, tex);
+            } catch (Exception e) {
+                NO_ICON.add(id);
+                return false;
+            }
+        }
+        g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, tex.textureLocation(), x, y, 0f, 0f, size, size, 64, 64, 64, 64);
+        return true;
+    }
+
+    /** Arkadaki oyunu / panoramayı bulanıklaştır (karede bir kez) */
+    @Override
+    public void blurBehind() {
+        g.blurBeforeThisStratum();
+    }
+
     @Override public void smoothText(boolean on) { smooth = on; }
     @Override public int guiScale() { return Math.max(1, Minecraft.getInstance().getWindow().getGuiScale()); }
     @Override public void panorama(float delta) { if (panorama != null) panorama.accept(delta); }

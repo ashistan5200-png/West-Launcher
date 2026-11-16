@@ -59,6 +59,10 @@ public final class WestHud {
         return new MenuScreen();
     }
 
+    public static WestScreen pause() {
+        return new dev.west.hud.screen.PauseMenu();
+    }
+
     public static WestScreen home() {
         return new dev.west.hud.screen.HomeScreen();
     }

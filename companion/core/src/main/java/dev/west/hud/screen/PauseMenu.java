@@ -1,0 +1,142 @@
+package dev.west.hud.screen;
+
+import dev.west.hud.WestHud;
+import dev.west.hud.api.Game;
+import dev.west.hud.api.Gfx;
+import dev.west.hud.ui.Icons;
+import dev.west.hud.ui.Icons.Icon;
+import dev.west.hud.ui.Theme;
+import dev.west.hud.ui.Ui;
+
+/**
+ * Oyun içi duraklatma menüsü: arkada bulanık oyun, ortada oyuncu, sağda
+ * "Oyuna dön" ve menü, altta kaydet ve ana menüye dön.
+ */
+public final class PauseMenu extends WestShell {
+    private static final String[] TABS = { "Oyun", "Modlar", "Görünüm" };
+    private static final int[] PAGES = { -1, 3, 1 };
+
+    @Override
+    public void render(Gfx g, int mx, int my, float delta) {
+        beginFrame(g, mx, my);
+        int sw = g.width(), sh = g.height();
+        float in = appear();
+        Game game = WestHud.game;
+        Game.Session s = game.session();
+
+        g.blurBehind();
+        g.fill(0, 0, sw, sh, 0x59080A10);
+        g.gradient(0, 0, sw, TOP + 24, 0x99080A10, 0x00080A10);
+        // Sağ tarafa doğru koyulaşan perde (menü okunaklı olsun)
+        int fade = sw / 2;
+        for (int i = 0; i < 24; i++) {
+            int x0 = sw - fade + fade * i / 24, x1 = sw - fade + fade * (i + 1) / 24;
+            g.fill(x0, 0, x1, sh, (int) (0x99 * (i + 1) / 24f) << 24 | 0x06070B);
+        }
+
+        // Sağ sütun
+        int colW = clamp(Math.round(sw * 0.30f), 150, 240);
+        int cx = sw - colW - 16 + Math.round((1 - in) * 20);
+        int items = s.singleplayer() ? 6 : 5;
+        int fixed = 9 + 17 + 11 + (s.singleplayer() ? 11 : 0) + 6 + 26 + 6 + 4 + 5 + 20;
+        int avail = sh - 8 - (TOP + 4);
+        int itemH = clamp((avail - fixed) / items, 12, 18);
+        int blockH = fixed + items * itemH;
+        int y = Math.max(TOP + 4, (sh - blockH) / 2 + 4);
+
+        g.push();
+        g.translate(cx, y);
+        g.scale(0.7f);
+        brand(g, s.singleplayer() ? "TEK OYUNCULU" : "ÇOK OYUNCULU", 0, 0, 0xBBFFFFFF, 1.6f);
+        g.pop();
+        y += 9;
+        bigText(g, ui.fit(s.title(), Math.round(colW / 1.35f)), cx, y + 3, 0xFFFFFFFF, 1.35f);
+        y += 17;
+        if (!s.detail().isEmpty()) g.text(ui.fit(s.detail(), colW), cx, y + 1, 0xBBFFFFFF, false);
+        y += 11;
+        if (s.singleplayer()) {
+            Icons.draw(g, Icon.PAUSE, cx, y + 1, 7, 0xBBFFFFFF);
+            smallText(g, "Oyun duraklatıldı", cx + 10, y + 1, 0xBBFFFFFF);
+            y += 11;
+        }
+        y += 6;
+        if (accentButton("resume", "Oyuna dön", null, cx, y, colW, 26)) {
+            game.closeScreen();
+            ui.end();
+            return;
+        }
+        y += 26 + 6;
+
+        if (item("opt", Icon.GEAR, "Ayarlar", cx, y, colW, itemH)) game.open(Game.Target.OPTIONS);
+        y += itemH;
+        if (s.singleplayer()) {
+            if (item("lan", Icon.SHARE, s.canShare() ? "Dünyayı paylaş" : "Dünya paylaşılıyor", cx, y, colW, itemH) && s.canShare()) game.open(Game.Target.SHARE_LAN);
+            y += itemH;
+        }
+        if (item("adv", Icon.STAR, "Gelişimler", cx, y, colW, itemH)) game.open(Game.Target.ADVANCEMENTS);
+        y += itemH;
+        if (item("stats", Icon.STATS, "İstatistikler", cx, y, colW, itemH)) game.open(Game.Target.STATS);
+        y += itemH;
+        if (item("mods", Icon.LIST, "Modlar", cx, y, colW, itemH)) game.openWestScreenPage(3);
+        y += itemH;
+        if (item("hud", Icon.HUD, "HUD'u düzenle", cx, y, colW, itemH)) game.openWestScreen(true);
+        y += itemH + 4;
+        g.fill(cx, y, cx + colW, y + 1, 0x1FFFFFFF);
+        y += 5;
+        if (danger("quit", s.singleplayer() ? "Kaydet ve ana menüye dön" : "Bağlantıyı kes", cx, y, colW, 20)) {
+            game.open(Game.Target.DISCONNECT);
+            ui.end();
+            return;
+        }
+
+        // Oyuncu
+        int left = cx - 20;
+        int mh = clamp(Math.round(sh * 0.5f), 70, 220);
+        int mw = Math.round(mh * 0.62f);
+        int pcx = Math.max(mw / 2 + 12, Math.min(left / 2 + 10, left - mw / 2 - 10));
+        int top = TOP + Math.max(28, (sh - TOP - 40 - mh) / 2) + Math.round((1 - in) * 12);
+        if (left > mw + 20) {
+            g.playerModel(pcx - mw / 2, top, mw, mh);
+            nameTag(pcx, top - 6, game.playerName(), s.title());
+        }
+
+        chips(sh, Math.min(left, cx - 12), in, false);
+        topBar(sw, in, TABS, PAGES, false);
+        ui.end();
+    }
+
+    private boolean item(String id, Icon icon, String label, int x, int y, int w, int h) {
+        Gfx g = ui.g;
+        boolean on = ui.hover(x, y, w, h);
+        float hv = hov(id, on);
+        if (hv > 0.01f) Ui.round(g, x - 4, y, w + 8, h, 6, Theme.alpha(0xFFFFFFFF, Math.max(1, (int) (0x18 * hv))));
+        int shift = Math.round(hv * 2);
+        Icons.draw(g, icon, x + 4 + shift, y + (h - 10) / 2, 10, Theme.mix(0xCCFFFFFF, 0xFFFFFFFF, hv));
+        g.textBold(label, x + 20 + shift, y + (h - 8) / 2, Theme.mix(0xDDFFFFFF, 0xFFFFFFFF, hv), false);
+        if (ui.clicked(x - 4, y, w + 8, h)) {
+            WestHud.game.click();
+            return true;
+        }
+        return false;
+    }
+
+    private boolean danger(String id, String label, int x, int y, int w, int h) {
+        Gfx g = ui.g;
+        boolean on = ui.hover(x, y, w, h);
+        float hv = hov(id, on);
+        Ui.round(g, x, y, w, h, 6, Theme.mix(0x33E5566E, 0x66E5566E, hv));
+        Ui.outline(g, x, y, w, h, 6, Theme.alpha(0xFFE5566E, (int) (0x40 + 0x60 * hv)));
+        Icons.draw(g, Icon.EXIT, x + 7, y + (h - 10) / 2, 10, 0xFFFF8094);
+        g.textBold(ui.fit(label, w - 30), x + 23, y + (h - 8) / 2, 0xFFFF8094, false);
+        if (ui.clicked(x, y, w, h)) {
+            WestHud.game.click();
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean pausesGame() {
+        return true;
+    }
+}

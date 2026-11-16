@@ -41,6 +41,10 @@ public final class Config {
         public boolean smoothFont = true;
         /** Minecraft'ın başlık ekranı yerine West ana menüsü */
         public boolean customTitle = true;
+        /** Ana menüdeki "vanilla'yı mı tercih edersin?" kartı kapatıldı mı */
+        public boolean titleTipSeen = false;
+        /** Ana menü oyna kartında son seçilen sekme: 0 tek oyunculu, 1 çok oyunculu */
+        public int homeTab = 0;
         public Map<String, Element> elements = new LinkedHashMap<>();
     }
 

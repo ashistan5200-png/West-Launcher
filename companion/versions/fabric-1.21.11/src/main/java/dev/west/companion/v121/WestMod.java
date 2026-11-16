@@ -28,9 +28,27 @@ public final class WestMod implements ClientModInitializer {
                 net.fabricmc.fabric.api.resource.v1.ResourceLoader.registerBuiltinPack(Identifier.fromNamespaceAndPath("west_companion", "smooth_ui"), c,
                         net.minecraft.network.chat.Component.literal("West pürüzsüz yazı"),
                         net.fabricmc.fabric.api.resource.v1.pack.PackActivationType.DEFAULT_ENABLED));
+        // Ana menü arka planı: West köyü panoraması (gündüz varsayılan, gün batımı isteğe bağlı)
+        net.fabricmc.loader.api.FabricLoader.getInstance().getModContainer("west_companion").ifPresent(c -> {
+            net.fabricmc.fabric.api.resource.v1.ResourceLoader.registerBuiltinPack(Identifier.fromNamespaceAndPath("west_companion", "village_day"), c,
+                    net.minecraft.network.chat.Component.literal("West köy arka planı (gündüz)"),
+                    net.fabricmc.fabric.api.resource.v1.pack.PackActivationType.DEFAULT_ENABLED);
+            net.fabricmc.fabric.api.resource.v1.ResourceLoader.registerBuiltinPack(Identifier.fromNamespaceAndPath("west_companion", "village_sunset"), c,
+                    net.minecraft.network.chat.Component.literal("West köy arka planı (gün batımı)"),
+                    net.fabricmc.fabric.api.resource.v1.pack.PackActivationType.NORMAL);
+        });
         KeyBindingHelper.registerKeyBinding(MENU);
         KeyBindingHelper.registerKeyBinding(EDITOR);
         ClientTickEvents.END_CLIENT_TICK.register(WestMod::tick);
+        // Vanilla başlık ekranında West ana menüsüne dönüş düğmesi (sağ üst)
+        net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.AFTER_INIT.register((client, screen, w, h) -> {
+            if (!(screen instanceof net.minecraft.client.gui.screens.TitleScreen) || WestHud.customTitle()) return;
+            net.fabricmc.fabric.api.client.screen.v1.Screens.getButtons(screen).add(net.minecraft.client.gui.components.Button.builder(net.minecraft.network.chat.Component.literal("◆ West"), b -> {
+                WestHud.config.data.customTitle = true;
+                WestHud.save();
+                client.setScreen(new WestHost(WestHud.home()));
+            }).bounds(w - 66, 6, 60, 20).build());
+        });
         HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT, Identifier.fromNamespaceAndPath("west_companion", "hud"),
                 (g, delta) -> WestHud.renderHud(new Gfx121(g)));
     }
@@ -39,7 +57,12 @@ public final class WestMod implements ClientModInitializer {
         WestHud.tick();
         // Minecraft'ın başlık ekranı açıldıysa West ana menüsüyle değiştir
         if (mc.screen instanceof net.minecraft.client.gui.screens.TitleScreen && WestHud.customTitle()) {
+            Game121.refreshWorlds();
             mc.setScreen(new WestHost(WestHud.home()));
+        }
+        // Duraklatma menüsü (Esc) → West duraklatma menüsü (F3+Esc ile açılan menüsüz duraklatma hariç)
+        if (mc.screen instanceof net.minecraft.client.gui.screens.PauseScreen ps && ps.showsPauseMenu() && WestHud.customTitle()) {
+            mc.setScreen(new WestHost(WestHud.pause()));
         }
         while (MENU.consumeClick()) {
             if (mc.screen == null) WestHud.game.openWestScreen(false);

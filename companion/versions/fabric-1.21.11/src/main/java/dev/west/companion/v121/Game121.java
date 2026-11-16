@@ -109,12 +109,19 @@ final class Game121 implements Game {
     public void open(Target t) {
         Minecraft m = mc();
         var parent = m.screen;
+        refreshWorlds();
         switch (t) {
             case SINGLEPLAYER -> m.setScreen(new net.minecraft.client.gui.screens.worldselection.SelectWorldScreen(parent));
             case MULTIPLAYER -> m.setScreen(new net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen(parent));
             case OPTIONS -> m.setScreen(new net.minecraft.client.gui.screens.options.OptionsScreen(parent, m.options));
             case LANGUAGE -> m.setScreen(new net.minecraft.client.gui.screens.options.LanguageSelectScreen(parent, m.options, m.getLanguageManager()));
             case QUIT -> m.stop();
+            case CREATE_WORLD -> net.minecraft.client.gui.screens.worldselection.CreateWorldScreen.openFresh(m, () -> m.setScreen(parent));
+            case ADVANCEMENTS -> { if (m.player != null) m.setScreen(new net.minecraft.client.gui.screens.advancements.AdvancementsScreen(m.player.connection.getAdvancements(), parent)); }
+            case STATS -> { if (m.player != null) m.setScreen(new net.minecraft.client.gui.screens.achievement.StatsScreen(parent, m.player.getStats())); }
+            case SHARE_LAN -> m.setScreen(new net.minecraft.client.gui.screens.ShareToLanScreen(parent));
+            case DISCONNECT -> { refreshWorlds(); m.disconnectFromWorld(net.minecraft.client.multiplayer.ClientLevel.DEFAULT_QUIT_MESSAGE); }
+            case ADD_SERVER -> m.setScreen(new net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen(parent));
         }
     }
 
@@ -143,6 +150,91 @@ final class Game121 implements Game {
     @Override
     public String playerName() {
         return mc().getUser().getName();
+    }
+
+    // ───── Dünyalar ─────
+    static volatile List<WorldInfo> worldCache;
+    private static volatile boolean worldsLoading;
+
+    /** Ana menü yeniden açıldığında dünya listesi tazelensin */
+    static void refreshWorlds() {
+        if (!worldsLoading) worldCache = null;
+    }
+
+    @Override
+    public List<WorldInfo> worlds(int max) {
+        if (worldCache == null && !worldsLoading) {
+            worldsLoading = true;
+            try {
+                var src = mc().getLevelSource();
+                src.loadLevelSummaries(src.findLevelCandidates()).thenAccept(list -> {
+                    List<WorldInfo> out = new ArrayList<>();
+                    for (net.minecraft.world.level.storage.LevelSummary s : list) {
+                        if (s.isDisabled()) continue;
+                        out.add(new WorldInfo(s.getLevelId(), s.getLevelName(), s.getLastPlayed(), s.getGameMode().getId(), s.isHardcore(),
+                                s.getIcon() == null ? null : s.getIcon().toString()));
+                    }
+                    out.sort(Comparator.comparingLong(WorldInfo::lastPlayed).reversed());
+                    worldCache = out;
+                    worldsLoading = false;
+                }).exceptionally(e -> {
+                    worldCache = List.of();
+                    worldsLoading = false;
+                    return null;
+                });
+            } catch (Exception e) {
+                worldCache = List.of();
+                worldsLoading = false;
+            }
+        }
+        List<WorldInfo> c = worldCache;
+        return c == null ? List.of() : c.subList(0, Math.min(max, c.size()));
+    }
+
+    private static final String[] MODE_NAMES = { "Hayatta kalma", "Yaratıcı", "Macera", "İzleyici" };
+
+    @Override
+    public Session session() {
+        Minecraft m = mc();
+        boolean sp = m.hasSingleplayerServer();
+        String mode = m.gameMode == null ? "" : MODE_NAMES[Math.max(0, Math.min(3, m.gameMode.getPlayerMode().getId()))];
+        if (sp) {
+            var srv = m.getSingleplayerServer();
+            String diff = m.level == null ? "" : m.level.getDifficulty().getDisplayName().getString();
+            return new Session(true, srv.getWorldData().getLevelName(), mode + (diff.isEmpty() ? "" : " · " + diff), !srv.isPublished());
+        }
+        ServerData d = m.getCurrentServer();
+        return new Session(false, d == null ? "Sunucu" : d.name, d == null ? mode : d.ip, false);
+    }
+
+    @Override
+    public void joinWorld(String id) {
+        refreshWorlds();
+        mc().createWorldOpenFlows().openWorld(id, () -> mc().setScreen(new WestHost(WestHud.home())));
+    }
+
+    @Override
+    public boolean fullscreen() {
+        return mc().getWindow().isFullscreen();
+    }
+
+    @Override
+    public void toggleFullscreen() {
+        mc().getWindow().toggleFullScreen();
+        mc().options.fullscreen().set(mc().getWindow().isFullscreen());
+    }
+
+    @Override
+    public void openVanillaTitle() {
+        WestHud.config.data.customTitle = false;
+        WestHud.save();
+        mc().setScreen(new net.minecraft.client.gui.screens.TitleScreen());
+    }
+
+    @Override
+    public void openWestScreenPage(int page) {
+        if (page < 0) return;
+        mc().setScreen(new WestHost(new dev.west.hud.screen.MenuScreen(page)));
     }
 
     @Override

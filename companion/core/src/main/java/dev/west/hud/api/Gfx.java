@@ -56,4 +56,10 @@ public interface Gfx {
     default void textBold(String s, int x, int y, int argb, boolean shadow) { text(s, x, y, argb, shadow); }
 
     default int textBoldWidth(String s) { return textWidth(s); }
+
+    /** Oyuncunun 3B modeli (fareyle sürükleyerek döndürülebilir) */
+    default void playerModel(int x, int y, int w, int h) {}
+
+    /** Dünyanın küçük resmi; yoksa false */
+    default boolean worldIcon(String id, String iconPath, int x, int y, int size) { return false; }
 }
