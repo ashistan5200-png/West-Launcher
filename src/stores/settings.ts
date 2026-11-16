@@ -21,9 +21,6 @@ const DEFAULT: Settings = {
   discordRpc: true,
   discordClientId: null,
   autoUpdate: true,
-  overlayEnabled: true,
-  overlayHotkey: "F7",
-  overlayTheme: "night",
 };
 
 interface SettingsState {

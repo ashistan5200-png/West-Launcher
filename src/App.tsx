@@ -35,7 +35,6 @@ import { CursorTrail } from "@/components/CursorTrail";
 import { ContentToasts } from "@/components/ContentToasts";
 import { useSettings } from "@/stores/settings";
 import { useInstances } from "@/stores/instances";
-import { events } from "@/lib/ipc";
 
 export default function App() {
   const location = useLocation();
@@ -53,12 +52,9 @@ export default function App() {
     const nameOf = (id: string) => useInstances.getState().instances.find((i) => i.id === id)?.name ?? id;
     const unAshi = bindAshi(nameOf);
     const unLogin = useAccounts.getState().bindEvents();
-    // West Overlay ayarları değiştirince kendi kopyamızı yenile (yoksa sonraki kayıt onu ezer)
-    const unSettings = events.onSettingsChanged(() => void loadSettings());
     return () => {
       void un.then((f) => f());
       void unLogin.then((f) => f());
-      void unSettings.then((f) => f());
       void unAshi.then((f) => f());
     };
   }, [loadSettings, refresh, bindEvents, bindAshi, loadSkin]);

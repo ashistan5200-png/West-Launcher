@@ -246,14 +246,14 @@ function CompanionCard({ instanceId }: { instanceId: string }) {
     <section className="card stack">
       <h3>West Companion <span className="muted tiny">oyun içi</span></h3>
       {!info.compatible ? (
-        <p className="muted small">Oyun içi West Paneli şimdilik Minecraft 1.21.1 + Fabric/NeoForge instance'larında çalışır.</p>
+        <p className="muted small">West Companion şimdilik Fabric 26.2, Fabric 1.21.11 ve 1.21.1 (Fabric/NeoForge) instance'larında çalışır. Diğer sürümler sırayla ekleniyor.</p>
       ) : !info.enabled ? (
         <p className="muted small">Ayarlar'dan "West Companion" kapatılmış.</p>
       ) : (
         <>
           <label className="check"><input type="checkbox" checked={c.fullbright} onChange={(e) => set({ fullbright: e.target.checked })} /> FullBright (her yer aydınlık)</label>
-          <label className="check"><input type="checkbox" checked={c.fpsOverlay} onChange={(e) => set({ fpsOverlay: e.target.checked })} /> FPS / MS / bellek göstergesi</label>
-          <p className="muted tiny">Oyunda <kbd>Sağ Shift</kbd> ya da duraklat menüsündeki "◆ West" düğmesi West Paneli'ni açar.</p>
+          <label className="check"><input type="checkbox" checked={c.fpsOverlay} onChange={(e) => set({ fpsOverlay: e.target.checked })} /> FPS göstergesi</label>
+          <p className="muted tiny">Oyunda <kbd>Sağ Shift</kbd> West menüsünü açar: HUD öğeleri (CPS, tuş göstergesi, koordinatlar, pusula, zırh…), sürükle-bırak HUD düzenleyici, temalar. Oyundan çıkmadan, oyunun içinde.</p>
         </>
       )}
     </section>

@@ -193,19 +193,8 @@ function GameTab() {
         <Row title="Dünyaları yedekle" desc="Oyundan çıkınca dünyaların otomatik yedeklenir.">
           <Toggle label="Dünyaları yedekle" on={settings.backupOnExit} onChange={(v) => void update({ backupOnExit: v })} />
         </Row>
-        <Row title="West Companion" desc="Oyun içi panel, FullBright ve FPS göstergesi (1.21.1 Fabric/NeoForge).">
+        <Row title="West Companion" desc="Oyun içi West menüsü (Sağ Shift), düzenlenebilir HUD ve FullBright. Fabric 26.2 ve 1.21.11 (1.21.1'de eski sürüm).">
           <Toggle label="West Companion" on={settings.companionEnabled} onChange={(v) => void update({ companionEnabled: v })} />
-        </Row>
-      </Group>
-
-      <Group title="West Overlay">
-        <Row title="Oyun üstü panel" desc="Oyun açıkken kısayolla oyunun üstünde West Client paneli açılır: modlar, oyun modları, tuşlar, performans. Her Minecraft sürümünde çalışır.">
-          <Toggle label="West Overlay" on={settings.overlayEnabled} onChange={(v) => void update({ overlayEnabled: v })} />
-        </Row>
-        <Row title="Açma kısayolu" desc="Pencereli ya da kenarlıksız modda en iyi çalışır.">
-          <select className="set-input" style={{ width: 140 }} value={settings.overlayHotkey} disabled={!settings.overlayEnabled} onChange={(e) => void update({ overlayHotkey: e.target.value })}>
-            {["F6", "F7", "F8", "F9", "F10", "F12", "Alt+W", "Ctrl+Tab"].map((k) => <option key={k} value={k}>{k}</option>)}
-          </select>
         </Row>
       </Group>
 

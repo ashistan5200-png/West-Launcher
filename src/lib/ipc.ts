@@ -7,7 +7,7 @@ import type {
   AshiEvent, AshiSkin, HuntPlan,
   PatchNote, ModUpdate, AssetDiff,
   Screenshot, FoundInstance, CompanionConfig, CompanionInfo, UpdateStatus,
-  AccountView, Cape, DeviceCode, MsLoginEvent, Skin, AiStatus, AiSetupProgress, GameStats, PortItem, PortResult, GameMode, GameModes, ModeApplyReport,
+  AccountView, Cape, DeviceCode, MsLoginEvent, Skin, AiStatus, AiSetupProgress, PortItem, PortResult, GameMode, GameModes, ModeApplyReport,
   ChatOutcome, ContentHit, ContentKind, ContentSource, InstallReport, InstalledContent, SearchQuery, SearchResult, SecretStatus,
   GameExit, GameLog, Hardware, Instance, JavaInstall, JvmProfile, LoaderKind,
   LoaderVersion, ManifestEntry, NewInstance, Progress, RunningInfo, Settings,
@@ -17,11 +17,6 @@ import type {
 export const api = {
   // ayarlar & sistem
   getSettings: () => invoke<Settings>("get_settings"),
-  // West Overlay
-  overlayToggle: () => invoke<void>("overlay_toggle"),
-  overlayHide: () => invoke<void>("overlay_hide"),
-  overlayCheckHotkey: (key: string) => invoke<boolean>("overlay_check_hotkey", { key }),
-  gameStats: (instanceId: string) => invoke<GameStats>("game_stats", { instanceId }),
   saveSettings: (settings: Settings) => invoke<void>("save_settings", { settings }),
   getHardware: () => invoke<Hardware>("get_hardware"),
   getDataDir: () => invoke<string>("get_data_dir"),
@@ -195,10 +190,6 @@ export const events = {
     listen<{ instanceId: string }>("screenshot-taken", (e) => cb(e.payload)),
   onUpdate: (cb: (x: UpdateStatus) => void): Promise<UnlistenFn> => listen<UpdateStatus>("update-status", (e) => cb(e.payload)),
   onMsLogin: (cb: (x: MsLoginEvent) => void): Promise<UnlistenFn> => listen<MsLoginEvent>("ms-login", (e) => cb(e.payload)),
-  /** Overlay kısayolla açıldı */
-  onOverlayOpen: (cb: () => void): Promise<UnlistenFn> => listen("overlay-open", () => cb()),
-  /** Başka bir pencere (overlay) ayarları değiştirdi */
-  onSettingsChanged: (cb: () => void): Promise<UnlistenFn> => listen("settings-changed", () => cb()),
 };
 
 /** Tarayıcıda (vite dev, Tauri dışı) UI geliştirmeyi kırmamak için. */

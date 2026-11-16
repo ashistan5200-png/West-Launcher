@@ -1,0 +1,8 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "dev.west.companion.v121.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": ["OptionInstanceMixin"],
+  "injectors": { "defaultRequire": 0 }
+}

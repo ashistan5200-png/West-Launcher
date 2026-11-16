@@ -3,8 +3,7 @@
   "identifier": "default",
   "description": "Main window capabilities",
   "windows": [
-    "main",
-    "overlay"
+    "main"
   ],
   "permissions": [
     "core:default",

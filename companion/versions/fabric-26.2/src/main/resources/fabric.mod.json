@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "west_companion",
+  "version": "${version}",
+  "name": "West Companion",
+  "description": "West Client'ın oyun içi parçası: düzenlenebilir HUD (FPS, CPS, tuş göstergesi, koordinatlar, pusula, zırh…), West menüsü ve FullBright.",
+  "authors": ["West Client"],
+  "license": "MIT",
+  "icon": "icon.png",
+  "environment": "client",
+  "entrypoints": { "client": ["dev.west.companion.v26.WestMod"] },
+  "mixins": ["west_companion.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.18.0",
+    "minecraft": "~26.2",
+    "fabric-api": "*",
+    "java": ">=25"
+  }
+}

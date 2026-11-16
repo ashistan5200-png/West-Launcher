@@ -10,11 +10,10 @@ pub fn get_settings(state: State<'_, AppState>) -> Settings {
 }
 
 #[tauri::command]
-pub fn save_settings(app: tauri::AppHandle, state: State<'_, AppState>, settings: Settings) -> Result<()> {
+pub fn save_settings(state: State<'_, AppState>, settings: Settings) -> Result<()> {
     settings.save(&state.paths.settings_file())?;
     state.discord.send(crate::discord::Presence::Configure { client_id: settings.discord_client_id.clone(), enabled: settings.discord_rpc });
     *state.settings.write() = settings;
-    crate::overlay::settings_changed(&app);
     Ok(())
 }
 

@@ -1,5 +1,5 @@
 //! West Companion oyun içi modunun launcher tarafı:
-//! - uyumlu instance'lara (1.21.1 Fabric/NeoForge) modu kurar/günceller, uyumsuzlardan kaldırır
+//! - uyumlu instance'lara (26.2 / 1.21.11 Fabric, 1.21.1 Fabric/NeoForge) doğru sürümü kurar, uyumsuzlardan kaldırır
 //! - Fabric'te gerekli Fabric API'yi yoksa kurar
 //! - offline hesabın skinini `west/skin.png` olarak yazar
 //! - `config/west-companion.json`'u launcher'dan okuyup yazar (oyun canlı okur)
@@ -15,20 +15,26 @@ use crate::util::write_json_atomic;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
-pub const SUPPORTED_MC: &str = "1.21.1";
 pub const JAR_PREFIX: &str = "west-companion";
 
-pub fn bundled_jar(resource_dir: &Path, kind: LoaderKind) -> Option<PathBuf> {
-    let name = match kind {
-        LoaderKind::Fabric => "west-companion-fabric.jar",
-        LoaderKind::NeoForge => "west-companion-neoforge.jar",
+/// Minecraft sürümü + yükleyici → paketlenmiş mod dosyası. Her sürüm ayrı derlenir.
+pub fn jar_name(mc: &str, kind: LoaderKind) -> Option<&'static str> {
+    Some(match (kind, mc) {
+        (LoaderKind::Fabric, "26.2") => "west-companion-fabric-26.2.jar",
+        (LoaderKind::Fabric, "1.21.11") => "west-companion-fabric-1.21.11.jar",
+        (LoaderKind::Fabric, "1.21.1") => "west-companion-fabric.jar",
+        (LoaderKind::NeoForge, "1.21.1") => "west-companion-neoforge.jar",
         _ => return None,
-    };
+    })
+}
+
+pub fn bundled_jar(resource_dir: &Path, inst: &Instance) -> Option<PathBuf> {
+    let name = jar_name(&inst.mc_version, inst.loader.kind)?;
     [resource_dir.join("companion").join(name), resource_dir.join("resources/companion").join(name)].into_iter().find(|p| p.exists())
 }
 
 pub fn compatible(inst: &Instance) -> bool {
-    inst.mc_version == SUPPORTED_MC && matches!(inst.loader.kind, LoaderKind::Fabric | LoaderKind::NeoForge)
+    jar_name(&inst.mc_version, inst.loader.kind).is_some()
 }
 
 fn installed_jars(mods: &Path) -> Vec<PathBuf> {
@@ -55,7 +61,7 @@ pub async fn prepare(http: &Http, paths: &Paths, resource_dir: &Path, inst: &Ins
     let game = paths.instance_game_dir(&inst.id);
     let mods = game.join("mods");
     let mut rep = PrepareReport::default();
-    let Some(src) = bundled_jar(resource_dir, inst.loader.kind).filter(|_| enabled && compatible(inst)) else {
+    let Some(src) = bundled_jar(resource_dir, inst).filter(|_| enabled && compatible(inst)) else {
         remove(&game);
         return rep;
     };
@@ -136,8 +142,18 @@ pub fn read_config(game_dir: &Path) -> CompanionConfig {
     std::fs::read(config_path(game_dir)).ok().and_then(|b| serde_json::from_slice(&b).ok()).unwrap_or_default()
 }
 
+/// Yalnızca launcher'ın bildiği alanları değiştirir; mod tarafındaki HUD düzeni,
+/// tema ve diğer ayarlar korunur.
 pub fn write_config(game_dir: &Path, cfg: &CompanionConfig) -> Result<()> {
-    write_json_atomic(&config_path(game_dir), cfg)
+    let p = config_path(game_dir);
+    let mut v: serde_json::Value = std::fs::read(&p).ok().and_then(|b| serde_json::from_slice(&b).ok()).unwrap_or_else(|| serde_json::json!({}));
+    if !v.is_object() {
+        v = serde_json::json!({});
+    }
+    if let (Some(o), serde_json::Value::Object(patch)) = (v.as_object_mut(), serde_json::to_value(cfg)?) {
+        o.extend(patch);
+    }
+    write_json_atomic(&p, &v)
 }
 
 #[cfg(test)]
@@ -152,5 +168,26 @@ mod tests {
         // Mod'un Gson ile yazdığı biçim de okunabilmeli
         let from_mod: CompanionConfig = serde_json::from_str(r#"{"fullbright":true,"fpsOverlay":true,"menuMode":"button","pose":"wave"}"#).unwrap();
         assert!(from_mod.fullbright && from_mod.fps_overlay);
+    }
+
+    #[test]
+    fn launcher_write_keeps_hud_layout() {
+        let dir = std::env::temp_dir().join(format!("west-comp-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(dir.join("config")).unwrap();
+        std::fs::write(dir.join("config/west-companion.json"), r#"{"fullbright":false,"theme":"pixel-night","elements":{"fps":{"x":0.5}}}"#).unwrap();
+        write_config(&dir, &CompanionConfig { fullbright: true, fps_overlay: true }).unwrap();
+        let v: serde_json::Value = serde_json::from_slice(&std::fs::read(dir.join("config/west-companion.json")).unwrap()).unwrap();
+        assert_eq!(v["fullbright"], true);
+        assert_eq!(v["theme"], "pixel-night");
+        assert_eq!(v["elements"]["fps"]["x"], 0.5);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn jars_per_version() {
+        assert_eq!(jar_name("26.2", LoaderKind::Fabric), Some("west-companion-fabric-26.2.jar"));
+        assert_eq!(jar_name("1.21.11", LoaderKind::Fabric), Some("west-companion-fabric-1.21.11.jar"));
+        assert!(jar_name("26.2", LoaderKind::NeoForge).is_none());
+        assert!(jar_name("1.20.1", LoaderKind::Fabric).is_none());
     }
 }
