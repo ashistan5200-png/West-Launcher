@@ -138,7 +138,9 @@ small, .small, .tiny, .chip, .field > span, .hint { letter-spacing: var(--ls-sma
 .content {
   flex: 1; min-width: 0; overflow-y: auto;
   background: rgb(var(--surface) / var(--surface-alpha));
-  backdrop-filter: blur(var(--blur));
+  /* backdrop-filter burada OLMAMALI: kaydırılan bir kapsayıcıda fixed katmanları (pencere
+     karartmaları) içeriğe bağlar, karartma kaydırılınca kayar. Cam efekti kenar/başlık çubuğunda. */
+  scrollbar-gutter: stable;
   border-top-left-radius: var(--radius);
   border-top: 1px solid rgb(var(--border) / 0.06);
   border-left: 1px solid rgb(var(--border) / 0.06);
@@ -1095,7 +1097,9 @@ body {
 
 /* ───────── Ana sayfa ortam arka planı ───────── */
 .home { position: relative; }
-/* .content backdrop-filter kullandığı için fixed burada içerik panelini kaplar */
+/* Bir pencere, karartma ya da tam ekran görüntüleyici açıkken arkadaki sayfa kaydırılamaz */
+body:has(.modal-backdrop, .mdetail-backdrop, .story-view, .lightbox, .editor-backdrop, .reader-backdrop, .setup-layer) .content { overflow: hidden; }
+.sidebar, .titlebar { backdrop-filter: blur(var(--blur)); }
 .mote { position: absolute; background: rgb(var(--accent) / 0.55); box-shadow: 0 0 8px rgb(var(--accent) / 0.5); animation: drift linear infinite; opacity: 0; }
 .mote:nth-child(3n) { background: rgb(var(--accent-2) / 0.55); box-shadow: 0 0 8px rgb(var(--accent-2) / 0.45); }
 @keyframes drift { 0% { transform: translateY(40px); opacity: 0; } 15% { opacity: .9; } 85% { opacity: .6; } 100% { transform: translateY(-260px) translateX(30px); opacity: 0; } }
