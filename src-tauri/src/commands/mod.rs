@@ -16,6 +16,7 @@ pub mod settings;
 pub mod skins;
 pub mod updater;
 pub mod versions;
+pub mod wallet;
 pub mod window;
 
 use crate::core::{Progress, ProgressFn};

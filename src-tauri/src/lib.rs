@@ -21,6 +21,7 @@ pub mod skins;
 pub mod state;
 pub mod updater;
 pub mod util;
+pub mod wallet;
 
 use paths::Paths;
 use state::AppState;
@@ -52,6 +53,9 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             // ayarlar & sistem
+            commands::wallet::wallet_get,
+            commands::wallet::wallet_buy,
+            commands::wallet::wallet_equip,
             commands::settings::get_settings,
             commands::settings::save_settings,
             commands::settings::get_hardware,

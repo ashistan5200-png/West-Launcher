@@ -105,7 +105,8 @@ pub async fn start_game(app: &AppHandle, id: &str, auth: AuthSession, join_serve
         let prefs = state.settings.read().clone();
         let gd = state.paths.instance_game_dir(id);
         if enabled {
-            if let Err(e) = crate::companion::apply_prefs(&gd, &prefs) {
+            let wallet = crate::wallet::load(&state.paths.root);
+            if let Err(e) = crate::companion::apply_prefs(&gd, &prefs, &wallet) {
                 tracing::warn!("companion ayarları yazılamadı: {e}");
             }
         }
@@ -232,6 +233,12 @@ pub async fn start_game(app: &AppHandle, id: &str, auth: AuthSession, join_serve
         let mgr = InstanceManager::new(&st.paths);
         if mode == LaunchMode::Play {
             let _ = mgr.record_session(&exit_id, secs);
+            // West Coin: oynanan süre kadar
+            if let Ok(coins) = crate::wallet::earn(&st.paths.root, secs) {
+                if coins > 0 {
+                    let _ = exit_app.emit("wallet-earned", serde_json::json!({ "coins": coins, "secs": secs }));
+                }
+            }
         }
         if let Some(w) = st.watchers.lock().get(&exit_id) {
             let _ = w.send(GameSignal::Exit(code));

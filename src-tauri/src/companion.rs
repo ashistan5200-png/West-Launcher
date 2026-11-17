@@ -158,7 +158,7 @@ pub fn write_config(game_dir: &Path, cfg: &CompanionConfig) -> Result<()> {
 
 /// Launcher ayarlarını (müzik, performans modu, West menüleri …) oyunun West Companion ayarına işler.
 /// Yalnızca bu alanlar değişir; HUD düzeni ve oyunda yapılan diğer ayarlar korunur.
-pub fn apply_prefs(game_dir: &Path, s: &crate::settings::Settings) -> Result<()> {
+pub fn apply_prefs(game_dir: &Path, s: &crate::settings::Settings, w: &crate::wallet::Wallet) -> Result<()> {
     let p = config_path(game_dir);
     if let Some(dir) = p.parent() {
         std::fs::create_dir_all(dir)?;
@@ -178,6 +178,17 @@ pub fn apply_prefs(game_dir: &Path, s: &crate::settings::Settings) -> Result<()>
     o.insert("smoothFont".into(), a.smooth_font.into());
     // West shader kaldırıldı; eski ayar dosyalarında kalmasın
     o.remove("westShader");
+    // West Coin ile alınan görünüm öğeleri (yalnızca kullanılabilir olanlar)
+    let mut cos = serde_json::Map::new();
+    for (k, id) in &w.equipped {
+        if let Some(it) = crate::wallet::item(id) {
+            if w.can_use(it) {
+                cos.insert(k.clone(), id.clone().into());
+            }
+        }
+    }
+    o.insert("cosmetics".into(), serde_json::Value::Object(cos));
+    o.insert("plus".into(), w.plus_active().into());
     write_json_atomic(&p, &v)
 }
 
@@ -251,11 +262,17 @@ mod tests {
         let mut s = crate::settings::Settings::default();
         s.music = false;
         s.accessibility.performance_mode = true;
-        apply_prefs(&dir, &s).unwrap();
+        let mut w = crate::wallet::Wallet::default();
+        w.equipped.insert("cape".into(), "cape_west".into());
+        w.equipped.insert("hat".into(), "hat_crown".into()); // sahip değil → yazılmaz
+        apply_prefs(&dir, &s, &w).unwrap();
         let v: serde_json::Value = serde_json::from_slice(&std::fs::read(dir.join("config/west-companion.json")).unwrap()).unwrap();
         assert_eq!(v["music"], false);
         assert_eq!(v["performanceMode"], true);
         assert_eq!(v["elements"]["fps"]["x"], 0.5);
+        assert_eq!(v["cosmetics"]["cape"], "cape_west");
+        assert!(v["cosmetics"]["hat"].is_null());
+        assert_eq!(v["plus"], false);
 
         std::fs::write(dir.join("options.txt"), "renderDistance:4\nparticles:0\nfov:0.0\n").unwrap();
         apply_low_graphics(&dir).unwrap();
