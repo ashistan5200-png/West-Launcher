@@ -36,6 +36,7 @@ import { BackgroundMusic } from "@/components/BackgroundMusic";
 import { startPresence } from "@/stores/west";
 import { ContentToasts } from "@/components/ContentToasts";
 import { InviteCenter } from "@/components/InviteCenter";
+import { AshiSolver } from "@/components/AshiSolver";
 import { useSettings } from "@/stores/settings";
 import { useInstances } from "@/stores/instances";
 
@@ -112,6 +113,7 @@ export default function App() {
           <ProgressDock />
         </div>
         <AshiConfirmModal />
+        <AshiSolver />
         <AiSetupModal />
         <ImageCropperHost />
         <ConfirmHost />

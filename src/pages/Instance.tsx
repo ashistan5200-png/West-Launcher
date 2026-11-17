@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Paintbrush, Pencil, Boxes, Clock, Copy, FileText, FolderOpen, Globe2, LayoutTemplate, Loader2, MoreVertical, Play, Settings2, Share2, Square, Tag, Timer, Trash2, Folder, Truck } from "lucide-react";
 import clsx from "clsx";
 import { useInstances } from "@/stores/instances";
@@ -36,7 +36,8 @@ export function InstancePage() {
   const inst = instances.find((i) => i.id === id);
   const hunting = useHuntRunning(id);
   const openAshi = useAshi((s) => s.openConfirm);
-  const [tab, setTab] = useState<Tab>("content");
+  const location = useLocation();
+  const [tab, setTab] = useState<Tab>(((location.state as { tab?: Tab } | null)?.tab) ?? "content");
   const [cloneOpen, setCloneOpen] = useState(false);
   const [appearOpen, setAppearOpen] = useState(false);
   const [portOpen, setPortOpen] = useState(false);

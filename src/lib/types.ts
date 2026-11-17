@@ -507,3 +507,17 @@ export interface PortItem {
 }
 export interface PortReport { ported: string[]; removed: string[]; keptDisabled: string[]; dependencies: string[]; failed: string[] }
 export interface PortResult { instance: Instance; report: PortReport }
+
+// ───────── Ashi Çözücü ─────────
+export type CrashCause = "badResourcePath" | "outOfMemory" | "mixinFailed" | "missingClass" | "missingDependency" | "javaVersion" | "graphics" | "duplicateMod" | "unknown";
+export interface CrashCulprit { file: string; name: string; ids: string[]; ours: boolean; library: boolean }
+export interface CrashAnalysis {
+  source: string;
+  cause: CrashCause;
+  detail: string | null;
+  description: string | null;
+  exception: string | null;
+  culprit: CrashCulprit | null;
+  frame: string | null;
+  via: "stack" | "mixin" | "loader" | null;
+}

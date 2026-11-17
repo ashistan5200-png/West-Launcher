@@ -416,3 +416,12 @@ pub async fn ashi_skin(state: State<'_, AppState>) -> Result<AshiSkin> {
     let _ = crate::util::write_json_atomic(&cache, &out);
     Ok(out)
 }
+
+/// Ashi Çözücü: son çökme raporunu (ya da verilen log dosyasını) okuyup suçluyu ve nedeni bulur.
+#[tauri::command]
+pub async fn analyze_crash(state: State<'_, AppState>, id: String, file: Option<String>) -> Result<Option<crate::crash::analyze::Analysis>> {
+    let gd = state.paths.instance_game_dir(&id);
+    tokio::task::spawn_blocking(move || crate::crash::analyze::analyze(&gd, file.as_deref()))
+        .await
+        .map_err(|e| crate::error::AppError::msg(e.to_string()))
+}

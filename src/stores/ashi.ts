@@ -132,8 +132,9 @@ export const useAshi = create<AshiState>((set, get) => ({
     if (!isTauri()) return () => {};
     const un = await Promise.all([
       events.onGameExit((x) => {
-        if (x.crashed && !x.duringHunt && x.modCount >= 2 && !get().hunts[x.instanceId]) {
-          get().showOffer({ instanceId: x.instanceId, name: nameOf(x.instanceId), modCount: x.modCount });
+        if (x.crashed && !x.duringHunt && !get().hunts[x.instanceId]) {
+          // Önce Ashi Çözücü raporu okur; suçlu/neden bulunamazsa Suçlu Avı önerilir
+          void import("./solver").then(({ useSolver }) => useSolver.getState().solve(x.instanceId, nameOf(x.instanceId), { modCount: x.modCount, auto: true }));
         }
       }),
       events.onAshi((e) => {

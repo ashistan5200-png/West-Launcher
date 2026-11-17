@@ -8,6 +8,9 @@ import type { ExportReport, FileEntry, Instance, LogFile, World } from "@/lib/ty
 import { EDITABLE, FileEditor } from "./FileEditor";
 import { askConfirm } from "@/components/ConfirmDialog";
 import { tx } from "@/lib/i18n";
+import { useSolver } from "@/stores/solver";
+import { AshiHead } from "@/components/AshiHead";
+import { useInstances } from "@/stores/instances";
 
 const fmtSize = (b: number) => (b >= 1 << 30 ? `${(b / (1 << 30)).toFixed(1)} GB` : b >= 1 << 20 ? `${(b / (1 << 20)).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
 const fromUnix = (s: number | null) => (s ? new Date(s * 1000).toISOString() : null);
@@ -115,6 +118,11 @@ export function LogsTab({ instanceId, live }: { instanceId: string; live: { line
       <div className="stack" style={{ minWidth: 0 }}>
         <div className="ctab-bar">
           <input className="logs-filter" placeholder={tx("Loglarda ara…")} value={filter} onChange={(e) => setFilter(e.target.value)} />
+          {sel !== "live" && (sel.startsWith("crash-reports/") || sel === "logs/latest.log") && (
+            <button className="btn btn-primary btn-sm solver-btn" onClick={() => void useSolver.getState().solve(instanceId, useInstances.getState().instances.find((i) => i.id === instanceId)?.name ?? "", { file: sel })}>
+              <AshiHead size={16} /> {tx("Ashi'ye çözdür")}
+            </button>
+          )}
           {sel !== "live" && <button className="btn-link" onClick={async () => api.openPath(await api.filePath(instanceId, sel))}><FolderOpen size={16} /> {tx("Dosyayı aç")}</button>}
         </div>
         <div className="console" ref={ref}>
