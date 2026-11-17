@@ -102,7 +102,7 @@ pub struct Settings {
     pub music: bool,
     /// Müzik oyunun içinde de çalsın (Minecraft'ın kendi müziğinin yerine)
     pub music_in_game: bool,
-    /// Shader'lar: Iris + Sodium + Complementary Reimagined otomatik kurulur ve açılır (Fabric)
+    /// West shader (ışıma, sıcak renkler); OpenGL ve Vulkan'da çalışır, ek indirme yok
     pub shaders: bool,
     pub accessibility: Accessibility,
 }

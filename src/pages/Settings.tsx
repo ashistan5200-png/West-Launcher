@@ -170,7 +170,7 @@ function AppearanceTab() {
       </Group>
 
       <Group title="Grafik">
-        <Row title="Shader'lar" desc="Gerçekçi ışık, gölge ve su. OpenGL'de Iris + Sodium + Complementary Reimagined kurulup açılır. Vulkan kullanıyorsan West shader'ı (ışıma, sıcak renkler, kenar kararması) devreye girer. Güçlü ekran kartı ister; Performans modunda kapalıdır.">
+        <Row title="Shader'lar" desc="Yerleşik West shader'ı: ışıma, sıcak renkler ve kenar kararması. Hiçbir ek mod (Iris vb.) indirmez; OpenGL ve Vulkan'da çalışır. Performans modunda kapalıdır.">
           <Toggle label="Shader'lar" on={settings.shaders} onChange={(v) => void useSettings.getState().update({ shaders: v })} />
         </Row>
       </Group>

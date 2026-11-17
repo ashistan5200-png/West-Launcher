@@ -132,21 +132,6 @@ pub async fn start_game(app: &AppHandle, id: &str, auth: AuthSession, join_serve
             if let Err(e) = crate::content::install::install(&ctx, crate::content::Source::Modrinth, "e4mc", crate::content::Kind::Mod).await {
                 tracing::info!("e4mc kurulamadı: {e}");
             }
-            // Shader'lar (Performans modunda kapalı)
-            // Iris (Complementary) yalnızca OpenGL'de çalışır; Vulkan'da West shader devrede
-            if prefs.shaders && !prefs.accessibility.performance_mode && !crate::companion::uses_vulkan(&gd) {
-                for slug in ["sodium", "iris"] {
-                    if let Err(e) = crate::content::install::install(&ctx, crate::content::Source::Modrinth, slug, crate::content::Kind::Mod).await {
-                        tracing::info!("shader modu kurulamadı ({slug}): {e}");
-                    }
-                }
-                if let Err(e) = crate::content::install::install(&ctx, crate::content::Source::Modrinth, "complementary-reimagined", crate::content::Kind::Shader).await {
-                    tracing::info!("shader paketi kurulamadı: {e}");
-                }
-                if let Err(e) = crate::companion::enable_shader_pack(&gd) {
-                    tracing::info!("shader açılamadı: {e}");
-                }
-            }
         }
         if prefs.accessibility.perf_mods && fabricish {
             let ctx = crate::content::install::InstallCtx {

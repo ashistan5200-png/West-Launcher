@@ -81,7 +81,7 @@ export interface Settings {
   /** West arka plan müziği (launcher ve oyun menüleri) */
   music: boolean;
   musicInGame: boolean;
-  /** Iris + Sodium + Complementary shader'ları otomatik kur ve aç */
+  /** Yerleşik West shader'ı (ek mod indirmez) */
   shaders: boolean;
   accessibility: Accessibility;
 }
