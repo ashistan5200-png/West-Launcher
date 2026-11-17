@@ -101,6 +101,17 @@ public final class PauseMenu extends WestShell {
         if (left > bw / 2 + 40) {
             g.playerBust(pcx - bw / 2, top, bw, bh, ui.time * 38f);
             g.nextLayer();
+            // Gövdenin alt kısmı arkadaki bulanık oyunun rengine doğru solar (kenarlarda da yumuşak)
+            int fh = Math.max(12, bh * 2 / 5), fy = top + bh - fh;
+            int cols = 32, x0 = pcx - bw / 2 - bw / 5, fw = bw + 2 * (bw / 5);
+            for (int i = 0; i < cols; i++) {
+                float u = (i + 0.5f) / cols;
+                float edge = Math.min(1, Math.min(u, 1 - u) / 0.3f);
+                edge = edge * edge * (3 - 2 * edge);
+                int a = Math.round(0xE6 * edge);
+                int cx0 = x0 + fw * i / cols, cx1 = x0 + fw * (i + 1) / cols;
+                g.gradient(cx0, fy, cx1, top + bh + 1, 0x000A0C11, (a << 24) | 0x0A0C11);
+            }
             nameTag(pcx, top - 6, game.playerName(), s.title());
         }
 

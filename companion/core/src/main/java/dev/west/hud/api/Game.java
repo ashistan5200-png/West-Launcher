@@ -103,8 +103,26 @@ public interface Game {
     /** Tek oyunculu dünyayı ağa aç; açılan port ya da -1. mode: 0-3 oyun modu */
     default int publishWorld(int mode, boolean cheats) { return -1; }
 
+    /** Her ağda çalışan tünel (e4mc) kurulu mu */
+    default boolean hasTunnel() { return false; }
+
+    /** Tünelin verdiği herkese açık adres (ör. abc.na.e4mc.link); henüz yoksa null */
+    default String tunnelAddress() { return null; }
+
+    /** Tünel kurulamadı mı (ağ UDP'yi engelliyor vb.) */
+    default boolean tunnelFailed() { return false; }
+
     /** Dünya açıksa portu, değilse -1 */
     default int publishedPort() { return -1; }
+
+    /** Ana menünün arkasındaki canlı dünya hazır mı (true ise menü fotoğraf/sahne çizmez) */
+    default boolean liveBackground() { return false; }
+
+    /** Ana menü stili değişti: canlı dünyayı başlat / kapat */
+    default void homeStyleChanged() {}
+
+    /** Canlı dünya yükleniyor mu */
+    default boolean liveLoading() { return false; }
 
     /** Bir sunucu adresine doğrudan bağlan (davetle katılma) */
     default void connect(String name, String address) {}

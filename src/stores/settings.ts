@@ -23,6 +23,7 @@ const DEFAULT: Settings = {
   autoUpdate: true,
   music: true,
   musicInGame: true,
+  shaders: false,
   accessibility: {
     performanceMode: false, westMenus: true, westHud: true, gameAnimations: true,
     smoothFont: true, perfMods: false, lowGraphics: false, launcherEffects: true,

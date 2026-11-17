@@ -38,6 +38,8 @@ public final class WestMod implements ClientModInitializer {
         KeyMappingHelper.registerKeyMapping(MENU);
         KeyMappingHelper.registerKeyMapping(EDITOR);
         ClientTickEvents.END_CLIENT_TICK.register(WestMod::tick);
+        // Dünya paylaşma: e4mc'nin verdiği herkese açık adresi sohbetten yakala
+        net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents.GAME.register((msg, overlay) -> WestHud.safe("tunnel", () -> Game26.onChat(msg)));
         // Vanilla başlık ekranında West ana menüsüne dönüş düğmesi (sağ üst)
         net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.AFTER_INIT.register((client, screen, w, h) -> {
             if (!(screen instanceof net.minecraft.client.gui.screens.TitleScreen) || WestHud.customTitle()) return;
@@ -51,16 +53,27 @@ public final class WestMod implements ClientModInitializer {
                 (g, delta) -> WestHud.renderHud(new Gfx26(g)));
     }
 
+    private static WestHost pendingMenuWorld;
+
     private static void tick(Minecraft mc) {
         WestHud.tick();
         WestHud.safe("music", () -> WestMusic.tick(mc));
+        if (pendingMenuWorld != null && mc.level == null) {
+            WestHost h = pendingMenuWorld;
+            pendingMenuWorld = null;
+            if (mc.gui.screen() == h) WestHud.safe("menuworld", () -> MenuWorld.start(mc, h));
+        }
+        WestHud.safe("menuworld-tick", () -> MenuWorld.tick(mc));
         // Minecraft'ın başlık ekranı açıldıysa West ana menüsüyle değiştir
         if (mc.gui.screen() instanceof net.minecraft.client.gui.screens.TitleScreen && WestHud.customTitle()) {
             Game26.refreshWorlds();
-            mc.gui.setScreen(new WestHost(WestHud.home()));
+            WestHost h = new WestHost(WestHud.home());
+            mc.gui.setScreen(h);
+            // Ana menünün arkasında canlı dünya (bir sonraki tick'te, ekran yerleştikten sonra)
+            pendingMenuWorld = h;
         }
         // Duraklatma menüsü (Esc) → West duraklatma menüsü (F3+Esc ile açılan menüsüz duraklatma hariç)
-        if (mc.gui.screen() instanceof net.minecraft.client.gui.screens.PauseScreen ps && ps.showsPauseMenu() && WestHud.customTitle()) {
+        if (!MenuWorld.active && mc.gui.screen() instanceof net.minecraft.client.gui.screens.PauseScreen ps && ps.showsPauseMenu() && WestHud.customTitle()) {
             mc.gui.setScreen(new WestHost(WestHud.pause()));
         }
         while (MENU.consumeClick()) {

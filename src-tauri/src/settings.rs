@@ -102,6 +102,8 @@ pub struct Settings {
     pub music: bool,
     /// Müzik oyunun içinde de çalsın (Minecraft'ın kendi müziğinin yerine)
     pub music_in_game: bool,
+    /// Shader'lar: Iris + Sodium + Complementary Reimagined otomatik kurulur ve açılır (Fabric)
+    pub shaders: bool,
     pub accessibility: Accessibility,
 }
 
@@ -127,6 +129,7 @@ impl Default for Settings {
             auto_update: true,
             music: true,
             music_in_game: true,
+            shaders: false,
             accessibility: Accessibility::default(),
         }
     }

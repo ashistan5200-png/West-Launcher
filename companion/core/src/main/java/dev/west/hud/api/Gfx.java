@@ -75,6 +75,13 @@ public interface Gfx {
     /** Oyuncunun kafa + gövdesinin üst yarısı; yaw derece cinsinden döndürme */
     default void playerBust(int x, int y, int w, int h, float yaw) {}
 
+    /**
+     * Önbellekli alfa maskesi (ikonlar, yuvarlak köşeler). Anahtar ilk kez istenince build() ile
+     * pw×ph alfa dizisi (0–255) üretilip dokuya çevrilir; sonra her karede tek parça çizilir.
+     * Geçerli dönüşümde (x,y) noktasına pw×ph boyutunda, color ile renklendirilerek çizer. Desteklenmiyorsa false.
+     */
+    default boolean mask(String key, int pw, int ph, java.util.function.Supplier<byte[]> build, int x, int y, int color) { return false; }
+
     /** Bir sonraki çizimler öncekilerin (3B model dahil) üstünde kalsın */
     default void nextLayer() {}
 

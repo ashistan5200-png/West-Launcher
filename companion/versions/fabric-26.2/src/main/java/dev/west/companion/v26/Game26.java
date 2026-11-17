@@ -27,7 +27,23 @@ final class Game26 implements Game {
         return Minecraft.getInstance();
     }
 
-    @Override public boolean inWorld() { return mc().player != null && mc().level != null; }
+    @Override public boolean inWorld() { return mc().player != null && mc().level != null && !MenuWorld.active; }
+
+    @Override public boolean liveBackground() { return MenuWorld.cameraReady(); }
+
+    @Override
+    public void homeStyleChanged() {
+        Minecraft m = mc();
+        if (!(m.gui.screen() instanceof WestHost h)) return;
+        if (MenuWorld.enabled()) {
+            if (!MenuWorld.active && m.level == null) MenuWorld.start(m, h);
+        } else if (MenuWorld.active) {
+            MenuWorld.stop(m);
+            m.gui.setScreen(h);
+        }
+    }
+
+    @Override public boolean liveLoading() { return MenuWorld.active && !MenuWorld.cameraReady(); }
     @Override public boolean hudHidden() { return mc().gui.hud.isHidden(); }
     @Override public boolean debugOpen() { return mc().getDebugOverlay().showDebugScreen(); }
     @Override public int fps() { return mc().getFps(); }
@@ -115,7 +131,10 @@ final class Game26 implements Game {
             case MULTIPLAYER -> m.gui.setScreen(new net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen(parent));
             case OPTIONS -> m.gui.setScreen(new net.minecraft.client.gui.screens.options.OptionsScreen(parent, m.options, m.level != null));
             case LANGUAGE -> m.gui.setScreen(new net.minecraft.client.gui.screens.options.LanguageSelectScreen(parent, m.options, m.getLanguageManager()));
-            case QUIT -> m.stop();
+            case QUIT -> {
+                MenuWorld.stop(m);
+                m.stop();
+            }
             case CREATE_WORLD -> net.minecraft.client.gui.screens.worldselection.CreateWorldScreen.openFresh(m, () -> m.gui.setScreen(parent));
             case ADVANCEMENTS -> { if (m.player != null) m.gui.setScreen(new net.minecraft.client.gui.screens.advancements.AdvancementsScreen(m.player.connection.getAdvancements(), parent)); }
             case STATS -> { if (m.player != null) m.gui.setScreen(new net.minecraft.client.gui.screens.achievement.StatsScreen(parent, m.player.getStats())); }
@@ -148,11 +167,49 @@ final class Game26 implements Game {
         net.minecraft.client.gui.screens.ConnectScreen.startConnecting(mc().gui.screen(), mc(), net.minecraft.client.multiplayer.resolver.ServerAddress.parseString(d.ip), d, false, null);
     }
 
+    /** e4mc'nin sohbete yazdığı herkese açık adres */
+    static volatile String tunnel;
+    private static final java.util.regex.Pattern TUNNEL = java.util.regex.Pattern.compile("([a-z0-9-]+(?:\\.[a-z0-9-]+)*\\.e4mc\\.link)");
+
+    /** Sohbet mesajlarından e4mc adresini yakala */
+    static void onChat(net.minecraft.network.chat.Component msg) {
+        String s = msg.getString() + " " + msg;
+        if (s.contains("e4mc_minecraft.closeServer") || s.contains("no longer publicly hosted")) {
+            tunnel = null;
+        tunnelFailed = false;
+            return;
+        }
+        if (s.contains("e4mc_minecraft.error") || s.contains("An error occurred in e4mc")) {
+            tunnelFailed = true;
+            return;
+        }
+        var m = TUNNEL.matcher(s);
+        if (m.find()) tunnel = m.group(1);
+    }
+
+    @Override
+    public boolean hasTunnel() {
+        return FabricLoader.getInstance().isModLoaded("e4mc");
+    }
+
+    @Override
+    public String tunnelAddress() {
+        return tunnel;
+    }
+
+    static volatile boolean tunnelFailed;
+
+    @Override
+    public boolean tunnelFailed() {
+        return tunnelFailed;
+    }
+
     @Override
     public int publishWorld(int mode, boolean cheats) {
         var srv = mc().getSingleplayerServer();
         if (srv == null) return -1;
         if (srv.isPublished()) return srv.getPort();
+        tunnel = null;
         int port = net.minecraft.util.HttpUtil.getAvailablePort();
         return srv.publishServer(net.minecraft.server.MinecraftServer.MultiplayerScope.LAN, net.minecraft.world.level.GameType.byId(mode), cheats, port) ? port : -1;
     }

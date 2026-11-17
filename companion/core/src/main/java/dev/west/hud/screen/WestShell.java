@@ -205,8 +205,9 @@ abstract class WestShell implements WestScreen {
         int w2 = 29 + Math.max(g.textBoldWidth(name), small(g, "Sen")) + 22;
         if (x + w2 <= maxX) {
             chip("c2", x, y, w2, h);
-            Ui.round(g, x + 5, y + 4, 18, 18, 5, Theme.alpha(t.accent, 0xAA));
-            g.playerFace(x + 6, y + 5, 16);
+            // Yüz kutucuğun içinde dikeyde ortalı (şapka katmanı dahil taşmasın)
+            Ui.round(g, x + 6, y + (h - 16) / 2, 16, 16, 4, Theme.alpha(t.accent, 0xAA));
+            g.playerFace(x + 7, y + (h - 14) / 2, 14);
             g.textBold(name, x + 29, y + 5, 0xFFFFFFFF, false);
             smallText(g, "Sen", x + 29, y + 16, 0x99FFFFFF);
             Ui.round(g, x + w2 - 13, y + 10, 6, 6, 3, t.ok);

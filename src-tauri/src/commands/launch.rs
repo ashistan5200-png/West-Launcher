@@ -116,7 +116,38 @@ pub async fn start_game(app: &AppHandle, id: &str, auth: AuthSession, join_serve
         }
         // Optimizasyon modları: yalnızca Fabric/Quilt; uyumsuz olanlar atlanır, hata oyunu durdurmaz
         let loader = crate::commands::content::loader_slug(inst.loader.kind);
-        if prefs.accessibility.perf_mods && matches!(loader.as_deref(), Some("fabric") | Some("quilt")) {
+        let fabricish = matches!(loader.as_deref(), Some("fabric") | Some("quilt"));
+        if fabricish && enabled {
+            let ctx = crate::content::install::InstallCtx {
+                http: &state.http,
+                cf_key: None,
+                instance_id: id,
+                instance_dir: state.paths.instance_dir(id),
+                game_dir: gd.clone(),
+                mc_version: inst.mc_version.clone(),
+                loader: loader.clone(),
+                progress: progress.clone(),
+            };
+            // Dünyayı paylaş: her ağda (modem/CGNAT fark etmez) çalışan e4mc tüneli
+            if let Err(e) = crate::content::install::install(&ctx, crate::content::Source::Modrinth, "e4mc", crate::content::Kind::Mod).await {
+                tracing::info!("e4mc kurulamadı: {e}");
+            }
+            // Shader'lar (Performans modunda kapalı)
+            if prefs.shaders && !prefs.accessibility.performance_mode {
+                for slug in ["sodium", "iris"] {
+                    if let Err(e) = crate::content::install::install(&ctx, crate::content::Source::Modrinth, slug, crate::content::Kind::Mod).await {
+                        tracing::info!("shader modu kurulamadı ({slug}): {e}");
+                    }
+                }
+                if let Err(e) = crate::content::install::install(&ctx, crate::content::Source::Modrinth, "complementary-reimagined", crate::content::Kind::Shader).await {
+                    tracing::info!("shader paketi kurulamadı: {e}");
+                }
+                if let Err(e) = crate::companion::enable_shader_pack(&gd) {
+                    tracing::info!("shader açılamadı: {e}");
+                }
+            }
+        }
+        if prefs.accessibility.perf_mods && fabricish {
             let ctx = crate::content::install::InstallCtx {
                 http: &state.http,
                 cf_key: None,

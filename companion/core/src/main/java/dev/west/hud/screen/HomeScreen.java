@@ -62,7 +62,24 @@ public final class HomeScreen extends WestShell {
             g.translate(-pivotX, -pivotY);
         }
 
-        photo(g, sw, sh, mx, my);
+        boolean live = !perf() && WestHud.game.liveBackground();
+        if (live) {
+            // Gerçek dünya arkada çiziliyor: yalnızca okunurluk için hafif karartma
+            parX = parY = 0;
+            if (page != Page.HOME) {
+                g.blurBehind();
+            }
+        } else if (!perf() && page == Page.HOME) {
+            // Canlı dünya hazırlanırken koyu, sakin bir zemin
+            g.gradient(0, 0, sw, sh, 0xFF141821, 0xFF07080C);
+            if (WestHud.game.liveLoading()) {
+                String l = "Dünya hazırlanıyor…";
+                float a = 0.5f + 0.5f * (float) Math.sin(ui.time * 3);
+                g.text(l, (sw - g.textWidth(l)) / 2, sh / 2 - 4, ((int) (90 + 120 * a) << 24) | 0xFFFFFF, false);
+            }
+        } else {
+            photo(g, sw, sh, mx, my);
+        }
         if (page == Page.HOME && perf()) {
             home(sw, sh, in);
         } else if (page == Page.HOME) {
@@ -113,7 +130,15 @@ public final class HomeScreen extends WestShell {
 
     /** Performans modu: fotoğraf + sade düzen; normal: blok üstünde karakterli sahne */
     static boolean perf() {
-        return WestHud.config.data.performanceMode;
+        return WestHud.config.data.performanceMode || WestHud.config.data.homeStyle == 1;
+    }
+
+    /** İki ana menü stili arasında geçiş */
+    private void toggleStyle() {
+        var d = WestHud.config.data;
+        d.homeStyle = d.homeStyle == 1 ? 0 : 1;
+        WestHud.save();
+        WestHud.game.homeStyleChanged();
     }
 
     String photoId() {
@@ -167,7 +192,11 @@ public final class HomeScreen extends WestShell {
             nextLook = ui.time + 2.5f + (float) Math.random() * 3.5f;
         }
         lookYaw += (lookTarget - lookYaw) * Math.min(1, dt * 2.2f);
-        if (size != null && photoScale > 0) {
+        if (WestHud.game.liveBackground()) {
+            // Karakter gerçek dünyada; isim etiketi ortaya yakın
+            pivotDefaultX = sw * 0.5f;
+            pivotDefaultY = sh * 0.5f;
+        } else if (size != null && photoScale > 0) {
             float fx = photoX + FEET_X * size[0] * photoScale;
             float fy = photoY + FEET_Y * size[1] * photoScale;
             int ph = Math.round(PLAYER_H * size[1] * photoScale);
@@ -201,6 +230,7 @@ public final class HomeScreen extends WestShell {
             WestHud.config.data.music = !musicOn;
             WestHud.save();
         }
+        if (iconButton("style", Icon.HUD, 34, sh - 18 - 26 - 26, 20, "Sade menüye geç", 0)) toggleStyle();
     }
 
     // ───────── Performans modu ana sayfası ─────────
@@ -327,6 +357,10 @@ public final class HomeScreen extends WestShell {
         if (topIcon("lang", Icon.GLOBE, x, y, s, "Dil", 0)) game.open(Game.Target.LANGUAGE);
         x -= s + 6;
         if (topIcon("west", Icon.LOGO, x, y, s, "West menüsü", 0)) game.openWestScreen(false);
+        if (!WestHud.config.data.performanceMode) {
+            x -= s + 6;
+            if (topIcon("style", Icon.HUD, x, y, s, "Canlı dünya menüsüne geç", 0)) toggleStyle();
+        }
 
         // Alt orta: yüklü modlar
         int cs = s;

@@ -89,8 +89,42 @@ public final class Ui {
         g.pop();
     }
 
+    /** Köşe maskesi: q 0 sol üst, 1 sağ üst, 2 sol alt, 3 sağ alt. ring>0 ise o kalınlıkta halka. */
+    private static byte[] corner(int r, int q, int ring) {
+        byte[] a = new byte[r * r];
+        for (int py = 0; py < r; py++) {
+            for (int px = 0; px < r; px++) {
+                // Sol üst çeyreğe göre ölçüp çevir
+                int lx = (q == 1 || q == 3) ? r - 1 - px : px;
+                int ly = (q == 2 || q == 3) ? r - 1 - py : py;
+                double d = Math.hypot(r - lx - 0.5, r - ly - 0.5);
+                double cov = Math.max(0, Math.min(1, r - d + 0.5));
+                if (ring > 0) cov -= Math.max(0, Math.min(1, (r - ring) - d + 0.5));
+                a[py * r + px] = (byte) Math.round(Math.max(0, cov) * 255);
+            }
+        }
+        return a;
+    }
+
+    /** Maskeyle (önbellekten) çizilebildiyse true */
+    private static boolean maskRect(Gfx g, int x, int y, int w, int h, int r, int color, int ring) {
+        if (r < 1) return false;
+        for (int q = 0; q < 4; q++) {
+            int cx = (q == 1 || q == 3) ? x + w - r : x, cy = (q == 2 || q == 3) ? y + h - r : y;
+            final int qq = q;
+            if (!g.mask((ring > 0 ? "ring" + ring + "_" : "corner_") + r + "_" + q, r, r, () -> corner(r, qq, ring), cx, cy, color)) return false;
+        }
+        return true;
+    }
+
     /** Fiziksel piksellerde, köşeleri kenar yumuşatmalı (anti-aliased) yuvarlak dikdörtgen. */
     private static void smoothRect(Gfx g, int x, int y, int w, int h, int r, int color) {
+        if (r > 0 && maskRect(g, x, y, w, h, r, color, 0)) {
+            g.fill(x + r, y, x + w - r, y + h, color);
+            g.fill(x, y + r, x + r, y + h - r, color);
+            g.fill(x + w - r, y + r, x + w, y + h - r, color);
+            return;
+        }
         g.fill(x, y + r, x + w, y + h - r, color);
         int a = color >>> 24;
         for (int i = 0; i < r; i++) {
@@ -136,6 +170,10 @@ public final class Ui {
         g.fill(X + r, Y + H - 1, X + W - r, Y + H, color);
         g.fill(X, Y + r, X + 1, Y + H - r, color);
         g.fill(X + W - 1, Y + r, X + W, Y + H - r, color);
+        if (r > 1 && maskRect(g, X, Y, W, H, r, color, 1)) {
+            g.pop();
+            return;
+        }
         // Köşe yayları: dış daire (r) ile 1 piksel içerideki daire (r-1) arasındaki halka
         for (int i = 0; i < r; i++) {
             double dy = r - i - 0.5;

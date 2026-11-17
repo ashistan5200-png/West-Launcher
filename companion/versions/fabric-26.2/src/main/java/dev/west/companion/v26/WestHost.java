@@ -3,6 +3,7 @@ package dev.west.companion.v26;
 import dev.west.hud.WestHud;
 import dev.west.hud.screen.WestScreen;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
@@ -10,8 +11,13 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 
 /** Sürümden bağımsız West ekranını 26.x Screen olarak taşır; olayları ona iletir. */
-final class WestHost extends Screen {
+public final class WestHost extends Screen {
     private WestScreen inner;
+
+    /** Şu an bir West ekranı açık mı (kare hızı sınırı için) */
+    public static boolean isOpen() {
+        return Minecraft.getInstance().gui.screen() instanceof WestHost;
+    }
     private boolean modelDrag;
 
     WestHost(WestScreen inner) {

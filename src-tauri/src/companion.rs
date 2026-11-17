@@ -211,6 +211,29 @@ pub fn apply_low_graphics(game_dir: &Path) -> Result<()> {
     Ok(())
 }
 
+/// Iris'i kurulu Complementary paketiyle açar (kullanıcı başka bir paket seçtiyse dokunmaz).
+pub fn enable_shader_pack(game_dir: &Path) -> Result<()> {
+    let packs = game_dir.join("shaderpacks");
+    let Some(name) = std::fs::read_dir(&packs)
+        .ok()
+        .and_then(|d| d.filter_map(|e| e.ok()).map(|e| e.file_name().to_string_lossy().to_string()).find(|n| n.to_lowercase().starts_with("complementary")))
+    else {
+        return Ok(());
+    };
+    let p = game_dir.join("config").join("iris.properties");
+    let text = std::fs::read_to_string(&p).unwrap_or_default();
+    let chosen = text.lines().find_map(|l| l.strip_prefix("shaderPack=")).map(str::trim).unwrap_or("");
+    if !chosen.is_empty() && !chosen.to_lowercase().starts_with("complementary") {
+        return Ok(());
+    }
+    let mut lines: Vec<String> = text.lines().filter(|l| !l.starts_with("shaderPack=") && !l.starts_with("enableShaders=")).map(String::from).collect();
+    lines.push(format!("shaderPack={name}"));
+    lines.push("enableShaders=true".into());
+    std::fs::create_dir_all(p.parent().unwrap())?;
+    std::fs::write(&p, lines.join("\n") + "\n")?;
+    Ok(())
+}
+
 /// Performans modunda kurulan optimizasyon modları (Modrinth). Sürüme uymayanlar sessizce atlanır.
 pub const PERF_MODS: &[&str] = &["sodium", "lithium", "ferrite-core", "entityculling", "immediatelyfast", "modernfix"];
 

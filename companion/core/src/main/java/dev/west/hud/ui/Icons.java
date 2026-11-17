@@ -29,6 +29,10 @@ public final class Icons {
         int a0 = color >>> 24, rgb = color & 0xFFFFFF;
         g.push();
         g.scale(1f / k);
+        if (S > 0 && g.mask("icon_" + icon.name().toLowerCase() + "_" + S, S, S, () -> raster(f, S), X, Y, color)) {
+            g.pop();
+            return;
+        }
         for (int py = 0; py < S; py++) {
             double v = (py + 0.5) * unit - 1;
             int runStart = -1;
@@ -50,6 +54,21 @@ public final class Icons {
             }
         }
         g.pop();
+    }
+
+    /** İkonun alfa maskesi (önbelleğe bir kez çizilir) */
+    private static byte[] raster(Sdf f, int S) {
+        byte[] a = new byte[S * S];
+        double unit = 2.0 / S;
+        for (int py = 0; py < S; py++) {
+            double v = (py + 0.5) * unit - 1;
+            for (int px = 0; px < S; px++) {
+                double u = (px + 0.5) * unit - 1;
+                double cov = Math.max(0, Math.min(1, 0.5 - f.d(u, v) / unit));
+                a[py * S + px] = (byte) Math.round(cov * 255);
+            }
+        }
+        return a;
     }
 
     // ---- Temel şekiller ----

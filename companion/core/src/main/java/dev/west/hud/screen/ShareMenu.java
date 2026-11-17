@@ -41,6 +41,7 @@ public final class ShareMenu extends WestShell {
         beginFrame(g, mx, my);
         Theme t = ui.t;
         c.poll(null);
+        pollTunnel();
         int sw = g.width(), sh = g.height();
         float in = appear();
         g.blurBehind();
@@ -174,7 +175,8 @@ public final class ShareMenu extends WestShell {
         if (toggle("cheats", "Hilelere izin ver", cheats, cx, ry, ctlW, rh) && !published) cheats = !cheats;
         ry += rh + 6;
         row("İnternet", ry, x);
-        if (toggle("upnp", "Modem portunu aç", upnp, cx, ry, ctlW, rh) && !published) upnp = !upnp;
+        if (WestHud.game.hasTunnel()) toggle("upnp", "Her ağdan bağlanılabilir", true, cx, ry, ctlW, rh);
+        else if (toggle("upnp", "Modem portunu aç", upnp, cx, ry, ctlW, rh) && !published) upnp = !upnp;
         ry += rh + 6;
         row("Davet", ry, x);
         if (toggle("notify", picked.isEmpty() ? "Arkadaş seç (solda)" : picked.size() + " arkadaşa gönder", notify, cx, ry, ctlW, rh)) notify = !notify;
@@ -195,6 +197,27 @@ public final class ShareMenu extends WestShell {
         if (accentButton("share", label, Icon.CHEVRON_RIGHT, x + 14 + bw + 8, by, w - 28 - bw - 8, 22) && !busy) share(published);
     }
 
+    /** Tünel adresi beklenirken (e4mc) */
+    private long tunnelWaitSince;
+    private int tunnelPort;
+
+    private void pollTunnel() {
+        if (tunnelWaitSince == 0) return;
+        Game game = WestHud.game;
+        String addr = game.tunnelAddress();
+        String world = game.session().title();
+        if (addr != null) {
+            tunnelWaitSince = 0;
+            busy = false;
+            result = "Dünya herkese açıldı (her ağdan bağlanılabilir): " + addr;
+            sendInvites(world, addr);
+        } else if (game.tunnelFailed() || System.currentTimeMillis() - tunnelWaitSince > 25_000) {
+            tunnelWaitSince = 0;
+            result = "Herkese açık adres alınamadı; modem yolu deneniyor…";
+            openUpnp(tunnelPort, world);
+        }
+    }
+
     private void share(boolean already) {
         Game game = WestHud.game;
         int port = already ? game.publishedPort() : game.publishWorld(mode, cheats);
@@ -203,6 +226,24 @@ public final class ShareMenu extends WestShell {
             return;
         }
         String world = game.session().title();
+        // 1) Her ağda çalışan yol: e4mc tüneli (modem/CGNAT fark etmez)
+        if (game.hasTunnel()) {
+            String addr = game.tunnelAddress();
+            if (addr != null) {
+                result = "Dünya herkese açık: " + addr;
+                sendInvites(world, addr);
+                return;
+            }
+            busy = true;
+            result = "Herkese açık adres alınıyor…";
+            tunnelWaitSince = System.currentTimeMillis();
+            tunnelPort = port;
+            return;
+        }
+        openUpnp(port, world);
+    }
+
+    private void openUpnp(int port, String world) {
         if (!upnp) {
             String lan = Upnp.localIp(null) + ":" + port;
             result = "Dünya aynı ağdakilere açıldı: " + lan;

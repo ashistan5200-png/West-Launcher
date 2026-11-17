@@ -194,6 +194,26 @@ public final class Gfx26 implements Gfx {
     /** WestHost sürükleme sırasında true yapar */
     public static boolean dragging;
 
+    private static final java.util.Map<String, Identifier> MASKS = new java.util.HashMap<>();
+
+    @Override
+    public boolean mask(String key, int pw, int ph, java.util.function.Supplier<byte[]> build, int x, int y, int color) {
+        if (pw <= 0 || ph <= 0 || pw > 1024 || ph > 1024) return false;
+        Identifier id = MASKS.get(key);
+        if (id == null) {
+            byte[] a = build.get();
+            var img = new com.mojang.blaze3d.platform.NativeImage(pw, ph, false);
+            for (int py = 0; py < ph; py++)
+                for (int px = 0; px < pw; px++) img.setPixel(px, py, ((a[py * pw + px] & 0xFF) << 24) | 0xFFFFFF);
+            String path = "mask/" + key.toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z0-9._-]", "_");
+            id = Identifier.fromNamespaceAndPath("west_companion", path);
+            Minecraft.getInstance().getTextureManager().register(id, new net.minecraft.client.renderer.texture.DynamicTexture(() -> "west mask", img));
+            MASKS.put(key, id);
+        }
+        g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, id, x, y, 0f, 0f, pw, ph, pw, ph, color);
+        return true;
+    }
+
     @Override
     public void nextLayer() {
         g.nextStratum();

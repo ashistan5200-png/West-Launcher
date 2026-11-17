@@ -53,6 +53,10 @@ public final class Config {
         public boolean performanceMode = false;
         /** West HUD öğeleri gösterilsin mi (launcher'daki Erişilebilirlik'ten) */
         public boolean hudEnabled = true;
+        /** Ana menünün arkasında gerçek, canlı bir Minecraft dünyası (Performans modunda kapalı) */
+        public boolean liveMenu = true;
+        /** Ana menü stili: 0 canlı dünya, 1 sade (fotoğraflı). Performans modunda her zaman sade. */
+        public int homeStyle = 0;
         public Map<String, Element> elements = new LinkedHashMap<>();
     }
 

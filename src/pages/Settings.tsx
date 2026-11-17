@@ -169,6 +169,12 @@ function AppearanceTab() {
         </Row>
       </Group>
 
+      <Group title="Grafik">
+        <Row title="Shader'lar" desc="Gerçekçi ışık, gölge ve su. Oyna'ya basınca Iris, Sodium ve Complementary Reimagined kurulup açılır (Fabric). Güçlü ekran kartı ister; Performans modunda kapalıdır.">
+          <Toggle label="Shader'lar" on={settings.shaders} onChange={(v) => void useSettings.getState().update({ shaders: v })} />
+        </Row>
+      </Group>
+
       <Group title="Ses">
         <Row title="Arka plan müziği" desc="West'e özel sakin bir müzik. Launcher açıkken ve oyunun menülerinde çalar.">
           <Toggle label="Arka plan müziği" on={settings.music} onChange={(v) => void useSettings.getState().update({ music: v })} />
