@@ -187,6 +187,11 @@
   const SHOTS = [
     ["home", "Ana sayfa", "Kaldığın yerden devam et; son oynananlar ve Minecraft haberleri."],
     ["library", "Kütüphane", "Her paketin kendi piksel manzarası ve kapağı."],
+    ["ingame", "Oyun içi ana menü", "Minecraft'ın içinde West ana menüsü: hızlı oyna, dünyalar, sosyal ve gardırop."],
+    ["shop", "West Coin mağazası", "Oynadıkça coin kazan; pelerin, kanat, şapka, tema ve West Plus al."],
+    ["wardrobe", "Gardırop", "Aksesuarlarını oyunun içinde tak, çıkar, dönen karakterinde gör."],
+    ["solver", "Ashi Çözücü", "Çökme raporunu okur, suçlu modu bulur, gerekirse modu kendisi onarır."],
+    ["invite", "Dünya davetleri", "Arkadaşının davetine tıkla, uygun instance'ı seç, doğrudan dünyasına gir."],
     ["instance", "Instance", "Modlar tek tabloda: güncelle, aç-kapat, kaldır."],
     ["browse", "Keşfet", "Sürüm, yükleyici, istemci/sunucu ve kategoriye göre süzme."],
     ["gallery", "Mod galerisi", "Bir moda tıkla; ekran görüntüleri ve açıklaması."],
