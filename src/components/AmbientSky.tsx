@@ -6,6 +6,8 @@ import { useSettings } from "@/stores/settings";
 import type { Instance } from "@/lib/types";
 import { paletteFor } from "./CoverArt";
 import { coverSeedOf } from "./InstanceBanner";
+import { useWallet } from "@/stores/wallet";
+import { SKIES, type SkyFx } from "@/lib/shop";
 
 /** Öne çıkan instance: önce oynanan, yoksa en son oynanan, yoksa ilki. */
 export function useFeaturedInstance(): Instance | null {
@@ -75,6 +77,11 @@ export function AmbientSky() {
   const banner = inst?.banner ? (isTauri() ? convertFileSrc(inst.banner) : inst.banner) : null;
   const seed = inst ? coverSeedOf(inst) : "west-client";
   const [imgPal, setImgPal] = useState<Pal | null>(null);
+  // West Coin ile alınan arka plan sahnesi her şeyin önüne geçer
+  const skyId = useWallet((s) => s.view?.wallet.equipped.sky ?? null);
+  const scene = skyId ? SKIES[skyId] ?? null : null;
+  const fx: SkyFx = scene?.fx ?? null;
+  const useBanner = !!banner && !scene;
 
   useEffect(() => {
     setImgPal(null);
@@ -82,10 +89,11 @@ export function AmbientSky() {
   }, [banner]);
 
   const pal: Pal = useMemo(() => {
+    if (scene) return { sky: scene.sky, sun: scene.sun, layers: scene.layers, stars: scene.stars };
     if (imgPal) return imgPal;
     const p = paletteFor(seed);
     return { sky: p.sky, sun: p.sun, layers: p.layers, stars: !!p.stars };
-  }, [seed, imgPal]);
+  }, [seed, imgPal, scene]);
 
   // Kaydırılan içerik alanının görünen yüksekliğini izle (arka plan sabit kalsın)
   useEffect(() => {
@@ -111,6 +119,9 @@ export function AmbientSky() {
       { base: 0.84, amp: 0.06, speed: 0.012, data: ridge(420, 3, h0 ^ 17) },
     ];
     const sunX = 0.72 + r() * 0.16;
+    // Sahne efektleri: düşen/yükselen parçacıklar
+    const fxParts = Array.from({ length: fx === "aurora" || fx === "meteors" ? 0 : 70 }, () => ({ x: r(), y: r(), v: 0.4 + r() * 0.8, p: r() * 6.28, s: r() > 0.7 ? 2 : 1 }));
+    let meteor = { x: 0, y: 0, life: 0 };
     let raf = 0, last = 0, alive = true;
     const t0 = performance.now();
 
@@ -123,12 +134,28 @@ export function AmbientSky() {
       if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; ctx.imageSmoothingEnabled = false; }
       const t = reduce ? 0 : (now - t0) / 1000;
       ctx.clearRect(0, 0, w, h);
-      if (!banner) {
+      if (!useBanner) {
         const g = ctx.createLinearGradient(0, 0, 0, h);
         g.addColorStop(0, pal.sky[0]);
         g.addColorStop(0.8, pal.sky[1]);
         ctx.fillStyle = g;
         ctx.fillRect(0, 0, w, h);
+      }
+      if (fx === "aurora" && !useBanner) {
+        // Aurora: gökte dalgalanan yeşil-mavi şeritler
+        for (let band = 0; band < 3; band++) {
+          const col = ["rgba(63,224,176,", "rgba(122,168,255,", "rgba(186,120,255,"][band];
+          for (let x = 0; x < w; x++) {
+            const k = x / w;
+            const y0 = h * (0.12 + band * 0.07 + Math.sin(k * 6 + t * 0.35 + band) * 0.05 + Math.sin(k * 15 - t * 0.6) * 0.015);
+            const len = Math.floor(h * (0.12 + 0.06 * Math.sin(k * 9 + t * 0.5 + band * 2)));
+            const a = (0.10 + 0.08 * Math.sin(k * 11 + t * 0.8 + band)) * (band === 0 ? 1.4 : 1);
+            for (let j = 0; j < len; j += 1) {
+              ctx.fillStyle = col + (a * (1 - j / len)).toFixed(3) + ")";
+              ctx.fillRect(x, Math.floor(y0) + j, 1, 1);
+            }
+          }
+        }
       }
       if (pal.stars) for (const s of stars) {
         const a = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(t * 1.3 + s.p));
@@ -161,19 +188,39 @@ export function AmbientSky() {
           ctx.fillRect(x, y, 1, h - y);
         }
       });
+      // Ön plan efektleri
+      if (fx === "meteors") {
+        if (meteor.life <= 0 && Math.random() < 0.006) meteor = { x: 0.2 + Math.random() * 0.6, y: 0.05 + Math.random() * 0.15, life: 1 };
+        if (meteor.life > 0) {
+          meteor.life -= 0.03;
+          const mx = Math.floor(w * (meteor.x + (1 - meteor.life) * 0.18)), my = Math.floor(h * (meteor.y + (1 - meteor.life) * 0.1));
+          for (let i = 0; i < 10; i++) { ctx.fillStyle = `rgba(255,255,255,${((1 - i / 10) * meteor.life).toFixed(3)})`; ctx.fillRect(mx - i * 2, my - i, 2, 1); }
+        }
+      } else if (fx) {
+        for (const q of fxParts) {
+          let x: number, y: number, col: string;
+          if (fx === "snow") { y = (q.y + t * 0.025 * q.v) % 1; x = (q.x + Math.sin(t * 0.6 + q.p) * 0.01) % 1; col = "rgba(255,255,255,0.85)"; }
+          else if (fx === "petals") { y = (q.y + t * 0.02 * q.v) % 1; x = ((q.x + t * 0.012 * q.v + Math.sin(t + q.p) * 0.01) % 1 + 1) % 1; col = q.s > 1 ? "rgba(255,194,218,0.95)" : "rgba(242,166,196,0.85)"; }
+          else if (fx === "embers") { y = 1 - ((q.y + t * 0.03 * q.v) % 1); x = (q.x + Math.sin(t * 0.8 + q.p) * 0.012) % 1; col = `rgba(255,${150 + Math.floor(q.v * 60)},70,${(0.5 + 0.5 * Math.sin(t * 4 + q.p)).toFixed(2)})`; }
+          else { y = (q.y + Math.sin(t * 0.3 + q.p) * 0.03 + 1) % 1; x = (q.x + t * 0.004 * q.v) % 1; col = `rgba(199,155,255,${(0.35 + 0.4 * Math.sin(t * 2 + q.p)).toFixed(2)})`; }
+          ctx.fillStyle = col;
+          const px = Math.floor(x * w), py = Math.floor(y * h);
+          ctx.fillRect(px, py, q.s + (fx === "petals" ? 1 : 0), q.s);
+        }
+      }
       if (!reduce) raf = requestAnimationFrame(draw);
     };
     raf = requestAnimationFrame(draw);
     return () => { alive = false; cancelAnimationFrame(raf); };
-  }, [seed, pal, banner, reduce, height]);
+  }, [seed, pal, banner, reduce, height, fx, useBanner]);
 
   const motes = useMemo(() => Array.from({ length: 22 }, (_, i) => ({ left: (i * 37 + 11) % 100, delay: -((i * 3.3) % 20), dur: 14 + ((i * 7) % 12), size: 3 + (i % 3) * 2, top: 35 + ((i * 53) % 60) })), []);
 
   return (
     <div className="ambient-holder" ref={holder} aria-hidden>
       <div className="ambient" style={{ height: height || "100vh" }}>
-        {banner && <img className="ambient-img" src={banner} alt="" draggable={false} />}
-        <canvas ref={canvas} className={banner ? "ambient-sky over-image" : "ambient-sky"} />
+        {useBanner && <img className="ambient-img" src={banner!} alt="" draggable={false} />}
+        <canvas ref={canvas} className={useBanner ? "ambient-sky over-image" : "ambient-sky"} />
         <div className="ambient-fade" />
         {!reduce && motes.map((m, i) => (
           <span key={i} className="mote" style={{ left: `${m.left}%`, top: `${m.top}%`, width: m.size, height: m.size, animationDelay: `${m.delay}s`, animationDuration: `${m.dur}s` }} />

@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { Home, Library, Settings, Plus, Play, Compass, Shirt, Images, Newspaper, MessagesSquare } from "lucide-react";
+import { Store, Home, Library, Settings, Plus, Play, Compass, Shirt, Images, Newspaper, MessagesSquare } from "lucide-react";
 import { useSocial } from "@/stores/social";
 import { useChat } from "@/stores/chat";
 import { AshiHead } from "./AshiHead";
@@ -14,6 +14,7 @@ const NAV = [
   { to: "/browse", icon: Compass, label: tx("Keşfet"), short: tx("Keşfet") },
   { to: "/social", icon: MessagesSquare, label: tx("West sosyal"), short: tx("Sosyal") },
   { to: "/skins", icon: Shirt, label: tx("Skin ve hesaplar"), short: tx("Skin") },
+  { to: "/shop", icon: Store, label: tx("West Coin mağazası"), short: tx("Mağaza") },
   { to: "/gallery", icon: Images, label: tx("Ekran görüntüleri"), short: tx("Galeri") },
   { to: "/news", icon: Newspaper, label: tx("Haberler ve güncellemeler"), short: tx("Haberler") },
 ];

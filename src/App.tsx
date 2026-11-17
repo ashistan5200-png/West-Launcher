@@ -37,6 +37,9 @@ import { startPresence } from "@/stores/west";
 import { ContentToasts } from "@/components/ContentToasts";
 import { InviteCenter } from "@/components/InviteCenter";
 import { AshiSolver } from "@/components/AshiSolver";
+import { ShopPage } from "@/pages/Shop";
+import { CoinToast } from "@/components/CoinToast";
+import { startWallet } from "@/stores/wallet";
 import { useSettings } from "@/stores/settings";
 import { useInstances } from "@/stores/instances";
 
@@ -53,6 +56,7 @@ export default function App() {
     void loadSkin();
     void useAccounts.getState().load();
     startPresence();
+    startWallet();
     const un = bindEvents();
     const nameOf = (id: string) => useInstances.getState().instances.find((i) => i.id === id)?.name ?? id;
     const unAshi = bindAshi(nameOf);
@@ -87,6 +91,7 @@ export default function App() {
                   <Route path="/instance/:id" element={<InstancePage />} />
                   <Route path="/browse" element={<BrowsePage />} />
                   <Route path="/skins" element={<SkinsPage />} />
+                  <Route path="/shop" element={<ShopPage />} />
                   <Route path="/gallery" element={<GalleryPage />} />
                   <Route path="/news" element={<NewsPage />} />
                   <Route path="/social" element={<SocialFeedPage />} />
@@ -108,6 +113,7 @@ export default function App() {
         </div>
         <div className="dock">
           <AshiDock />
+          <CoinToast />
           <InviteCenter />
           <ContentToasts />
           <ProgressDock />
