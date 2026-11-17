@@ -64,6 +64,7 @@ public final class WestMod implements ClientModInitializer {
             if (mc.gui.screen() == h) WestHud.safe("menuworld", () -> MenuWorld.start(mc, h));
         }
         WestHud.safe("menuworld-tick", () -> MenuWorld.tick(mc));
+        WestHud.safe("westshader", () -> WestShader.tick(mc));
         // Minecraft'ın başlık ekranı açıldıysa West ana menüsüyle değiştir
         if (mc.gui.screen() instanceof net.minecraft.client.gui.screens.TitleScreen && WestHud.customTitle()) {
             Game26.refreshWorlds();

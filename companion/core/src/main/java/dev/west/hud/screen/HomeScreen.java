@@ -66,18 +66,12 @@ public final class HomeScreen extends WestShell {
         if (live) {
             // Gerçek dünya arkada çiziliyor: yalnızca okunurluk için hafif karartma
             parX = parY = 0;
-            if (page != Page.HOME) {
-                g.blurBehind();
-            }
-        } else if (!perf() && page == Page.HOME) {
-            // Canlı dünya hazırlanırken koyu, sakin bir zemin
-            g.gradient(0, 0, sw, sh, 0xFF141821, 0xFF07080C);
-            if (WestHud.game.liveLoading()) {
-                String l = "Dünya hazırlanıyor…";
-                float a = 0.5f + 0.5f * (float) Math.sin(ui.time * 3);
-                g.text(l, (sw - g.textWidth(l)) / 2, sh / 2 - 4, ((int) (90 + 120 * a) << 24) | 0xFFFFFF, false);
-            }
+            // Canlı dünya yeni hazırlandıysa fotoğraftan dünyaya yumuşak geçiş
+            if (liveSince == 0) liveSince = System.nanoTime();
+            float fade = 1 - Math.min(1, (System.nanoTime() - liveSince) / 1e9f / 1.2f);
+            if (fade > 0.01f) photo(g, sw, sh, mx, my, fade);
         } else {
+            liveSince = 0;
             photo(g, sw, sh, mx, my);
         }
         if (page == Page.HOME && perf()) {
@@ -115,6 +109,8 @@ public final class HomeScreen extends WestShell {
         ui.end();
     }
 
+    private long liveSince;
+
     // ───────── Arka plan fotoğrafı ─────────
 
     private float parX, parY;
@@ -142,10 +138,15 @@ public final class HomeScreen extends WestShell {
     }
 
     String photoId() {
-        return perf() ? "home" : "scene";
+        // Canlı dünya hazırlanırken de bekleme hissi olmasın: sade menünün fotoğrafı görünür
+        return "home";
     }
 
     void photo(Gfx g, int sw, int sh, int mx, int my) {
+        photo(g, sw, sh, mx, my, 1f);
+    }
+
+    void photo(Gfx g, int sw, int sh, int mx, int my, float alpha) {
         int[] size = g.imageSize(photoId());
         float tx = transition != null ? parX : (mx - sw / 2f) / (sw / 2f) * 9;
         float ty = transition != null ? parY : (my - sh / 2f) / (sh / 2f) * 5;
@@ -159,7 +160,8 @@ public final class HomeScreen extends WestShell {
         float dw = size[0] * photoScale, dh = size[1] * photoScale;
         photoX = (sw - dw) / 2 - parX;
         photoY = (sh - dh) / 2 - parY;
-        g.image(photoId(), photoX, photoY, dw, dh, 0, 0, size[0], size[1], 0xFFFFFFFF);
+        g.image(photoId(), photoX, photoY, dw, dh, 0, 0, size[0], size[1], ((int) (255 * alpha) << 24) | 0xFFFFFF);
+        if (alpha < 1) return;
         // Havada süzülen sıcak ışık zerreleri (öndeki katman: daha çok kayar)
         float time = ui.time;
         for (float[] m : MOTES) {
@@ -505,6 +507,7 @@ public final class HomeScreen extends WestShell {
     }
 
     void open(Page p) {
+        if (p == Page.STATS) StatsPage.reset();
         page = p;
         search = "";
         searchFocus = false;

@@ -28,7 +28,11 @@ public final class Stats {
         public Map<String, Long> servers = new LinkedHashMap<>();
         public long sessions;
         public long sessionSeconds;
+        public long longestSession;
     }
+
+    /** Bu oturumun süresi (sn) */
+    public long current;
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private final Path path;
@@ -61,6 +65,7 @@ public final class Stats {
             single = s.singleplayer();
             key = single ? s.title() : (s.detail().isEmpty() ? s.title() : s.detail());
             data.sessions++;
+            current = 0;
             dirtySince = System.currentTimeMillis();
         }
         if (!in && wasInWorld) save();
@@ -71,6 +76,8 @@ public final class Stats {
         data.days.merge(today, 1L, Long::sum);
         (single ? data.worlds : data.servers).merge(key, 1L, Long::sum);
         data.sessionSeconds++;
+        current++;
+        if (current > data.longestSession) data.longestSession = current;
         if (System.currentTimeMillis() - dirtySince > 30_000) save();
     }
 
@@ -91,6 +98,26 @@ public final class Stats {
         long t = 0;
         for (long v : data.days.values()) t += v;
         return t;
+    }
+
+    /** Son n gün (en eskiden bugüne) saniye */
+    public long[] days(int n) {
+        long[] out = new long[n];
+        LocalDate d = LocalDate.now();
+        for (int i = 0; i < n; i++) out[n - 1 - i] = data.days.getOrDefault(d.minusDays(i).toString(), 0L);
+        return out;
+    }
+
+    /** Art arda oynanan gün sayısı (bugün ya da dünden geriye) */
+    public int streak() {
+        LocalDate d = LocalDate.now();
+        if (data.days.getOrDefault(d.toString(), 0L) == 0) d = d.minusDays(1);
+        int n = 0;
+        while (data.days.getOrDefault(d.toString(), 0L) > 0) {
+            n++;
+            d = d.minusDays(1);
+        }
+        return n;
     }
 
     /** Son 7 gün (en eskiden bugüne) saniye */

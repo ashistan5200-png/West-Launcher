@@ -258,6 +258,7 @@ public final class MenuScreen implements WestScreen {
             };
             out.add(new Feature(e.name, icon, 1, () -> e.enabled, () -> e.enabled = !e.enabled, e));
         }
+        out.add(new Feature("West shader", Icon.STAR, 2, () -> d.westShader, () -> d.westShader = !d.westShader, null));
         out.add(new Feature("FullBright", Icon.SUN, 2, () -> d.fullbright, () -> d.fullbright = !d.fullbright, null));
         out.add(new Feature("Pürüzsüz yazı", Icon.TEXT, 2, () -> d.smoothFont, () -> d.smoothFont = !d.smoothFont, null));
         out.add(new Feature("Animasyonlar", Icon.STAR, 2, () -> d.animations, () -> d.animations = !d.animations, null));

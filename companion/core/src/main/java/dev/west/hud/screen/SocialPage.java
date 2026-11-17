@@ -63,10 +63,25 @@ final class SocialPage {
         Ui ui = h.ui;
         Gfx g = ui.g;
         StatsPage.panel(g, x, y, w, hgt);
-        WestShell.bigText(g, "Mesajlar", x + 10, y + 10, 0xFFFFFFFF, 1.2f);
-        // Durum seçici (tıkladıkça değişir)
+        // Profil
         int si = Math.max(0, java.util.Arrays.asList(STATUSES).indexOf(c.status));
-        int sy = y + 28;
+        Ui.round(g, x + 9, y + 8, 22, 22, 6, Theme.alpha(ui.t.accent, 0xCC));
+        g.playerFace(x + 10, y + 9, 20);
+        Ui.round(g, x + 25, y + 24, 8, 8, 4, 0xFF101114);
+        Ui.round(g, x + 26, y + 25, 6, 6, 3, STATUS_COLORS[si]);
+        g.textBold(ui.fit(WestHud.game.playerName(), w - 50), x + 37, y + 9, 0xFFFFFFFF, false);
+        WestShell.smallText(g, STATUS_NAMES[si], x + 37, y + 21, 0xAAFFFFFF);
+        int unread = 0;
+        for (Conversation cv : c.conversations) if (cv.unread()) unread++;
+        if (unread > 0) {
+            String u = String.valueOf(unread);
+            int uw = Math.max(14, g.textBoldWidth(u) + 8);
+            Ui.round(g, x + w - 10 - uw, y + 12, uw, 14, 7, ui.t.accent | 0xFF000000);
+            g.textBold(u, x + w - 10 - uw + (uw - g.textBoldWidth(u)) / 2, y + 15, ui.t.onAccent, false);
+        }
+        g.fill(x + 8, y + 36, x + w - 8, y + 37, 0x14FFFFFF);
+        // Durum seçici (tıkladıkça değişir)
+        int sy = y + 42;
         boolean on = ui.hover(x + 8, sy, w - 16, 18);
         Ui.round(g, x + 8, sy, w - 16, 18, 6, on ? 0x30FFFFFF : 0x1AFFFFFF);
         Ui.round(g, x + 14, sy + 6, 6, 6, 3, STATUS_COLORS[si]);
@@ -200,7 +215,19 @@ final class SocialPage {
         }
         g.scissor(x, ly, x + w, y + hgt - 6);
         int start = ly - Math.round(scroll);
+        int online = 0;
+        for (Person p : list) if (p.online()) online++;
+        boolean onlineHeader = false, offlineHeader = false;
         for (Person p : list) {
+            if (p.online() && !onlineHeader) {
+                onlineHeader = true;
+                sectionHead(g, "ÇEVRİMİÇİ — " + online, x + 12, start + 3);
+                start += 14;
+            } else if (!p.online() && !offlineHeader) {
+                offlineHeader = true;
+                sectionHead(g, "ÇEVRİMDIŞI — " + (list.size() - online), x + 12, start + 3);
+                start += 14;
+            }
             if (start + 30 >= ly && start <= y + hgt) personRow(h, p, x + 8, start, w - 16, false);
             start += 32;
         }
@@ -239,6 +266,14 @@ final class SocialPage {
         }
     }
 
+    private static void sectionHead(Gfx g, String s, int x, int y) {
+        g.push();
+        g.translate(x, y);
+        g.scale(0.68f);
+        WestShell.brand(g, s, 0, 0, 0x88FFFFFF, 0.8f);
+        g.pop();
+    }
+
     // ───── Orta: sohbet ─────
 
     private void chatPanel(HomeScreen h, int x, int y, int w, int hgt) {
@@ -261,18 +296,21 @@ final class SocialPage {
             Message m = ms.get(i);
             boolean mine = m.sender().equals(c.me);
             String body = m.body().startsWith("[west-davet]") ? "Dünya daveti gönderdi (Seni bekleyenler bölümünde)" : m.body();
-            List<String> lines = WestShell.wrap(g, body, Math.max(60, w * 2 / 3 - 16));
+            List<String> lines = WestShell.wrap(g, body, Math.max(60, w * 2 / 3 - 30));
             int bh = lines.size() * 10 + 8, bw = 0;
             for (String l : lines) bw = Math.max(bw, g.textWidth(l));
             bw += 14;
-            by -= bh + 4;
-            int bx = mine ? x + w - 10 - bw : x + 10;
-            Ui.round(g, bx, by, bw, bh, 7, mine ? ui.t.accent | 0xFF000000 : 0x26FFFFFF);
+            String time = clock(m.at());
+            by -= bh + 13;
+            int bx = mine ? x + w - 10 - bw : x + 32;
+            if (!mine) badge(g, chatTitle, x + 10, by + bh - 18, 18, false);
+            Ui.round(g, bx, by, bw, bh, 8, mine ? ui.t.accent | 0xFF000000 : 0x2AFFFFFF);
             int ty = by + 5;
             for (String l : lines) {
                 g.text(l, bx + 7, ty, mine ? ui.t.onAccent : 0xFFFFFFFF, false);
                 ty += 10;
             }
+            WestShell.smallText(g, time, mine ? bx + bw - WestShell.small(g, time) - 2 : bx + 2, by + bh + 2, 0x77FFFFFF);
         }
         g.noScissor();
         if (ms.isEmpty()) WestShell.smallText(g, "Henüz mesaj yok. İlk mesajı sen yaz!", x + 12, inputY - 16, 0x88FFFFFF);
@@ -363,6 +401,15 @@ final class SocialPage {
     private static String statusName(String s) {
         int i = java.util.Arrays.asList(STATUSES).indexOf(s);
         return i < 0 ? "Çevrimiçi" : STATUS_NAMES[i];
+    }
+
+    private static String clock(String iso) {
+        try {
+            var t = java.time.OffsetDateTime.parse(iso).atZoneSameInstant(java.time.ZoneId.systemDefault());
+            return String.format(Locale.ROOT, "%02d:%02d", t.getHour(), t.getMinute());
+        } catch (Exception e) {
+            return "";
+        }
     }
 
     private static String ago(String iso) {

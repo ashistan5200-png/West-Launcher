@@ -176,6 +176,8 @@ pub fn apply_prefs(game_dir: &Path, s: &crate::settings::Settings) -> Result<()>
     o.insert("hudEnabled".into(), a.west_hud.into());
     o.insert("animations".into(), a.game_animations.into());
     o.insert("smoothFont".into(), a.smooth_font.into());
+    // West shader: Vulkan'da da çalışan kendi efektimiz (Iris paketi açıkken kendiliğinden devre dışı)
+    o.insert("westShader".into(), (s.shaders && !a.performance_mode).into());
     write_json_atomic(&p, &v)
 }
 
@@ -209,6 +211,13 @@ pub fn apply_low_graphics(game_dir: &Path) -> Result<()> {
     set("entityDistanceScaling", "0.75", None);
     std::fs::write(&p, lines.join("\n") + "\n")?;
     Ok(())
+}
+
+/// Oyun Vulkan ile mi çizilecek (options.txt → preferredGraphicsBackend)
+pub fn uses_vulkan(game_dir: &Path) -> bool {
+    std::fs::read_to_string(game_dir.join("options.txt"))
+        .map(|t| t.lines().any(|l| l.starts_with("preferredGraphicsBackend:") && l.to_lowercase().contains("vulkan")))
+        .unwrap_or(false)
 }
 
 /// Iris'i kurulu Complementary paketiyle açar (kullanıcı başka bir paket seçtiyse dokunmaz).

@@ -133,7 +133,8 @@ pub async fn start_game(app: &AppHandle, id: &str, auth: AuthSession, join_serve
                 tracing::info!("e4mc kurulamadı: {e}");
             }
             // Shader'lar (Performans modunda kapalı)
-            if prefs.shaders && !prefs.accessibility.performance_mode {
+            // Iris (Complementary) yalnızca OpenGL'de çalışır; Vulkan'da West shader devrede
+            if prefs.shaders && !prefs.accessibility.performance_mode && !crate::companion::uses_vulkan(&gd) {
                 for slug in ["sodium", "iris"] {
                     if let Err(e) = crate::content::install::install(&ctx, crate::content::Source::Modrinth, slug, crate::content::Kind::Mod).await {
                         tracing::info!("shader modu kurulamadı ({slug}): {e}");

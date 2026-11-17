@@ -106,7 +106,11 @@ public final class Gfx121 implements Gfx {
     /** Arkadaki oyunu / panoramayı bulanıklaştır (karede bir kez) */
     @Override
     public void blurBehind() {
-        g.blurBeforeThisStratum();
+        // Minecraft karede yalnızca bir bulanıklaştırmaya izin verir; ikincisi tüm ekranı düşürmesin
+        try {
+            g.blurBeforeThisStratum();
+        } catch (IllegalStateException ignored) {
+        }
     }
 
     // ───── Görseller (arka plan fotoğrafı) ─────
