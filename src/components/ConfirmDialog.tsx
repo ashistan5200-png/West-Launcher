@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { create } from "zustand";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle, HelpCircle } from "lucide-react";
+import { tx } from "@/lib/i18n";
 
 interface Ask {
   message: string;
@@ -51,12 +52,12 @@ export function ConfirmHost() {
           <motion.div className="confirm" role="alertdialog" aria-modal initial={{ opacity: 0, scale: 0.95, y: 6 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.97 }} onMouseDown={(e) => e.stopPropagation()}>
             <span className={`confirm-ico ${ask.danger ? "danger" : ""}`}>{ask.danger ? <AlertTriangle size={20} /> : <HelpCircle size={20} />}</span>
             <div className="confirm-text">
-              <strong>{ask.title ?? (ask.danger ? "Emin misin?" : "Onaylıyor musun?")}</strong>
+              <strong>{ask.title ?? (ask.danger ? tx("Emin misin?") : tx("Onaylıyor musun?"))}</strong>
               <p>{ask.message}</p>
             </div>
             <div className="confirm-actions">
-              <button className="btn btn-ghost" onClick={() => answer(false)}>Vazgeç</button>
-              <button ref={okRef} className={ask.danger ? "btn btn-danger" : "btn btn-primary"} onClick={() => answer(true)}>{ask.confirmLabel ?? "Evet"}</button>
+              <button className="btn btn-ghost" onClick={() => answer(false)}>{tx("Vazgeç")}</button>
+              <button ref={okRef} className={ask.danger ? "btn btn-danger" : "btn btn-primary"} onClick={() => answer(true)}>{ask.confirmLabel ?? tx("Evet")}</button>
             </div>
           </motion.div>
         </motion.div>

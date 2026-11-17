@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { api, events, isTauri } from "@/lib/ipc";
 import type { AccountView, Skin } from "@/lib/types";
+import { tx } from "@/lib/i18n";
 
 /** Klasik skinlerde sağ kolun 4. sütunu (x=54..55, y=20..31) doludur; slim'de saydamdır. */
 async function detectSlim(dataUrl: string): Promise<boolean> {
@@ -121,7 +122,7 @@ export const useAccounts = create<AccountsState>((set, get) => {
         if (e.status === "progress") {
           set({ loginOpen: true, loginStage: e.message });
         } else if (e.status === "done") {
-          set({ loginOpen: false, loginStage: null, loginError: null, notice: `${e.username} hesabı eklendi` });
+          set({ loginOpen: false, loginStage: null, loginError: null, notice: tx("{0} hesabı eklendi", e.username) });
           await get().load();
           await get().syncAccountSkin();
         } else if (e.status === "error") {
@@ -143,14 +144,14 @@ export const useAccounts = create<AccountsState>((set, get) => {
         const slim = await detectSlim(skin.dataUrl);
         if (slim !== skin.slim) skin = await api.updateSkin(skin.id, { slim });
         upsertSkin(skin);
-        set({ previewId: skin.id, notice: `${skin.name} arşive eklendi (${slim ? "ince" : "klasik"} kol)` });
+        set({ previewId: skin.id, notice: tx("{0} arşive eklendi ({1} kol)", skin.name, slim ? "ince" : "klasik") });
       }),
 
     importPlayer: (name) =>
       run("player", async () => {
         const skin = await api.importSkinPlayer(name);
         upsertSkin(skin);
-        set({ previewId: skin.id, notice: `${name} oyuncusunun skini arşive eklendi` });
+        set({ previewId: skin.id, notice: tx("{0} oyuncusunun skini arşive eklendi", name) });
       }),
 
     toggleFavorite: async (s) => upsertSkin(await api.updateSkin(s.id, { favorite: !s.favorite })),
@@ -166,13 +167,13 @@ export const useAccounts = create<AccountsState>((set, get) => {
     apply: (s) =>
       run("apply", async () => {
         const acc = get().active();
-        if (!acc) throw new Error("Önce bir hesap ekle veya seç");
+        if (!acc) throw new Error(tx("Önce bir hesap ekle veya seç"));
         const r = await api.applySkin(s.id, acc.uuid);
         set({
           accounts: r.accounts,
           notice: r.uploaded
-            ? `${s.name} Microsoft hesabına yüklendi; oyunda ve sunucularda birkaç dakika içinde görünür.`
-            : `${s.name} ${acc.username} için etkin skin oldu.`,
+            ? tx("{0} Microsoft hesabına yüklendi; oyunda ve sunucularda birkaç dakika içinde görünür.", s.name)
+            : tx("{0} {1} için etkin skin oldu.", s.name, acc.username),
         });
         await get().load();
       }),

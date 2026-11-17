@@ -13,11 +13,12 @@ import { LOADER_LABEL, formatCount, formatRelative } from "@/lib/format";
 import type { ContentHit, Instance, ProjectDetail, ProjectVersion } from "@/lib/types";
 import { ContentIcon } from "./ContentIcon";
 import { InstallMenu } from "./InstallMenu";
+import { tx } from "@/lib/i18n";
 
 type Tab = "about" | "gallery" | "versions";
 const dateTR = (iso: string) => new Date(iso).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" });
-const SIDE: Record<string, string> = { required: "Gerekli", optional: "İsteğe bağlı", unsupported: "Gerekmez", unknown: "Bilinmiyor" };
-const VTYPE: Record<string, string> = { release: "Kararlı", beta: "Beta", alpha: "Alfa" };
+const SIDE: Record<string, string> = { required: tx("Gerekli"), optional: tx("İsteğe bağlı"), unsupported: tx("Gerekmez"), unknown: tx("Bilinmiyor") };
+const VTYPE: Record<string, string> = { release: tx("Kararlı"), beta: tx("Beta"), alpha: tx("Alfa") };
 
 /** Dış bağlantıları sistem tarayıcısında açan Markdown görünümü */
 function Markdown({ md }: { md: string }) {
@@ -64,11 +65,11 @@ export function ModDetail({ hit, instances, preferred, onClose }: { hit: Content
   const gallery = useMemo(() => [...(p?.gallery ?? [])].sort((a, b) => Number(b.featured) - Number(a.featured)), [p]);
   const links = p
     ? ([
-        p.source_url && { icon: Code2, label: "Kaynak kod", url: p.source_url },
-        p.issues_url && { icon: Bug, label: "Hata bildir", url: p.issues_url },
-        p.wiki_url && { icon: BookOpen, label: "Wiki", url: p.wiki_url },
-        p.discord_url && { icon: MessageCircle, label: "Discord", url: p.discord_url },
-        { icon: ExternalLink, label: "Modrinth sayfası", url: hit.url },
+        p.source_url && { icon: Code2, label: tx("Kaynak kod"), url: p.source_url },
+        p.issues_url && { icon: Bug, label: tx("Hata bildir"), url: p.issues_url },
+        p.wiki_url && { icon: BookOpen, label: tx("Wiki"), url: p.wiki_url },
+        p.discord_url && { icon: MessageCircle, label: tx("Discord"), url: p.discord_url },
+        { icon: ExternalLink, label: tx("Modrinth sayfası"), url: hit.url },
       ].filter(Boolean) as { icon: typeof Code2; label: string; url: string }[])
     : [];
 
@@ -87,21 +88,21 @@ export function ModDetail({ hit, instances, preferred, onClose }: { hit: Content
               <div className="mdetail-stats">
                 <span><Download size={14} /> {formatCount(p?.downloads ?? hit.downloads)}</span>
                 {p && <span><Heart size={14} /> {formatCount(p.followers)}</span>}
-                {p && <span><CalendarDays size={14} /> {formatRelative(p.updated)} güncellendi</span>}
+                {p && <span><CalendarDays size={14} /> {formatRelative(p.updated)} {tx("güncellendi")}</span>}
                 <span className="muted">· {p?.ownerName ?? hit.author}</span>
               </div>
             </div>
             <div className="mdetail-actions">
               <InstallMenu hit={hit} instances={instances} preferred={preferred} direct={!!preferred} />
-              <button className="icon-btn" onClick={onClose} aria-label="Kapat"><X size={18} /></button>
+              <button className="icon-btn" onClick={onClose} aria-label={tx("Kapat")}><X size={18} /></button>
             </div>
           </div>
         </header>
 
         <nav className="pill-tabs mdetail-tabs">
-          <button className={clsx("pill-tab", tab === "about" && "on")} onClick={() => setTab("about")}><BookOpen size={16} /> Açıklama</button>
-          {gallery.length > 0 && <button className={clsx("pill-tab", tab === "gallery" && "on")} onClick={() => setTab("gallery")}><ImageIcon size={16} /> Galeri <span className="count">{gallery.length}</span></button>}
-          <button className={clsx("pill-tab", tab === "versions" && "on")} onClick={() => setTab("versions")}><History size={16} /> Sürümler ve değişiklikler {versions && <span className="count">{versions.length}</span>}</button>
+          <button className={clsx("pill-tab", tab === "about" && "on")} onClick={() => setTab("about")}><BookOpen size={16} /> {tx("Açıklama")}</button>
+          {gallery.length > 0 && <button className={clsx("pill-tab", tab === "gallery" && "on")} onClick={() => setTab("gallery")}><ImageIcon size={16} /> {tx("Galeri")} <span className="count">{gallery.length}</span></button>}
+          <button className={clsx("pill-tab", tab === "versions" && "on")} onClick={() => setTab("versions")}><History size={16} /> {tx("Sürümler ve değişiklikler")} {versions && <span className="count">{versions.length}</span>}</button>
         </nav>
 
         <div className="mdetail-body">
@@ -118,7 +119,7 @@ export function ModDetail({ hit, instances, preferred, onClose }: { hit: Content
                     {gallery.length > 4 && <button className="more" onClick={() => setTab("gallery")}>+{gallery.length - 4}</button>}
                   </div>
                 )}
-                {p.body ? <Markdown md={p.body} /> : <p className="muted">Bu proje için ayrıntılı açıklama yazılmamış.</p>}
+                {p.body ? <Markdown md={p.body} /> : <p className="muted">{tx("Bu proje için ayrıntılı açıklama yazılmamış.")}</p>}
               </>
             )}
             {p && tab === "gallery" && (
@@ -142,29 +143,29 @@ export function ModDetail({ hit, instances, preferred, onClose }: { hit: Content
           {p && (
             <aside className="mdetail-side">
               <section>
-                <h4>Nerede çalışır</h4>
-                <div className="kv"><Laptop size={14} /> <span>İstemci (oyuncu)</span><b className={p.client_side}>{SIDE[p.client_side] ?? p.client_side}</b></div>
-                <div className="kv"><Server size={14} /> <span>Sunucu</span><b className={p.server_side}>{SIDE[p.server_side] ?? p.server_side}</b></div>
+                <h4>{tx("Nerede çalışır")}</h4>
+                <div className="kv"><Laptop size={14} /> <span>{tx("İstemci (oyuncu)")}</span><b className={p.client_side}>{SIDE[p.client_side] ?? p.client_side}</b></div>
+                <div className="kv"><Server size={14} /> <span>{tx("Sunucu")}</span><b className={p.server_side}>{SIDE[p.server_side] ?? p.server_side}</b></div>
               </section>
               <section>
-                <h4>Uyumluluk</h4>
-                <div className="chips-wrap">{p.loaders.filter((l) => l in LOADER_LABEL || l === "minecraft").map((l) => <span key={l} className={`rtag loader ${l}`}>{LOADER_LABEL[l] ?? "Vanilla"}</span>)}</div>
-                <p className="small muted">Minecraft {versionSpan(p.game_versions)}</p>
+                <h4>{tx("Uyumluluk")}</h4>
+                <div className="chips-wrap">{p.loaders.filter((l) => l in LOADER_LABEL || l === "minecraft").map((l) => <span key={l} className={`rtag loader ${l}`}>{LOADER_LABEL[l] ?? tx("Vanilla")}</span>)}</div>
+                <p className="small muted">{tx("Minecraft")} {versionSpan(p.game_versions)}</p>
               </section>
               {(p.categories.length > 0 || (p.additional_categories ?? []).length > 0) && (
                 <section>
-                  <h4>Kategoriler</h4>
+                  <h4>{tx("Kategoriler")}</h4>
                   <div className="chips-wrap">{[...p.categories, ...(p.additional_categories ?? [])].filter((c) => !(c in LOADER_LABEL)).map((c) => <span key={c} className="rtag cat">{catLabel(c)}</span>)}</div>
                 </section>
               )}
               <section>
-                <h4>Bilgiler</h4>
-                {p.license && <div className="kv"><Scale size={14} /> <span>Lisans</span><b>{p.license.name || p.license.id}</b></div>}
-                <div className="kv"><CalendarDays size={14} /> <span>Yayın</span><b>{dateTR(p.published)}</b></div>
-                <div className="kv"><History size={14} /> <span>Güncelleme</span><b>{dateTR(p.updated)}</b></div>
+                <h4>{tx("Bilgiler")}</h4>
+                {p.license && <div className="kv"><Scale size={14} /> <span>{tx("Lisans")}</span><b>{p.license.name || p.license.id}</b></div>}
+                <div className="kv"><CalendarDays size={14} /> <span>{tx("Yayın")}</span><b>{dateTR(p.published)}</b></div>
+                <div className="kv"><History size={14} /> <span>{tx("Güncelleme")}</span><b>{dateTR(p.updated)}</b></div>
               </section>
               <section>
-                <h4>Bağlantılar</h4>
+                <h4>{tx("Bağlantılar")}</h4>
                 {links.map((l) => (
                   <button key={l.url} className="mdetail-link" onClick={() => void openUrl(l.url)}><l.icon size={14} /> {l.label} <ExternalLink size={12} className="muted" /></button>
                 ))}
@@ -218,12 +219,12 @@ function Versions({ versions }: { versions: ProjectVersion[] | null }) {
   }, [mc, loader, versions]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!versions) return <div className="center pad muted"><Loader2 size={20} className="spin" /></div>;
-  if (!versions.length) return <p className="muted">Sürüm bilgisi bulunamadı.</p>;
+  if (!versions.length) return <p className="muted">{tx("Sürüm bilgisi bulunamadı.")}</p>;
   return (
     <div className="vlist">
       <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
         <select className="bf-select" value={mc} onChange={(e) => setMc(e.target.value)} style={{ width: 170 }}>
-          <option value="">Tüm Minecraft sürümleri</option>
+          <option value="">{tx("Tüm Minecraft sürümleri")}</option>
           {mcs.map((v) => <option key={v} value={v}>{v}</option>)}
         </select>
         {loaders.length > 1 && (
@@ -231,7 +232,7 @@ function Versions({ versions }: { versions: ProjectVersion[] | null }) {
             {loaders.map((l) => <button key={l} className={clsx("fchip", loader === l && "on")} onClick={() => setLoader(loader === l ? "" : l)}>{LOADER_LABEL[l] ?? l}</button>)}
           </div>
         )}
-        <span className="muted small">{list.length} sürüm</span>
+        <span className="muted small">{list.length} {tx("sürüm")}</span>
       </div>
       {list.slice(0, limit).map((v) => {
         const isOpen = open.has(v.id);
@@ -249,13 +250,13 @@ function Versions({ versions }: { versions: ProjectVersion[] | null }) {
             </button>
             {isOpen && (
               <div className="vbody">
-                {v.changelog?.trim() ? <Markdown md={v.changelog} /> : <p className="muted small">Bu sürüm için değişiklik notu yazılmamış.</p>}
+                {v.changelog?.trim() ? <Markdown md={v.changelog} /> : <p className="muted small">{tx("Bu sürüm için değişiklik notu yazılmamış.")}</p>}
               </div>
             )}
           </article>
         );
       })}
-      {list.length > limit && <button className="btn btn-ghost" style={{ alignSelf: "center" }} onClick={() => setLimit((n) => n + 20)}>Daha eski sürümler</button>}
+      {list.length > limit && <button className="btn btn-ghost" style={{ alignSelf: "center" }} onClick={() => setLimit((n) => n + 20)}>{tx("Daha eski sürümler")}</button>}
     </div>
   );
 }

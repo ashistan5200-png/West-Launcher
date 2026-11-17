@@ -4,6 +4,7 @@ import { Modal } from "./Modal";
 import { AshiAvatar } from "./AshiAvatar";
 import { useAshi } from "@/stores/ashi";
 import { useSettings } from "@/stores/settings";
+import { tx } from "@/lib/i18n";
 
 /** Bir test turunun kabaca süresi: modlu paket açılışı ≈ 1–3 dk. */
 const MIN_PER_ROUND = 1;
@@ -22,11 +23,11 @@ export function AshiConfirmModal() {
     <Modal
       open={!!confirm}
       onClose={() => { setErr(null); closeConfirm(); }}
-      title="Otomatik Suçlu Avcısı"
+      title={tx("Otomatik Suçlu Avcısı")}
       width={540}
       footer={
         <>
-          <button className="btn btn-ghost" onClick={closeConfirm}>Vazgeç</button>
+          <button className="btn btn-ghost" onClick={closeConfirm}>{tx("Vazgeç")}</button>
           <button
             className="btn btn-primary"
             disabled={busy}
@@ -35,7 +36,7 @@ export function AshiConfirmModal() {
               try { await start(confirm!.instanceId, offlineName); } catch (e) { setErr(String(e)); }
             }}
           >
-            <Swords size={15} /> {busy ? "Başlatılıyor…" : "Avı başlat"}
+            <Swords size={15} /> {busy ? tx("Başlatılıyor…") : tx("Avı başlat")}
           </button>
         </>
       }
@@ -47,27 +48,26 @@ export function AshiConfirmModal() {
           </div>
           <div className="stack">
             <p className="ashi-bubble">
-              <strong>{confirm.name}</strong> içindeki <strong>{plan.modCount} modu</strong> ikiye bölerek tarayacağım.
-              Her turda oyunu açıp ana menüye ulaşıp ulaşmadığına bakacağım.
+              <strong>{confirm.name}</strong> {tx("içindeki")} <strong>{plan.modCount} modu</strong> {tx("ikiye bölerek tarayacağım. Her turda oyunu açıp ana menüye ulaşıp ulaşmadığına bakacağım.")}
             </p>
 
             <div className="warn-box">
               <AlertTriangle size={16} />
               <div>
-                <strong>Bu işlem biraz uzun sürebilir.</strong>
+                <strong>{tx("Bu işlem biraz uzun sürebilir.")}</strong>
                 <span className="small">
-                  En fazla ~{plan.maxRounds} tur · tahminen <strong>{lo}–{hi} dakika</strong>
+                  {tx("En fazla ~")}{plan.maxRounds} {tx("tur · tahminen")} <strong>{lo}–{hi} dakika</strong>
                 </span>
               </div>
             </div>
 
             <ul className="ashi-facts">
-              <li><MonitorPlay size={15} /> Oyun penceresi birkaç kez kendiliğinden açılıp kapanacak. Lütfen kapatma; Ashi kapatır.</li>
-              <li><ShieldCheck size={15} /> Hiçbir mod silinmez. Av bitince ya da durdurulunca tüm modlar eski haline döner.</li>
-              <li><Clock size={15} /> Bu sırada bilgisayarını kullanabilirsin; avı sağ alttaki karttan izleyip istediğin an durdurabilirsin.</li>
+              <li><MonitorPlay size={15} /> {tx("Oyun penceresi birkaç kez kendiliğinden açılıp kapanacak. Lütfen kapatma; Ashi kapatır.")}</li>
+              <li><ShieldCheck size={15} /> {tx("Hiçbir mod silinmez. Av bitince ya da durdurulunca tüm modlar eski haline döner.")}</li>
+              <li><Clock size={15} /> {tx("Bu sırada bilgisayarını kullanabilirsin; avı sağ alttaki karttan izleyip istediğin an durdurabilirsin.")}</li>
             </ul>
             <p className="muted tiny">
-              Şimdilik açılışta (ana menüye kadar) olan çökmeleri yakalar. Dünyaya girdikten sonra olan çökmeler için sonuç "tekrarlanmadı" çıkabilir.
+              {tx("Şimdilik açılışta (ana menüye kadar) olan çökmeleri yakalar. Dünyaya girdikten sonra olan çökmeler için sonuç \"tekrarlanmadı\" çıkabilir.")}
             </p>
             {err && <p className="hint error">{err}</p>}
           </div>

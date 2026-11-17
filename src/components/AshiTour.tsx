@@ -4,6 +4,7 @@ import { AshiAvatar } from "./AshiAvatar";
 import { useOnboarding } from "@/stores/onboarding";
 import { LAUNCHER_LABEL } from "./ImportWizard";
 import type { AshiMood } from "@/lib/ashi";
+import { tx } from "@/lib/i18n";
 
 interface Step {
   /** Kenar çubuğundaki hedef (data-tour); yoksa ekran ortası */
@@ -16,44 +17,44 @@ interface Step {
 
 const STEPS: Step[] = [
   {
-    title: "Selam, ben Ashi!",
-    text: "West Client'a hoş geldin. Sana birkaç dakikada her şeyi gezdireyim; istediğin an geçebilirsin.",
-    more: "Ben bu launcher'ın rehberi ve iz sürücüsüyüm: mod bulurum, çöken paketlerde suçlu modu yakalarım, sorularını cevaplarım.",
+    title: tx("Selam, ben Ashi!"),
+    text: tx("West Client'a hoş geldin. Sana birkaç dakikada her şeyi gezdireyim; istediğin an geçebilirsin."),
+    more: tx("Ben bu launcher'ın rehberi ve iz sürücüsüyüm: mod bulurum, çöken paketlerde suçlu modu yakalarım, sorularını cevaplarım."),
     mood: "wave",
   },
   {
     target: "/library",
-    title: "Kütüphane",
-    text: "Tüm instance'ların burada. Her biri kendi modları, ayarları ve dünyalarıyla tamamen ayrı.",
-    more: "Vanilla, Fabric, Quilt, Forge ve NeoForge destekliyorum. Bir instance'ı klonlayabilir ya da şablon yapıp yeni paketlere temel olarak kullanabilirsin.",
+    title: tx("Kütüphane"),
+    text: tx("Tüm instance'ların burada. Her biri kendi modları, ayarları ve dünyalarıyla tamamen ayrı."),
+    more: tx("Vanilla, Fabric, Quilt, Forge ve NeoForge destekliyorum. Bir instance'ı klonlayabilir ya da şablon yapıp yeni paketlere temel olarak kullanabilirsin."),
     mood: "idle",
   },
   {
     target: "/browse",
-    title: "Keşfet",
-    text: "Modrinth'teki on binlerce içeriği sürüme, yükleyiciye ve kategoriye göre süzerim. Mod, modpack, shader ve resource pack tek tıkla kurulur.",
-    more: "Bir modun ihtiyaç duyduğu kütüphaneleri (Fabric API, Architectury…) kendim bulup kurarım; zaten kuruluysa atlarım.",
+    title: tx("Keşfet"),
+    text: tx("Modrinth'teki on binlerce içeriği sürüme, yükleyiciye ve kategoriye göre süzerim. Mod, modpack, shader ve resource pack tek tıkla kurulur."),
+    more: tx("Bir modun ihtiyaç duyduğu kütüphaneleri (Fabric API, Architectury…) kendim bulup kurarım; zaten kuruluysa atlarım."),
     mood: "search",
   },
   {
     target: "/skins",
-    title: "Skin ve hesaplar",
-    text: "Microsoft ve offline hesapların, skin arşivin ve 3D önizleme burada.",
-    more: "Bilgisayarından .png yükleyebilir, bir oyuncunun skinini alabilir, favorilerini saklayıp tek tıkla hesabına uygulayabilirsin.",
+    title: tx("Skin ve hesaplar"),
+    text: tx("Microsoft ve offline hesapların, skin arşivin ve 3D önizleme burada."),
+    more: tx("Bilgisayarından .png yükleyebilir, bir oyuncunun skinini alabilir, favorilerini saklayıp tek tıkla hesabına uygulayabilirsin."),
     mood: "think",
   },
   {
     target: "/gallery",
-    title: "Ekran görüntüleri",
-    text: "Oyunda F2'ye bastığın an fotoğraf burada belirir. Kırp, filtre uygula, üzerine yaz.",
-    more: "Düzenlemeler her zaman kopya olarak kaydedilir; orijinal dosyan hiç değişmez. Panoya kopyalayıp Discord'a yapıştırabilirsin.",
+    title: tx("Ekran görüntüleri"),
+    text: tx("Oyunda F2'ye bastığın an fotoğraf burada belirir. Kırp, filtre uygula, üzerine yaz."),
+    more: tx("Düzenlemeler her zaman kopya olarak kaydedilir; orijinal dosyan hiç değişmez. Panoya kopyalayıp Discord'a yapıştırabilirsin."),
     mood: "celebrate",
   },
   {
     target: "ashi",
-    title: "Bana her zaman sorabilirsin",
-    text: "\"Korku-aksiyon modpack öner\" gibi yaz; arayıp kurulabilir öneriler getiririm.",
-    more: "Varsayılan olarak bilgisayarında çalışan ücretsiz bir yapay zeka kullanırım. Ayarlardan değiştirebilirsin.",
+    title: tx("Bana her zaman sorabilirsin"),
+    text: tx("\"Korku-aksiyon modpack öner\" gibi yaz; arayıp kurulabilir öneriler getiririm."),
+    more: tx("Varsayılan olarak bilgisayarında çalışan ücretsiz bir yapay zeka kullanırım. Ayarlardan değiştirebilirsin."),
     mood: "wave",
   },
 ];
@@ -94,18 +95,18 @@ export function AshiTour() {
   const next = () => setI((n) => n + 1);
   const finish = () => void endTour();
 
-  const title = isImport ? "Son bir şey" : step.title;
+  const title = isImport ? tx("Son bir şey") : step.title;
   const text = isImport
     ? scanning && !found
-      ? "Bilgisayarında başka launcher var mı diye bakıyorum…"
+      ? tx("Bilgisayarında başka launcher var mı diye bakıyorum…")
       : launchers.length
-        ? `Bilgisayarında ${launchers.join(", ")} tespit ettim (${found!.length} instance). Mevcut modpack'lerini ve ayarlarını West Client'a hemen aktarmak ister misin?`
-        : "Başka bir launcher bulamadım. İleride Kütüphane'den bir klasör seçip aktarım yapabilirsin."
+        ? tx("Bilgisayarında {0} tespit ettim ({1} instance). Mevcut modpack'lerini ve ayarlarını West Client'a hemen aktarmak ister misin?", launchers.join(", "), found!.length)
+        : tx("Başka bir launcher bulamadım. İleride Kütüphane'den bir klasör seçip aktarım yapabilirsin.")
     : step.text;
   const mood: AshiMood = isImport ? (launchers.length ? "think" : "wave") : step.mood;
 
   return (
-    <div className="tour-layer" role="dialog" aria-label="Ashi tanıtım turu">
+    <div className="tour-layer" role="dialog" aria-label={tx("Ashi tanıtım turu")}>
       {/* Odak: hedef dışını hafifçe karartan, hedefe kayan çerçeve */}
       <AnimatePresence>
         {pos.rect && !isImport && (
@@ -159,17 +160,17 @@ export function AshiTour() {
               {isImport ? (
                 launchers.length ? (
                   <>
-                    <button className="btn btn-primary btn-sm" onClick={() => { finish(); openWizard(); }}>Evet, aktaralım</button>
-                    <button className="btn btn-ghost btn-sm" onClick={finish}>Şimdilik geç</button>
+                    <button className="btn btn-primary btn-sm" onClick={() => { finish(); openWizard(); }}>{tx("Evet, aktaralım")}</button>
+                    <button className="btn btn-ghost btn-sm" onClick={finish}>{tx("Şimdilik geç")}</button>
                   </>
                 ) : (
-                  <button className="btn btn-primary btn-sm" disabled={scanning && !found} onClick={finish}>Hadi başlayalım</button>
+                  <button className="btn btn-primary btn-sm" disabled={scanning && !found} onClick={finish}>{tx("Hadi başlayalım")}</button>
                 )
               ) : (
                 <>
-                  <button className="btn btn-primary btn-sm" onClick={next}>Devam et</button>
-                  {!showMore && <button className="btn btn-ghost btn-sm" onClick={() => setShowMore(true)}>Bu ne işe yarıyor?</button>}
-                  <button className="btn-link" onClick={finish}>Anladım, geç</button>
+                  <button className="btn btn-primary btn-sm" onClick={next}>{tx("Devam et")}</button>
+                  {!showMore && <button className="btn btn-ghost btn-sm" onClick={() => setShowMore(true)}>{tx("Bu ne işe yarıyor?")}</button>}
+                  <button className="btn-link" onClick={finish}>{tx("Anladım, geç")}</button>
                 </>
               )}
             </div>

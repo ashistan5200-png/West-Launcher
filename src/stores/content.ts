@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { api } from "@/lib/ipc";
 import type { ContentHit, InstallReport } from "@/lib/types";
 import { useInstances } from "./instances";
+import { tx } from "@/lib/i18n";
 
 const key = (h: Pick<ContentHit, "source" | "id">) => `${h.source}:${h.id}`;
 
@@ -29,7 +30,7 @@ let toastId = 0;
 const summarize = (hit: ContentHit, r: InstallReport): Toast => {
   const deps = r.installed.filter((i) => i.dependencyOf).length;
   if (r.installed.length === 0 && r.skipped.length) return { id: ++toastId, text: r.skipped[0], tone: "warn" };
-  const text = deps > 0 ? `${hit.title} ve ${deps} bağımlılık kuruldu` : `${hit.title} kuruldu`;
+  const text = deps > 0 ? tx("{0} ve {1} bağımlılık kuruldu", hit.title, deps) : `${hit.title} kuruldu`;
   return { id: ++toastId, text: r.warnings.length ? `${text} · ${r.warnings[0]}` : text, tone: r.warnings.length ? "warn" : "ok" };
 };
 
@@ -58,7 +59,7 @@ export const useContent = create<ContentState>((set, get) => ({
         await useInstances.getState().refresh();
         push({ id: ++toastId, text: `${inst.name} yeni instance olarak kuruldu`, tone: "ok" });
       } else {
-        if (!instanceId) throw new Error("Önce bir instance seç");
+        if (!instanceId) throw new Error(tx("Önce bir instance seç"));
         const r = await api.installContent(instanceId, hit.source, hit.id, hit.kind);
         push(summarize(hit, r));
         await get().loadInstalled(instanceId);

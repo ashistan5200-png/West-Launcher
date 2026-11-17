@@ -1,3 +1,4 @@
+import { tx } from "@/lib/i18n";
 export const formatDuration = (secs: number) => {
   if (secs < 60) return `${secs} sn`;
   const h = Math.floor(secs / 3600);
@@ -6,33 +7,33 @@ export const formatDuration = (secs: number) => {
 };
 
 export const formatRelative = (iso: string | null) => {
-  if (!iso) return "Hiç oynanmadı";
+  if (!iso) return tx("Hiç oynanmadı");
   const diff = (Date.now() - new Date(iso).getTime()) / 1000;
-  if (diff < 60) return "Az önce";
-  if (diff < 3600) return `${Math.floor(diff / 60)} dk önce`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)} sa önce`;
+  if (diff < 60) return tx("Az önce");
+  if (diff < 3600) return tx("{0} dk önce", Math.floor(diff / 60));
+  if (diff < 86400) return tx("{0} sa önce", Math.floor(diff / 3600));
   const d = Math.floor(diff / 86400);
-  if (d < 7) return `${d} gün önce`;
-  if (d < 30) return `${Math.floor(d / 7)} hafta önce`;
-  if (d < 365) return `${Math.floor(d / 30)} ay önce`;
-  return `${Math.floor(d / 365)} yıl önce`;
+  if (d < 7) return tx("{0} gün önce", d);
+  if (d < 30) return tx("{0} hafta önce", Math.floor(d / 7));
+  if (d < 365) return tx("{0} ay önce", Math.floor(d / 30));
+  return tx("{0} yıl önce", Math.floor(d / 365));
 };
 
 export const LOADER_LABEL: Record<string, string> = {
-  vanilla: "Vanilla",
-  fabric: "Fabric",
-  quilt: "Quilt",
-  forge: "Forge",
-  neoforge: "NeoForge",
+  vanilla: tx("Vanilla"),
+  fabric: tx("Fabric"),
+  quilt: tx("Quilt"),
+  forge: tx("Forge"),
+  neoforge: tx("NeoForge"),
 };
 
 export const STAGE_LABEL: Record<string, string> = {
-  manifest: "Sürüm bilgisi alınıyor",
-  loader: "Mod yükleyici kuruluyor",
-  files: "Dosyalar indiriliyor",
-  java: "Java hazırlanıyor",
-  update: "İçerik güncelleniyor",
-  done: "Hazır",
+  manifest: tx("Sürüm bilgisi alınıyor"),
+  loader: tx("Mod yükleyici kuruluyor"),
+  files: tx("Dosyalar indiriliyor"),
+  java: tx("Java hazırlanıyor"),
+  update: tx("İçerik güncelleniyor"),
+  done: tx("Hazır"),
 };
 
 export const formatCount = (n: number) =>

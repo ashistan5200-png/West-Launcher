@@ -4,6 +4,7 @@ import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { FlipHorizontal2, Loader2, RotateCcw, RotateCw, ZoomIn, ZoomOut } from "lucide-react";
 import { Modal } from "./Modal";
 import { api } from "@/lib/ipc";
+import { tx } from "@/lib/i18n";
 
 interface CropRequest {
   src: string;
@@ -19,7 +20,7 @@ interface CropRequest {
 
 const useCropStore = create<{ req: CropRequest | null; set: (r: CropRequest | null) => void }>((set) => ({ req: null, set: (req) => set({ req }) }));
 
-const IMAGES = [{ name: "Görsel", extensions: ["png", "jpg", "jpeg", "webp", "gif"] }];
+const IMAGES = [{ name: tx("Görsel"), extensions: ["png", "jpg", "jpeg", "webp", "gif"] }];
 
 /**
  * Görsel seçtirir, kırpma penceresini açar ve kırpılmış görseli geçici bir dosyaya yazar.
@@ -108,10 +109,10 @@ export function ImageCropperHost() {
     <Modal open={!!req} onClose={() => close(null)} title={req?.title ?? ""} width={Math.max(W + 40, 420)}
       footer={
         <>
-          {req?.isGif && <button className="btn btn-ghost" onClick={() => close("original")} title="Hareketli GIF kırpılınca durağan olur">Kırpmadan kullan (GIF)</button>}
+          {req?.isGif && <button className="btn btn-ghost" onClick={() => close("original")} title={tx("Hareketli GIF kırpılınca durağan olur")}>{tx("Kırpmadan kullan (GIF)")}</button>}
           <span className="grow" />
-          <button className="btn btn-ghost" onClick={() => close(null)}>Vazgeç</button>
-          <button className="btn btn-primary" disabled={!img || busy} onClick={done}>{busy && <Loader2 size={15} className="spin" />} Uygula</button>
+          <button className="btn btn-ghost" onClick={() => close(null)}>{tx("Vazgeç")}</button>
+          <button className="btn btn-primary" disabled={!img || busy} onClick={done}>{busy && <Loader2 size={15} className="spin" />} {tx("Uygula")}</button>
         </>
       }>
       <div
@@ -131,15 +132,15 @@ export function ImageCropperHost() {
       </div>
       <div className="crop-tools">
         <ZoomOut size={16} className="muted" />
-        <input type="range" min={1} max={5} step={0.01} value={v.zoom} onChange={(e) => update({ zoom: Number(e.target.value) })} aria-label="Yakınlaştır" />
+        <input type="range" min={1} max={5} step={0.01} value={v.zoom} onChange={(e) => update({ zoom: Number(e.target.value) })} aria-label={tx("Yakınlaştır")} />
         <ZoomIn size={16} className="muted" />
         <span className="vsep" />
-        <button className="icon-btn" title="Sola döndür" onClick={() => update({ rot: (v.rot + 270) % 360, x: 0, y: 0 })}><RotateCcw size={16} /></button>
-        <button className="icon-btn" title="Sağa döndür" onClick={() => update({ rot: (v.rot + 90) % 360, x: 0, y: 0 })}><RotateCw size={16} /></button>
-        <button className={`icon-btn ${v.flip ? "on" : ""}`} title="Aynala" onClick={() => update({ flip: !v.flip })}><FlipHorizontal2 size={16} /></button>
-        <button className="btn btn-ghost btn-sm" onClick={() => setV(START)}>Sıfırla</button>
+        <button className="icon-btn" title={tx("Sola döndür")} onClick={() => update({ rot: (v.rot + 270) % 360, x: 0, y: 0 })}><RotateCcw size={16} /></button>
+        <button className="icon-btn" title={tx("Sağa döndür")} onClick={() => update({ rot: (v.rot + 90) % 360, x: 0, y: 0 })}><RotateCw size={16} /></button>
+        <button className={`icon-btn ${v.flip ? "on" : ""}`} title={tx("Aynala")} onClick={() => update({ flip: !v.flip })}><FlipHorizontal2 size={16} /></button>
+        <button className="btn btn-ghost btn-sm" onClick={() => setV(START)}>{tx("Sıfırla")}</button>
       </div>
-      <p className="muted tiny" style={{ textAlign: "center" }}>Sürükleyerek konumlandır, tekerlek ya da çubukla yakınlaştır. Çerçevenin içi görünecek.</p>
+      <p className="muted tiny" style={{ textAlign: "center" }}>{tx("Sürükleyerek konumlandır, tekerlek ya da çubukla yakınlaştır. Çerçevenin içi görünecek.")}</p>
     </Modal>
   );
 }

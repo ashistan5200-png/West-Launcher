@@ -9,6 +9,7 @@ import { api } from "@/lib/ipc";
 import { useInstances } from "@/stores/instances";
 import { Logo } from "./Logo";
 import { UpdateButton } from "./UpdateCenter";
+import { tx } from "@/lib/i18n";
 
 const win = () => (isTauri() ? getCurrentWindow() : null);
 
@@ -23,24 +24,24 @@ export function TitleBar() {
     <header className="titlebar" data-tauri-drag-region>
       <div className="titlebar-brand" data-tauri-drag-region>
         <Logo size={20} />
-        <span className="wordmark" data-tauri-drag-region>West<b>Client</b></span>
+        <span className="wordmark" data-tauri-drag-region>{tx("West")}<b>{tx("Client")}</b></span>
       </div>
       <div className="titlebar-actions">
         <RunningPill />
         <UpdateButton />
-        <button className="tb-account" onClick={() => navigate("/skins")} title="Hesap ve skin">
+        <button className="tb-account" onClick={() => navigate("/skins")} title={tx("Hesap ve skin")}>
           <span className="tb-avatar">{(name ?? "?").slice(0, 1).toUpperCase()}</span>
-          <span className="truncate">{name ?? "Giriş yap"}</span>
-          {west ? <span className="tb-kind west">West</span> : account && <span className={`tb-kind ${account.kind}`}>{account.kind === "microsoft" ? "MS" : "Offline"}</span>}
+          <span className="truncate">{name ?? tx("Giriş yap")}</span>
+          {west ? <span className="tb-kind west">{tx("West")}</span> : account && <span className={`tb-kind ${account.kind}`}>{account.kind === "microsoft" ? "MS" : tx("Offline")}</span>}
         </button>
         <span className="tb-sep" />
-        <button className="tb-btn" aria-label="Küçült" onClick={() => win()?.minimize()}>
+        <button className="tb-btn" aria-label={tx("Küçült")} onClick={() => win()?.minimize()}>
           <Minus size={14} />
         </button>
-        <button className="tb-btn" aria-label="Büyüt" onClick={() => win()?.toggleMaximize()}>
+        <button className="tb-btn" aria-label={tx("Büyüt")} onClick={() => win()?.toggleMaximize()}>
           <Square size={12} />
         </button>
-        <button className="tb-btn tb-close" aria-label="Kapat" onClick={() => win()?.close()}>
+        <button className="tb-btn tb-close" aria-label={tx("Kapat")} onClick={() => win()?.close()}>
           <X size={14} />
         </button>
       </div>
@@ -74,11 +75,11 @@ function RunningPill() {
   }, [ids.length]);
 
   const live = ids.map((id) => instances.find((i) => i.id === id)).filter(Boolean);
-  if (!live.length) return <div className="tb-running idle" data-tauri-drag-region><span className="tb-dot" /> Çalışan instance yok</div>;
+  if (!live.length) return <div className="tb-running idle" data-tauri-drag-region><span className="tb-dot" /> {tx("Çalışan instance yok")}</div>;
   const first = live[0]!;
   const secs = started[first.id] ? Math.max(0, Math.floor((Date.now() - started[first.id]) / 1000)) : null;
   return (
-    <button className="tb-running live" onClick={() => navigate(`/instance/${first.id}`)} title="Instance'a git">
+    <button className="tb-running live" onClick={() => navigate(`/instance/${first.id}`)} title={tx("Instance'a git")}>
       <span className="tb-dot" />
       <span className="truncate">{first.name}</span>
       {live.length > 1 && <span className="tb-more">+{live.length - 1}</span>}

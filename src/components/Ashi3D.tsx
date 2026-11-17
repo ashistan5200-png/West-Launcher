@@ -4,6 +4,7 @@ import { BoxGeometry, CircleGeometry, Group, Mesh, MeshLambertMaterial, MeshBasi
 import type { AshiMood } from "@/lib/ashi";
 import { useAshi } from "@/stores/ashi";
 import { useSettings } from "@/stores/settings";
+import { tx } from "@/lib/i18n";
 
 /**
  * Ashi — AshiWest skinli, Minecraft formatında 3D maskot.
@@ -288,5 +289,5 @@ export default function Ashi3D({ mood, facing = -0.42, width = 120, height = 150
     if (viewer.current?.animation) viewer.current.animation.paused = reduceMotion;
   }, [reduceMotion]);
 
-  return <canvas ref={canvas} className="ashi-canvas" style={{ width, height }} aria-label="Ashi" />;
+  return <canvas ref={canvas} className="ashi-canvas" style={{ width, height }} aria-label={tx("Ashi")} />;
 }

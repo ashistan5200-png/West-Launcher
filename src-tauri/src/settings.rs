@@ -104,7 +104,15 @@ pub struct Settings {
     pub music_in_game: bool,
     /// West shader (ışıma, sıcak renkler); OpenGL ve Vulkan'da çalışır, ek indirme yok
     pub shaders: bool,
+    /// Arayüz dili: "tr" | "en" | "de". Boş → ilk açılışta sistem dilinden seçilir.
+    /// Eski ayar dosyalarında alan yoksa Türkçe kalır.
+    #[serde(default = "legacy_language")]
+    pub language: String,
     pub accessibility: Accessibility,
+}
+
+fn legacy_language() -> String {
+    "tr".into()
 }
 
 impl Default for Settings {
@@ -130,6 +138,7 @@ impl Default for Settings {
             music: true,
             music_in_game: true,
             shaders: false,
+            language: String::new(),
             accessibility: Accessibility::default(),
         }
     }

@@ -6,6 +6,7 @@ import { useAshi, type HuntView } from "@/stores/ashi";
 import { useInstances } from "@/stores/instances";
 import { ashiLines, type AshiMood } from "@/lib/ashi";
 import { formatDuration } from "@/lib/format";
+import { tx } from "@/lib/i18n";
 
 /** Sağ alttaki Ashi kartları: çökme sonrası teklif + süren/biten avlar. */
 export function AshiDock() {
@@ -33,25 +34,25 @@ function OfferCard() {
   const { offer, dismissOffer, openConfirm } = useAshi();
   if (!offer) return null;
   return (
-    <motion.div className="ashi-card" {...cardMotion} role="alertdialog" aria-label="Ashi">
+    <motion.div className="ashi-card" {...cardMotion} role="alertdialog" aria-label={tx("Ashi")}>
       <div className="ashi-stage">
         <AshiAvatar mood="wave" width={96} height={120} />
       </div>
       <div className="ashi-body">
         <div className="ashi-head">
-          <span className="ashi-name">Ashi</span>
-          <span className="ashi-role">Suçlu Avcısı</span>
-          <button className="icon-btn ashi-x" onClick={dismissOffer} aria-label="Kapat">
+          <span className="ashi-name">{tx("Ashi")}</span>
+          <span className="ashi-role">{tx("Suçlu Avcısı")}</span>
+          <button className="icon-btn ashi-x" onClick={dismissOffer} aria-label={tx("Kapat")}>
             <X size={14} />
           </button>
         </div>
         <p className="ashi-bubble">{offer.line}</p>
-        <p className="muted tiny">Otomatik Suçlu Avcısı'nı çalıştırmak istiyor musun?</p>
+        <p className="muted tiny">{tx("Otomatik Suçlu Avcısı'nı çalıştırmak istiyor musun?")}</p>
         <div className="row">
           <button className="btn btn-primary btn-sm" onClick={() => openConfirm(offer.instanceId, offer.name)}>
-            <Search size={14} /> Çalıştır
+            <Search size={14} /> {tx("Çalıştır")}
           </button>
-          <button className="btn btn-ghost btn-sm" onClick={dismissOffer}>Şimdi değil</button>
+          <button className="btn btn-ghost btn-sm" onClick={dismissOffer}>{tx("Şimdi değil")}</button>
         </div>
       </div>
     </motion.div>
@@ -97,14 +98,14 @@ function HuntCard({ hunt: h }: { hunt: HuntView }) {
       </div>
       <div className="ashi-body">
         <div className="ashi-head">
-          <span className="ashi-name">Ashi</span>
+          <span className="ashi-name">{tx("Ashi")}</span>
           <span className="ashi-role truncate">{name}</span>
           {running ? (
-            <button className="icon-btn ashi-x" onClick={() => setCollapsed((c) => !c)} aria-label="Küçült">
+            <button className="icon-btn ashi-x" onClick={() => setCollapsed((c) => !c)} aria-label={tx("Küçült")}>
               <Minus size={14} />
             </button>
           ) : (
-            <button className="icon-btn ashi-x" onClick={() => close(h.instanceId)} aria-label="Kapat">
+            <button className="icon-btn ashi-x" onClick={() => close(h.instanceId)} aria-label={tx("Kapat")}>
               <X size={14} />
             </button>
           )}
@@ -116,8 +117,8 @@ function HuntCard({ hunt: h }: { hunt: HuntView }) {
         {running && (
           <>
             <div className="ashi-stats">
-              <span>Tur {Math.min(h.round + 1, h.maxRounds)} / ~{h.maxRounds}</span>
-              <span>{h.suspects} şüpheli</span>
+              <span>{tx("Tur")} {Math.min(h.round + 1, h.maxRounds)} / ~{h.maxRounds}</span>
+              <span>{h.suspects} {tx("şüpheli")}</span>
               <span>{formatDuration(elapsed)}</span>
             </div>
             <div className="progress-bar"><div style={{ width: `${pct}%` }} /></div>
@@ -127,7 +128,7 @@ function HuntCard({ hunt: h }: { hunt: HuntView }) {
                 disabled={stopping}
                 onClick={async () => { setStopping(true); await cancel(h.instanceId).catch(() => setStopping(false)); }}
               >
-                {stopping ? "Durduruluyor…" : "Avı durdur"}
+                {stopping ? tx("Durduruluyor…") : tx("Avı durdur")}
               </button>
             )}
           </>
@@ -142,19 +143,18 @@ function HuntCard({ hunt: h }: { hunt: HuntView }) {
               <ModList mods={mods} highlight />
               {lib && (
                 <p className="muted tiny">
-                  Bu bir kütüphane{deps.length > 0 && <> ve şu modlar ona bağlı: <strong>{deps.slice(0, 5).join(", ")}</strong>{deps.length > 5 && ` +${deps.length - 5}`}</>}.
-                  Kapatmak yerine İçerik sekmesinden güncellemeyi dene.
+                  {tx("Bu bir kütüphane")}{deps.length > 0 && <> {tx("ve şu modlar ona bağlı:")} <strong>{deps.slice(0, 5).join(", ")}</strong>{deps.length > 5 && ` +${deps.length - 5}`}</>}{tx(". Kapatmak yerine İçerik sekmesinden güncellemeyi dene.")}
                 </p>
               )}
               <div className="row">
                 {!lib && (
                   <button className="btn btn-primary btn-sm" onClick={() => disable(h.instanceId, mods.map((m) => m.file))}>
-                    <Ban size={14} /> Devre dışı bırak
+                    <Ban size={14} /> {tx("Devre dışı bırak")}
                   </button>
                 )}
-                <button className="btn btn-ghost btn-sm" onClick={() => close(h.instanceId)}>{lib ? "Tamam" : "Dokunma"}</button>
+                <button className="btn btn-ghost btn-sm" onClick={() => close(h.instanceId)}>{lib ? tx("Tamam") : tx("Dokunma")}</button>
               </div>
-              {!lib && <p className="muted tiny">Mod silinmez; dosya <code>.disabled</code> olur, istediğin zaman geri açabilirsin.</p>}
+              {!lib && <p className="muted tiny">{tx("Mod silinmez; dosya")} <code>.disabled</code> {tx("olur, istediğin zaman geri açabilirsin.")}</p>}
             </>
           );
         })()}
@@ -166,8 +166,8 @@ function HuntCard({ hunt: h }: { hunt: HuntView }) {
         {h.status === "done" && h.verdict?.kind === "combination" && (
           <>
             <ModList mods={h.verdict.suspects.slice(0, 6)} />
-            {h.verdict.suspects.length > 6 && <p className="muted tiny">+{h.verdict.suspects.length - 6} şüpheli daha</p>}
-            <p className="muted tiny">Bu modları tek tek güncellemeyi veya birini kaldırıp denemeyi öneririm.</p>
+            {h.verdict.suspects.length > 6 && <p className="muted tiny">+{h.verdict.suspects.length - 6} {tx("şüpheli daha")}</p>}
+            <p className="muted tiny">{tx("Bu modları tek tek güncellemeyi veya birini kaldırıp denemeyi öneririm.")}</p>
           </>
         )}
 

@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import {
   CrouchAnimation, FunctionAnimation, IdleAnimation, RunningAnimation, SkinViewer, WalkingAnimation, WaveAnimation, type PlayerAnimation,
 } from "skinview3d";
+import { tx } from "@/lib/i18n";
 
 export type PreviewAnim = "idle" | "walk" | "run" | "wave" | "crouch" | "pose";
 
@@ -84,5 +85,5 @@ export default function SkinPreview3D({ dataUrl, slim, animation, autoRotate, na
     else v.loadCape(null);
   }, [capeUrl]);
 
-  return <canvas ref={canvas} className="skin-canvas" style={{ width, height }} aria-label="3D skin önizlemesi" />;
+  return <canvas ref={canvas} className="skin-canvas" style={{ width, height }} aria-label={tx("3D skin önizlemesi")} />;
 }

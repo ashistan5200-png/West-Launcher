@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle, CheckCircle2, X } from "lucide-react";
 import { useContent } from "@/stores/content";
+import { tx } from "@/lib/i18n";
 
 /** Kurulum sonuçları — sağ alttaki dock içinde, kısa süre görünür. */
 export function ContentToasts() {
@@ -18,7 +19,7 @@ export function ContentToasts() {
         >
           {t.tone === "ok" ? <CheckCircle2 size={15} /> : <AlertTriangle size={15} />}
           <span className="grow">{t.text}</span>
-          <button className="icon-btn" onClick={() => dismissToast(t.id)} aria-label="Kapat"><X size={13} /></button>
+          <button className="icon-btn" onClick={() => dismissToast(t.id)} aria-label={tx("Kapat")}><X size={13} /></button>
         </motion.div>
       ))}
     </AnimatePresence>

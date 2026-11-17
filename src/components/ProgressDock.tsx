@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import { useInstances } from "@/stores/instances";
 import { STAGE_LABEL } from "@/lib/format";
+import { tx } from "@/lib/i18n";
 
 export function ProgressDock() {
   const progress = useInstances((s) => s.progress);
@@ -9,7 +10,7 @@ export function ProgressDock() {
   // "done" gelmese bile %100'e ulaşan iş kart olarak kalmasın
   const items = Object.values(progress).filter((p) => p.stage !== "done" && !(p.total > 0 && p.current >= p.total && p.stage === "java"));
   const label = (task: string) => {
-    if (task.startsWith("java-")) return `Java ${task.slice(5)}`;
+    if (task.startsWith("java-")) return tx("Java {0}", task.slice(5));
     const id = task.startsWith("update:") ? task.slice(7) : task;
     return instances.find((i) => i.id === id)?.name ?? id;
   };

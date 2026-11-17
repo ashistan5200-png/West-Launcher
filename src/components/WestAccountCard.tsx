@@ -6,6 +6,7 @@ import { api } from "@/lib/ipc";
 import { useWest } from "@/stores/west";
 import { PasswordField } from "./SetupWizard";
 import { Logo } from "./Logo";
+import { tx } from "@/lib/i18n";
 
 const USERNAME = /^[A-Za-z0-9_]{3,16}$/;
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
@@ -20,7 +21,7 @@ function strength(pw: string) {
   if (/\d/.test(pw) && /[^A-Za-z0-9]/.test(pw)) s++;
   return Math.min(4, s);
 }
-const STRENGTH = ["Çok zayıf", "Zayıf", "Orta", "İyi", "Güçlü"];
+const STRENGTH = [tx("Çok zayıf"), tx("Zayıf"), tx("Orta"), tx("İyi"), tx("Güçlü")];
 
 /** West hesabı: kayıt ol / giriş yap / oturum. */
 export function WestAccountCard() {
@@ -35,15 +36,15 @@ export function WestAccountCard() {
       <div className="west-card-head">
         <span className="west-badge"><Logo size={18} /></span>
         <div className="grow">
-          <h3>West hesabı</h3>
-          <p className="muted tiny">Tek hesapla West Client'ı her bilgisayarda kullan.</p>
+          <h3>{tx("West hesabı")}</h3>
+          <p className="muted tiny">{tx("Tek hesapla West Client'ı her bilgisayarda kullan.")}</p>
         </div>
       </div>
 
       {!loaded ? (
-        <p className="muted small"><Loader2 size={14} className="spin" /> Yükleniyor…</p>
+        <p className="muted small"><Loader2 size={14} className="spin" /> {tx("Yükleniyor…")}</p>
       ) : !configured ? (
-        <div className="banner banner-info"><CircleAlert size={14} /> West hesap sunucusu henüz bağlanmadı. Bir sonraki güncellemeyle açılacak.</div>
+        <div className="banner banner-info"><CircleAlert size={14} /> {tx("West hesap sunucusu henüz bağlanmadı. Bir sonraki güncellemeyle açılacak.")}</div>
       ) : account ? (
         <div className="west-me">
           <span className="west-avatar">{account.username.slice(0, 1).toUpperCase()}</span>
@@ -51,18 +52,18 @@ export function WestAccountCard() {
             <strong className="truncate">{account.username}</strong>
             <span className="muted small truncate">{account.email}</span>
             {account.emailConfirmed ? (
-              <span className="west-ok"><MailCheck size={13} /> E-posta doğrulandı</span>
+              <span className="west-ok"><MailCheck size={13} /> {tx("E-posta doğrulandı")}</span>
             ) : (
-              <span className="west-warn"><Mail size={13} /> E-posta doğrulanmadı</span>
+              <span className="west-warn"><Mail size={13} /> {tx("E-posta doğrulanmadı")}</span>
             )}
           </div>
-          <button className="btn btn-ghost btn-sm" onClick={() => void logout()}><LogOut size={14} /> Çıkış</button>
+          <button className="btn btn-ghost btn-sm" onClick={() => void logout()}><LogOut size={14} /> {tx("Çıkış")}</button>
         </div>
       ) : (
         <>
           <div className="segmented">
-            <button className={clsx(tab === "signup" && "active")} onClick={() => setTab("signup")}><UserPlus size={14} /> Kayıt ol</button>
-            <button className={clsx(tab === "login" && "active")} onClick={() => setTab("login")}><LogIn size={14} /> Giriş yap</button>
+            <button className={clsx(tab === "signup" && "active")} onClick={() => setTab("signup")}><UserPlus size={14} /> {tx("Kayıt ol")}</button>
+            <button className={clsx(tab === "login" && "active")} onClick={() => setTab("login")}><LogIn size={14} /> {tx("Giriş yap")}</button>
           </div>
           <AnimatePresence mode="wait">
             <motion.div key={tab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.16 }}>
@@ -99,11 +100,11 @@ function SignupForm({ onDone, toLogin }: { onDone: (a: import("@/lib/types").Wes
   const st = strength(pw);
   const problems = useMemo(() => {
     const p: string[] = [];
-    if (username && !USERNAME.test(username)) p.push("Kullanıcı adı 3–16 karakter; harf, rakam, alt çizgi.");
-    if (email && !EMAIL.test(email)) p.push("E-posta adresi geçerli görünmüyor.");
-    if (pw && pw.length < 8) p.push("Şifre en az 8 karakter olmalı.");
-    else if (pw && !(/[A-Za-zÇĞİÖŞÜçğıöşü]/.test(pw) && /\d/.test(pw))) p.push("Şifrede en az bir harf ve bir rakam olsun.");
-    if (pw2 && pw !== pw2) p.push("Şifreler aynı değil.");
+    if (username && !USERNAME.test(username)) p.push(tx("Kullanıcı adı 3–16 karakter; harf, rakam, alt çizgi."));
+    if (email && !EMAIL.test(email)) p.push(tx("E-posta adresi geçerli görünmüyor."));
+    if (pw && pw.length < 8) p.push(tx("Şifre en az 8 karakter olmalı."));
+    else if (pw && !(/[A-Za-zÇĞİÖŞÜçğıöşü]/.test(pw) && /\d/.test(pw))) p.push(tx("Şifrede en az bir harf ve bir rakam olsun."));
+    if (pw2 && pw !== pw2) p.push(tx("Şifreler aynı değil."));
     return p;
   }, [username, email, pw, pw2]);
   const ready = USERNAME.test(username) && EMAIL.test(email) && pw.length >= 8 && pw === pw2 && problems.length === 0 && avail !== "taken";
@@ -127,9 +128,9 @@ function SignupForm({ onDone, toLogin }: { onDone: (a: import("@/lib/types").Wes
     return (
       <div className="west-sent">
         <MailCheck size={28} />
-        <strong>Neredeyse bitti!</strong>
-        <p className="small muted"><b>{email}</b> adresine bir doğrulama bağlantısı gönderdik. Bağlantıya tıkla, sonra buradan giriş yap.</p>
-        <button className="btn btn-primary btn-sm" onClick={toLogin}><LogIn size={14} /> Giriş yap</button>
+        <strong>{tx("Neredeyse bitti!")}</strong>
+        <p className="small muted"><b>{email}</b> {tx("adresine bir doğrulama bağlantısı gönderdik. Bağlantıya tıkla, sonra buradan giriş yap.")}</p>
+        <button className="btn btn-primary btn-sm" onClick={toLogin}><LogIn size={14} /> {tx("Giriş yap")}</button>
       </div>
     );
   }
@@ -137,25 +138,25 @@ function SignupForm({ onDone, toLogin }: { onDone: (a: import("@/lib/types").Wes
   return (
     <form className="west-form" onSubmit={(e) => { e.preventDefault(); void submit(); }}>
       <label className="field">
-        <span>Kullanıcı adı</span>
+        <span>{tx("Kullanıcı adı")}</span>
         <div className="pw-field">
-          <input value={username} maxLength={16} placeholder="AshiWest" autoComplete="username" onChange={(e) => setUsername(e.target.value.replace(/\s/g, ""))} />
+          <input value={username} maxLength={16} placeholder={tx("AshiWest")} autoComplete="username" onChange={(e) => setUsername(e.target.value.replace(/\s/g, ""))} />
           <span className="pw-eye static">
             {avail === "checking" ? <Loader2 size={15} className="spin" /> : avail === "ok" ? <Check size={15} className="ok" /> : avail === "taken" ? <X size={15} className="bad" /> : <UserRound size={15} />}
           </span>
         </div>
-        {avail === "taken" && <small className="hint error">Bu kullanıcı adı alınmış.</small>}
+        {avail === "taken" && <small className="hint error">{tx("Bu kullanıcı adı alınmış.")}</small>}
       </label>
       <label className="field">
-        <span>E-posta</span>
+        <span>{tx("E-posta")}</span>
         <div className="pw-field">
           <input type="email" value={email} placeholder="sen@ornek.com" autoComplete="email" onChange={(e) => setEmail(e.target.value.trim())} />
           <span className="pw-eye static"><AtSign size={15} /></span>
         </div>
       </label>
       <label className="field" htmlFor="west-pw">
-        <span>Şifre</span>
-        <PasswordField id="west-pw" value={pw} onChange={setPw} visible={show} onToggle={() => setShow((v) => !v)} placeholder="En az 8 karakter" />
+        <span>{tx("Şifre")}</span>
+        <PasswordField id="west-pw" value={pw} onChange={setPw} visible={show} onToggle={() => setShow((v) => !v)} placeholder={tx("En az 8 karakter")} />
         {pw && (
           <div className="pw-meter" data-level={st}>
             {[0, 1, 2, 3].map((i) => <span key={i} className={clsx(i < Math.max(1, st) && "on")} />)}
@@ -164,15 +165,15 @@ function SignupForm({ onDone, toLogin }: { onDone: (a: import("@/lib/types").Wes
         )}
       </label>
       <label className="field" htmlFor="west-pw2">
-        <span>Şifre (tekrar)</span>
+        <span>{tx("Şifre (tekrar)")}</span>
         <PasswordField id="west-pw2" value={pw2} onChange={setPw2} visible={show} onToggle={() => setShow((v) => !v)} onEnter={() => void submit()} />
       </label>
       {problems.length > 0 && <ul className="west-problems">{problems.map((p) => <li key={p}>{p}</li>)}</ul>}
       {error && <p className="hint error">{error}</p>}
       <button className="btn btn-primary" type="submit" disabled={!ready || busy}>
-        {busy ? <Loader2 size={15} className="spin" /> : <UserPlus size={15} />} West hesabı oluştur
+        {busy ? <Loader2 size={15} className="spin" /> : <UserPlus size={15} />} {tx("West hesabı oluştur")}
       </button>
-      <p className="muted tiny"><ShieldCheck size={12} /> Şifren yalnızca West hesap sunucusunda, geri çözülemeyen biçimde saklanır; West Client onu bilgisayarına yazmaz.</p>
+      <p className="muted tiny"><ShieldCheck size={12} /> {tx("Şifren yalnızca West hesap sunucusunda, geri çözülemeyen biçimde saklanır; West Client onu bilgisayarına yazmaz.")}</p>
     </form>
   );
 }
@@ -199,10 +200,10 @@ function LoginForm({ onDone }: { onDone: (a: import("@/lib/types").WestAccount) 
   };
   const forgot = async () => {
     setError(null);
-    if (!EMAIL.test(email)) return setError("Önce e-posta adresini yaz.");
+    if (!EMAIL.test(email)) return setError(tx("Önce e-posta adresini yaz."));
     try {
       await api.westResetPassword(email);
-      setNotice(`${email} adresine şifre sıfırlama bağlantısı gönderdik.`);
+      setNotice(tx("{0} adresine şifre sıfırlama bağlantısı gönderdik.", email));
     } catch (e) {
       setError(errText(e));
     }
@@ -211,22 +212,22 @@ function LoginForm({ onDone }: { onDone: (a: import("@/lib/types").WestAccount) 
   return (
     <form className="west-form" onSubmit={(e) => { e.preventDefault(); void submit(); }}>
       <label className="field">
-        <span>E-posta</span>
+        <span>{tx("E-posta")}</span>
         <div className="pw-field">
           <input type="email" value={email} placeholder="sen@ornek.com" autoComplete="email" onChange={(e) => setEmail(e.target.value.trim())} />
           <span className="pw-eye static"><AtSign size={15} /></span>
         </div>
       </label>
       <label className="field" htmlFor="west-login-pw">
-        <span>Şifre</span>
+        <span>{tx("Şifre")}</span>
         <PasswordField id="west-login-pw" value={pw} onChange={setPw} visible={show} onToggle={() => setShow((v) => !v)} onEnter={() => void submit()} />
       </label>
       {error && <p className="hint error">{error}</p>}
       {notice && <p className="hint">{notice}</p>}
       <div className="row" style={{ justifyContent: "space-between" }}>
-        <button type="button" className="btn-link" style={{ marginLeft: 0 }} onClick={() => void forgot()}>Şifremi unuttum</button>
+        <button type="button" className="btn-link" style={{ marginLeft: 0 }} onClick={() => void forgot()}>{tx("Şifremi unuttum")}</button>
         <button className="btn btn-primary" type="submit" disabled={busy || !EMAIL.test(email) || !pw}>
-          {busy ? <Loader2 size={15} className="spin" /> : <LogIn size={15} />} Giriş yap
+          {busy ? <Loader2 size={15} className="spin" /> : <LogIn size={15} />} {tx("Giriş yap")}
         </button>
       </div>
     </form>

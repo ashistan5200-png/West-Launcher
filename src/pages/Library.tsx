@@ -8,6 +8,7 @@ import { InstanceCard } from "@/components/InstanceCard";
 import { CreateInstanceModal } from "@/components/CreateInstanceModal";
 import type { LoaderKind } from "@/lib/types";
 import { LOADER_LABEL } from "@/lib/format";
+import { tx } from "@/lib/i18n";
 
 type Filter = "all" | "templates" | LoaderKind;
 
@@ -34,27 +35,27 @@ export function LibraryPage() {
       <div className="toolbar">
         <div className="search">
           <Search size={15} />
-          <input placeholder="Instance ara…" value={query} onChange={(e) => setQuery(e.target.value)} />
+          <input placeholder={tx("Instance ara…")} value={query} onChange={(e) => setQuery(e.target.value)} />
         </div>
         <div className="pills">
           {filters.map((f) => (
             <button key={f} className={clsx("pill", filter === f && "active")} onClick={() => setFilter(f)}>
-              {f === "all" ? "Tümü" : f === "templates" ? "Şablonlar" : LOADER_LABEL[f]}
+              {f === "all" ? tx("Tümü") : f === "templates" ? tx("Şablonlar") : LOADER_LABEL[f]}
             </button>
           ))}
         </div>
-        <button className="btn btn-ghost btn-sm" onClick={() => useOnboarding.getState().openWizard()} title="Modrinth App, CurseForge, Prism, MultiMC veya resmi launcher'dan">
-          <Import size={15} /> Aktar
+        <button className="btn btn-ghost btn-sm" onClick={() => useOnboarding.getState().openWizard()} title={tx("Modrinth App, CurseForge, Prism, MultiMC veya resmi launcher'dan")}>
+          <Import size={15} /> {tx("Aktar")}
         </button>
         <button className="btn btn-primary btn-sm" onClick={() => setParams({ new: "1" })}>
-          <Plus size={15} /> Yeni
+          <Plus size={15} /> {tx("Yeni")}
         </button>
       </div>
 
       {filtered.length ? (
         <div className="grid">{filtered.map((i) => <InstanceCard key={i.id} instance={i} />)}</div>
       ) : (
-        <p className="muted center pad">Eşleşen instance yok.</p>
+        <p className="muted center pad">{tx("Eşleşen instance yok.")}</p>
       )}
 
       <CreateInstanceModal

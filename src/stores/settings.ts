@@ -2,6 +2,8 @@ import { create } from "zustand";
 import { api, isTauri } from "@/lib/ipc";
 import { applyTheme, DEFAULT_ACCENT, LEGACY_DEFAULT_ACCENT } from "@/lib/theme";
 import type { Settings, ThemeSettings } from "@/lib/types";
+import { detectLang, getLang, setLang, type Lang } from "@/lib/i18n";
+
 
 const DEFAULT: Settings = {
   theme: { accent: DEFAULT_ACCENT, blur: 14, opacity: 0.96, windowEffect: "mica", density: "compact", reduceMotion: false, cursorTrail: true },
@@ -24,6 +26,7 @@ const DEFAULT: Settings = {
   music: true,
   musicInGame: true,
   shaders: false,
+  language: "",
   accessibility: {
     performanceMode: false, westMenus: true, westHud: true, gameAnimations: true,
     smoothFont: true, perfMods: false, lowGraphics: false, launcherEffects: true,
@@ -60,6 +63,17 @@ export const useSettings = create<SettingsState>((set, get) => ({
       if (isTauri()) void api.saveSettings(settings);
     }
     settings = { ...DEFAULT, ...settings, accessibility: { ...DEFAULT.accessibility, ...(settings.accessibility ?? {}) } };
+    // Dil: ilk açılışta sistem dilinden seç ve kaydet (oyun içi West arayüzü de bunu kullanır)
+    if (!settings.language) {
+      settings = { ...settings, language: detectLang() };
+      if (isTauri()) void api.saveSettings(settings);
+    }
+    if (settings.language !== getLang()) {
+      setLang(settings.language as Lang);
+      // Arayüz bu dil ile baştan kurulsun
+      location.reload();
+      return;
+    }
     applyTheme(settings.theme);
     document.documentElement.dataset.effects = settings.accessibility.launcherEffects ? "on" : "off";
     set({ settings, loaded: true });

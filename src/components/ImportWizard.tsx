@@ -9,9 +9,10 @@ import { useInstances } from "@/stores/instances";
 import { api } from "@/lib/ipc";
 import type { FoundInstance, LauncherId, ManifestEntry } from "@/lib/types";
 import { LOADER_LABEL } from "@/lib/format";
+import { tx } from "@/lib/i18n";
 
 export const LAUNCHER_LABEL: Record<LauncherId, string> = {
-  modrinth: "Modrinth App", curseforge: "CurseForge", prism: "Prism Launcher", multimc: "MultiMC", official: "Minecraft Launcher",
+  modrinth: tx("Modrinth App"), curseforge: tx("CurseForge"), prism: tx("Prism Launcher"), multimc: tx("MultiMC"), official: tx("Minecraft Launcher"),
 };
 
 const key = (f: FoundInstance) => `${f.launcher}:${f.gameDir}:${f.name}`;
@@ -44,7 +45,7 @@ export function ImportWizard() {
   const done = Object.values(state).filter((s) => s === "done").length;
 
   const pickFolder = async () => {
-    const dir = await openDialog({ directory: true, multiple: false, title: "Launcher veya .minecraft klasörünü seç" });
+    const dir = await openDialog({ directory: true, multiple: false, title: tx("Launcher veya .minecraft klasörünü seç") });
     if (typeof dir !== "string") return;
     const more = await api.detectLauncherFolder(dir);
     setExtra((e) => [...e, ...more]);
@@ -71,16 +72,16 @@ export function ImportWizard() {
     <Modal
       open={wizardOpen}
       onClose={() => !running && closeWizard()}
-      title="Diğer launcher'lardan aktar"
+      title={tx("Diğer launcher'lardan aktar")}
       width={620}
       footer={
         <>
-          <button className="btn btn-ghost" disabled={running} onClick={pickFolder}><FolderSearch size={15} /> Klasör seç…</button>
+          <button className="btn btn-ghost" disabled={running} onClick={pickFolder}><FolderSearch size={15} /> {tx("Klasör seç…")}</button>
           <span className="grow" />
-          <button className="btn btn-ghost" disabled={running} onClick={closeWizard}>{finished ? "Kapat" : "Şimdilik geç"}</button>
+          <button className="btn btn-ghost" disabled={running} onClick={closeWizard}>{finished ? tx("Kapat") : tx("Şimdilik geç")}</button>
           {!finished && (
             <button className="btn btn-primary" disabled={running || picked.size === 0} onClick={run}>
-              {running ? <Loader2 size={15} className="spin" /> : null} {picked.size} instance'ı aktar
+              {running ? <Loader2 size={15} className="spin" /> : null} {picked.size} {tx("instance'ı aktar")}
             </button>
           )}
         </>
@@ -90,12 +91,12 @@ export function ImportWizard() {
         <AshiHead size={36} />
         <p className="small">
           {scanning && !found
-            ? "Bilgisayarını tarıyorum…"
+            ? tx("Bilgisayarını tarıyorum…")
             : all.length
-              ? `Bilgisayarında ${groups.map(([l]) => LAUNCHER_LABEL[l]).join(", ")} buldum. Modpack'lerini, modlarını ve ayarlarını West Client'a hemen aktarmak ister misin? Orijinal dosyalarına dokunmam, sadece kopyalarım.`
-              : "Bilinen konumlarda başka bir launcher bulamadım. Taşınabilir bir MultiMC/Prism ya da farklı bir .minecraft klasörün varsa \"Klasör seç…\" ile gösterebilirsin."}
+              ? tx("Bilgisayarında {0} buldum. Modpack'lerini, modlarını ve ayarlarını West Client'a hemen aktarmak ister misin? Orijinal dosyalarına dokunmam, sadece kopyalarım.", groups.map(([l]) => LAUNCHER_LABEL[l]).join(", "))
+              : tx("Bilinen konumlarda başka bir launcher bulamadım. Taşınabilir bir MultiMC/Prism ya da farklı bir .minecraft klasörün varsa \"Klasör seç…\" ile gösterebilirsin.")}
         </p>
-        <button className="icon-btn" title="Yeniden tara" disabled={scanning || running} onClick={() => scan()}><RefreshCw size={15} className={clsx(scanning && "spin")} /></button>
+        <button className="icon-btn" title={tx("Yeniden tara")} disabled={scanning || running} onClick={() => scan()}><RefreshCw size={15} className={clsx(scanning && "spin")} /></button>
       </div>
 
       {groups.map(([launcher, items]) => (
@@ -115,13 +116,13 @@ export function ImportWizard() {
                 <span className="grow">
                   <strong className="truncate">{f.name}</strong>
                   <span className="muted tiny">
-                    {LOADER_LABEL[f.loader.kind]} {f.mcVersion ?? "?"} · {f.modCount} mod · {f.worldCount} dünya{f.hasShaders ? " · shader" : ""}
+                    {LOADER_LABEL[f.loader.kind]} {f.mcVersion ?? "?"} · {f.modCount} {tx("mod ·")} {f.worldCount} {tx("dünya")}{f.hasShaders ? tx(" · shader") : ""}
                   </span>
                   {typeof st === "string" && st !== "busy" && st !== "done" && <span className="hint error">{st}</span>}
                 </span>
                 {!f.mcVersion && st !== "done" && (
-                  <select className="select-sm" value={versions[k] ?? ""} onChange={(e) => setVersions((v) => ({ ...v, [k]: e.target.value }))} title="Sürüm belirlenemedi">
-                    <option value="">Sürüm seç</option>
+                  <select className="select-sm" value={versions[k] ?? ""} onChange={(e) => setVersions((v) => ({ ...v, [k]: e.target.value }))} title={tx("Sürüm belirlenemedi")}>
+                    <option value="">{tx("Sürüm seç")}</option>
                     {mcList.slice(0, 60).map((m) => <option key={m.id} value={m.id}>{m.id}</option>)}
                   </select>
                 )}
@@ -136,10 +137,10 @@ export function ImportWizard() {
       {all.length > 0 && (
         <label className="check">
           <input type="checkbox" checked={worlds} disabled={running} onChange={(e) => setWorlds(e.target.checked)} />
-          Dünyaları da kopyala ({totalWorlds} dünya — büyük olabilir)
+          {tx("Dünyaları da kopyala (")}{totalWorlds} {tx("dünya — büyük olabilir)")}
         </label>
       )}
-      {finished && <p className="hint ok">{done} instance aktarıldı; Kütüphane'de "↳ kaynak launcher" etiketiyle görünürler.</p>}
+      {finished && <p className="hint ok">{done} {tx("instance aktarıldı; Kütüphane'de \"↳ kaynak launcher\" etiketiyle görünürler.")}</p>}
     </Modal>
   );
 }

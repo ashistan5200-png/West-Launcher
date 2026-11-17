@@ -7,18 +7,19 @@ import { api } from "@/lib/ipc";
 import type { Screenshot } from "@/lib/types";
 import { canvasToBase64, NEUTRAL, PRESETS, render, type Adjust, type Annotation, type EditState, type Rect } from "@/lib/imageEdit";
 import { useGallery } from "@/stores/gallery";
+import { tx } from "@/lib/i18n";
 
 type Tool = "adjust" | "crop" | "draw" | "text";
 const ASPECTS: { label: string; r: number | null }[] = [
-  { label: "Serbest", r: null }, { label: "16:9", r: 16 / 9 }, { label: "4:3", r: 4 / 3 }, { label: "1:1", r: 1 }, { label: "9:16", r: 9 / 16 },
+  { label: tx("Serbest"), r: null }, { label: "16:9", r: 16 / 9 }, { label: "4:3", r: 4 / 3 }, { label: "1:1", r: 1 }, { label: "9:16", r: 9 / 16 },
 ];
 const COLORS = ["#ffffff", "#7fa7c9", "#79a88a", "#c2a878", "#c08573", "#a08cb8", "#111214"];
 const SLIDERS: { key: keyof Omit<Adjust, "mode">; label: string; min: number }[] = [
-  { key: "brightness", label: "Parlaklık", min: -100 },
-  { key: "contrast", label: "Kontrast", min: -100 },
-  { key: "saturation", label: "Doygunluk", min: -100 },
-  { key: "warmth", label: "Sıcaklık", min: -100 },
-  { key: "vignette", label: "Vinyet", min: 0 },
+  { key: "brightness", label: tx("Parlaklık"), min: -100 },
+  { key: "contrast", label: tx("Kontrast"), min: -100 },
+  { key: "saturation", label: tx("Doygunluk"), min: -100 },
+  { key: "warmth", label: tx("Sıcaklık"), min: -100 },
+  { key: "vignette", label: tx("Vinyet"), min: 0 },
 ];
 const MAX_W = 1000;
 const MAX_H = 600;
@@ -31,7 +32,7 @@ export function ScreenshotEditor({ shot }: { shot: Screenshot }) {
   const [aspect, setAspect] = useState<number | null>(null);
   const [color, setColor] = useState(COLORS[0]);
   const [size, setSize] = useState(8);
-  const [text, setText] = useState("West Client");
+  const [text, setText] = useState(tx("West Client"));
   const [busy, setBusy] = useState<string | null>(null);
   const [draftCrop, setDraftCrop] = useState<Rect | null>(null);
   const view = useRef<HTMLCanvasElement>(null);
@@ -170,9 +171,9 @@ export function ScreenshotEditor({ shot }: { shot: Screenshot }) {
           <strong className="truncate">{shot.file}</strong>
           <span className="muted tiny">{shot.instanceName}</span>
           <div className="row" style={{ marginLeft: "auto" }}>
-            <button className="icon-btn" title="Son çizimi geri al" disabled={!st.annotations.length} onClick={() => setSt((s) => ({ ...s, annotations: s.annotations.slice(0, -1) }))}><Undo2 size={16} /></button>
-            <button className="icon-btn" title="Her şeyi sıfırla" onClick={() => setSt({ adjust: NEUTRAL, annotations: [], crop: null, outWidth: null })}><RotateCcw size={16} /></button>
-            <button className="icon-btn" title="Kapat" onClick={() => edit(null)}><X size={17} /></button>
+            <button className="icon-btn" title={tx("Son çizimi geri al")} disabled={!st.annotations.length} onClick={() => setSt((s) => ({ ...s, annotations: s.annotations.slice(0, -1) }))}><Undo2 size={16} /></button>
+            <button className="icon-btn" title={tx("Her şeyi sıfırla")} onClick={() => setSt({ adjust: NEUTRAL, annotations: [], crop: null, outWidth: null })}><RotateCcw size={16} /></button>
+            <button className="icon-btn" title={tx("Kapat")} onClick={() => edit(null)}><X size={17} /></button>
           </div>
         </header>
 
@@ -187,7 +188,7 @@ export function ScreenshotEditor({ shot }: { shot: Screenshot }) {
 
           <aside className="editor-side">
             <div className="editor-tools">
-              {([["adjust", SlidersHorizontal, "Ayarla"], ["crop", Crop, "Kırp"], ["draw", Pencil, "Çiz"], ["text", Type, "Yazı"]] as const).map(([id, Icon, label]) => (
+              {([["adjust", SlidersHorizontal, tx("Ayarla")], ["crop", Crop, tx("Kırp")], ["draw", Pencil, tx("Çiz")], ["text", Type, tx("Yazı")]] as const).map(([id, Icon, label]) => (
                 <button key={id} className={clsx(tool === id && "active")} onClick={() => setTool(id)}>
                   <Icon size={16} /> {label}
                 </button>
@@ -209,23 +210,23 @@ export function ScreenshotEditor({ shot }: { shot: Screenshot }) {
                     <input type="range" min={s.min} max={100} value={st.adjust[s.key]} onChange={(e) => setAdjust({ [s.key]: Number(e.target.value) })} onDoubleClick={() => setAdjust({ [s.key]: 0 })} />
                   </label>
                 ))}
-                <p className="muted tiny">Sıfırlamak için kaydırıcıya çift tıkla.</p>
+                <p className="muted tiny">{tx("Sıfırlamak için kaydırıcıya çift tıkla.")}</p>
               </div>
             )}
 
             {tool === "crop" && (
               <div className="stack">
-                <p className="muted tiny">Görüntü üzerinde sürükleyerek kırpma alanını seç.</p>
+                <p className="muted tiny">{tx("Görüntü üzerinde sürükleyerek kırpma alanını seç.")}</p>
                 <div className="preset-grid">
                   {ASPECTS.map((a) => (
                     <button key={a.label} className={clsx("preset", aspect === a.r && "active")} onClick={() => setAspect(a.r)}>{a.label}</button>
                   ))}
                 </div>
-                {st.crop && <button className="btn btn-ghost btn-sm" onClick={() => setSt((s) => ({ ...s, crop: null }))}>Kırpmayı kaldır</button>}
+                {st.crop && <button className="btn btn-ghost btn-sm" onClick={() => setSt((s) => ({ ...s, crop: null }))}>{tx("Kırpmayı kaldır")}</button>}
                 <div className="divider" />
-                <span className="field-label">Boyut · {outW}×{outH}</span>
+                <span className="field-label">{tx("Boyut ·")} {outW}×{outH}</span>
                 <div className="preset-grid">
-                  {[{ l: "Orijinal", w: null }, { l: "1920", w: 1920 }, { l: "1280", w: 1280 }, { l: "%50", w: -0.5 }].map((o) => (
+                  {[{ l: tx("Orijinal"), w: null }, { l: "1920", w: 1920 }, { l: "1280", w: 1280 }, { l: "%50", w: -0.5 }].map((o) => (
                     <button
                       key={o.l}
                       className={clsx("preset", (o.w === null ? st.outWidth === null : st.outWidth === (o.w! > 0 ? o.w : Math.round((st.crop?.w ?? img?.width ?? 0) / 2))) && "active")}
@@ -242,11 +243,11 @@ export function ScreenshotEditor({ shot }: { shot: Screenshot }) {
               <div className="stack">
                 {tool === "text" && (
                   <>
-                    <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Eklenecek yazı" maxLength={80} />
-                    <p className="muted tiny">Yazmak için görüntüde bir noktaya tıkla.</p>
+                    <input value={text} onChange={(e) => setText(e.target.value)} placeholder={tx("Eklenecek yazı")} maxLength={80} />
+                    <p className="muted tiny">{tx("Yazmak için görüntüde bir noktaya tıkla.")}</p>
                   </>
                 )}
-                {tool === "draw" && <p className="muted tiny">Görüntü üzerinde sürükleyerek çiz.</p>}
+                {tool === "draw" && <p className="muted tiny">{tx("Görüntü üzerinde sürükleyerek çiz.")}</p>}
                 <div className="color-row">
                   {COLORS.map((c) => (
                     <button key={c} className={clsx("swatch sm", color === c && "active")} style={{ background: c }} onClick={() => setColor(c)} aria-label={c} />
@@ -254,7 +255,7 @@ export function ScreenshotEditor({ shot }: { shot: Screenshot }) {
                   <label className="swatch sm swatch-custom"><input type="color" value={color} onChange={(e) => setColor(e.target.value)} /></label>
                 </div>
                 <label className="field">
-                  <span>{tool === "text" ? "Yazı boyutu" : "Kalem kalınlığı"} · {size}</span>
+                  <span>{tool === "text" ? tx("Yazı boyutu") : tx("Kalem kalınlığı")} · {size}</span>
                   <input type="range" min={2} max={30} value={size} onChange={(e) => setSize(Number(e.target.value))} />
                 </label>
               </div>
@@ -264,25 +265,25 @@ export function ScreenshotEditor({ shot }: { shot: Screenshot }) {
               <button className="btn btn-primary" disabled={!img || !!busy} onClick={() => act("save", async () => {
                 const saved = await api.saveScreenshotEdit(shot.path, await canvasToBase64(exportCanvas()));
                 added(saved);
-                flash(`Kopya olarak kaydedildi: ${saved.file}`);
+                flash(tx("Kopya olarak kaydedildi: {0}", saved.file));
                 edit(null);
                 void api.generateThumbs([saved.path]);
               })}>
-                {busy === "save" ? <Loader2 size={15} className="spin" /> : <Save size={15} />} Kopya olarak kaydet
+                {busy === "save" ? <Loader2 size={15} className="spin" /> : <Save size={15} />} {tx("Kopya olarak kaydet")}
               </button>
               <div className="row">
                 <button className="btn btn-ghost grow" disabled={!img || !!busy} onClick={() => act("copy", async () => {
                   await api.copyPngBytes(await canvasToBase64(exportCanvas()));
-                  flash("Düzenlenmiş görüntü panoya kopyalandı");
-                })}><Copy size={14} /> Kopyala</button>
+                  flash(tx("Düzenlenmiş görüntü panoya kopyalandı"));
+                })}><Copy size={14} /> {tx("Kopyala")}</button>
                 <button className="btn btn-ghost grow" disabled={!img || !!busy} onClick={() => act("export", async () => {
                   const dest = await saveDialog({ defaultPath: shot.file.replace(/\.(png|jpe?g)$/i, "_west.png"), filters: [{ name: "PNG", extensions: ["png"] }] });
                   if (!dest) return;
                   await api.exportPng(dest, await canvasToBase64(exportCanvas()));
-                  flash("Dışa aktarıldı");
-                })}><Download size={14} /> Dışa aktar</button>
+                  flash(tx("Dışa aktarıldı"));
+                })}><Download size={14} /> {tx("Dışa aktar")}</button>
               </div>
-              <p className="muted tiny">Orijinal dosya hiçbir zaman değiştirilmez.</p>
+              <p className="muted tiny">{tx("Orijinal dosya hiçbir zaman değiştirilmez.")}</p>
             </div>
           </aside>
         </div>

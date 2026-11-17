@@ -8,6 +8,7 @@ import { api, isTauri } from "@/lib/ipc";
 import { formatCount } from "@/lib/format";
 import type { AssetDiff, ManifestEntry, ModUpdate, NewSound, NewTexture, PatchNote } from "@/lib/types";
 import { ContentIcon } from "@/components/ContentIcon";
+import { tx } from "@/lib/i18n";
 
 type Tab = "minecraft" | "mods" | "assets";
 const dateTR = (iso: string) => new Date(iso).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" });
@@ -15,7 +16,7 @@ const dateTR = (iso: string) => new Date(iso).toLocaleDateString("tr-TR", { day:
 /** Mojang'ın sürüm notu HTML'ini güvenli hale getirir: betik, iframe ve olay öznitelikleri atılır. */
 function sanitize(html: string): string {
   const doc = new DOMParser().parseFromString(html, "text/html");
-  doc.querySelectorAll("script, style, iframe, object, embed, form, link, meta").forEach((n) => n.remove());
+  doc.querySelectorAll(tx("script, style, iframe, object, embed, form, link, meta")).forEach((n) => n.remove());
   doc.querySelectorAll("*").forEach((el) => {
     for (const a of [...el.attributes]) {
       const v = a.value.trim().toLowerCase();
@@ -36,7 +37,7 @@ export function NewsPage() {
   return (
     <div className="stack">
       <div className="tabs">
-        {([["minecraft", "Minecraft güncellemeleri"], ["mods", "Mod güncellemeleri"], ["assets", "Yeni bloklar ve sesler"]] as const).map(([id, label]) => (
+        {([["minecraft", tx("Minecraft güncellemeleri")], ["mods", tx("Mod güncellemeleri")], ["assets", tx("Yeni bloklar ve sesler")]] as const).map(([id, label]) => (
           <button key={id} className={clsx("tab", tab === id && "active")} onClick={() => setTab(id)}>{label}</button>
         ))}
       </div>
@@ -64,7 +65,7 @@ function PatchNotes() {
       <div className="pills">
         {(["all", "release", "snapshot"] as const).map((f) => (
           <button key={f} className={clsx("pill", filter === f && "active")} onClick={() => setFilter(f)}>
-            {f === "all" ? "Tümü" : f === "release" ? "Tam sürümler" : "Snapshot'lar"}
+            {f === "all" ? tx("Tümü") : f === "release" ? tx("Tam sürümler") : tx("Snapshot'lar")}
           </button>
         ))}
       </div>
@@ -75,7 +76,7 @@ function PatchNotes() {
           <button key={n.id} className="note-card" onClick={() => setReading(n)}>
             {n.image ? <img src={n.image} alt="" loading="lazy" /> : <div className="note-img-blank" />}
             <div className="note-meta">
-              <span className={clsx("chip", n.kind === "release" && "chip-accent")}>{n.kind === "release" ? "Tam sürüm" : "Snapshot"}</span>
+              <span className={clsx("chip", n.kind === "release" && "chip-accent")}>{n.kind === "release" ? tx("Tam sürüm") : tx("Snapshot")}</span>
               <span className="muted tiny">{dateTR(n.date)}</span>
             </div>
             <strong>{n.title}</strong>
@@ -101,10 +102,10 @@ function NoteReader({ note, onClose }: { note: PatchNote; onClose: () => void })
       <motion.article className="reader" initial={{ y: 12, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }} onMouseDown={(e) => e.stopPropagation()}>
         <header className="reader-head">
           <div className="grow">
-            <span className="muted tiny">{note.kind === "release" ? "Tam sürüm" : "Snapshot"} · {dateTR(note.date)}</span>
+            <span className="muted tiny">{note.kind === "release" ? tx("Tam sürüm") : tx("Snapshot")} · {dateTR(note.date)}</span>
             <h2>{note.title}</h2>
           </div>
-          <button className="icon-btn" title="Kapat" onClick={onClose}><X size={17} /></button>
+          <button className="icon-btn" title={tx("Kapat")} onClick={onClose}><X size={17} /></button>
         </header>
         {note.image && <img className="reader-hero" src={note.image} alt="" />}
         {html === null ? (
@@ -139,7 +140,7 @@ function ModUpdates() {
   }, []);
   return (
     <>
-      <p className="muted tiny">Modrinth'te en çok indirilen 40 modun en son yayınlanan sürümleri, yeniden eskiye.</p>
+      <p className="muted tiny">{tx("Modrinth'te en çok indirilen 40 modun en son yayınlanan sürümleri, yeniden eskiye.")}</p>
       {error && <div className="banner banner-error">{error}</div>}
       {!mods && !error && <div className="center pad muted"><Loader2 className="spin" size={18} /></div>}
       <div className="content-list">
@@ -152,16 +153,16 @@ function ModUpdates() {
                 <span className="chip">{m.versionNumber}</span>
               </div>
               <span className="muted tiny">
-                {dateTR(m.date)} · Minecraft {m.gameVersions.join(", ")} · {m.loaders.join(", ")} · {formatCount(m.downloads)} indirme
+                {dateTR(m.date)} {tx("· Minecraft")} {m.gameVersions.join(", ")} · {m.loaders.join(", ")} · {formatCount(m.downloads)} indirme
               </span>
               {m.changelog && (
                 <button className="link tiny" style={{ alignSelf: "flex-start" }} onClick={() => setOpen(open === m.projectId ? null : m.projectId)}>
-                  {open === m.projectId ? "Değişiklikleri gizle" : "Neler değişti?"}
+                  {open === m.projectId ? tx("Değişiklikleri gizle") : tx("Neler değişti?")}
                 </button>
               )}
               {open === m.projectId && <pre className="changelog">{m.changelog}</pre>}
             </div>
-            <button className="icon-btn" title="Modrinth'te aç" onClick={() => openUrl(m.url)}><ExternalLink size={15} /></button>
+            <button className="icon-btn" title={tx("Modrinth'te aç")} onClick={() => openUrl(m.url)}><ExternalLink size={15} /></button>
           </div>
         ))}
       </div>
@@ -212,7 +213,7 @@ function AssetExplorer() {
     if (!dest) return;
     try {
       await api.newsExport(dest, file);
-      setFlash(`${name}.${ext} kaydedildi`);
+      setFlash(tx("{0}.{1} kaydedildi", name, ext));
     } catch (e) {
       setFlash(String(e));
     }
@@ -223,44 +224,44 @@ function AssetExplorer() {
     <>
       <div className="toolbar">
         <label className="field-inline">
-          <span className="muted tiny">Sürüm</span>
+          <span className="muted tiny">{tx("Sürüm")}</span>
           <select className="select-sm" value={version} onChange={(e) => { setVersion(e.target.value); setBase(""); setDiff(null); }}>
             {versions.map((v) => <option key={v.id} value={v.id}>{v.id}{v.type !== "release" ? " (snapshot)" : ""}</option>)}
           </select>
         </label>
         <label className="field-inline">
-          <span className="muted tiny">şununla karşılaştır</span>
+          <span className="muted tiny">{tx("şununla karşılaştır")}</span>
           <select className="select-sm" value={base} onChange={(e) => { setBase(e.target.value); setDiff(null); }}>
-            <option value="">Önceki sürüm (otomatik)</option>
+            <option value="">{tx("Önceki sürüm (otomatik)")}</option>
             {versions.filter((v) => v.id !== version).map((v) => <option key={v.id} value={v.id}>{v.id}</option>)}
           </select>
         </label>
         <button className="btn btn-primary btn-sm" disabled={!version || busy} onClick={run}>
-          {busy ? <Loader2 size={14} className="spin" /> : <Search size={14} />} {busy ? "Sürüm dosyaları hazırlanıyor…" : "Yenileri bul"}
+          {busy ? <Loader2 size={14} className="spin" /> : <Search size={14} />} {busy ? tx("Sürüm dosyaları hazırlanıyor…") : tx("Yenileri bul")}
         </button>
         {diff && (
           <div className="search grow">
             <Search size={15} />
-            <input placeholder="Ad veya kategoriye göre filtrele…" value={q} onChange={(e) => setQ(e.target.value)} />
+            <input placeholder={tx("Ad veya kategoriye göre filtrele…")} value={q} onChange={(e) => setQ(e.target.value)} />
           </div>
         )}
       </div>
-      <p className="muted tiny">İki sürümün resmi oyun dosyaları karşılaştırılır; ilk seferde her sürüm için yaklaşık 25 MB indirilir.</p>
+      <p className="muted tiny">{tx("İki sürümün resmi oyun dosyaları karşılaştırılır; ilk seferde her sürüm için yaklaşık 25 MB indirilir.")}</p>
       {error && <div className="banner banner-error">{error}</div>}
 
       {diff && (
         <>
           <section className="stack" style={{ gap: 10 }}>
-            <h3>Yeni dokular <span className="muted tiny">{textures.length} · {diff.base} → {diff.version}</span></h3>
-            {textures.length === 0 ? <p className="muted small">Bu iki sürüm arasında yeni doku yok.</p> : (
+            <h3>{tx("Yeni dokular")} <span className="muted tiny">{textures.length} · {diff.base} → {diff.version}</span></h3>
+            {textures.length === 0 ? <p className="muted small">{tx("Bu iki sürüm arasında yeni doku yok.")}</p> : (
               <div className="tex-grid">
                 {textures.map((t) => <TextureTile key={t.path} version={diff.version} t={t} onSave={() => exportFile(t.name, "png", { version: diff.version, path: t.path })} />)}
               </div>
             )}
           </section>
           <section className="stack" style={{ gap: 10 }}>
-            <h3>Yeni sesler <span className="muted tiny">{sounds.length}</span></h3>
-            {sounds.length === 0 ? <p className="muted small">Bu iki sürüm arasında yeni ses yok.</p> : (
+            <h3>{tx("Yeni sesler")} <span className="muted tiny">{sounds.length}</span></h3>
+            {sounds.length === 0 ? <p className="muted small">{tx("Bu iki sürüm arasında yeni ses yok.")}</p> : (
               <div className="sound-list">
                 {sounds.map((s) => <SoundRow key={s.path} s={s} onSave={() => exportFile(s.name, "ogg", { hash: s.hash })} />)}
               </div>
@@ -297,7 +298,7 @@ function TextureTile({ version, t, onSave }: { version: string; t: NewTexture; o
       <div className="tex-img">{url ? <img src={url} alt={t.name} /> : <Loader2 size={14} className="spin" />}</div>
       <span className="truncate tiny">{t.name}</span>
       <span className="muted tiny">{t.category}</span>
-      <button className="icon-btn tex-save" title="PNG olarak indir" onClick={onSave}><Download size={14} /></button>
+      <button className="icon-btn tex-save" title={tx("PNG olarak indir")} onClick={onSave}><Download size={14} /></button>
     </div>
   );
 }
@@ -333,14 +334,14 @@ function SoundRow({ s, onSave }: { s: NewSound; onSave: () => void }) {
   useEffect(() => () => { audio.current?.pause(); }, []);
   return (
     <div className="sound-row">
-      <button className={clsx("play-btn", state === "playing" && "on")} onClick={toggle} aria-label={state === "playing" ? "Durdur" : "Dinle"}>
+      <button className={clsx("play-btn", state === "playing" && "on")} onClick={toggle} aria-label={state === "playing" ? tx("Durdur") : tx("Dinle")}>
         {state === "loading" ? <Loader2 size={14} className="spin" /> : state === "playing" ? <Pause size={14} /> : <Play size={14} />}
       </button>
       <div className="grow" style={{ minWidth: 0 }}>
         <span className="truncate small">{s.name}</span>
         <span className="truncate muted tiny">{s.group} · {(s.size / 1024).toFixed(0)} KB</span>
       </div>
-      <button className="icon-btn" title="OGG olarak indir" onClick={onSave}><Download size={14} /></button>
+      <button className="icon-btn" title={tx("OGG olarak indir")} onClick={onSave}><Download size={14} /></button>
     </div>
   );
 }

@@ -8,6 +8,7 @@ import { useSettings } from "@/stores/settings";
 import { useHuntRunning } from "@/stores/ashi";
 import { InstanceIcon } from "./InstanceIcon";
 import { InstanceBanner } from "./InstanceBanner";
+import { tx } from "@/lib/i18n";
 
 /** Kapak görselli instance kartı; üzerine gelince oyna düğmesi belirir. */
 export function InstanceCard({ instance }: { instance: Instance }) {
@@ -29,7 +30,7 @@ export function InstanceCard({ instance }: { instance: Instance }) {
       <div className="icard-cover">
         <InstanceBanner instance={instance} className="icard-art" />
         <span className={`loader-badge ${instance.loader.kind}`}>{LOADER_LABEL[instance.loader.kind]}</span>
-        {isRunning && <span className="live-badge"><span /> Oynanıyor</span>}
+        {isRunning && <span className="live-badge"><span /> {tx("Oynanıyor")}</span>}
       </div>
       <div className="icard-body">
         <InstanceIcon instance={instance} size={46} />
@@ -39,7 +40,7 @@ export function InstanceCard({ instance }: { instance: Instance }) {
           {instance.totalPlaySecs > 0 && <span className="muted tiny"><Clock size={11} /> {formatDuration(instance.totalPlaySecs)}</span>}
         </div>
       </div>
-      <button className={`icard-play ${isRunning ? "stop" : ""}`} onClick={onPlay} aria-label={isRunning ? "Durdur" : "Oyna"}>
+      <button className={`icard-play ${isRunning ? "stop" : ""}`} onClick={onPlay} aria-label={isRunning ? tx("Durdur") : tx("Oyna")}>
         {isLaunching ? <Loader2 size={18} className="spin" /> : isRunning ? <Square size={15} fill="currentColor" /> : <Play size={18} fill="currentColor" />}
       </button>
     </motion.div>

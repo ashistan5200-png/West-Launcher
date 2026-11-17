@@ -5,8 +5,9 @@ import clsx from "clsx";
 import type { ContentHit } from "@/lib/types";
 import { useContent, contentKey } from "@/stores/content";
 import { formatCount } from "@/lib/format";
+import { tx } from "@/lib/i18n";
 
-const SOURCE_LABEL = { modrinth: "Modrinth", curseforge: "CurseForge" } as const;
+const SOURCE_LABEL = { modrinth: tx("Modrinth"), curseforge: tx("CurseForge") } as const;
 
 interface Props {
   hit: ContentHit;
@@ -43,14 +44,14 @@ export function ContentRow({ hit, instanceId, reason, compact = false }: Props) 
         <button
           className={clsx("btn btn-sm", installed ? "btn-ghost" : "btn-primary")}
           disabled={installing || installed || needsInstance}
-          title={needsInstance ? "Önce bir instance seç" : undefined}
+          title={needsInstance ? tx("Önce bir instance seç") : undefined}
           onClick={() => install(hit, instanceId)}
         >
           {installing ? <Loader2 size={14} className="spin" /> : installed ? <Check size={14} /> : <Download size={14} />}
-          {installed ? "Kurulu" : hit.kind === "modpack" ? "Kur" : "Ekle"}
+          {installed ? tx("Kurulu") : hit.kind === "modpack" ? tx("Kur") : tx("Ekle")}
         </button>
         {!compact && (
-          <button className="icon-btn" title="Sayfasını aç" onClick={() => openUrl(hit.url)}>
+          <button className="icon-btn" title={tx("Sayfasını aç")} onClick={() => openUrl(hit.url)}>
             <ExternalLink size={15} />
           </button>
         )}

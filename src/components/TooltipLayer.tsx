@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { tx } from "@/lib/i18n";
 
 interface Tip {
   text: string;
@@ -28,7 +29,7 @@ export function TooltipLayer() {
     };
 
     const onOver = (e: MouseEvent) => {
-      const el = (e.target as Element | null)?.closest?.("[title], [data-tip]");
+      const el = (e.target as Element | null)?.closest?.(tx("[title], [data-tip]"));
       if (!el || el === current.current) return;
       const title = el.getAttribute("title");
       if (title) {

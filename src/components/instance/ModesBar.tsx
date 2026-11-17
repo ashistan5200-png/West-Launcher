@@ -6,6 +6,7 @@ import type { GameModes } from "@/lib/types";
 import { Modal } from "@/components/Modal";
 import { Menu } from "./Menu";
 import { askConfirm } from "@/components/ConfirmDialog";
+import { tx } from "@/lib/i18n";
 
 const ICONS = ["🏗️", "⚔️", "⛏️", "🌲", "🎥", "🏹", "🧪", "🌙", "🏆", "🎮"];
 const err = (e: unknown) => String(e).replace(/^Error: /, "");
@@ -27,14 +28,14 @@ export function ModesBar({ instanceId, locked, onApplied, onNotice }: {
   useEffect(() => void load(), [instanceId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const apply = async (id: string) => {
-    if (locked) return onNotice({ ok: false, text: "Oyun açıkken mod değiştirilemez; önce oyunu kapat." });
+    if (locked) return onNotice({ ok: false, text: tx("Oyun açıkken mod değiştirilemez; önce oyunu kapat.") });
     setBusy(id);
     try {
       const r = await api.applyMode(instanceId, id);
       const m = data?.modes.find((x) => x.id === id);
       onNotice({
         ok: true,
-        text: `${m?.icon ?? ""} ${m?.name ?? "Mod"} etkin: ${r.enabled} içerik açık, ${r.disabled} kapalı${r.optionsRestored ? ", tuş atamaları ve ayarlar yüklendi" : ""}.${r.missing ? ` ${r.missing} içerik artık yok, atlandı.` : ""}`,
+        text: tx("{0} {1} etkin: {2} içerik açık, {3} kapalı{4}.{5}", m?.icon ?? "", m?.name ?? "Mod", r.enabled, r.disabled, r.optionsRestored ? ", tuş atamaları ve ayarlar yüklendi" : "", r.missing ? ` ${r.missing} içerik artık yok, atlandı.` : ""),
       });
       await load();
       onApplied();
@@ -43,17 +44,17 @@ export function ModesBar({ instanceId, locked, onApplied, onNotice }: {
 
   const recapture = async (id: string) => {
     const m = data?.modes.find((x) => x.id === id);
-    if (!m || !await askConfirm(`"${m.name}" şu anki açık/kapalı içeriklerle${m.hasOptions ? " ve şu anki tuş atamalarıyla" : ""} güncellensin mi?`)) return;
+    if (!m || !await askConfirm(tx("\"{0}\" şu anki açık/kapalı içeriklerle{1} güncellensin mi?", m.name, m.hasOptions ? " ve şu anki tuş atamalarıyla" : ""))) return;
     try {
       await api.saveMode(instanceId, id, m.name, m.icon, m.hasOptions);
-      onNotice({ ok: true, text: `${m.name} güncellendi.` });
+      onNotice({ ok: true, text: tx("{0} güncellendi.", m.name) });
       await load();
     } catch (e) { onNotice({ ok: false, text: err(e) }); }
   };
 
   const remove = async (id: string) => {
     const m = data?.modes.find((x) => x.id === id);
-    if (!m || !await askConfirm(`"${m.name}" silinsin mi? Modların ve dosyaların silinmez; yalnızca bu kayıt kaldırılır.`)) return;
+    if (!m || !await askConfirm(tx("\"{0}\" silinsin mi? Modların ve dosyaların silinmez; yalnızca bu kayıt kaldırılır.", m.name))) return;
     await api.deleteMode(instanceId, id).catch((e) => onNotice({ ok: false, text: err(e) }));
     await load();
   };
@@ -63,7 +64,7 @@ export function ModesBar({ instanceId, locked, onApplied, onNotice }: {
     try {
       if (editor.id) await api.renameMode(instanceId, editor.id, editor.name, editor.icon);
       else await api.saveMode(instanceId, null, editor.name, editor.icon, editor.options);
-      onNotice({ ok: true, text: editor.id ? "Mod güncellendi." : `${editor.icon} ${editor.name} oluşturuldu. Artık tek tıkla bu düzene dönebilirsin.` });
+      onNotice({ ok: true, text: editor.id ? tx("Mod güncellendi.") : tx("{0} {1} oluşturuldu. Artık tek tıkla bu düzene dönebilirsin.", editor.icon, editor.name) });
       setEditor(null);
       await load();
     } catch (e) { onNotice({ ok: false, text: err(e) }); }
@@ -72,46 +73,46 @@ export function ModesBar({ instanceId, locked, onApplied, onNotice }: {
   if (!data) return null;
   return (
     <div className="modes-bar">
-      <span className="modes-label"><Layers size={15} /> Oyun modları</span>
-      {data.modes.length === 0 && <span className="muted small">Build ve PvP gibi farklı mod/tuş düzenleri arasında tek tıkla geç.</span>}
+      <span className="modes-label"><Layers size={15} /> {tx("Oyun modları")}</span>
+      {data.modes.length === 0 && <span className="muted small">{tx("Build ve PvP gibi farklı mod/tuş düzenleri arasında tek tıkla geç.")}</span>}
       {data.modes.map((m) => (
         <div key={m.id} className={clsx("mode-chip", data.active === m.id && "on")}>
-          <button className="mode-main" disabled={!!busy} onClick={() => void apply(m.id)} title={`${m.enabled.length} açık, ${m.disabled.length} kapalı içerik${m.hasOptions ? " · tuş atamaları dahil" : ""}`}>
+          <button className="mode-main" disabled={!!busy} onClick={() => void apply(m.id)} title={tx("{0} açık, {1} kapalı içerik{2}", m.enabled.length, m.disabled.length, m.hasOptions ? " · tuş atamaları dahil" : "")}>
             {busy === m.id ? <Loader2 size={14} className="spin" /> : <span className="mode-ico">{m.icon}</span>}
             {m.name}
             {m.hasOptions && <Keyboard size={12} className="muted" />}
             {data.active === m.id && <Check size={13} />}
           </button>
           <Menu
-            trigger={() => <button className="mode-more" aria-label="Seçenekler"><MoreHorizontal size={14} /></button>}
+            trigger={() => <button className="mode-more" aria-label={tx("Seçenekler")}><MoreHorizontal size={14} /></button>}
             items={[
-              { label: "Şu anki düzenle güncelle", icon: <RefreshCw size={14} />, onClick: () => void recapture(m.id) },
-              { label: "Adını / simgesini değiştir", icon: <Pencil size={14} />, onClick: () => setEditor({ id: m.id, name: m.name, icon: m.icon, options: m.hasOptions }) },
-              { label: "Sil", icon: <Trash2 size={14} />, danger: true, onClick: () => void remove(m.id) },
+              { label: tx("Şu anki düzenle güncelle"), icon: <RefreshCw size={14} />, onClick: () => void recapture(m.id) },
+              { label: tx("Adını / simgesini değiştir"), icon: <Pencil size={14} />, onClick: () => setEditor({ id: m.id, name: m.name, icon: m.icon, options: m.hasOptions }) },
+              { label: tx("Sil"), icon: <Trash2 size={14} />, danger: true, onClick: () => void remove(m.id) },
             ]}
           />
         </div>
       ))}
-      <button className="mode-add" onClick={() => setEditor({ id: null, name: data.modes.length ? "" : "Build Modu", icon: data.modes.length ? "⚔️" : "🏗️", options: true })}>
-        <Plus size={14} /> Mod oluştur
+      <button className="mode-add" onClick={() => setEditor({ id: null, name: data.modes.length ? "" : tx("Build Modu"), icon: data.modes.length ? "⚔️" : "🏗️", options: true })}>
+        <Plus size={14} /> {tx("Mod oluştur")}
       </button>
 
-      <Modal open={!!editor} onClose={() => setEditor(null)} title={editor?.id ? "Modu düzenle" : "Yeni oyun modu"} width={440}
-        footer={<><button className="btn btn-ghost" onClick={() => setEditor(null)}>Vazgeç</button><button className="btn btn-primary" disabled={!editor?.name.trim()} onClick={() => void submit()}>{editor?.id ? "Kaydet" : "Oluştur"}</button></>}>
+      <Modal open={!!editor} onClose={() => setEditor(null)} title={editor?.id ? tx("Modu düzenle") : tx("Yeni oyun modu")} width={440}
+        footer={<><button className="btn btn-ghost" onClick={() => setEditor(null)}>{tx("Vazgeç")}</button><button className="btn btn-primary" disabled={!editor?.name.trim()} onClick={() => void submit()}>{editor?.id ? tx("Kaydet") : tx("Oluştur")}</button></>}>
         {editor && (
           <>
-            {!editor.id && <p className="small muted">Şu an <strong>açık</strong> olan modlar, resource pack'ler ve shader'lar bu moda kaydedilir. Önce modları istediğin gibi açıp kapat, sonra modu oluştur.</p>}
-            <label className="field"><span>Ad</span><input autoFocus value={editor.name} maxLength={32} placeholder="Örn. PvP Modu" onChange={(e) => setEditor({ ...editor, name: e.target.value })} onKeyDown={(e) => e.key === "Enter" && editor.name.trim() && void submit()} /></label>
+            {!editor.id && <p className="small muted">{tx("Şu an")} <strong>{tx("açık")}</strong> {tx("olan modlar, resource pack'ler ve shader'lar bu moda kaydedilir. Önce modları istediğin gibi açıp kapat, sonra modu oluştur.")}</p>}
+            <label className="field"><span>{tx("Ad")}</span><input autoFocus value={editor.name} maxLength={32} placeholder={tx("Örn. PvP Modu")} onChange={(e) => setEditor({ ...editor, name: e.target.value })} onKeyDown={(e) => e.key === "Enter" && editor.name.trim() && void submit()} /></label>
             <div className="field">
-              <span>Simge</span>
+              <span>{tx("Simge")}</span>
               <div className="mode-icons">
                 {ICONS.map((i) => <button key={i} className={clsx("mode-icon", editor.icon === i && "on")} onClick={() => setEditor({ ...editor, icon: i })}>{i}</button>)}
               </div>
             </div>
             {!editor.id && (
-              <label className="check"><input type="checkbox" checked={editor.options} onChange={(e) => setEditor({ ...editor, options: e.target.checked })} /> <Keyboard size={14} /> Tuş atamalarını ve oyun ayarlarını da kaydet (options.txt)</label>
+              <label className="check"><input type="checkbox" checked={editor.options} onChange={(e) => setEditor({ ...editor, options: e.target.checked })} /> <Keyboard size={14} /> {tx("Tuş atamalarını ve oyun ayarlarını da kaydet (options.txt)")}</label>
             )}
-            {!editor.id && editor.options && <p className="muted tiny">Bu moddayken oyunda değiştirdiğin tuşlar, başka moda geçerken bu moda kendiliğinden kaydedilir.</p>}
+            {!editor.id && editor.options && <p className="muted tiny">{tx("Bu moddayken oyunda değiştirdiğin tuşlar, başka moda geçerken bu moda kendiliğinden kaydedilir.")}</p>}
           </>
         )}
       </Modal>

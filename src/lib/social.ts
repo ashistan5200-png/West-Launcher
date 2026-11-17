@@ -3,6 +3,7 @@
  * (west_api) geçer; kim neyi görebilir/yapabilir Supabase'teki kurallarla belirlenir.
  */
 import { api } from "./ipc";
+import { tx } from "@/lib/i18n";
 
 export interface Profile {
   id: string; username: string; display_name: string | null; bio: string | null; avatar_url: string | null; banner_url: string | null;
@@ -83,7 +84,7 @@ export const quotes = async (id: string) => enrich(await api.westApi<Post[]>("GE
 export const tagPosts = async (tag: string, before?: string) =>
   enrich(await api.westApi<Post[]>("GET", R("post_view"), { query: [["tags", `cs.{${clean(tag).toLowerCase()}}`], ["created_at", `lt.${before ?? new Date().toISOString()}`], ["order", "created_at.desc"], ["limit", "25"]] }));
 export const searchPosts = async (q: string) =>
-  enrich(await api.westApi<Post[]>("GET", R("post_view"), { query: [["body", `ilike.*${clean(q)}*`], ["order", "created_at.desc"], ["limit", "30"]] }));
+  enrich(await api.westApi<Post[]>("GET", R("post_view"), { query: [["body", tx("ilike.*{0}*", clean(q))], ["order", "created_at.desc"], ["limit", "30"]] }));
 export const bookmarks = async () => {
   const b = await api.westApi<{ post_id: string }[]>("GET", R("bookmarks"), { query: [["order", "created_at.desc"], ["limit", "100"]] });
   if (!b.length) return [];

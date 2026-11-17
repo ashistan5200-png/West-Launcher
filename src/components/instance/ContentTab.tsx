@@ -17,15 +17,16 @@ import { Modal } from "@/components/Modal";
 import { ModesBar } from "./ModesBar";
 import type { ContentFile } from "@/lib/types";
 import { askConfirm } from "@/components/ConfirmDialog";
+import { tx } from "@/lib/i18n";
 
 type KindFilter = "all" | "mod" | "resourcepack" | "shader";
 type Extra = "updates" | "disabled" | "deps";
 type Sort = "az" | "za" | "updates" | "size";
 
 const KIND_ICON = { mod: Box, resourcepack: Paintbrush, shader: Sparkles } as const;
-const KIND_LABEL = { mod: "Mod", resourcepack: "Resource pack", shader: "Shader" } as const;
-const SORT_LABEL: Record<Sort, string> = { az: "Ad (A-Z)", za: "Ad (Z-A)", updates: "Güncellemesi olan önce", size: "Boyut" };
-const EXTRA_LABEL: Record<Extra, string> = { updates: "Güncellemesi olanlar", disabled: "Kapalı olanlar", deps: "Bağımlılık olarak gelenler" };
+const KIND_LABEL = { mod: tx("Mod"), resourcepack: tx("Resource pack"), shader: tx("Shader") } as const;
+const SORT_LABEL: Record<Sort, string> = { az: tx("Ad (A-Z)"), za: tx("Ad (Z-A)"), updates: tx("Güncellemesi olan önce"), size: tx("Boyut") };
+const EXTRA_LABEL: Record<Extra, string> = { updates: tx("Güncellemesi olanlar"), disabled: tx("Kapalı olanlar"), deps: tx("Bağımlılık olarak gelenler") };
 
 const fmtSize = (b: number) => (b >= 1 << 20 ? `${(b / (1 << 20)).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
 
@@ -101,7 +102,7 @@ export function ContentTab({ instanceId, locked }: { instanceId: string; locked:
   };
 
   const remove = async (list: ContentFile[]) => {
-    const msg = list.length === 1 ? `"${list[0].title}" kaldırılsın mı? Dosya çöp kutusuna taşınır.` : `${list.length} içerik kaldırılsın mı? Dosyalar çöp kutusuna taşınır.`;
+    const msg = list.length === 1 ? tx("\"{0}\" kaldırılsın mı? Dosya çöp kutusuna taşınır.", list[0].title) : tx("{0} içerik kaldırılsın mı? Dosyalar çöp kutusuna taşınır.", list.length);
     if (!await askConfirm(msg)) return;
     const ids = list.map((i) => i.id);
     try {
@@ -121,8 +122,8 @@ export function ContentTab({ instanceId, locked }: { instanceId: string; locked:
     try {
       const r = await api.updateContent(instanceId, ids);
       const parts = [];
-      if (r.updated.length) parts.push(`${r.updated.length} içerik güncellendi; eski dosyalar yedeklendi.`);
-      if (r.failed.length) parts.push(`Güncellenemeyenler: ${r.failed.join("; ")}`);
+      if (r.updated.length) parts.push(tx("{0} içerik güncellendi; eski dosyalar yedeklendi.", r.updated.length));
+      if (r.failed.length) parts.push(tx("Güncellenemeyenler: {0}", r.failed.join("; ")));
       setNotice({ ok: r.failed.length === 0, text: parts.join(" ") });
       setSelected(new Set());
       await refresh();
@@ -143,7 +144,7 @@ export function ContentTab({ instanceId, locked }: { instanceId: string; locked:
   const addPaths = async (paths: string[]) => {
     try {
       const added = await api.addContentFiles(instanceId, paths);
-      setNotice({ ok: true, text: `${added.length} dosya eklendi.` });
+      setNotice({ ok: true, text: tx("{0} dosya eklendi.", added.length) });
       await refresh();
     } catch (e) {
       fail(e);
@@ -166,8 +167,8 @@ export function ContentTab({ instanceId, locked }: { instanceId: string; locked:
       else if (t === "drop") {
         setDragging(false);
         const paths = e.payload.paths.filter((p) => /\.(jar|zip)$/i.test(p));
-        if (lockedRef.current) setNotice({ ok: false, text: "Oyun açıkken içerik eklenemez." });
-        else if (!paths.length) setNotice({ ok: false, text: "Yalnızca .jar (mod) veya .zip (resource pack / shader) dosyaları eklenebilir." });
+        if (lockedRef.current) setNotice({ ok: false, text: tx("Oyun açıkken içerik eklenemez.") });
+        else if (!paths.length) setNotice({ ok: false, text: tx("Yalnızca .jar (mod) veya .zip (resource pack / shader) dosyaları eklenebilir.") });
         else setDropped(paths);
       }
     });
@@ -181,11 +182,11 @@ export function ContentTab({ instanceId, locked }: { instanceId: string; locked:
       <div className="ctab-bar">
         <label className="ctab-search">
           <Search size={16} />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={`${counts.all} proje içinde ara…`} />
-          {q && <button className="icon-btn sm" onClick={() => setQ("")} aria-label="Temizle"><X size={14} /></button>}
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={tx("{0} proje içinde ara…", counts.all)} />
+          {q && <button className="icon-btn sm" onClick={() => setQ("")} aria-label={tx("Temizle")}><X size={14} /></button>}
         </label>
-        <button className="btn btn-ghost lg" disabled={locked} onClick={() => void upload()}><FolderUp size={16} /> Dosya yükle</button>
-        <button className="btn btn-primary lg" onClick={() => navigate(`/browse?instance=${encodeURIComponent(instanceId)}`)}><Compass size={16} /> İçerik keşfet</button>
+        <button className="btn btn-ghost lg" disabled={locked} onClick={() => void upload()}><FolderUp size={16} /> {tx("Dosya yükle")}</button>
+        <button className="btn btn-primary lg" onClick={() => navigate(`/browse?instance=${encodeURIComponent(instanceId)}`)}><Compass size={16} /> {tx("İçerik keşfet")}</button>
       </div>
 
       <ModesBar instanceId={instanceId} locked={locked} onApplied={() => void refresh()} onNotice={setNotice} />
@@ -197,14 +198,14 @@ export function ContentTab({ instanceId, locked }: { instanceId: string; locked:
           items={(Object.keys(SORT_LABEL) as Sort[]).map((s) => ({ label: SORT_LABEL[s], active: s === sort, icon: s === sort ? <Check size={14} /> : <span className="menu-gap" />, onClick: () => setSort(s) }))}
         />
         <span className="grow" />
-        {offline && <span className="muted tiny">Modrinth'e ulaşılamadı; yerel bilgiler gösteriliyor</span>}
+        {offline && <span className="muted tiny">{tx("Modrinth'e ulaşılamadı; yerel bilgiler gösteriliyor")}</span>}
         {updatable.length > 0 && (
           <button className="btn-link accent" disabled={locked || busy.size > 0} onClick={() => void update(updatable)}>
-            <Download size={16} /> Tümünü güncelle ({updatable.length})
+            <Download size={16} /> {tx("Tümünü güncelle (")}{updatable.length})
           </button>
         )}
         <button className="btn-link" disabled={refreshing} onClick={() => void refresh()}>
-          <RefreshCw size={16} className={clsx(refreshing && "spin")} /> Yenile
+          <RefreshCw size={16} className={clsx(refreshing && "spin")} /> {tx("Yenile")}
         </button>
       </div>
 
@@ -212,7 +213,7 @@ export function ContentTab({ instanceId, locked }: { instanceId: string; locked:
         <Filter size={16} className="muted" />
         {(["all", "mod", "resourcepack", "shader"] as KindFilter[]).filter((k) => k === "all" || counts[k] > 0).map((k) => (
           <button key={k} className={clsx("fchip", kind === k && "on")} onClick={() => setKind(k)}>
-            {k === "all" ? "Hepsi" : k === "mod" ? "Modlar" : k === "resourcepack" ? "Resource Pack" : "Shader"}
+            {k === "all" ? tx("Hepsi") : k === "mod" ? tx("Modlar") : k === "resourcepack" ? tx("Resource Pack") : tx("Shader")}
           </button>
         ))}
         <span className="vsep" />
@@ -222,7 +223,7 @@ export function ContentTab({ instanceId, locked }: { instanceId: string; locked:
         {extras.length < 3 && (
           <Menu
             align="left"
-            trigger={() => <button className="fchip"><Plus size={14} /> Filtre</button>}
+            trigger={() => <button className="fchip"><Plus size={14} /> {tx("Filtre")}</button>}
             items={(Object.keys(EXTRA_LABEL) as Extra[]).filter((x) => !extras.includes(x)).map((x) => ({ label: EXTRA_LABEL[x], onClick: () => setExtras((e) => [...e, x]) }))}
           />
         )}
@@ -231,38 +232,38 @@ export function ContentTab({ instanceId, locked }: { instanceId: string; locked:
       {notice && (
         <div className={clsx("banner", notice.ok ? "banner-ok" : "banner-error", "row")}>
           <span className="grow">{notice.text}</span>
-          <button className="icon-btn sm" onClick={() => setNotice(null)} aria-label="Kapat"><X size={14} /></button>
+          <button className="icon-btn sm" onClick={() => setNotice(null)} aria-label={tx("Kapat")}><X size={14} /></button>
         </div>
       )}
-      {locked && <div className="banner row"><span className="grow muted small">Oyun açıkken içerik değiştirilemez.</span></div>}
+      {locked && <div className="banner row"><span className="grow muted small">{tx("Oyun açıkken içerik değiştirilemez.")}</span></div>}
 
       <div className="ctable">
         <div className="ctable-head">
-          <input type="checkbox" className="cbox" aria-label="Hepsini seç" checked={allSelected} onChange={() => setSelected(allSelected ? new Set() : new Set(view.map((i) => i.id)))} />
+          <input type="checkbox" className="cbox" aria-label={tx("Hepsini seç")} checked={allSelected} onChange={() => setSelected(allSelected ? new Set() : new Set(view.map((i) => i.id)))} />
           {selectedItems.length ? (
             <div className="ctable-bulk">
-              <strong>{selectedItems.length} seçili</strong>
-              <button className="btn btn-sm btn-ghost" disabled={locked} onClick={() => void toggle(selectedItems.map((i) => i.id), true)}>Aç</button>
-              <button className="btn btn-sm btn-ghost" disabled={locked} onClick={() => void toggle(selectedItems.map((i) => i.id), false)}>Kapat</button>
-              {selectedItems.some((i) => i.update) && <button className="btn btn-sm btn-ghost" disabled={locked} onClick={() => void update(selectedItems)}><ArrowUpCircle size={14} /> Güncelle</button>}
-              <button className="btn btn-sm btn-danger-ghost" disabled={locked} onClick={() => void remove(selectedItems)}><Trash2 size={14} /> Kaldır</button>
+              <strong>{selectedItems.length} {tx("seçili")}</strong>
+              <button className="btn btn-sm btn-ghost" disabled={locked} onClick={() => void toggle(selectedItems.map((i) => i.id), true)}>{tx("Aç")}</button>
+              <button className="btn btn-sm btn-ghost" disabled={locked} onClick={() => void toggle(selectedItems.map((i) => i.id), false)}>{tx("Kapat")}</button>
+              {selectedItems.some((i) => i.update) && <button className="btn btn-sm btn-ghost" disabled={locked} onClick={() => void update(selectedItems)}><ArrowUpCircle size={14} /> {tx("Güncelle")}</button>}
+              <button className="btn btn-sm btn-danger-ghost" disabled={locked} onClick={() => void remove(selectedItems)}><Trash2 size={14} /> {tx("Kaldır")}</button>
             </div>
           ) : (
-            <span className="ctable-title">Proje</span>
+            <span className="ctable-title">{tx("Proje")}</span>
           )}
-          <span className="ctable-actions-h">İşlemler</span>
+          <span className="ctable-actions-h">{tx("İşlemler")}</span>
         </div>
 
         {items === null ? (
-          <div className="ctable-empty"><Loader2 size={18} className="spin" /> İçerik okunuyor…</div>
+          <div className="ctable-empty"><Loader2 size={18} className="spin" /> {tx("İçerik okunuyor…")}</div>
         ) : view.length === 0 ? (
           <div className="ctable-empty">
             {counts.all === 0 ? (
               <>
-                <p>Bu instance'ta henüz içerik yok.</p>
-                <button className="btn btn-primary" onClick={() => navigate(`/browse?instance=${encodeURIComponent(instanceId)}`)}><Compass size={15} /> İçerik keşfet</button>
+                <p>{tx("Bu instance'ta henüz içerik yok.")}</p>
+                <button className="btn btn-primary" onClick={() => navigate(`/browse?instance=${encodeURIComponent(instanceId)}`)}><Compass size={15} /> {tx("İçerik keşfet")}</button>
               </>
-            ) : <p className="muted">Filtreye uyan içerik yok.</p>}
+            ) : <p className="muted">{tx("Filtreye uyan içerik yok.")}</p>}
           </div>
         ) : (
           view.map((c) => {
@@ -271,7 +272,7 @@ export function ContentTab({ instanceId, locked }: { instanceId: string; locked:
             return (
               <div key={c.id} className={clsx("crow", !c.enabled && "off", selected.has(c.id) && "sel")}>
                 <input
-                  type="checkbox" className="cbox" aria-label={`${c.title} seç`} checked={selected.has(c.id)}
+                  type="checkbox" className="cbox" aria-label={tx("{0} seç", c.title)} checked={selected.has(c.id)}
                   onChange={() => setSelected((s) => { const n = new Set(s); if (n.has(c.id)) n.delete(c.id); else n.add(c.id); return n; })}
                 />
                 <ContentIcon key={c.icon ?? c.id} src={c.icon} title={c.title} kind={c.kind} size={52} />
@@ -279,9 +280,9 @@ export function ContentTab({ instanceId, locked }: { instanceId: string; locked:
                   <div className="crow-title">
                     <KIcon size={16} className="muted" aria-label={KIND_LABEL[c.kind]} />
                     {c.projectId && c.source === "modrinth" ? (
-                      <button className="crow-name truncate" title={`${c.file} · Keşfet'te aç`} onClick={() => navigate(`/browse?instance=${encodeURIComponent(instanceId)}&kind=${c.kind}&project=${encodeURIComponent(c.projectId!)}`)}>{c.title}</button>
+                      <button className="crow-name truncate" title={tx("{0} · Keşfet'te aç", c.file)} onClick={() => navigate(`/browse?instance=${encodeURIComponent(instanceId)}&kind=${c.kind}&project=${encodeURIComponent(c.projectId!)}`)}>{c.title}</button>
                     ) : <strong className="truncate" title={c.file}>{c.title}</strong>}
-                    {c.dependencyOf && <span className="chip" title={`${c.dependencyOf} için kuruldu`}>bağımlılık</span>}
+                    {c.dependencyOf && <span className="chip" title={tx("{0} için kuruldu", c.dependencyOf)}>{tx("bağımlılık")}</span>}
                   </div>
                   <div className="crow-sub">
                     {c.author && (
@@ -297,23 +298,23 @@ export function ContentTab({ instanceId, locked }: { instanceId: string; locked:
                 </div>
                 <div className="crow-actions">
                   {c.update ? (
-                    <button className="icon-btn accent" disabled={locked || working} title={`Güncelle: ${c.update.versionNumber}`} onClick={() => void update([c])}>
+                    <button className="icon-btn accent" disabled={locked || working} title={tx("Güncelle: {0}", c.update.versionNumber)} onClick={() => void update([c])}>
                       {working ? <Loader2 size={18} className="spin" /> : <ArrowUpCircle size={19} />}
                     </button>
                   ) : <span className="icon-btn ghost-slot" />}
                   {c.projectId && c.source === "modrinth" ? (
-                    <button className="icon-btn" disabled={locked} title="Sürümü değiştir" onClick={() => setPicking(c)}><History size={18} /></button>
+                    <button className="icon-btn" disabled={locked} title={tx("Sürümü değiştir")} onClick={() => setPicking(c)}><History size={18} /></button>
                   ) : <span className="icon-btn ghost-slot" />}
-                  <Switch on={c.enabled} disabled={locked} label={c.enabled ? "Kapat" : "Aç"} onChange={(v) => void toggle([c.id], v)} />
-                  <button className="icon-btn" disabled={locked} title="Kaldır" onClick={() => void remove([c])}><Trash2 size={18} /></button>
+                  <Switch on={c.enabled} disabled={locked} label={c.enabled ? tx("Kapat") : tx("Aç")} onChange={(v) => void toggle([c.id], v)} />
+                  <button className="icon-btn" disabled={locked} title={tx("Kaldır")} onClick={() => void remove([c])}><Trash2 size={18} /></button>
                   <Menu
-                    trigger={() => <button className="icon-btn" aria-label="Daha fazla"><MoreVertical size={18} /></button>}
+                    trigger={() => <button className="icon-btn" aria-label={tx("Daha fazla")}><MoreVertical size={18} /></button>}
                     items={[
-                      ...(c.url ? [{ label: "Modrinth sayfasını aç", icon: <ExternalLink size={14} />, onClick: () => void openUrl(c.url!) }] : []),
-                      ...(c.projectId && c.source === "modrinth" ? [{ label: "Sürümü değiştir", icon: <History size={14} />, disabled: locked, onClick: () => setPicking(c) }] : []),
-                      { label: "Klasörde göster", icon: <FolderOpen size={14} />, onClick: () => void reveal(c) },
-                      { label: c.enabled ? "Kapat" : "Aç", icon: <span className="menu-gap" />, disabled: locked, onClick: () => void toggle([c.id], !c.enabled) },
-                      { label: "Kaldır", icon: <Trash2 size={14} />, danger: true, disabled: locked, onClick: () => void remove([c]) },
+                      ...(c.url ? [{ label: tx("Modrinth sayfasını aç"), icon: <ExternalLink size={14} />, onClick: () => void openUrl(c.url!) }] : []),
+                      ...(c.projectId && c.source === "modrinth" ? [{ label: tx("Sürümü değiştir"), icon: <History size={14} />, disabled: locked, onClick: () => setPicking(c) }] : []),
+                      { label: tx("Klasörde göster"), icon: <FolderOpen size={14} />, onClick: () => void reveal(c) },
+                      { label: c.enabled ? tx("Kapat") : tx("Aç"), icon: <span className="menu-gap" />, disabled: locked, onClick: () => void toggle([c.id], !c.enabled) },
+                      { label: tx("Kaldır"), icon: <Trash2 size={14} />, danger: true, disabled: locked, onClick: () => void remove([c]) },
                     ]}
                   />
                 </div>
@@ -324,11 +325,11 @@ export function ContentTab({ instanceId, locked }: { instanceId: string; locked:
       </div>
       {instance && <VersionPicker instance={instance} item={picking} onClose={() => setPicking(null)} onChanged={(text) => { setNotice({ ok: true, text }); void refresh(); }} />}
       {dragging && !locked && (
-        <div className="drop-overlay"><FolderUp size={34} /><strong>Bırak, bu instance'a ekleyelim</strong><span className="muted small">.jar modlar · .zip resource pack ve shader'lar</span></div>
+        <div className="drop-overlay"><FolderUp size={34} /><strong>{tx("Bırak, bu instance'a ekleyelim")}</strong><span className="muted small">{tx(".jar modlar · .zip resource pack ve shader'lar")}</span></div>
       )}
-      <Modal open={!!dropped} onClose={() => setDropped(null)} title="Dosyalar eklensin mi?" width={460}
-        footer={<><button className="btn btn-ghost" onClick={() => setDropped(null)}>Vazgeç</button><button className="btn btn-primary" onClick={() => { const p = dropped ?? []; setDropped(null); void addPaths(p); }}><Download size={15} /> {dropped?.length ?? 0} dosyayı ekle</button></>}>
-        <p className="small">Bu dosyalar instance'a kopyalanacak. Yalnızca güvendiğin kaynaklardan indirdiğin dosyaları ekle.</p>
+      <Modal open={!!dropped} onClose={() => setDropped(null)} title={tx("Dosyalar eklensin mi?")} width={460}
+        footer={<><button className="btn btn-ghost" onClick={() => setDropped(null)}>{tx("Vazgeç")}</button><button className="btn btn-primary" onClick={() => { const p = dropped ?? []; setDropped(null); void addPaths(p); }}><Download size={15} /> {dropped?.length ?? 0} {tx("dosyayı ekle")}</button></>}>
+        <p className="small">{tx("Bu dosyalar instance'a kopyalanacak. Yalnızca güvendiğin kaynaklardan indirdiğin dosyaları ekle.")}</p>
         <ul className="drop-list">{(dropped ?? []).map((p) => <li key={p}><Box size={14} /> <span className="truncate">{p.split(/[\\/]/).pop()}</span></li>)}</ul>
       </Modal>
     </div>

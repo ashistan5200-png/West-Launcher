@@ -10,6 +10,7 @@ import { useSettings } from "@/stores/settings";
 import { api, isTauri } from "@/lib/ipc";
 import type { AshiMood } from "@/lib/ashi";
 import { LAUNCHER_LABEL } from "./ImportWizard";
+import { tx } from "@/lib/i18n";
 
 const STEPS = ["welcome", "login", "import", "done"] as const;
 type Step = (typeof STEPS)[number];
@@ -48,7 +49,7 @@ export function PasswordField({ id, value, onChange, visible, onToggle, placehol
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && onEnter?.()}
       />
-      <button type="button" className="pw-eye" onClick={onToggle} aria-label={visible ? "Şifreyi gizle" : "Şifreyi göster"} aria-pressed={visible}>
+      <button type="button" className="pw-eye" onClick={onToggle} aria-label={visible ? tx("Şifreyi gizle") : tx("Şifreyi göster")} aria-pressed={visible}>
         {visible ? <EyeOff size={16} /> : <Eye size={16} />}
       </button>
     </div>
@@ -165,7 +166,7 @@ export function SetupWizard() {
   return (
     <motion.div className="setup-layer" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
       <div className="setup-stage" ref={stageRef}>
-        <div className="setup-progress" aria-label={`Adım ${i + 1} / ${STEPS.length}`}>
+        <div className="setup-progress" aria-label={tx("Adım {0} / {1}", i + 1, STEPS.length)}>
           {STEPS.map((s, k) => <span key={s} className={clsx(k === i && "on", k < i && "done")} />)}
         </div>
 
@@ -191,29 +192,29 @@ export function SetupWizard() {
             {step === "welcome" && (
               <div className="setup-body">
                 <Logo size={34} />
-                <h2>West Client'a hoş geldin</h2>
-                <p>Ben Ashi. Seni birkaç adımda hazır edeyim: hesabını bağlayalım, eski paketlerini taşıyalım, sonra oyuna.</p>
+                <h2>{tx("West Client'a hoş geldin")}</h2>
+                <p>{tx("Ben Ashi. Seni birkaç adımda hazır edeyim: hesabını bağlayalım, eski paketlerini taşıyalım, sonra oyuna.")}</p>
               </div>
             )}
 
             {step === "login" && (
               <div className="setup-body">
-                <h2>Giriş yap</h2>
-                <p className="muted small">Minecraft hesabını bağla. İstersen launcher'ı bir şifreyle kilitleyebilirsin.</p>
+                <h2>{tx("Giriş yap")}</h2>
+                <p className="muted small">{tx("Minecraft hesabını bağla. İstersen launcher'ı bir şifreyle kilitleyebilirsin.")}</p>
 
                 {hasAccount ? (
-                  <div className="setup-account"><Check size={15} /> {accounts.map((a) => a.username).join(", ")} bağlandı</div>
+                  <div className="setup-account"><Check size={15} /> {accounts.map((a) => a.username).join(", ")} {tx("bağlandı")}</div>
                 ) : (
                   <>
                     <button className="btn btn-primary" disabled={loginOpen} onClick={() => void startLogin()}>
                       {loginOpen ? <Loader2 size={15} className="spin" /> : <LogIn size={15} />}
-                      {loginOpen ? "Microsoft penceresinde giriş yap…" : "Microsoft ile giriş yap"}
+                      {loginOpen ? tx("Microsoft penceresinde giriş yap…") : tx("Microsoft ile giriş yap")}
                     </button>
                     <div className="setup-or"><span>veya offline oyna</span></div>
                     <label className="field">
-                      <span>Kullanıcı adı</span>
+                      <span>{tx("Kullanıcı adı")}</span>
                       <div className="pw-field">
-                        <input id="setup-name" value={name} placeholder={offlineDefault || "Steve"} maxLength={16} onChange={(e) => setName(e.target.value.replace(/[^A-Za-z0-9_]/g, ""))} />
+                        <input id="setup-name" value={name} placeholder={offlineDefault || tx("Steve")} maxLength={16} onChange={(e) => setName(e.target.value.replace(/[^A-Za-z0-9_]/g, ""))} />
                         <span className="pw-eye static"><UserRound size={16} /></span>
                       </div>
                     </label>
@@ -221,50 +222,50 @@ export function SetupWizard() {
                 )}
 
                 <label className="field" htmlFor="setup-pw">
-                  <span>Launcher şifresi <span className="muted">(isteğe bağlı)</span></span>
-                  <PasswordField id="setup-pw" value={pw} onChange={setPw} visible={pwVisible} onToggle={() => setPwVisible((v) => !v)} placeholder="Boş bırakırsan kilit olmaz" onEnter={() => canNext && void next()} />
+                  <span>{tx("Launcher şifresi")} <span className="muted">{tx("(isteğe bağlı)")}</span></span>
+                  <PasswordField id="setup-pw" value={pw} onChange={setPw} visible={pwVisible} onToggle={() => setPwVisible((v) => !v)} placeholder={tx("Boş bırakırsan kilit olmaz")} onEnter={() => canNext && void next()} />
                 </label>
-                <p className="muted tiny"><ShieldCheck size={12} /> Bu şifre yalnızca bu bilgisayarda, geri çözülemeyen bir özet olarak saklanır. Microsoft şifren buraya değil, Microsoft'un kendi penceresine girilir.</p>
+                <p className="muted tiny"><ShieldCheck size={12} /> {tx("Bu şifre yalnızca bu bilgisayarda, geri çözülemeyen bir özet olarak saklanır. Microsoft şifren buraya değil, Microsoft'un kendi penceresine girilir.")}</p>
                 {error && <p className="hint error">{error}</p>}
               </div>
             )}
 
             {step === "import" && (
               <div className="setup-body">
-                <h2>Eski paketlerin</h2>
+                <h2>{tx("Eski paketlerin")}</h2>
                 {scanning && !found ? (
-                  <p className="muted small"><Loader2 size={13} className="spin" /> Bilgisayarındaki launcher'lara bakıyorum…</p>
+                  <p className="muted small"><Loader2 size={13} className="spin" /> {tx("Bilgisayarındaki launcher'lara bakıyorum…")}</p>
                 ) : launchers.length ? (
                   <>
-                    <p>Bilgisayarında <strong>{launchers.join(", ")}</strong> buldum ({found!.length} instance). Modlarını, ayarlarını ve paketlerini West Client'a taşıyabilirim; orijinallerine dokunmam.</p>
-                    <label className="check"><input type="checkbox" checked={importAfter} onChange={(e) => setImportAfter(e.target.checked)} /> <Import size={14} /> Kurulum bitince aktarım sihirbazını aç</label>
+                    <p>{tx("Bilgisayarında")} <strong>{launchers.join(", ")}</strong> buldum ({found!.length} {tx("instance). Modlarını, ayarlarını ve paketlerini West Client'a taşıyabilirim; orijinallerine dokunmam.")}</p>
+                    <label className="check"><input type="checkbox" checked={importAfter} onChange={(e) => setImportAfter(e.target.checked)} /> <Import size={14} /> {tx("Kurulum bitince aktarım sihirbazını aç")}</label>
                   </>
                 ) : (
-                  <p className="muted">Başka bir launcher bulamadım. İstersen sonra Kütüphane'deki "Aktar" düğmesiyle bir klasör seçebilirsin.</p>
+                  <p className="muted">{tx("Başka bir launcher bulamadım. İstersen sonra Kütüphane'deki \"Aktar\" düğmesiyle bir klasör seçebilirsin.")}</p>
                 )}
               </div>
             )}
 
             {step === "done" && (
               <div className="setup-body">
-                <h2>Hazırsın!</h2>
-                <p>Mod aramak, skin değiştirmek ya da çöken bir paketin suçlusunu bulmak için sol menüdeki simgeleri kullan. Takılırsan bana sor.</p>
+                <h2>{tx("Hazırsın!")}</h2>
+                <p>{tx("Mod aramak, skin değiştirmek ya da çöken bir paketin suçlusunu bulmak için sol menüdeki simgeleri kullan. Takılırsan bana sor.")}</p>
                 {!(importAfter && launchers.length) && (
-                  <label className="check"><input type="checkbox" checked={tour} onChange={(e) => setTour(e.target.checked)} /> <Sparkles size={14} /> Ashi bana launcher'ı kısaca gezdirsin</label>
+                  <label className="check"><input type="checkbox" checked={tour} onChange={(e) => setTour(e.target.checked)} /> <Sparkles size={14} /> {tx("Ashi bana launcher'ı kısaca gezdirsin")}</label>
                 )}
               </div>
             )}
 
             <footer className="setup-foot">
               {i > 0 ? (
-                <button className="btn btn-ghost" disabled={moving || busy} onClick={() => void go(i - 1)}><ArrowLeft size={15} /> Geri</button>
+                <button className="btn btn-ghost" disabled={moving || busy} onClick={() => void go(i - 1)}><ArrowLeft size={15} /> {tx("Geri")}</button>
               ) : <span />}
-              {step === "login" && !hasAccount && <button className="btn-link" disabled={moving} onClick={() => void go(i + 1)}>Şimdilik atla</button>}
+              {step === "login" && !hasAccount && <button className="btn-link" disabled={moving} onClick={() => void go(i + 1)}>{tx("Şimdilik atla")}</button>}
               {step === "done" ? (
-                <button className="btn btn-primary" onClick={finish}><Check size={15} /> Başla</button>
+                <button className="btn btn-primary" onClick={finish}><Check size={15} /> {tx("Başla")}</button>
               ) : (
                 <button className="btn btn-primary" disabled={moving || busy || !canNext} onClick={() => void next()}>
-                  {busy ? <Loader2 size={15} className="spin" /> : null} İleri <ArrowRight size={15} />
+                  {busy ? <Loader2 size={15} className="spin" /> : null} {tx("İleri")} <ArrowRight size={15} />
                 </button>
               )}
             </footer>
@@ -323,26 +324,26 @@ export function LockScreen() {
         >
           {!forgot ? (
             <div className="setup-body">
-              <h2>Tekrar hoş geldin</h2>
+              <h2>{tx("Tekrar hoş geldin")}</h2>
               <label className="field" htmlFor="lock-pw">
-                <span>Launcher şifresi</span>
+                <span>{tx("Launcher şifresi")}</span>
                 <PasswordField id="lock-pw" value={pw} onChange={(v) => { setPw(v); setError(false); }} visible={visible} onToggle={() => setVisible((v) => !v)} autoFocus onEnter={() => void unlock()} />
               </label>
-              {error && <p className="hint error">Şifre yanlış. Tekrar dene.</p>}
+              {error && <p className="hint error">{tx("Şifre yanlış. Tekrar dene.")}</p>}
               <footer className="setup-foot">
-                <button className="btn-link" onClick={() => setForgot(true)}>Şifremi unuttum</button>
+                <button className="btn-link" onClick={() => setForgot(true)}>{tx("Şifremi unuttum")}</button>
                 <button className="btn btn-primary" disabled={!pw || checking} onClick={() => void unlock()}>
-                  {checking ? <Loader2 size={15} className="spin" /> : null} Kilidi aç
+                  {checking ? <Loader2 size={15} className="spin" /> : null} {tx("Kilidi aç")}
                 </button>
               </footer>
             </div>
           ) : (
             <div className="setup-body">
-              <h2>Şifreyi sıfırla</h2>
-              <p className="small">Güvenliğin için şifre sıfırlanırken bu launcher'daki <strong>kayıtlı hesaplar da kaldırılır</strong>. Instance'ların, modların ve dünyaların olduğu gibi kalır; hesabını sonra yeniden bağlayabilirsin.</p>
+              <h2>{tx("Şifreyi sıfırla")}</h2>
+              <p className="small">{tx("Güvenliğin için şifre sıfırlanırken bu launcher'daki")} <strong>{tx("kayıtlı hesaplar da kaldırılır")}</strong>{tx(". Instance'ların, modların ve dünyaların olduğu gibi kalır; hesabını sonra yeniden bağlayabilirsin.")}</p>
               <footer className="setup-foot">
-                <button className="btn btn-ghost" onClick={() => setForgot(false)}>Vazgeç</button>
-                <button className="btn btn-danger" onClick={async () => { await api.resetLauncherLock(); await useAccounts.getState().load(); setLocked(false); }}>Sıfırla ve aç</button>
+                <button className="btn btn-ghost" onClick={() => setForgot(false)}>{tx("Vazgeç")}</button>
+                <button className="btn btn-danger" onClick={async () => { await api.resetLauncherLock(); await useAccounts.getState().load(); setLocked(false); }}>{tx("Sıfırla ve aç")}</button>
               </footer>
             </div>
           )}

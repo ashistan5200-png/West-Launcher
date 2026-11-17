@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useAshi } from "@/stores/ashi";
+import { tx } from "@/lib/i18n";
 
 /**
  * AshiWest skininin yüzünden (8×8 yüz + şapka katmanı) üretilen piksel-art
@@ -24,5 +25,5 @@ export function AshiHead({ size = 28, className = "" }: { size?: number; classNa
     img.src = skin;
   }, [skin]);
 
-  return <canvas ref={ref} width={8} height={8} className={`ashi-head ${className}`} style={{ width: size, height: size }} aria-label="Ashi" />;
+  return <canvas ref={ref} width={8} height={8} className={`ashi-head ${className}`} style={{ width: size, height: size }} aria-label={tx("Ashi")} />;
 }

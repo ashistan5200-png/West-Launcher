@@ -1,4 +1,5 @@
 import { memo, useMemo } from "react";
+import { tx } from "@/lib/i18n";
 
 /**
  * Instance kapakları için prosedürel piksel manzara (SVG, tek renkli bloklar,
@@ -68,7 +69,7 @@ function Cover({ seed, className, sun = true, wide = false }: { seed: string; cl
   }, [seed, W, H, PX, wide]);
   const { p } = art;
   return (
-    <svg className={className} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" shapeRendering="crispEdges" aria-hidden>
+    <svg className={className} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio={tx("xMidYMid slice")} shapeRendering="crispEdges" aria-hidden>
       <defs>
         <linearGradient id={art.id} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor={p.sky[0]} />
@@ -92,7 +93,7 @@ function Cover({ seed, className, sun = true, wide = false }: { seed: string; cl
         <path
           key={li}
           fill={p.layers[li]}
-          d={`M0 ${H} ` + rd.map((y, i) => `L${i * PX} ${y} L${(i + 1) * PX} ${y}`).join(" ") + ` L${W} ${H} Z`}
+          d={`M0 ${H} ` + rd.map((y, i) => tx("L{0} {1} L{2} {3}", i * PX, y, (i + 1) * PX, y)).join(" ") + tx(" L{0} {1} Z", W, H)}
         />
       ))}
     </svg>

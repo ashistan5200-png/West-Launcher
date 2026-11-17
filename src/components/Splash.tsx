@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useOnboarding } from "@/stores/onboarding";
 import { useSettings } from "@/stores/settings";
+import { tx } from "@/lib/i18n";
 
 /** Hızlı başlayıp güçlü yavaşlayan eğri — iğne "oturur" gibi durur. */
 const SETTLE = [0.12, 0.85, 0.16, 1] as const;
@@ -29,7 +30,7 @@ export function Splash() {
           onClick={finishSplash}
           exit={{ opacity: 0, scale: 1.015 }}
           transition={{ duration: 0.45, ease: [0.4, 0, 0.2, 1] }}
-          aria-label="West Client açılıyor"
+          aria-label={tx("West Client açılıyor")}
         >
           <div className="splash-compass">
             <motion.svg
@@ -62,10 +63,10 @@ export function Splash() {
             animate={{ opacity: 1, y: 0, letterSpacing: "0.04em" }}
             transition={{ duration: 0.9, delay: reduce ? 0 : 1.1, ease: [0.22, 1, 0.36, 1] }}
           >
-            West Client
+            {tx("West Client")}
           </motion.h1>
           <motion.span className="splash-sub" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: reduce ? 0 : 1.5 }}>
-            Rotanı belirle.
+            {tx("Rotanı belirle.")}
           </motion.span>
         </motion.div>
       )}

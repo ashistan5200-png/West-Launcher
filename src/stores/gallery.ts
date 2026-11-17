@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { api, events, isTauri } from "@/lib/ipc";
 import type { Screenshot } from "@/lib/types";
+import { tx } from "@/lib/i18n";
 
 interface GalleryState {
   items: Screenshot[];
@@ -64,18 +65,18 @@ export const useGallery = create<GalleryState>((set, get) => ({
   copy: async (s) => {
     try {
       await api.copyScreenshot(s.path);
-      get().flash("Panoya kopyalandı — Discord'a veya herhangi bir yere yapıştırabilirsin");
+      get().flash(tx("Panoya kopyalandı — Discord'a veya herhangi bir yere yapıştırabilirsin"));
     } catch (e) {
       get().flash(String(e), "error");
     }
   },
 
   exportTo: async (s) => {
-    const dest = await saveDialog({ defaultPath: s.file, filters: [{ name: "Görüntü", extensions: [s.file.split(".").pop() ?? "png"] }] });
+    const dest = await saveDialog({ defaultPath: s.file, filters: [{ name: tx("Görüntü"), extensions: [s.file.split(".").pop() ?? "png"] }] });
     if (!dest) return;
     try {
       await api.exportScreenshot(s.path, dest);
-      get().flash("Dışa aktarıldı");
+      get().flash(tx("Dışa aktarıldı"));
     } catch (e) {
       get().flash(String(e), "error");
     }
@@ -85,7 +86,7 @@ export const useGallery = create<GalleryState>((set, get) => ({
     try {
       await api.deleteScreenshot(s.path);
       set((st) => ({ items: st.items.filter((x) => x.path !== s.path), viewing: st.viewing === s.path ? null : st.viewing }));
-      get().flash("Çöp kutusuna taşındı");
+      get().flash(tx("Çöp kutusuna taşındı"));
     } catch (e) {
       get().flash(String(e), "error");
     }

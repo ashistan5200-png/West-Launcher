@@ -7,6 +7,7 @@ import { formatRelative } from "@/lib/format";
 import type { ExportReport, FileEntry, Instance, LogFile, World } from "@/lib/types";
 import { EDITABLE, FileEditor } from "./FileEditor";
 import { askConfirm } from "@/components/ConfirmDialog";
+import { tx } from "@/lib/i18n";
 
 const fmtSize = (b: number) => (b >= 1 << 30 ? `${(b / (1 << 30)).toFixed(1)} GB` : b >= 1 << 20 ? `${(b / (1 << 20)).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
 const fromUnix = (s: number | null) => (s ? new Date(s * 1000).toISOString() : null);
@@ -24,7 +25,7 @@ export function WorldsTab({ instanceId, locked }: { instanceId: string; locked: 
     setBusy(w.folder);
     try {
       const p = await api.backupWorld(instanceId, w.folder);
-      setMsg({ ok: true, text: `"${w.folder}" yedeklendi: ${p.split(/[\\/]/).pop()}` });
+      setMsg({ ok: true, text: tx("\"{0}\" yedeklendi: {1}", w.folder, p.split(/[\\/]/).pop()) });
     } catch (e) {
       setMsg({ ok: false, text: errText(e) });
     } finally {
@@ -32,7 +33,7 @@ export function WorldsTab({ instanceId, locked }: { instanceId: string; locked: 
     }
   };
   const remove = async (w: World) => {
-    if (!await askConfirm(`"${w.folder}" dünyası çöp kutusuna taşınsın mı? Önce yedek almanı öneririm.`)) return;
+    if (!await askConfirm(tx("\"{0}\" dünyası çöp kutusuna taşınsın mı? Önce yedek almanı öneririm.", w.folder))) return;
     try {
       await api.deleteWorld(instanceId, w.folder);
       await load();
@@ -44,15 +45,15 @@ export function WorldsTab({ instanceId, locked }: { instanceId: string; locked: 
   return (
     <div className="stack">
       <div className="ctab-bar">
-        <span className="muted small grow">{worlds ? `${worlds.length} dünya` : ""}</span>
-        <button className="btn-link" onClick={async () => api.openPath(await api.worldBackupsDir(instanceId)).catch(() => setMsg({ ok: false, text: "Henüz yedek yok." }))}><Archive size={16} /> Yedekler klasörü</button>
-        <button className="btn-link" onClick={async () => api.openPath(await api.filePath(instanceId, "saves")).catch(() => {})}><FolderOpen size={16} /> saves klasörü</button>
+        <span className="muted small grow">{worlds ? tx("{0} dünya", worlds.length) : ""}</span>
+        <button className="btn-link" onClick={async () => api.openPath(await api.worldBackupsDir(instanceId)).catch(() => setMsg({ ok: false, text: tx("Henüz yedek yok.") }))}><Archive size={16} /> {tx("Yedekler klasörü")}</button>
+        <button className="btn-link" onClick={async () => api.openPath(await api.filePath(instanceId, "saves")).catch(() => {})}><FolderOpen size={16} /> {tx("saves klasörü")}</button>
       </div>
       {msg && <div className={clsx("banner", msg.ok ? "banner-ok" : "banner-error")}>{msg.text}</div>}
       {worlds === null ? (
         <div className="ctable-empty"><Loader2 size={18} className="spin" /></div>
       ) : worlds.length === 0 ? (
-        <div className="ctable-empty"><Globe2 size={22} className="muted" /><p className="muted">Bu instance'ta henüz dünya yok.</p></div>
+        <div className="ctable-empty"><Globe2 size={22} className="muted" /><p className="muted">{tx("Bu instance'ta henüz dünya yok.")}</p></div>
       ) : (
         <div className="world-grid">
           {worlds.map((w) => (
@@ -62,9 +63,9 @@ export function WorldsTab({ instanceId, locked }: { instanceId: string; locked: 
                 <strong className="truncate" style={{ display: "block" }}>{w.folder}</strong>
                 <span className="muted tiny">{formatRelative(fromUnix(w.lastPlayed))} · {fmtSize(w.size)}</span>
               </div>
-              <button className="icon-btn" title="Yedekle" disabled={busy === w.folder} onClick={() => void backup(w)}>{busy === w.folder ? <Loader2 size={17} className="spin" /> : <Archive size={17} />}</button>
-              <button className="icon-btn" title="Klasörü aç" onClick={async () => api.openPath(await api.filePath(instanceId, `saves/${w.folder}`))}><FolderOpen size={17} /></button>
-              <button className="icon-btn danger" title="Sil" disabled={locked} onClick={() => void remove(w)}><Trash2 size={17} /></button>
+              <button className="icon-btn" title={tx("Yedekle")} disabled={busy === w.folder} onClick={() => void backup(w)}>{busy === w.folder ? <Loader2 size={17} className="spin" /> : <Archive size={17} />}</button>
+              <button className="icon-btn" title={tx("Klasörü aç")} onClick={async () => api.openPath(await api.filePath(instanceId, `saves/${w.folder}`))}><FolderOpen size={17} /></button>
+              <button className="icon-btn danger" title={tx("Sil")} disabled={locked} onClick={() => void remove(w)}><Trash2 size={17} /></button>
             </div>
           ))}
         </div>
@@ -102,7 +103,7 @@ export function LogsTab({ instanceId, live }: { instanceId: string; live: { line
   return (
     <div className="logs-split">
       <aside className="logs-list">
-        <button className={clsx("logs-item", sel === "live" && "on")} onClick={() => setSel("live")}><Terminal size={15} /> Canlı konsol</button>
+        <button className={clsx("logs-item", sel === "live" && "on")} onClick={() => setSel("live")}><Terminal size={15} /> {tx("Canlı konsol")}</button>
         {files.map((f) => (
           <button key={f.path} className={clsx("logs-item", sel === f.path && "on", f.crash && "crash")} onClick={() => setSel(f.path)} title={f.path}>
             {f.crash ? <FileWarning size={15} /> : <ScrollText size={15} />}
@@ -113,12 +114,12 @@ export function LogsTab({ instanceId, live }: { instanceId: string; live: { line
       </aside>
       <div className="stack" style={{ minWidth: 0 }}>
         <div className="ctab-bar">
-          <input className="logs-filter" placeholder="Loglarda ara…" value={filter} onChange={(e) => setFilter(e.target.value)} />
-          {sel !== "live" && <button className="btn-link" onClick={async () => api.openPath(await api.filePath(instanceId, sel))}><FolderOpen size={16} /> Dosyayı aç</button>}
+          <input className="logs-filter" placeholder={tx("Loglarda ara…")} value={filter} onChange={(e) => setFilter(e.target.value)} />
+          {sel !== "live" && <button className="btn-link" onClick={async () => api.openPath(await api.filePath(instanceId, sel))}><FolderOpen size={16} /> {tx("Dosyayı aç")}</button>}
         </div>
         <div className="console" ref={ref}>
           {sel !== "live" && text === null ? <Loader2 size={16} className="spin" /> : lines.length === 0 ? (
-            <span className="muted">{sel === "live" ? "Oyun başlatıldığında loglar burada akacak." : "Eşleşen satır yok."}</span>
+            <span className="muted">{sel === "live" ? tx("Oyun başlatıldığında loglar burada akacak.") : tx("Eşleşen satır yok.")}</span>
           ) : (
             lines.slice(-6000).map((l, i) => <div key={i} className={clsx("log-line", l.stderr && "stderr", level(l.line))}>{l.line}</div>)
           )}
@@ -163,12 +164,12 @@ export function FilesTab({ instanceId }: { instanceId: string }) {
             </span>
           ))}
         </nav>
-        {hasOptions && <button className="btn-link" onClick={() => setEditing("options.txt")}><FileCog size={16} /> Oyun ayarları (options.txt)</button>}
-        <button className="btn-link" onClick={async () => api.openPath(await api.filePath(instanceId, path)).catch((x) => setError(errText(x)))}><FolderOpen size={16} /> Klasörde aç</button>
+        {hasOptions && <button className="btn-link" onClick={() => setEditing("options.txt")}><FileCog size={16} /> {tx("Oyun ayarları (options.txt)")}</button>}
+        <button className="btn-link" onClick={async () => api.openPath(await api.filePath(instanceId, path)).catch((x) => setError(errText(x)))}><FolderOpen size={16} /> {tx("Klasörde aç")}</button>
       </div>
       {error && <div className="banner banner-error">{error}</div>}
       <div className="ctable">
-        {entries === null ? <div className="ctable-empty"><Loader2 size={18} className="spin" /></div> : entries.length === 0 ? <div className="ctable-empty muted">Klasör boş.</div> : entries.map((e) => (
+        {entries === null ? <div className="ctable-empty"><Loader2 size={18} className="spin" /></div> : entries.length === 0 ? <div className="ctable-empty muted">{tx("Klasör boş.")}</div> : entries.map((e) => (
           <button key={e.name} className="frow" onDoubleClick={() => void open(e)} onClick={() => e.dir && void open(e)}>
             {e.dir ? <Folder size={17} className="accent-fg" /> : EDITABLE.test(e.name) ? <FilePen size={17} className="muted" /> : <File size={17} className="muted" />}
             <span className="grow truncate">{e.name}</span>
@@ -177,7 +178,7 @@ export function FilesTab({ instanceId }: { instanceId: string }) {
           </button>
         ))}
       </div>
-      <p className="muted tiny">Ayar dosyalarına (txt, json, toml, cfg…) çift tıklayınca West Client içinde düzenlenir; diğerleri bilgisayarındaki uygulamayla açılır.</p>
+      <p className="muted tiny">{tx("Ayar dosyalarına (txt, json, toml, cfg…) çift tıklayınca West Client içinde düzenlenir; diğerleri bilgisayarındaki uygulamayla açılır.")}</p>
       <FileEditor instanceId={instanceId} path={editing} onClose={() => setEditing(null)} />
     </div>
   );
@@ -185,11 +186,11 @@ export function FilesTab({ instanceId }: { instanceId: string }) {
 
 // ───────── Paylaş ─────────
 const EXTRA_CANDIDATES = [
-  { path: "config", label: "Mod ayarları (config)" },
-  { path: "options.txt", label: "Oyun ayarları (options.txt)" },
-  { path: "defaultconfigs", label: "Varsayılan ayarlar (defaultconfigs)" },
-  { path: "kubejs", label: "KubeJS betikleri" },
-  { path: "servers.dat", label: "Sunucu listesi" },
+  { path: "config", label: tx("Mod ayarları (config)") },
+  { path: "options.txt", label: tx("Oyun ayarları (options.txt)") },
+  { path: "defaultconfigs", label: tx("Varsayılan ayarlar (defaultconfigs)") },
+  { path: "kubejs", label: tx("KubeJS betikleri") },
+  { path: "servers.dat", label: tx("Sunucu listesi") },
 ];
 
 export function ShareTab({ instance }: { instance: Instance }) {
@@ -205,7 +206,7 @@ export function ShareTab({ instance }: { instance: Instance }) {
   const available = EXTRA_CANDIDATES.filter((c) => present.includes(c.path));
 
   const run = async () => {
-    const dest = await saveDialog({ defaultPath: `${instance.name.replace(/[\\/:*?"<>|]/g, "")}-${version}.mrpack`, filters: [{ name: "Modrinth modpack", extensions: ["mrpack"] }] });
+    const dest = await saveDialog({ defaultPath: tx("{0}-{1}.mrpack", instance.name.replace(/[\\/:*?"<>|]/g, ""), version), filters: [{ name: "Modrinth modpack", extensions: ["mrpack"] }] });
     if (!dest) return;
     setBusy(true);
     setError(null);
@@ -222,15 +223,14 @@ export function ShareTab({ instance }: { instance: Instance }) {
   return (
     <div className="settings-grid">
       <section className="card stack">
-        <h3><Share2 size={17} /> Modpack olarak paylaş</h3>
+        <h3><Share2 size={17} /> {tx("Modpack olarak paylaş")}</h3>
         <p className="small">
-          Bu instance'ı tek bir <code>.mrpack</code> dosyasına dönüştürür. Modrinth'te bulunan modlar pakete bağlantı olarak eklenir, böylece dosya küçük kalır; bulunamayanlar ve seçtiğin ayarlar pakete gömülür.
-          Arkadaşın dosyayı West Client, Modrinth App ya da Prism Launcher ile açabilir.
+          {tx("Bu instance'ı tek bir")} <code>.mrpack</code> {tx("dosyasına dönüştürür. Modrinth'te bulunan modlar pakete bağlantı olarak eklenir, böylece dosya küçük kalır; bulunamayanlar ve seçtiğin ayarlar pakete gömülür. Arkadaşın dosyayı West Client, Modrinth App ya da Prism Launcher ile açabilir.")}
         </p>
-        <label className="field"><span>Paket sürümü</span><input value={version} onChange={(e) => setVersion(e.target.value)} /></label>
+        <label className="field"><span>{tx("Paket sürümü")}</span><input value={version} onChange={(e) => setVersion(e.target.value)} /></label>
         {available.length > 0 && (
           <div className="field">
-            <span>Pakete eklenecekler</span>
+            <span>{tx("Pakete eklenecekler")}</span>
             {available.map((c) => (
               <label key={c.path} className="check">
                 <input type="checkbox" checked={extras.includes(c.path)} onChange={(e) => setExtras((x) => (e.target.checked ? [...x, c.path] : x.filter((y) => y !== c.path)))} /> {c.label}
@@ -238,14 +238,14 @@ export function ShareTab({ instance }: { instance: Instance }) {
             ))}
           </div>
         )}
-        <p className="muted tiny">Dünyalar, ekran görüntüleri ve hesap bilgilerin pakete eklenmez.</p>
+        <p className="muted tiny">{tx("Dünyalar, ekran görüntüleri ve hesap bilgilerin pakete eklenmez.")}</p>
         <div className="row">
-          <button className="btn btn-primary" disabled={busy || !version.trim()} onClick={() => void run()}>{busy ? <Loader2 size={15} className="spin" /> : <Package size={15} />} .mrpack oluştur</button>
+          <button className="btn btn-primary" disabled={busy || !version.trim()} onClick={() => void run()}>{busy ? <Loader2 size={15} className="spin" /> : <Package size={15} />} {tx(".mrpack oluştur")}</button>
         </div>
         {result && (
           <div className="banner banner-ok row">
-            <span className="grow">Hazır: {result.linked} dosya bağlantıyla, {result.embedded} dosya pakete gömülü.</span>
-            <button className="btn btn-sm btn-ghost" onClick={() => void api.openPath(result.path, true)}><FolderOpen size={14} /> Göster</button>
+            <span className="grow">{tx("Hazır:")} {result.linked} {tx("dosya bağlantıyla,")} {result.embedded} {tx("dosya pakete gömülü.")}</span>
+            <button className="btn btn-sm btn-ghost" onClick={() => void api.openPath(result.path, true)}><FolderOpen size={14} /> {tx("Göster")}</button>
           </div>
         )}
         {error && <div className="banner banner-error">{error}</div>}

@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
+import { tx } from "@/lib/i18n";
 
 interface Props {
   open: boolean;
@@ -34,7 +35,7 @@ export function Modal({ open, title, onClose, children, footer, width = 460 }: P
           >
             <div className="modal-head">
               <h3>{title}</h3>
-              <button className="icon-btn" onClick={onClose} aria-label="Kapat">
+              <button className="icon-btn" onClick={onClose} aria-label={tx("Kapat")}>
                 <X size={16} />
               </button>
             </div>

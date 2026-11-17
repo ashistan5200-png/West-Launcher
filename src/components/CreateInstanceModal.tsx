@@ -5,6 +5,7 @@ import { api, isTauri } from "@/lib/ipc";
 import { LOADER_LABEL } from "@/lib/format";
 import type { LoaderKind, LoaderVersion, ManifestEntry } from "@/lib/types";
 import { useInstances } from "@/stores/instances";
+import { tx } from "@/lib/i18n";
 
 const LOADERS: LoaderKind[] = ["vanilla", "fabric", "quilt", "forge", "neoforge"];
 
@@ -65,23 +66,23 @@ export function CreateInstanceModal({ open, onClose, onCreated }: { open: boolea
     <Modal
       open={open}
       onClose={onClose}
-      title="Yeni Instance"
+      title={tx("Yeni Instance")}
       footer={
         <>
-          <button className="btn btn-ghost" onClick={onClose}>İptal</button>
+          <button className="btn btn-ghost" onClick={onClose}>{tx("İptal")}</button>
           <button className="btn btn-primary" disabled={!mc || busy} onClick={submit}>
-            {busy ? "Oluşturuluyor…" : "Oluştur"}
+            {busy ? tx("Oluşturuluyor…") : tx("Oluştur")}
           </button>
         </>
       }
     >
       <label className="field">
-        <span>Ad</span>
+        <span>{tx("Ad")}</span>
         <input value={name} placeholder={placeholder} onChange={(e) => setName(e.target.value)} autoFocus />
       </label>
 
       <div className="field">
-        <span>Mod yükleyici</span>
+        <span>{tx("Mod yükleyici")}</span>
         <div className="segmented">
           {LOADERS.map((l) => (
             <button key={l} className={clsx(loader === l && "active")} onClick={() => setLoader(l)}>
@@ -93,7 +94,7 @@ export function CreateInstanceModal({ open, onClose, onCreated }: { open: boolea
 
       <div className="field-row">
         <label className="field">
-          <span>Minecraft sürümü</span>
+          <span>{tx("Minecraft sürümü")}</span>
           <select value={mc} onChange={(e) => setMc(e.target.value)}>
             {versions.map((v) => (
               <option key={v.id} value={v.id}>{v.id}{v.type !== "release" ? ` (${v.type})` : ""}</option>
@@ -102,9 +103,9 @@ export function CreateInstanceModal({ open, onClose, onCreated }: { open: boolea
         </label>
         {loader !== "vanilla" && (
           <label className="field">
-            <span>{LOADER_LABEL[loader]} sürümü</span>
+            <span>{LOADER_LABEL[loader]} {tx("sürümü")}</span>
             <select value={loaderVersion} onChange={(e) => setLoaderVersion(e.target.value)} disabled={!loaderVersions.length}>
-              <option value="">Önerilen (en güncel kararlı)</option>
+              <option value="">{tx("Önerilen (en güncel kararlı)")}</option>
               {loaderVersions.map((v) => (
                 <option key={v.version} value={v.version}>{v.version}{v.stable ? "" : " (beta)"}</option>
               ))}
@@ -115,10 +116,10 @@ export function CreateInstanceModal({ open, onClose, onCreated }: { open: boolea
 
       <label className="check">
         <input type="checkbox" checked={snapshots} onChange={(e) => setSnapshots(e.target.checked)} />
-        Snapshot sürümlerini göster
+        {tx("Snapshot sürümlerini göster")}
       </label>
 
-      {noLoaderSupport && <p className="hint warn">{LOADER_LABEL[loader]} bu sürüm için yükleyici yayınlamamış olabilir.</p>}
+      {noLoaderSupport && <p className="hint warn">{LOADER_LABEL[loader]} {tx("bu sürüm için yükleyici yayınlamamış olabilir.")}</p>}
       {err && <p className="hint error">{err}</p>}
     </Modal>
   );

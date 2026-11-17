@@ -6,15 +6,16 @@ import { AshiHead } from "./AshiHead";
 import clsx from "clsx";
 import { useInstances } from "@/stores/instances";
 import { InstanceIcon } from "./InstanceIcon";
+import { tx } from "@/lib/i18n";
 
 const NAV = [
-  { to: "/", icon: Home, label: "Ana Sayfa", short: "Ana" },
-  { to: "/library", icon: Library, label: "Kütüphane", short: "Kütüphane" },
-  { to: "/browse", icon: Compass, label: "Keşfet", short: "Keşfet" },
-  { to: "/social", icon: MessagesSquare, label: "West sosyal", short: "Sosyal" },
-  { to: "/skins", icon: Shirt, label: "Skin ve hesaplar", short: "Skin" },
-  { to: "/gallery", icon: Images, label: "Ekran görüntüleri", short: "Galeri" },
-  { to: "/news", icon: Newspaper, label: "Haberler ve güncellemeler", short: "Haberler" },
+  { to: "/", icon: Home, label: tx("Ana Sayfa"), short: tx("Ana") },
+  { to: "/library", icon: Library, label: tx("Kütüphane"), short: tx("Kütüphane") },
+  { to: "/browse", icon: Compass, label: tx("Keşfet"), short: tx("Keşfet") },
+  { to: "/social", icon: MessagesSquare, label: tx("West sosyal"), short: tx("Sosyal") },
+  { to: "/skins", icon: Shirt, label: tx("Skin ve hesaplar"), short: tx("Skin") },
+  { to: "/gallery", icon: Images, label: tx("Ekran görüntüleri"), short: tx("Galeri") },
+  { to: "/news", icon: Newspaper, label: tx("Haberler ve güncellemeler"), short: tx("Haberler") },
 ];
 
 export function Sidebar() {
@@ -51,16 +52,16 @@ export function Sidebar() {
             )}
           </NavLink>
         ))}
-        <button className="nav-item nav-add" title="Yeni instance" onClick={() => navigate("/library?new=1")}>
+        <button className="nav-item nav-add" title={tx("Yeni instance")} onClick={() => navigate("/library?new=1")}>
           <Plus size={18} />
         </button>
       </div>
 
       <div className="sidebar-bottom">
-        <button data-tour="ashi" className={clsx("nav-item nav-ashi", chatOpen && "active")} title="Ashi'ye sor" onClick={toggleChat}>
+        <button data-tour="ashi" className={clsx("nav-item nav-ashi", chatOpen && "active")} title={tx("Ashi'ye sor")} onClick={toggleChat}>
           <AshiHead size={22} />
         </button>
-        <NavLink to="/settings" className={({ isActive }) => clsx("nav-item", isActive && "active")} title="Ayarlar">
+        <NavLink to="/settings" className={({ isActive }) => clsx("nav-item", isActive && "active")} title={tx("Ayarlar")}>
           <Settings size={18} />
         </NavLink>
       </div>

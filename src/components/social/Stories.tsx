@@ -12,6 +12,7 @@ import { useSocial } from "@/stores/social";
 import { Modal } from "@/components/Modal";
 import { Avatar, ago } from "./PostCard";
 import { askConfirm } from "@/components/ConfirmDialog";
+import { tx } from "@/lib/i18n";
 
 const DURATION = 6000;
 
@@ -35,7 +36,7 @@ export function StoriesBar() {
               <Avatar url={myProfile.avatar_url} name={myProfile.username} size={58} />
               <span className="story-plus" onClick={(e) => { e.stopPropagation(); setCreate(true); }}><Plus size={13} /></span>
             </span>
-            <span className="tiny truncate">Hikâyen</span>
+            <span className="tiny truncate">{tx("Hikâyen")}</span>
           </button>
         )}
         {groups.map((g, i) => g.author.id === me?.userId ? null : (
@@ -44,7 +45,7 @@ export function StoriesBar() {
             <span className="tiny truncate">{g.author.display_name || g.author.username}</span>
           </button>
         ))}
-        {groups.length === 0 && !me && <span className="muted small" style={{ padding: 12 }}>Henüz hikâye yok.</span>}
+        {groups.length === 0 && !me && <span className="muted small" style={{ padding: 12 }}>{tx("Henüz hikâye yok.")}</span>}
       </div>
       <AnimatePresence>
         {open !== null && groups[open] && (
@@ -132,37 +133,37 @@ function StoryViewer({ groups, start, onClose }: { groups: S.StoryGroup[]; start
             <span className="tiny" style={{ opacity: 0.75 }}>{ago(story.created_at)}</span>
           </button>
           <span className="grow" />
-          {mine && <button className="icon-btn" title="Sil" onClick={async () => { if (!await askConfirm("Bu hikâye silinsin mi?")) return; await S.deleteStory(story.id); onClose(); }}><Trash2 size={17} /></button>}
+          {mine && <button className="icon-btn" title={tx("Sil")} onClick={async () => { if (!await askConfirm(tx("Bu hikâye silinsin mi?"))) return; await S.deleteStory(story.id); onClose(); }}><Trash2 size={17} /></button>}
           <button className="icon-btn" onClick={onClose}><X size={20} /></button>
         </div>
         <img src={story.media_url} alt="" referrerPolicy="no-referrer" draggable={false}
           onMouseDown={() => setPaused(true)} onMouseUp={() => setPaused(false)} onMouseLeave={() => setPaused(false)} />
-        <button className="story-tap left" onClick={prev} aria-label="Önceki" />
-        <button className="story-tap right" onClick={next} aria-label="Sonraki" />
+        <button className="story-tap left" onClick={prev} aria-label={tx("Önceki")} />
+        <button className="story-tap right" onClick={next} aria-label={tx("Sonraki")} />
         {story.caption && <p className="story-caption">{story.caption}</p>}
         <div className="story-bottom">
           {mine ? (
-            <button className="btn btn-glass" onClick={async () => { setViewers(await S.storyViewers(story.id).catch(() => [])); }}><Eye size={15} /> Görenler</button>
+            <button className="btn btn-glass" onClick={async () => { setViewers(await S.storyViewers(story.id).catch(() => [])); }}><Eye size={15} /> {tx("Görenler")}</button>
           ) : me ? (
             <form className="story-reply" onSubmit={async (e) => {
               e.preventDefault();
               if (!reply.trim()) return;
               try {
                 const conv = await S.startDm(story.author_id);
-                await S.sendMessage(conv, `Hikâyene yanıt: ${reply.trim()}`, [{ url: story.media_url }]);
+                await S.sendMessage(conv, tx("Hikâyene yanıt: {0}", reply.trim()), [{ url: story.media_url }]);
                 setReply(""); setSent(true);
               } catch (er) { alert(String(er).replace(/^Error: /, "")); }
             }}>
-              <input value={reply} placeholder={sent ? "Gönderildi ✓" : `${group.author.display_name || group.author.username} adlı kişiye yanıt ver`} onFocus={() => setPaused(true)} onBlur={() => setPaused(false)} onChange={(e) => setReply(e.target.value)} />
+              <input value={reply} placeholder={sent ? tx("Gönderildi ✓") : tx("{0} adlı kişiye yanıt ver", group.author.display_name || group.author.username)} onFocus={() => setPaused(true)} onBlur={() => setPaused(false)} onChange={(e) => setReply(e.target.value)} />
               <button className="icon-btn" type="submit"><Send size={17} /></button>
             </form>
           ) : null}
         </div>
         {viewers && (
           <div className="story-viewers">
-            <div className="row" style={{ justifyContent: "space-between" }}><strong><Eye size={15} /> {viewers.length} görüntüleme</strong><button className="icon-btn" onClick={() => setViewers(null)}><X size={16} /></button></div>
+            <div className="row" style={{ justifyContent: "space-between" }}><strong><Eye size={15} /> {viewers.length} {tx("görüntüleme")}</strong><button className="icon-btn" onClick={() => setViewers(null)}><X size={16} /></button></div>
             {viewers.map((v) => <div key={v.viewer_id} className="row" style={{ gap: 10, padding: "6px 0" }}><Avatar url={v.profile!.avatar_url} name={v.profile!.username} size={32} /><span className="grow">{v.profile!.display_name || v.profile!.username}</span><span className="muted tiny">{ago(v.viewed_at)}</span></div>)}
-            {!viewers.length && <p className="muted small">Henüz kimse görmedi.</p>}
+            {!viewers.length && <p className="muted small">{tx("Henüz kimse görmedi.")}</p>}
           </div>
         )}
       </div>
@@ -177,20 +178,20 @@ function StoryComposer({ open, onClose, onPosted }: { open: boolean; onClose: ()
   const [error, setError] = useState<string | null>(null);
   useEffect(() => { if (open) { setFile(null); setCaption(""); setError(null); } }, [open]);
   const pick = async () => {
-    const p = await openDialog({ multiple: false, filters: [{ name: "Görsel", extensions: ["png", "jpg", "jpeg", "webp", "gif"] }] });
+    const p = await openDialog({ multiple: false, filters: [{ name: tx("Görsel"), extensions: ["png", "jpg", "jpeg", "webp", "gif"] }] });
     if (typeof p === "string") setFile(p);
   };
   return (
-    <Modal open={open} onClose={onClose} title="Hikâye paylaş" width={420}
-      footer={<><button className="btn btn-ghost" onClick={onClose}>Vazgeç</button><button className="btn btn-primary" disabled={!file || busy} onClick={async () => {
+    <Modal open={open} onClose={onClose} title={tx("Hikâye paylaş")} width={420}
+      footer={<><button className="btn btn-ghost" onClick={onClose}>{tx("Vazgeç")}</button><button className="btn btn-primary" disabled={!file || busy} onClick={async () => {
         setBusy(true); setError(null);
         try { await S.createStory(await api.westUpload(file!, "stories"), caption); onPosted(); } catch (e) { setError(String(e).replace(/^Error: /, "")); } finally { setBusy(false); }
-      }}>{busy && <Loader2 size={15} className="spin" />} Paylaş</button></>}>
+      }}>{busy && <Loader2 size={15} className="spin" />} {tx("Paylaş")}</button></>}>
       <div className="story-new" onClick={() => void pick()}>
-        {file ? <img src={isTauri() ? convertFileSrc(file) : file} alt="" /> : <span className="muted"><Plus size={22} /><br />Fotoğraf seç</span>}
+        {file ? <img src={isTauri() ? convertFileSrc(file) : file} alt="" /> : <span className="muted"><Plus size={22} /><br />{tx("Fotoğraf seç")}</span>}
       </div>
-      <input style={{ width: "100%", marginTop: 10 }} value={caption} maxLength={200} placeholder="Bir şey yaz (isteğe bağlı)" onChange={(e) => setCaption(e.target.value)} />
-      <p className="muted tiny" style={{ marginTop: 8 }}>Hikâyeler 24 saat sonra kendiliğinden kaybolur. Gizli hesapsan yalnızca takipçilerin görür.</p>
+      <input style={{ width: "100%", marginTop: 10 }} value={caption} maxLength={200} placeholder={tx("Bir şey yaz (isteğe bağlı)")} onChange={(e) => setCaption(e.target.value)} />
+      <p className="muted tiny" style={{ marginTop: 8 }}>{tx("Hikâyeler 24 saat sonra kendiliğinden kaybolur. Gizli hesapsan yalnızca takipçilerin görür.")}</p>
       {error && <p className="hint error">{error}</p>}
     </Modal>
   );

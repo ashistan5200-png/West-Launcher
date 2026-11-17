@@ -1,3 +1,4 @@
+import { tx } from "@/lib/i18n";
 /**
  * Ekran görüntüsü düzenleyicisinin işleme hattı. Önizleme ve dışa aktarma
  * AYNI fonksiyonu kullanır (yalnızca ölçek farklı), böylece kaydedilen sonuç
@@ -17,13 +18,13 @@ export interface Adjust {
 export const NEUTRAL: Adjust = { brightness: 0, contrast: 0, saturation: 0, warmth: 0, vignette: 0, mode: "normal" };
 
 export const PRESETS: { id: string; label: string; adjust: Adjust }[] = [
-  { id: "none", label: "Yok", adjust: NEUTRAL },
-  { id: "vivid", label: "Canlı", adjust: { ...NEUTRAL, contrast: 10, saturation: 35 } },
-  { id: "cinema", label: "Sinematik", adjust: { ...NEUTRAL, contrast: 18, saturation: -15, warmth: 10, vignette: 45 } },
-  { id: "bw", label: "Siyah-Beyaz", adjust: { ...NEUTRAL, contrast: 12, saturation: -100 } },
-  { id: "sepia", label: "Sepya", adjust: { ...NEUTRAL, mode: "sepia", contrast: 5 } },
-  { id: "cold", label: "Soğuk", adjust: { ...NEUTRAL, warmth: -30, saturation: -5 } },
-  { id: "night", label: "Gece", adjust: { ...NEUTRAL, brightness: -15, contrast: 12, warmth: -25, vignette: 35 } },
+  { id: "none", label: tx("Yok"), adjust: NEUTRAL },
+  { id: "vivid", label: tx("Canlı"), adjust: { ...NEUTRAL, contrast: 10, saturation: 35 } },
+  { id: "cinema", label: tx("Sinematik"), adjust: { ...NEUTRAL, contrast: 18, saturation: -15, warmth: 10, vignette: 45 } },
+  { id: "bw", label: tx("Siyah-Beyaz"), adjust: { ...NEUTRAL, contrast: 12, saturation: -100 } },
+  { id: "sepia", label: tx("Sepya"), adjust: { ...NEUTRAL, mode: "sepia", contrast: 5 } },
+  { id: "cold", label: tx("Soğuk"), adjust: { ...NEUTRAL, warmth: -30, saturation: -5 } },
+  { id: "night", label: tx("Gece"), adjust: { ...NEUTRAL, brightness: -15, contrast: 12, warmth: -25, vignette: 35 } },
 ];
 
 export interface Rect {
@@ -95,7 +96,7 @@ function drawAnnotations(ctx: CanvasRenderingContext2D, list: Annotation[], scal
       ctx.stroke();
     } else {
       const px = a.size * scale;
-      ctx.font = `600 ${px}px "Plus Jakarta Sans Variable", system-ui, sans-serif`;
+      ctx.font = tx("600 {0}px \"Plus Jakarta Sans Variable\", system-ui, sans-serif", px);
       ctx.textBaseline = "top";
       // Okunabilirlik: her zeminde görünsün diye yumuşak koyu kontur
       ctx.lineWidth = Math.max(2, px * 0.14);
@@ -159,7 +160,7 @@ export function render(src: CanvasImageSource & { width: number; height: number 
 export const canvasToBase64 = (c: HTMLCanvasElement): Promise<string> =>
   new Promise((resolve, reject) =>
     c.toBlob(async (b) => {
-      if (!b) return reject(new Error("PNG üretilemedi"));
+      if (!b) return reject(new Error(tx("PNG üretilemedi")));
       const buf = new Uint8Array(await b.arrayBuffer());
       let bin = "";
       for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import clsx from "clsx";
+import { tx } from "@/lib/i18n";
 
 /** Sayfa düğmeleri: ilk, önceki, numaralar, sonraki, son ve "sayfaya git". */
 export function Pagination({ page, pages, onChange, disabled }: { page: number; pages: number; onChange: (p: number) => void; disabled?: boolean }) {
@@ -19,9 +20,9 @@ export function Pagination({ page, pages, onChange, disabled }: { page: number; 
     else if (nums[nums.length - 1] !== "…") nums.push("…");
   }
   return (
-    <nav className="pager" aria-label="Sayfalar">
-      <button className="pg-btn" disabled={disabled || page === 1} onClick={() => go(1)} title="İlk sayfa"><ChevronsLeft size={16} /></button>
-      <button className="pg-btn" disabled={disabled || page === 1} onClick={() => go(page - 1)} title="Önceki sayfa"><ChevronLeft size={16} /> <span>Önceki</span></button>
+    <nav className="pager" aria-label={tx("Sayfalar")}>
+      <button className="pg-btn" disabled={disabled || page === 1} onClick={() => go(1)} title={tx("İlk sayfa")}><ChevronsLeft size={16} /></button>
+      <button className="pg-btn" disabled={disabled || page === 1} onClick={() => go(page - 1)} title={tx("Önceki sayfa")}><ChevronLeft size={16} /> <span>{tx("Önceki")}</span></button>
       <div className="pg-nums">
         {nums.map((n, i) =>
           n === "…" ? <span key={`e${i}`} className="pg-gap">…</span> : (
@@ -29,13 +30,13 @@ export function Pagination({ page, pages, onChange, disabled }: { page: number; 
           ),
         )}
       </div>
-      <button className="pg-btn" disabled={disabled || page === pages} onClick={() => go(page + 1)} title="Sonraki sayfa"><span>Sonraki</span> <ChevronRight size={16} /></button>
-      <button className="pg-btn" disabled={disabled || page === pages} onClick={() => go(pages)} title="Son sayfa"><ChevronsRight size={16} /></button>
+      <button className="pg-btn" disabled={disabled || page === pages} onClick={() => go(page + 1)} title={tx("Sonraki sayfa")}><span>{tx("Sonraki")}</span> <ChevronRight size={16} /></button>
+      <button className="pg-btn" disabled={disabled || page === pages} onClick={() => go(pages)} title={tx("Son sayfa")}><ChevronsRight size={16} /></button>
       <form className="pg-jump" onSubmit={(e) => { e.preventDefault(); const n = parseInt(jump, 10); if (!Number.isNaN(n)) go(n); }}>
-        <span className="muted small">Sayfa</span>
-        <input inputMode="numeric" value={jump} onChange={(e) => setJump(e.target.value.replace(/\D/g, ""))} aria-label="Sayfa numarası" />
+        <span className="muted small">{tx("Sayfa")}</span>
+        <input inputMode="numeric" value={jump} onChange={(e) => setJump(e.target.value.replace(/\D/g, ""))} aria-label={tx("Sayfa numarası")} />
         <span className="muted small">/ {pages.toLocaleString("tr-TR")}</span>
-        <button className="btn btn-ghost btn-sm" type="submit" disabled={disabled}>Git</button>
+        <button className="btn btn-ghost btn-sm" type="submit" disabled={disabled}>{tx("Git")}</button>
       </form>
     </nav>
   );

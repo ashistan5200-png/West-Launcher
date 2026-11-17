@@ -4,6 +4,7 @@ import { ArrowUpCircle, Check, ExternalLink, Loader2 } from "lucide-react";
 import { open as openUrl } from "@tauri-apps/plugin-shell";
 import { Modal } from "./Modal";
 import { useUpdate } from "@/stores/update";
+import { tx } from "@/lib/i18n";
 
 const fmtMB = (b: number) => `${(b / 1_048_576).toFixed(1)} MB`;
 
@@ -30,7 +31,7 @@ function Notes({ text }: { text: string }) {
     }
   });
   flush();
-  return <div className="update-notes">{blocks.length ? blocks : <p className="muted">Bu sürüm için not eklenmemiş.</p>}</div>;
+  return <div className="update-notes">{blocks.length ? blocks : <p className="muted">{tx("Bu sürüm için not eklenmemiş.")}</p>}</div>;
 }
 
 /** Başlık çubuğundaki güncelleme düğmesi — yalnızca yeni sürüm varken görünür. */
@@ -51,10 +52,10 @@ export function UpdateButton() {
           initial={{ opacity: 0, y: -4 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0 }}
-          title={`West Client ${info.version} hazır`}
+          title={tx("West Client {0} hazır", info.version)}
         >
           {status.downloading ? <Loader2 size={13} className="spin" /> : <ArrowUpCircle size={14} />}
-          <span>{status.downloaded ? "Güncelle" : "Güncelleme"} · v{info.version}</span>
+          <span>{status.downloaded ? tx("Güncelle") : tx("Güncelleme")} · v{info.version}</span>
           <span className="update-dot" />
         </motion.button>
       )}
@@ -72,26 +73,26 @@ export function UpdateModal() {
     <Modal
       open={open}
       onClose={() => !installing && setOpen(false)}
-      title="Yeni sürüm hazır"
+      title={tx("Yeni sürüm hazır")}
       width={500}
       footer={
         <>
           <button className="btn btn-ghost" disabled={installing} onClick={() => openUrl(info.pageUrl)}>
-            <ExternalLink size={14} /> GitHub'da gör
+            <ExternalLink size={14} /> {tx("GitHub'da gör")}
           </button>
           <span className="grow" />
-          <button className="btn btn-ghost" disabled={installing} onClick={() => setOpen(false)}>Sonra</button>
+          <button className="btn btn-ghost" disabled={installing} onClick={() => setOpen(false)}>{tx("Sonra")}</button>
           <button className="btn btn-primary" disabled={installing || status.downloading} onClick={() => void install()}>
             {installing ? <Loader2 size={15} className="spin" /> : <ArrowUpCircle size={15} />}
-            {installing ? "Kuruluyor…" : status.downloaded ? "Güncelle ve yeniden başlat" : "İndir ve güncelle"}
+            {installing ? tx("Kuruluyor…") : status.downloaded ? tx("Güncelle ve yeniden başlat") : tx("İndir ve güncelle")}
           </button>
         </>
       }
     >
       <div className="update-versions">
-        <div><span className="muted tiny">Şu anki</span><strong>v{info.current}</strong></div>
+        <div><span className="muted tiny">{tx("Şu anki")}</span><strong>v{info.current}</strong></div>
         <span className="update-arrow">→</span>
-        <div><span className="muted tiny">Yeni</span><strong className="accent">v{info.version}</strong></div>
+        <div><span className="muted tiny">{tx("Yeni")}</span><strong className="accent">v{info.version}</strong></div>
         <span className="grow" />
         <span className="muted tiny">
           {info.publishedAt ? new Date(info.publishedAt).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" }) : ""}
@@ -99,17 +100,17 @@ export function UpdateModal() {
         </span>
       </div>
 
-      <h4 className="update-title">Neler yeni</h4>
+      <h4 className="update-title">{tx("Neler yeni")}</h4>
       <Notes text={info.notes} />
 
       {status.downloading && (
         <div className="stack" style={{ gap: 6 }}>
-          <span className="tiny muted">İndiriliyor… %{pct}</span>
+          <span className="tiny muted">{tx("İndiriliyor… %")}{pct}</span>
           <div className="progress-bar"><div style={{ width: `${pct}%` }} /></div>
         </div>
       )}
       {status.downloaded && !installing && (
-        <p className="hint ok"><Check size={13} /> İndirildi ve doğrulandı. Güncelleme birkaç saniye sürer; launcher kapanıp yeni sürümle açılır.</p>
+        <p className="hint ok"><Check size={13} /> {tx("İndirildi ve doğrulandı. Güncelleme birkaç saniye sürer; launcher kapanıp yeni sürümle açılır.")}</p>
       )}
       {(error || status.error) && <p className="hint error">{error ?? status.error}</p>}
     </Modal>

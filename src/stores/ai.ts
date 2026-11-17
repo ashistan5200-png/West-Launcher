@@ -3,6 +3,7 @@ import { api, events, isTauri } from "@/lib/ipc";
 import type { AiSetupProgress, AiStatus } from "@/lib/types";
 import { useSettings } from "@/stores/settings";
 import { useChat } from "@/stores/chat";
+import { tx } from "@/lib/i18n";
 
 interface AiState {
   status: AiStatus | null;
@@ -41,7 +42,7 @@ export const useAi = create<AiState>((set, get) => ({
     if (!bound) {
       bound = true;
       void events.onOllamaSetup((p) => {
-        if (p.stage === "error") set({ progress: null, error: p.error ?? "Kurulum durdu" });
+        if (p.stage === "error") set({ progress: null, error: p.error ?? tx("Kurulum durdu") });
         else if (p.stage === "done") {
           set({ progress: p, error: null });
           useChat.setState({ mode: null }); // sonraki mesaj akıllı modla gider
@@ -53,7 +54,7 @@ export const useAi = create<AiState>((set, get) => ({
     const m = model ?? get().status?.model;
     // Ön yüzdeki ayar kopyası da güncellensin; yoksa sonraki kayıt bunu geri alır
     await useSettings.getState().update({ aiProvider: "ollama", ...(m ? { ollamaModel: m } : {}) });
-    set({ error: null, progress: { stage: "download", label: "Hazırlanıyor", completed: 0, total: 0, error: null } });
+    set({ error: null, progress: { stage: "download", label: tx("Hazırlanıyor"), completed: 0, total: 0, error: null } });
     try {
       await api.ollamaSetup(m);
     } catch (e) {
@@ -68,6 +69,6 @@ export const useAi = create<AiState>((set, get) => ({
 export const aiReady = (s: AiStatus | null) => !!s && s.installed && (!s.running || s.modelInstalled);
 
 export const MODELS = [
-  { id: "qwen2.5:3b", name: "Hafif", gb: 1.9, note: "8 GB RAM'li bilgisayarlar için. Hızlı, biraz daha basit." },
-  { id: "qwen2.5:7b", name: "Akıllı", gb: 4.7, note: "16 GB RAM ve üstü. Türkçeyi ve isteklerini daha iyi anlar." },
+  { id: "qwen2.5:3b", name: "Hafif", gb: 1.9, note: tx("8 GB RAM'li bilgisayarlar için. Hızlı, biraz daha basit.") },
+  { id: "qwen2.5:7b", name: tx("Akıllı"), gb: 4.7, note: tx("16 GB RAM ve üstü. Türkçeyi ve isteklerini daha iyi anlar.") },
 ] as const;

@@ -9,6 +9,7 @@ import { api, isTauri } from "@/lib/ipc";
 import type { Screenshot } from "@/lib/types";
 import { ScreenshotEditor } from "@/components/ScreenshotEditor";
 import { askConfirm } from "@/components/ConfirmDialog";
+import { tx } from "@/lib/i18n";
 
 const src = (p: string) => (isTauri() ? convertFileSrc(p) : p);
 const fmtSize = (b: number) => (b > 1_048_576 ? `${(b / 1_048_576).toFixed(1)} MB` : `${Math.round(b / 1024)} KB`);
@@ -17,8 +18,8 @@ function dayLabel(iso: string) {
   const d = new Date(iso);
   const today = new Date();
   const diff = Math.floor((new Date(today.toDateString()).getTime() - new Date(d.toDateString()).getTime()) / 86_400_000);
-  if (diff === 0) return "Bugün";
-  if (diff === 1) return "Dün";
+  if (diff === 0) return tx("Bugün");
+  if (diff === 1) return tx("Dün");
   return d.toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: today.getFullYear() === d.getFullYear() ? undefined : "numeric" });
 }
 
@@ -57,26 +58,26 @@ export function GalleryPage() {
       <div className="toolbar">
         <div className="search grow">
           <Images size={15} />
-          <input placeholder="Dosya adı veya instance ara…" value={query} onChange={(e) => setQuery(e.target.value)} />
+          <input placeholder={tx("Dosya adı veya instance ara…")} value={query} onChange={(e) => setQuery(e.target.value)} />
         </div>
         <select className="select-sm" value={g.instance ?? ""} onChange={(e) => g.setInstance(e.target.value || null)}>
-          <option value="">Tüm instance'lar</option>
+          <option value="">{tx("Tüm instance'lar")}</option>
           {instances.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
         </select>
         <div className="segmented mini">
-          <button className={clsx(layout === "grid" && "active")} onClick={() => setLayout("grid")} title="Izgara"><Grid3x3 size={14} /></button>
-          <button className={clsx(layout === "list" && "active")} onClick={() => setLayout("list")} title="Liste"><List size={14} /></button>
+          <button className={clsx(layout === "grid" && "active")} onClick={() => setLayout("grid")} title={tx("Izgara")}><Grid3x3 size={14} /></button>
+          <button className={clsx(layout === "list" && "active")} onClick={() => setLayout("list")} title={tx("Liste")}><List size={14} /></button>
         </div>
-        <button className="icon-btn" title="Yenile" onClick={() => g.load()}><RefreshCw size={15} className={clsx(g.loading && "spin")} /></button>
+        <button className="icon-btn" title={tx("Yenile")} onClick={() => g.load()}><RefreshCw size={15} className={clsx(g.loading && "spin")} /></button>
         {g.instance && (
-          <button className="icon-btn" title="Klasörü aç" onClick={async () => api.openPath(await api.screenshotsFolder(g.instance!))}><FolderOpen size={15} /></button>
+          <button className="icon-btn" title={tx("Klasörü aç")} onClick={async () => api.openPath(await api.screenshotsFolder(g.instance!))}><FolderOpen size={15} /></button>
         )}
       </div>
 
       {filtered.length === 0 && !g.loading && (
         <div className="empty small-empty">
           <Images size={34} />
-          <p className="muted">Henüz ekran görüntüsü yok. Oyunda <kbd>F2</kbd>'ye bas; yeni görüntüler burada kendiliğinden belirir.</p>
+          <p className="muted">{tx("Henüz ekran görüntüsü yok. Oyunda")} <kbd>F2</kbd>{tx("'ye bas; yeni görüntüler burada kendiliğinden belirir.")}</p>
         </div>
       )}
 
@@ -107,10 +108,10 @@ function Actions({ s, dark = false }: { s: Screenshot; dark?: boolean }) {
   const stop = (fn: () => void) => (e: React.MouseEvent) => { e.stopPropagation(); fn(); };
   return (
     <div className={clsx("shot-actions", dark && "dark")}>
-      <button title="Düzenle" onClick={stop(() => g.edit(s.path))}><Pencil size={14} /></button>
-      <button title="Panoya kopyala / paylaş" onClick={stop(() => g.copy(s))}><Copy size={14} /></button>
-      <button title="Dışa aktar" onClick={stop(() => g.exportTo(s))}><Download size={14} /></button>
-      <button title="Sil (çöp kutusuna)" className="danger" onClick={stop(async () => await askConfirm(`${s.file} çöp kutusuna taşınsın mı?`) && g.remove(s))}><Trash2 size={14} /></button>
+      <button title={tx("Düzenle")} onClick={stop(() => g.edit(s.path))}><Pencil size={14} /></button>
+      <button title={tx("Panoya kopyala / paylaş")} onClick={stop(() => g.copy(s))}><Copy size={14} /></button>
+      <button title={tx("Dışa aktar")} onClick={stop(() => g.exportTo(s))}><Download size={14} /></button>
+      <button title={tx("Sil (çöp kutusuna)")} className="danger" onClick={stop(async () => await askConfirm(tx("{0} çöp kutusuna taşınsın mı?", s.file)) && g.remove(s))}><Trash2 size={14} /></button>
     </div>
   );
 }
@@ -122,7 +123,7 @@ function ShotCard({ s, layout }: { s: Screenshot; layout: "grid" | "list" }) {
     <motion.div layout className={clsx("shot", layout)} onClick={() => view(s.path)}>
       <div className={clsx("shot-img", !loaded && "loading")}>
         {s.thumb && <img src={src(s.thumb)} alt="" loading="lazy" decoding="async" onLoad={() => setLoaded(true)} draggable={false} />}
-        {s.edited && <span className="shot-badge">Düzenlendi</span>}
+        {s.edited && <span className="shot-badge">{tx("Düzenlendi")}</span>}
         {layout === "grid" && <Actions s={s} dark />}
       </div>
       <div className="shot-meta">
@@ -152,7 +153,7 @@ function Lightbox({ shot, list }: { shot: Screenshot; list: Screenshot[] }) {
   });
   return (
     <motion.div className="lightbox" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => g.view(null)}>
-      <button className="lb-nav left" onClick={(e) => { e.stopPropagation(); go(-1); }} aria-label="Önceki"><ChevronLeft size={22} /></button>
+      <button className="lb-nav left" onClick={(e) => { e.stopPropagation(); go(-1); }} aria-label={tx("Önceki")}><ChevronLeft size={22} /></button>
       <motion.img
         key={shot.path}
         src={src(shot.path)}
@@ -162,15 +163,15 @@ function Lightbox({ shot, list }: { shot: Screenshot; list: Screenshot[] }) {
         transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
         onClick={(e) => e.stopPropagation()}
       />
-      <button className="lb-nav right" onClick={(e) => { e.stopPropagation(); go(1); }} aria-label="Sonraki"><ChevronRight size={22} /></button>
+      <button className="lb-nav right" onClick={(e) => { e.stopPropagation(); go(1); }} aria-label={tx("Sonraki")}><ChevronRight size={22} /></button>
       <div className="lb-bar" onClick={(e) => e.stopPropagation()}>
         <div className="grow">
           <strong className="truncate">{shot.file}</strong>
           <span className="muted tiny">{shot.instanceName} · {new Date(shot.modified).toLocaleString("tr-TR")} · {fmtSize(shot.size)} · {i + 1}/{list.length}</span>
         </div>
         <Actions s={shot} />
-        <button className="icon-btn" title="Klasörde göster" onClick={async () => api.openPath(await api.screenshotsFolder(shot.instanceId))}><FolderOpen size={15} /></button>
-        <button className="icon-btn" title="Kapat" onClick={() => g.view(null)}><X size={16} /></button>
+        <button className="icon-btn" title={tx("Klasörde göster")} onClick={async () => api.openPath(await api.screenshotsFolder(shot.instanceId))}><FolderOpen size={15} /></button>
+        <button className="icon-btn" title={tx("Kapat")} onClick={() => g.view(null)}><X size={16} /></button>
       </div>
     </motion.div>
   );

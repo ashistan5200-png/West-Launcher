@@ -18,27 +18,28 @@ import { ModDetail } from "@/components/ModDetail";
 import { AnimatePresence } from "framer-motion";
 import { LOADER_LABEL, formatCount, formatRelative } from "@/lib/format";
 import { catLabel } from "@/lib/categories";
+import { tx } from "@/lib/i18n";
 
 const KINDS: { id: ContentKind; label: string }[] = [
-  { id: "mod", label: "Modlar" },
-  { id: "modpack", label: "Modpack'ler" },
-  { id: "resourcepack", label: "Resource Pack'ler" },
-  { id: "shader", label: "Shader'lar" },
+  { id: "mod", label: tx("Modlar") },
+  { id: "modpack", label: tx("Modpack'ler") },
+  { id: "resourcepack", label: tx("Resource Pack'ler") },
+  { id: "shader", label: tx("Shader'lar") },
 ];
 const LOADERS = ["fabric", "neoforge", "forge", "quilt"] as const;
 type Env = "all" | "client" | "server" | "both";
 const ENVS: { id: Env; label: string; hint: string; icon: typeof Laptop }[] = [
-  { id: "all", label: "Hepsi", hint: "", icon: SlidersHorizontal },
-  { id: "client", label: "Yalnız istemci", hint: "Sunucuda gerekmez (ör. Sodium, minimap)", icon: Laptop },
-  { id: "server", label: "Yalnız sunucu", hint: "Oyuncuların kurmasına gerek yok", icon: Server },
-  { id: "both", label: "İkisinde de", hint: "Hem oyuncuda hem sunucuda olmalı", icon: Monitor },
+  { id: "all", label: tx("Hepsi"), hint: "", icon: SlidersHorizontal },
+  { id: "client", label: tx("Yalnız istemci"), hint: tx("Sunucuda gerekmez (ör. Sodium, minimap)"), icon: Laptop },
+  { id: "server", label: tx("Yalnız sunucu"), hint: tx("Oyuncuların kurmasına gerek yok"), icon: Server },
+  { id: "both", label: tx("İkisinde de"), hint: tx("Hem oyuncuda hem sunucuda olmalı"), icon: Monitor },
 ];
 const SORTS: { id: NonNullable<SearchQuery["sort"]>; label: string }[] = [
-  { id: "relevance", label: "En alakalı" },
-  { id: "downloads", label: "En çok indirilen" },
-  { id: "follows", label: "En çok takip edilen" },
-  { id: "newest", label: "En yeni" },
-  { id: "updated", label: "Son güncellenen" },
+  { id: "relevance", label: tx("En alakalı") },
+  { id: "downloads", label: tx("En çok indirilen") },
+  { id: "follows", label: tx("En çok takip edilen") },
+  { id: "newest", label: tx("En yeni") },
+  { id: "updated", label: tx("Son güncellenen") },
 ];
 
 
@@ -49,10 +50,10 @@ const MAX_OFFSET = 10_000;
 const sideLabel = (h: ContentHit) => {
   const c = h.clientSide, s = h.serverSide;
   if (!c || !s || c === "unknown" || s === "unknown") return null;
-  if (s === "unsupported") return { icon: Laptop, text: "İstemci" };
-  if (c === "unsupported") return { icon: Server, text: "Sunucu" };
-  if (c === "required" && s === "required") return { icon: Monitor, text: "İstemci + sunucu" };
-  return { icon: Monitor, text: c === "optional" ? "Sunucu (istemcide isteğe bağlı)" : "İstemci (sunucuda isteğe bağlı)" };
+  if (s === "unsupported") return { icon: Laptop, text: tx("İstemci") };
+  if (c === "unsupported") return { icon: Server, text: tx("Sunucu") };
+  if (c === "required" && s === "required") return { icon: Monitor, text: tx("İstemci + sunucu") };
+  return { icon: Monitor, text: c === "optional" ? tx("Sunucu (istemcide isteğe bağlı)") : tx("İstemci (sunucuda isteğe bağlı)") };
 };
 
 const versionRange = (v: string[] | undefined) => {
@@ -190,8 +191,8 @@ export function BrowsePage() {
     <div className="browse">
       <aside className="bfilters">
         <div className="bf-head">
-          <strong><SlidersHorizontal size={15} /> Filtreler</strong>
-          {activeFilters > 0 && <button className="btn-link" onClick={reset}><RotateCcw size={13} /> Temizle</button>}
+          <strong><SlidersHorizontal size={15} /> {tx("Filtreler")}</strong>
+          {activeFilters > 0 && <button className="btn-link" onClick={reset}><RotateCcw size={13} /> {tx("Temizle")}</button>}
         </div>
 
         {fromInstance ? (
@@ -201,23 +202,23 @@ export function BrowsePage() {
               <strong className="truncate">{fromInstance.name}</strong>
               <span className="muted tiny">{LOADER_LABEL[fromInstance.loader.kind]} {fromInstance.mcVersion}</span>
             </div>
-            <p className="muted tiny">Yalnızca bu instance'a uyan içerikler gösteriliyor. "Kur" dediğinde uyumlu en son sürüm ve bağımlılıkları kurulur.</p>
-            <button className="btn btn-ghost btn-sm" onClick={leaveInstance}>Tüm içeriği göster</button>
+            <p className="muted tiny">{tx("Yalnızca bu instance'a uyan içerikler gösteriliyor. \"Kur\" dediğinde uyumlu en son sürüm ve bağımlılıkları kurulur.")}</p>
+            <button className="btn btn-ghost btn-sm" onClick={leaveInstance}>{tx("Tüm içeriği göster")}</button>
           </section>
         ) : (
         <section className="bf-sec">
-          <h4>Minecraft sürümü</h4>
+          <h4>{tx("Minecraft sürümü")}</h4>
           <select className="bf-select" value={version} onChange={(e) => setVersion(e.target.value)}>
-            <option value="">Tüm sürümler</option>
+            <option value="">{tx("Tüm sürümler")}</option>
             {versions.map((v) => <option key={v} value={v}>{v}</option>)}
           </select>
-          <label className="check tiny"><input type="checkbox" checked={snapshots} onChange={(e) => setSnapshots(e.target.checked)} /> Snapshot'ları da göster</label>
+          <label className="check tiny"><input type="checkbox" checked={snapshots} onChange={(e) => setSnapshots(e.target.checked)} /> {tx("Snapshot'ları da göster")}</label>
         </section>
         )}
 
         {!fromInstance && (kind === "mod" || kind === "modpack") && (
           <section className="bf-sec">
-            <h4>Yükleyici</h4>
+            <h4>{tx("Yükleyici")}</h4>
             <div className="bf-chips">
               {LOADERS.map((l) => (
                 <button key={l} className={clsx("fchip", loader === l && "on")} onClick={() => setLoader(loader === l ? "" : l)}>{LOADER_LABEL[l]}</button>
@@ -228,7 +229,7 @@ export function BrowsePage() {
 
         {kind === "mod" && (
           <section className="bf-sec">
-            <h4>Çalıştığı yer</h4>
+            <h4>{tx("Çalıştığı yer")}</h4>
             <div className="bf-env">
               {ENVS.map((e) => (
                 <button key={e.id} className={clsx("bf-env-item", env === e.id && "on")} onClick={() => setEnv(e.id)} title={e.hint}>
@@ -241,7 +242,7 @@ export function BrowsePage() {
 
         {categoryGroups.map(([header, names]) => (
           <section key={header} className="bf-sec">
-            <h4>{header === "categories" ? "Kategori" : header === "features" ? "Özellikler" : header === "resolutions" ? "Çözünürlük" : header === "performance impact" ? "Performans etkisi" : catLabel(header)}</h4>
+            <h4>{header === "categories" ? tx("Kategori") : header === "features" ? tx("Özellikler") : header === "resolutions" ? tx("Çözünürlük") : header === "performance impact" ? tx("Performans etkisi") : catLabel(header)}</h4>
             <div className="bf-cats">
               {names.map((n) => (
                 <label key={n} className={clsx("bf-cat", cats.includes(n) && "on")}>
@@ -252,15 +253,15 @@ export function BrowsePage() {
             </div>
           </section>
         ))}
-        {!tags && <p className="muted tiny"><Loader2 size={12} className="spin" /> Kategoriler yükleniyor…</p>}
+        {!tags && <p className="muted tiny"><Loader2 size={12} className="spin" /> {tx("Kategoriler yükleniyor…")}</p>}
       </aside>
 
       <div className="bmain" ref={topRef}>
         <div className="ctab-bar">
           <label className="ctab-search">
             <Search size={16} />
-            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={`${KINDS.find((k) => k.id === kind)!.label} içinde ara…`} autoFocus />
-            {query && <button className="icon-btn sm" onClick={() => setQuery("")} aria-label="Temizle"><X size={14} /></button>}
+            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={tx("{0} içinde ara…", KINDS.find((k) => k.id === kind)!.label)} autoFocus />
+            {query && <button className="icon-btn sm" onClick={() => setQuery("")} aria-label={tx("Temizle")}><X size={14} /></button>}
           </label>
           <Menu
             trigger={(open) => <button className={clsx("btn btn-ghost lg", open && "pressed")}>{SORTS.find((s) => s.id === sort)!.label} <ChevronDown size={14} /></button>}
@@ -275,9 +276,9 @@ export function BrowsePage() {
         </nav>
 
         <div className="bmeta muted small">
-          {loading && hits.length === 0 ? "Aranıyor…" : `${formatCount(total)} sonuç · sayfa ${page} / ${pages.toLocaleString("tr-TR")}`}
+          {loading && hits.length === 0 ? tx("Aranıyor…") : tx("{0} sonuç · sayfa {1} / {2}", formatCount(total), page, pages.toLocaleString("tr-TR"))}
           {fromInstance && <span> · <strong>{fromInstance.name}</strong> ile uyumlu</span>}
-          {kind === "modpack" && <span> · Modpack'ler kendi sürümüyle yeni bir instance olarak kurulur</span>}
+          {kind === "modpack" && <span> {tx("· Modpack'ler kendi sürümüyle yeni bir instance olarak kurulur")}</span>}
         </div>
 
         {error && <div className="banner banner-error">{error}</div>}
@@ -287,7 +288,7 @@ export function BrowsePage() {
         </div>
 
         {loading && hits.length === 0 && <div className="center pad muted"><Loader2 className="spin" size={18} /></div>}
-        {!loading && hits.length === 0 && !error && <p className="muted center pad">Sonuç yok. Filtreleri gevşetmeyi dene.</p>}
+        {!loading && hits.length === 0 && !error && <p className="muted center pad">{tx("Sonuç yok. Filtreleri gevşetmeyi dene.")}</p>}
         <Pagination page={page} pages={pages} onChange={changePage} disabled={loading} />
       </div>
       <AnimatePresence>
@@ -302,7 +303,7 @@ function ResultCard({ hit, instances, preferred, direct, onOpen }: { hit: Conten
   const range = versionRange(hit.versions);
   const shots = hit.gallery ?? [];
   return (
-    <article className="rcard clickable" onClick={onOpen} title="Ayrıntılar, galeri ve sürüm notları">
+    <article className="rcard clickable" onClick={onOpen} title={tx("Ayrıntılar, galeri ve sürüm notları")}>
       <ContentIcon key={hit.icon ?? hit.id} src={hit.icon} title={hit.title} kind={hit.kind} size={64} />
       <div className="rcard-main">
         <div className="rcard-title">
@@ -318,7 +319,7 @@ function ResultCard({ hit, instances, preferred, direct, onOpen }: { hit: Conten
         </div>
       </div>
       {shots.length > 0 && (
-        <div className="rcard-shots" aria-label="Görseller">
+        <div className="rcard-shots" aria-label={tx("Görseller")}>
           {shots.slice(0, 3).map((g) => <img key={g} src={g} alt="" loading="lazy" referrerPolicy="no-referrer" />)}
         </div>
       )}
@@ -326,7 +327,7 @@ function ResultCard({ hit, instances, preferred, direct, onOpen }: { hit: Conten
         <span className="rstat"><Download size={13} /> {formatCount(hit.downloads)}</span>
         {hit.updated && <span className="rstat muted">{formatRelative(hit.updated)}</span>}
         <div className="row" style={{ gap: 6 }}>
-          <button className="icon-btn" title="Modrinth sayfası" onClick={() => void openUrl(hit.url)}><ExternalLink size={16} /></button>
+          <button className="icon-btn" title={tx("Modrinth sayfası")} onClick={() => void openUrl(hit.url)}><ExternalLink size={16} /></button>
           <InstallMenu hit={hit} instances={instances} preferred={preferred} direct={direct} />
         </div>
       </div>

@@ -17,14 +17,15 @@ import { api } from "@/lib/ipc";
 import { LOADER_LABEL, formatDuration, formatRelative } from "@/lib/format";
 import type { CompanionConfig, CompanionInfo, Instance, JvmProfile, LoaderKind, LoaderVersion, ManifestEntry } from "@/lib/types";
 import { askConfirm } from "@/components/ConfirmDialog";
+import { tx } from "@/lib/i18n";
 
 type Tab = "content" | "files" | "worlds" | "logs" | "share" | "settings";
 const TABS: { id: Tab; label: string; icon: typeof Boxes }[] = [
-  { id: "content", label: "İçerik", icon: Boxes },
-  { id: "files", label: "Dosyalar", icon: Folder },
-  { id: "worlds", label: "Dünyalar", icon: Globe2 },
-  { id: "logs", label: "Loglar", icon: FileText },
-  { id: "share", label: "Paylaş", icon: Share2 },
+  { id: "content", label: tx("İçerik"), icon: Boxes },
+  { id: "files", label: tx("Dosyalar"), icon: Folder },
+  { id: "worlds", label: tx("Dünyalar"), icon: Globe2 },
+  { id: "logs", label: tx("Loglar"), icon: FileText },
+  { id: "share", label: tx("Paylaş"), icon: Share2 },
 ];
 
 export function InstancePage() {
@@ -40,14 +41,14 @@ export function InstancePage() {
   const [appearOpen, setAppearOpen] = useState(false);
   const [portOpen, setPortOpen] = useState(false);
 
-  if (!inst) return <p className="muted pad">Instance bulunamadı.</p>;
+  if (!inst) return <p className="muted pad">{tx("Instance bulunamadı.")}</p>;
 
   const isRunning = running[id] !== undefined;
   const isLaunching = !!launching[id];
   const exit = lastExit[id];
   const locked = isRunning || isLaunching || hunting;
   const del = async () => {
-    if (await askConfirm(`"${inst.name}" ve tüm dünyaları silinsin mi?`)) {
+    if (await askConfirm(tx("\"{0}\" ve tüm dünyaları silinsin mi?", inst.name))) {
       await remove(id);
       navigate("/library");
     }
@@ -58,7 +59,7 @@ export function InstancePage() {
       <header className="ihead">
         <InstanceBanner instance={inst} className="ihead-art" wide />
         <div className="ihead-shade" />
-        <button className="ihead-edit" onClick={() => setAppearOpen(true)} title="Profil fotoğrafı, banner ve ad"><Pencil size={14} /> Görünümü düzenle</button>
+        <button className="ihead-edit" onClick={() => setAppearOpen(true)} title={tx("Profil fotoğrafı, banner ve ad")}><Pencil size={14} /> {tx("Görünümü düzenle")}</button>
         <InstanceIcon instance={inst} size={76} />
         <div className="grow ihead-text">
           <h1 className="truncate">{inst.name}</h1>
@@ -69,31 +70,31 @@ export function InstancePage() {
             {inst.importedFrom && <><span className="dot" /><span>↳ {inst.importedFrom}</span></>}
           </div>
           <div className="ihead-line">
-            <span><Clock size={16} /> {inst.lastPlayed ? `Son oynama: ${formatRelative(inst.lastPlayed).toLowerCase()}` : "Hiç oynanmadı"}</span>
+            <span><Clock size={16} /> {inst.lastPlayed ? tx("Son oynama: {0}", formatRelative(inst.lastPlayed).toLowerCase()) : tx("Hiç oynanmadı")}</span>
           </div>
         </div>
         <div className="ihead-actions">
           <button
             className={clsx("btn ihead-play", isRunning ? "btn-danger" : "btn-primary")}
             disabled={isLaunching || hunting}
-            title={hunting ? "Ashi bu instance'ta suçlu avında" : undefined}
+            title={hunting ? tx("Ashi bu instance'ta suçlu avında") : undefined}
             onClick={() => (isRunning ? kill(id) : launch(id, offlineName))}
           >
             {isLaunching ? <Loader2 size={20} className="spin" /> : isRunning ? <Square size={17} fill="currentColor" /> : <Play size={20} />}
-            {hunting ? "Ashi avda" : isRunning ? "Durdur" : "Oyna"}
+            {hunting ? tx("Ashi avda") : isRunning ? tx("Durdur") : tx("Oyna")}
           </button>
-          <button className={clsx("round-btn", tab === "settings" && "on")} title="Instance ayarları" onClick={() => setTab(tab === "settings" ? "content" : "settings")}>
+          <button className={clsx("round-btn", tab === "settings" && "on")} title={tx("Instance ayarları")} onClick={() => setTab(tab === "settings" ? "content" : "settings")}>
             <Settings2 size={20} />
           </button>
           <Menu
-            trigger={() => <button className="icon-btn" aria-label="Daha fazla"><MoreVertical size={20} /></button>}
+            trigger={() => <button className="icon-btn" aria-label={tx("Daha fazla")}><MoreVertical size={20} /></button>}
             items={[
-              { label: "Görünümü düzenle", icon: <Paintbrush size={14} />, onClick: () => setAppearOpen(true) },
-              { label: "Klasörü aç", icon: <FolderOpen size={14} />, onClick: async () => api.openPath(await api.instancePath(id)) },
-              { label: "Ashi Taşıyıcı: başka sürüme taşı", icon: <Truck size={14} />, disabled: locked, onClick: () => setPortOpen(true) },
-              { label: "Klonla", icon: <Copy size={14} />, onClick: () => setCloneOpen(true) },
-              { label: "Şablon oluştur", icon: <LayoutTemplate size={14} />, onClick: async () => { await api.makeTemplate(id, `${inst.name} şablonu`); await refresh(); } },
-              { label: "Instance'ı sil", icon: <Trash2 size={14} />, danger: true, disabled: locked, onClick: () => void del() },
+              { label: tx("Görünümü düzenle"), icon: <Paintbrush size={14} />, onClick: () => setAppearOpen(true) },
+              { label: tx("Klasörü aç"), icon: <FolderOpen size={14} />, onClick: async () => api.openPath(await api.instancePath(id)) },
+              { label: tx("Ashi Taşıyıcı: başka sürüme taşı"), icon: <Truck size={14} />, disabled: locked, onClick: () => setPortOpen(true) },
+              { label: tx("Klonla"), icon: <Copy size={14} />, onClick: () => setCloneOpen(true) },
+              { label: tx("Şablon oluştur"), icon: <LayoutTemplate size={14} />, onClick: async () => { await api.makeTemplate(id, `${inst.name} şablonu`); await refresh(); } },
+              { label: tx("Instance'ı sil"), icon: <Trash2 size={14} />, danger: true, disabled: locked, onClick: () => void del() },
             ]}
           />
         </div>
@@ -101,11 +102,11 @@ export function InstancePage() {
 
       {exit?.crashed && !exit.duringHunt && !isRunning && !hunting && (
         <div className="banner banner-error row">
-          <span className="grow">Oyun {exit.code} çıkış koduyla çöktü.</span>
-          <button className="btn btn-sm btn-ghost" onClick={() => setTab("logs")}>Logları gör</button>
+          <span className="grow">{tx("Oyun")} {exit.code} {tx("çıkış koduyla çöktü.")}</span>
+          <button className="btn btn-sm btn-ghost" onClick={() => setTab("logs")}>{tx("Logları gör")}</button>
           {exit.modCount >= 2 && (
             <button className="btn btn-sm btn-ghost" onClick={() => openAshi(id, inst.name)}>
-              Ashi'den suçluyu bulmasını iste
+              {tx("Ashi'den suçluyu bulmasını iste")}
             </button>
           )}
         </div>
@@ -155,13 +156,13 @@ function InstanceSettings({ instance, onDelete }: { instance: Instance; onDelete
   return (
     <div className="settings-grid">
       <section className="card stack">
-        <h3>Genel</h3>
+        <h3>{tx("Genel")}</h3>
         <label className="field">
-          <span>Ad</span>
+          <span>{tx("Ad")}</span>
           <input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
         </label>
         <label className="field">
-          <span>Bellek {draft.memoryMb ? `${draft.memoryMb} MB` : "(otomatik)"}</span>
+          <span>{tx("Bellek")} {draft.memoryMb ? `${draft.memoryMb} MB` : "(otomatik)"}</span>
           <input
             type="range" min={1024} max={maxMem} step={256}
             value={draft.memoryMb ?? jvm?.memoryMb ?? 4096}
@@ -170,22 +171,22 @@ function InstanceSettings({ instance, onDelete }: { instance: Instance; onDelete
         </label>
         <label className="check">
           <input type="checkbox" checked={draft.memoryMb === null} onChange={(e) => setDraft({ ...draft, memoryMb: e.target.checked ? null : 4096 })} />
-          Donanıma ve mod sayısına göre otomatik ayarla
+          {tx("Donanıma ve mod sayısına göre otomatik ayarla")}
         </label>
         <label className="field">
-          <span>Java yolu (boş = otomatik)</span>
-          <input value={draft.javaPath ?? ""} placeholder="Otomatik seçim" onChange={(e) => setDraft({ ...draft, javaPath: e.target.value || null })} />
+          <span>{tx("Java yolu (boş = otomatik)")}</span>
+          <input value={draft.javaPath ?? ""} placeholder={tx("Otomatik seçim")} onChange={(e) => setDraft({ ...draft, javaPath: e.target.value || null })} />
         </label>
         <label className="field">
-          <span>Ek JVM argümanları</span>
+          <span>{tx("Ek JVM argümanları")}</span>
           <input
             value={draft.extraJvmArgs.join(" ")}
             onChange={(e) => setDraft({ ...draft, extraJvmArgs: e.target.value.split(/\s+/).filter(Boolean) })}
           />
         </label>
         <div className="row">
-          <button className="btn btn-primary" onClick={save}>Kaydet</button>
-          <button className="btn btn-danger-ghost" onClick={onDelete}><Trash2 size={15} /> Sil</button>
+          <button className="btn btn-primary" onClick={save}>{tx("Kaydet")}</button>
+          <button className="btn btn-danger-ghost" onClick={onDelete}><Trash2 size={15} /> {tx("Sil")}</button>
         </div>
       </section>
 
@@ -194,14 +195,14 @@ function InstanceSettings({ instance, onDelete }: { instance: Instance; onDelete
       <CompanionCard instanceId={instance.id} />
 
       <section className="card stack">
-        <h3>JVM Optimizatörü</h3>
+        <h3>{tx("JVM Optimizatörü")}</h3>
         {jvm ? (
           <>
             <p className="small">{jvm.reason}</p>
             <div className="flag-list">{jvm.flags.map((f) => <code key={f}>{f}</code>)}</div>
           </>
         ) : (
-          <p className="muted small">Önizleme yükleniyor…</p>
+          <p className="muted small">{tx("Önizleme yükleniyor…")}</p>
         )}
       </section>
     </div>
@@ -215,16 +216,16 @@ function CloneModal({ open, onClose, name, onConfirm }: { open: boolean; onClose
     <Modal
       open={open}
       onClose={onClose}
-      title="Instance'ı klonla"
+      title={tx("Instance'ı klonla")}
       footer={
         <>
-          <button className="btn btn-ghost" onClick={onClose}>İptal</button>
-          <button className="btn btn-primary" onClick={async () => { await onConfirm(n, worlds); onClose(); }}>Klonla</button>
+          <button className="btn btn-ghost" onClick={onClose}>{tx("İptal")}</button>
+          <button className="btn btn-primary" onClick={async () => { await onConfirm(n, worlds); onClose(); }}>{tx("Klonla")}</button>
         </>
       }
     >
-      <label className="field"><span>Yeni ad</span><input value={n} onChange={(e) => setN(e.target.value)} /></label>
-      <label className="check"><input type="checkbox" checked={worlds} onChange={(e) => setWorlds(e.target.checked)} /> Dünyaları da kopyala</label>
+      <label className="field"><span>{tx("Yeni ad")}</span><input value={n} onChange={(e) => setN(e.target.value)} /></label>
+      <label className="check"><input type="checkbox" checked={worlds} onChange={(e) => setWorlds(e.target.checked)} /> {tx("Dünyaları da kopyala")}</label>
     </Modal>
   );
 }
@@ -244,16 +245,16 @@ function CompanionCard({ instanceId }: { instanceId: string }) {
   const c = info.config;
   return (
     <section className="card stack">
-      <h3>West Companion <span className="muted tiny">oyun içi</span></h3>
+      <h3>{tx("West Companion")} <span className="muted tiny">{tx("oyun içi")}</span></h3>
       {!info.compatible ? (
-        <p className="muted small">West Companion şimdilik Fabric 26.2, Fabric 1.21.11 ve 1.21.1 (Fabric/NeoForge) instance'larında çalışır. Diğer sürümler sırayla ekleniyor.</p>
+        <p className="muted small">{tx("West Companion şimdilik Fabric 26.2, Fabric 1.21.11 ve 1.21.1 (Fabric/NeoForge) instance'larında çalışır. Diğer sürümler sırayla ekleniyor.")}</p>
       ) : !info.enabled ? (
-        <p className="muted small">Ayarlar'dan "West Companion" kapatılmış.</p>
+        <p className="muted small">{tx("Ayarlar'dan \"West Companion\" kapatılmış.")}</p>
       ) : (
         <>
-          <label className="check"><input type="checkbox" checked={c.fullbright} onChange={(e) => set({ fullbright: e.target.checked })} /> FullBright (her yer aydınlık)</label>
-          <label className="check"><input type="checkbox" checked={c.fpsOverlay} onChange={(e) => set({ fpsOverlay: e.target.checked })} /> FPS göstergesi</label>
-          <p className="muted tiny">Oyunda <kbd>Sağ Shift</kbd> West menüsünü açar: HUD öğeleri (CPS, tuş göstergesi, koordinatlar, pusula, zırh…), sürükle-bırak HUD düzenleyici, temalar. Oyundan çıkmadan, oyunun içinde.</p>
+          <label className="check"><input type="checkbox" checked={c.fullbright} onChange={(e) => set({ fullbright: e.target.checked })} /> {tx("FullBright (her yer aydınlık)")}</label>
+          <label className="check"><input type="checkbox" checked={c.fpsOverlay} onChange={(e) => set({ fpsOverlay: e.target.checked })} /> {tx("FPS göstergesi")}</label>
+          <p className="muted tiny">{tx("Oyunda")} <kbd>{tx("Sağ Shift")}</kbd> {tx("West menüsünü açar: HUD öğeleri (CPS, tuş göstergesi, koordinatlar, pusula, zırh…), sürükle-bırak HUD düzenleyici, temalar. Oyundan çıkmadan, oyunun içinde.")}</p>
         </>
       )}
     </section>
@@ -290,29 +291,29 @@ function VersionCard({ instance }: { instance: Instance }) {
 
   const save = async () => {
     const mcChanged = mc !== instance.mcVersion || kind !== instance.loader.kind;
-    if (mcChanged && !await askConfirm(`Sürüm ${LOADER_LABEL[instance.loader.kind]} ${instance.mcVersion} → ${LOADER_LABEL[kind]} ${mc} olarak değişecek.\n\nBazı modlar yeni sürümle uyumsuz olabilir. Önemli dünyaların varsa önce yedek al. Devam edilsin mi?`)) return;
+    if (mcChanged && !await askConfirm(tx("Sürüm {0} {1} → {2} {3} olarak değişecek.\n\nBazı modlar yeni sürümle uyumsuz olabilir. Önemli dünyaların varsa önce yedek al. Devam edilsin mi?", LOADER_LABEL[instance.loader.kind], instance.mcVersion, LOADER_LABEL[kind], mc))) return;
     setBusy(true);
     try {
       await api.updateInstance({ ...instance, mcVersion: mc, loader: { kind, version: kind === "vanilla" ? null : lv } });
       await refresh();
-      setMsg({ ok: true, text: mcChanged ? "Sürüm değişti. İçerik sekmesinde \"Tümünü güncelle\" ile modları yeni sürüme uygun hale getir; oyun ilk açılışta yeni sürümü indirir." : "Yükleyici sürümü değişti; ilk açılışta indirilecek." });
+      setMsg({ ok: true, text: mcChanged ? tx("Sürüm değişti. İçerik sekmesinde \"Tümünü güncelle\" ile modları yeni sürüme uygun hale getir; oyun ilk açılışta yeni sürümü indirir.") : tx("Yükleyici sürümü değişti; ilk açılışta indirilecek.") });
     } catch (e) { setMsg({ ok: false, text: String(e).replace(/^Error: /, "") }); } finally { setBusy(false); }
   };
 
   const releases = mcList.filter((v) => snapshots || v.type === "release");
   return (
     <section className="card stack">
-      <h3>Sürüm</h3>
+      <h3>{tx("Sürüm")}</h3>
       <label className="field">
-        <span>Minecraft sürümü</span>
+        <span>{tx("Minecraft sürümü")}</span>
         <select value={mc} onChange={(e) => setMc(e.target.value)} disabled={running}>
           {!releases.some((v) => v.id === mc) && <option value={mc}>{mc}</option>}
           {releases.map((v) => <option key={v.id} value={v.id}>{v.id}{v.type !== "release" ? " (snapshot)" : ""}</option>)}
         </select>
       </label>
-      <label className="check tiny"><input type="checkbox" checked={snapshots} onChange={(e) => setSnapshots(e.target.checked)} /> Snapshot'ları göster</label>
+      <label className="check tiny"><input type="checkbox" checked={snapshots} onChange={(e) => setSnapshots(e.target.checked)} /> {tx("Snapshot'ları göster")}</label>
       <div className="field">
-        <span>Yükleyici</span>
+        <span>{tx("Yükleyici")}</span>
         <div className="segmented wrap">
           {(["vanilla", "fabric", "quilt", "forge", "neoforge"] as LoaderKind[]).map((k) => (
             <button key={k} className={clsx(kind === k && "active")} disabled={running} onClick={() => setKind(k)}>{LOADER_LABEL[k]}</button>
@@ -321,9 +322,9 @@ function VersionCard({ instance }: { instance: Instance }) {
       </div>
       {kind !== "vanilla" && (
         <label className="field">
-          <span>{LOADER_LABEL[kind]} sürümü</span>
-          {loaderList === null ? <span className="muted small"><Loader2 size={13} className="spin" /> Sürümler yükleniyor…</span>
-            : loaderList.length === 0 ? <span className="hint error">{LOADER_LABEL[kind]}, Minecraft {mc} için mevcut değil.</span>
+          <span>{LOADER_LABEL[kind]} {tx("sürümü")}</span>
+          {loaderList === null ? <span className="muted small"><Loader2 size={13} className="spin" /> {tx("Sürümler yükleniyor…")}</span>
+            : loaderList.length === 0 ? <span className="hint error">{LOADER_LABEL[kind]}{tx(", Minecraft")} {mc} {tx("için mevcut değil.")}</span>
             : (
               <select value={lv ?? ""} onChange={(e) => setLv(e.target.value)} disabled={running}>
                 {loaderList.map((v) => <option key={v.version} value={v.version}>{v.version}{v.stable ? "" : " (beta)"}</option>)}
@@ -331,11 +332,11 @@ function VersionCard({ instance }: { instance: Instance }) {
             )}
         </label>
       )}
-      {running && <p className="muted tiny">Oyun açıkken sürüm değiştirilemez.</p>}
-      <p className="muted tiny">Modlarınla birlikte başka sürüme geçmek mi istiyorsun? Üstteki ⋮ menüsünden <strong>Ashi Taşıyıcı</strong>'yı kullan: her modun yeni sürümünü bulur ve eski instance'a dokunmaz.</p>
+      {running && <p className="muted tiny">{tx("Oyun açıkken sürüm değiştirilemez.")}</p>}
+      <p className="muted tiny">{tx("Modlarınla birlikte başka sürüme geçmek mi istiyorsun? Üstteki ⋮ menüsünden")} <strong>{tx("Ashi Taşıyıcı")}</strong>{tx("'yı kullan: her modun yeni sürümünü bulur ve eski instance'a dokunmaz.")}</p>
       {msg && <p className={clsx("hint", !msg.ok && "error")}>{msg.text}</p>}
       <button className="btn btn-primary" style={{ alignSelf: "flex-start" }} disabled={!changed || loaderMissing || busy || running} onClick={() => void save()}>
-        {busy && <Loader2 size={15} className="spin" />} Sürümü değiştir
+        {busy && <Loader2 size={15} className="spin" />} {tx("Sürümü değiştir")}
       </button>
     </section>
   );

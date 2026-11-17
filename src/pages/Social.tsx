@@ -22,6 +22,7 @@ import { Modal } from "@/components/Modal";
 import { Menu } from "@/components/instance/Menu";
 import { formatCount } from "@/lib/format";
 import { askConfirm } from "@/components/ConfirmDialog";
+import { tx } from "@/lib/i18n";
 
 const err = (e: unknown) => String(e).replace(/^Error: /, "");
 
@@ -42,20 +43,20 @@ export function SocialLayout({ children, wide }: { children: ReactNode; wide?: b
   if (loaded && !account) {
     return (
       <div className="s-gate">
-        <h1>West sosyal</h1>
-        <p className="muted">Gönderi paylaşmak, takip etmek ve profil oluşturmak için bir West hesabıyla giriş yap.</p>
+        <h1>{tx("West sosyal")}</h1>
+        <p className="muted">{tx("Gönderi paylaşmak, takip etmek ve profil oluşturmak için bir West hesabıyla giriş yap.")}</p>
         <div style={{ width: "min(460px, 100%)" }}><WestAccountCard /></div>
       </div>
     );
   }
   const nav = [
-    { to: "/social", icon: Home, label: "Akış", end: true },
-    { to: "/social/search", icon: Search, label: "Keşfet" },
-    { to: "/social/notifications", icon: Bell, label: "Bildirimler", badge: unread.notifications },
-    { to: "/social/messages", icon: Mail, label: "Mesajlar", badge: unread.messages },
-    { to: "/social/bookmarks", icon: Bookmark, label: "Yer imleri" },
-    ...(me ? [{ to: `/u/${me.username}`, icon: UserRound, label: "Profil" }] : []),
-    { to: "/social/settings", icon: Shield, label: "Gizlilik" },
+    { to: "/social", icon: Home, label: tx("Akış"), end: true },
+    { to: "/social/search", icon: Search, label: tx("Keşfet") },
+    { to: "/social/notifications", icon: Bell, label: tx("Bildirimler"), badge: unread.notifications },
+    { to: "/social/messages", icon: Mail, label: tx("Mesajlar"), badge: unread.messages },
+    { to: "/social/bookmarks", icon: Bookmark, label: tx("Yer imleri") },
+    ...(me ? [{ to: `/u/${me.username}`, icon: UserRound, label: tx("Profil") }] : []),
+    { to: "/social/settings", icon: Shield, label: tx("Gizlilik") },
   ];
   return (
     <div className={clsx("s-layout", wide && "wide")}>
@@ -66,7 +67,7 @@ export function SocialLayout({ children, wide }: { children: ReactNode; wide?: b
             {!!n.badge && <em className="s-badge">{n.badge > 99 ? "99+" : n.badge}</em>}
           </NavLink>
         ))}
-        <button className="btn btn-primary s-post-btn" onClick={() => openCompose()}><PenSquare size={17} /> <span>Gönderi paylaş</span></button>
+        <button className="btn btn-primary s-post-btn" onClick={() => openCompose()}><PenSquare size={17} /> <span>{tx("Gönderi paylaş")}</span></button>
         {me && (
           <button className="s-me" onClick={() => navigate(`/u/${me.username}`)}>
             <Avatar url={me.avatar_url} name={me.username} size={36} />
@@ -77,7 +78,7 @@ export function SocialLayout({ children, wide }: { children: ReactNode; wide?: b
       <main className="s-center">{children}</main>
       {!wide && <aside className="s-rail">
         <form className="s-search" onSubmit={(e) => { e.preventDefault(); if (q.trim()) navigate(`/social/search?q=${encodeURIComponent(q.trim())}`); }}>
-          <Search size={15} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="West'te ara" />
+          <Search size={15} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder={tx("West'te ara")} />
         </form>
         <Trending />
         <WhoToFollow />
@@ -94,12 +95,12 @@ function Trending() {
   if (!tags?.length) return null;
   return (
     <section className="s-box">
-      <h3>Gündem</h3>
+      <h3>{tx("Gündem")}</h3>
       {tags.map((t, i) => (
         <button key={t.tag} className="s-trend" onClick={() => navigate(`/social/tag/${encodeURIComponent(t.tag)}`)}>
-          <span className="muted tiny">{i + 1} · Gündemde</span>
+          <span className="muted tiny">{i + 1} {tx("· Gündemde")}</span>
           <strong>#{t.tag}</strong>
-          <span className="muted tiny">{formatCount(t.posts)} gönderi</span>
+          <span className="muted tiny">{formatCount(t.posts)} {tx("gönderi")}</span>
         </button>
       ))}
     </section>
@@ -113,7 +114,7 @@ function WhoToFollow() {
   if (!list?.length) return null;
   return (
     <section className="s-box">
-      <h3>Kimi takip etmeli</h3>
+      <h3>{tx("Kimi takip etmeli")}</h3>
       {list.map((p) => <UserRow key={p.id} p={p} me={me?.userId} />)}
     </section>
   );
@@ -136,7 +137,7 @@ export function UserRow({ p, me, extra }: { p: Profile; me?: string; extra?: Rea
           e.stopPropagation();
           if (state === "none") { await S.follow(me, p.id); setState(p.is_private ? "pending" : "accepted"); }
           else { await S.unfollow(me, p.id); setState("none"); }
-        }}>{state === "none" ? "Takip et" : state === "pending" ? "İstek gönderildi" : "Takip ediliyor"}</button>
+        }}>{state === "none" ? tx("Takip et") : state === "pending" ? tx("İstek gönderildi") : tx("Takip ediliyor")}</button>
       )}
     </div>
   );
@@ -235,22 +236,22 @@ export function SocialFeedPage() {
   return (
     <SocialLayout>
       <div className="s-tabs sticky">
-        {([["foryou", "Senin için"], ["following", "Takip edilenler"], ["latest", "En yeni"]] as const).map(([k, l]) => (
+        {([["foryou", tx("Senin için")], ["following", tx("Takip edilenler")], ["latest", tx("En yeni")]] as const).map(([k, l]) => (
           <button key={k} className={clsx(tab === k && "on")} onClick={() => setTab(k)}>{l}</button>
         ))}
       </div>
       <StoriesBar />
       <Composer onPosted={() => window.dispatchEvent(new CustomEvent("west:posted"))} />
-      <PostList load={load} deps={[tab]} empty={tab === "following" ? <><UserPlus size={26} /><p>Takip ettiğin kişilerin gönderileri burada görünür. Sağdaki önerilerden birini takip et!</p></> : <><Globe2 size={26} /><p>Henüz gönderi yok. İlk paylaşan sen ol!</p></>} />
+      <PostList load={load} deps={[tab]} empty={tab === "following" ? <><UserPlus size={26} /><p>{tx("Takip ettiğin kişilerin gönderileri burada görünür. Sağdaki önerilerden birini takip et!")}</p></> : <><Globe2 size={26} /><p>{tx("Henüz gönderi yok. İlk paylaşan sen ol!")}</p></>} />
     </SocialLayout>
   );
 }
 
 // ───────── Bildirimler ─────────
 const N_TEXT: Record<string, string> = {
-  like: "gönderini beğendi", reply: "gönderine yanıt verdi", repost: "gönderini yeniden paylaştı", quote: "gönderini alıntıladı",
-  mention: "senden bahsetti", follow: "seni takip etmeye başladı", follow_request: "seni takip etmek istiyor", follow_accept: "takip isteğini kabul etti",
-  message: "sana mesaj gönderdi", poll_vote: "anketine oy verdi",
+  like: tx("gönderini beğendi"), reply: tx("gönderine yanıt verdi"), repost: tx("gönderini yeniden paylaştı"), quote: tx("gönderini alıntıladı"),
+  mention: "senden bahsetti", follow: tx("seni takip etmeye başladı"), follow_request: "seni takip etmek istiyor", follow_accept: tx("takip isteğini kabul etti"),
+  message: tx("sana mesaj gönderdi"), poll_vote: "anketine oy verdi",
 };
 const N_ICON: Record<string, typeof Heart> = { like: Heart, reply: MessageCircle, repost: Repeat2, quote: Quote, mention: AtSign, follow: UserPlus, follow_request: Lock, follow_accept: UserCheck, message: MessageCircle, poll_vote: Check };
 
@@ -271,24 +272,24 @@ export function NotificationsPage() {
   return (
     <SocialLayout>
       <div className="s-tabs sticky">
-        <button className={clsx(tab === "all" && "on")} onClick={() => setTab("all")}>Tümü</button>
-        <button className={clsx(tab === "mentions" && "on")} onClick={() => setTab("mentions")}>Bahsetmeler ve yanıtlar</button>
+        <button className={clsx(tab === "all" && "on")} onClick={() => setTab("all")}>{tx("Tümü")}</button>
+        <button className={clsx(tab === "mentions" && "on")} onClick={() => setTab("mentions")}>{tx("Bahsetmeler ve yanıtlar")}</button>
       </div>
       {requests.length > 0 && (
         <section className="s-requests">
-          <h3><Lock size={15} /> Takip istekleri ({requests.length})</h3>
+          <h3><Lock size={15} /> {tx("Takip istekleri (")}{requests.length})</h3>
           {requests.map((p) => (
             <UserRow key={p.id} p={p} extra={
               <div className="row" style={{ gap: 6 }} onClick={(e) => e.stopPropagation()}>
-                <button className="btn btn-primary btn-sm" onClick={async () => { await S.acceptFollow(me!.userId, p.id); setRequests((r) => r.filter((x) => x.id !== p.id)); }}>Onayla</button>
-                <button className="btn btn-ghost btn-sm" onClick={async () => { await S.removeFollower(me!.userId, p.id); setRequests((r) => r.filter((x) => x.id !== p.id)); }}>Reddet</button>
+                <button className="btn btn-primary btn-sm" onClick={async () => { await S.acceptFollow(me!.userId, p.id); setRequests((r) => r.filter((x) => x.id !== p.id)); }}>{tx("Onayla")}</button>
+                <button className="btn btn-ghost btn-sm" onClick={async () => { await S.removeFollower(me!.userId, p.id); setRequests((r) => r.filter((x) => x.id !== p.id)); }}>{tx("Reddet")}</button>
               </div>
             } />
           ))}
         </section>
       )}
       {list === null ? <div className="center pad muted"><Loader2 size={20} className="spin" /></div>
-        : shown.length === 0 ? <div className="s-empty"><Bell size={26} /><p>Henüz bildirim yok.</p></div>
+        : shown.length === 0 ? <div className="s-empty"><Bell size={26} /><p>{tx("Henüz bildirim yok.")}</p></div>
         : shown.map((n) => {
           const Icon = N_ICON[n.type] ?? Bell;
           return (
@@ -296,7 +297,7 @@ export function NotificationsPage() {
               <Icon size={20} className="s-notif-ico" fill={n.type === "like" ? "currentColor" : "none"} />
               <div className="grow" style={{ minWidth: 0 }}>
                 <Avatar url={n.actor?.avatar_url} name={n.actor?.username ?? "?"} size={30} />
-                <p><strong>{n.actor?.display_name || n.actor?.username || "Biri"}</strong> {N_TEXT[n.type] ?? n.type} <span className="muted tiny">· {ago(n.created_at)}</span></p>
+                <p><strong>{n.actor?.display_name || n.actor?.username || tx("Biri")}</strong> {N_TEXT[n.type] ?? n.type} <span className="muted tiny">· {ago(n.created_at)}</span></p>
                 {n.post?.body && <p className="muted small clamp-2">{n.post.body}</p>}
               </div>
             </button>
@@ -311,8 +312,8 @@ export function BookmarksPage() {
   const load = useCallback(async (c: Post | null) => (c ? [] : S.bookmarks()), []);
   return (
     <SocialLayout>
-      <div className="s-title"><h2>Yer imleri</h2><span className="muted tiny">Yalnızca sen görürsün</span></div>
-      <PostList load={load} empty={<><Bookmark size={26} /><p>Kaydettiğin gönderiler burada. Bir gönderideki yer imi simgesine tıkla.</p></>} />
+      <div className="s-title"><h2>{tx("Yer imleri")}</h2><span className="muted tiny">{tx("Yalnızca sen görürsün")}</span></div>
+      <PostList load={load} empty={<><Bookmark size={26} /><p>{tx("Kaydettiğin gönderiler burada. Bir gönderideki yer imi simgesine tıkla.")}</p></>} />
     </SocialLayout>
   );
 }
@@ -330,18 +331,18 @@ export function SocialSearchPage() {
   return (
     <SocialLayout>
       <form className="s-search big" onSubmit={(e) => { e.preventDefault(); setParams(input.trim() ? { q: input.trim() } : {}); }}>
-        <Search size={17} /><input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Kişi, gönderi ya da #etiket ara" autoFocus />
+        <Search size={17} /><input value={input} onChange={(e) => setInput(e.target.value)} placeholder={tx("Kişi, gönderi ya da #etiket ara")} autoFocus />
       </form>
       {q.startsWith("#") && <TagRedirect tag={q.slice(1)} />}
       {q && (
         <div className="s-tabs">
-          <button className={clsx(tab === "posts" && "on")} onClick={() => setTab("posts")}>Gönderiler</button>
-          <button className={clsx(tab === "people" && "on")} onClick={() => setTab("people")}>Kişiler {people && `(${people.length})`}</button>
+          <button className={clsx(tab === "posts" && "on")} onClick={() => setTab("posts")}>{tx("Gönderiler")}</button>
+          <button className={clsx(tab === "people" && "on")} onClick={() => setTab("people")}>{tx("Kişiler")} {people && `(${people.length})`}</button>
         </div>
       )}
-      {!q && <div className="s-title"><h2>Keşfet</h2><span className="muted tiny">Son 7 günün öne çıkanları</span></div>}
+      {!q && <div className="s-title"><h2>{tx("Keşfet")}</h2><span className="muted tiny">{tx("Son 7 günün öne çıkanları")}</span></div>}
       {tab === "people" && q ? (people ?? []).map((p) => <UserRow key={p.id} p={p} me={me?.userId} />)
-        : <PostList load={load} deps={[q]} empty={<><Search size={26} /><p>“{q}” için gönderi bulunamadı.</p></>} />}
+        : <PostList load={load} deps={[q]} empty={<><Search size={26} /><p>“{q}{tx("” için gönderi bulunamadı.")}</p></>} />}
     </SocialLayout>
   );
 }
@@ -357,7 +358,7 @@ export function TagPage() {
   return (
     <SocialLayout>
       <div className="s-title"><h2><Hash size={20} /> {tag}</h2></div>
-      <PostList load={load} deps={[tag]} empty={<><Hash size={26} /><p>#{tag} etiketiyle henüz gönderi yok.</p></>} />
+      <PostList load={load} deps={[tag]} empty={<><Hash size={26} /><p>#{tag} {tx("etiketiyle henüz gönderi yok.")}</p></>} />
     </SocialLayout>
   );
 }
@@ -393,9 +394,9 @@ export function PostPage() {
   }, [loadAll]);
   return (
     <SocialLayout>
-      <div className="s-title"><button className="icon-btn" onClick={() => navigate(-1)}><ArrowLeft size={18} /></button><h2>Gönderi</h2></div>
+      <div className="s-title"><button className="icon-btn" onClick={() => navigate(-1)}><ArrowLeft size={18} /></button><h2>{tx("Gönderi")}</h2></div>
       {post === undefined ? <div className="center pad muted"><Loader2 size={20} className="spin" /></div>
-        : post === null ? <div className="s-empty"><X size={26} /><p>Bu gönderi silinmiş ya da görme iznin yok.</p></div>
+        : post === null ? <div className="s-empty"><X size={26} /><p>{tx("Bu gönderi silinmiş ya da görme iznin yok.")}</p></div>
         : (
           <>
             {parents.map((p) => <div key={p.id} className="s-thread-parent"><PostCard post={p} onOpenMedia={(m, i) => setViewer({ m, i })} /></div>)}
@@ -442,7 +443,7 @@ export function ProfilePage() {
   const load = useCallback((c: Post | null) => (p ? S.userPosts(p.id, tab, c?.created_at) : Promise.resolve([])), [p, tab]);
 
   if (p === undefined) return <SocialLayout><div className="center pad muted"><Loader2 size={20} className="spin" /></div></SocialLayout>;
-  if (p === null) return <SocialLayout><div className="s-empty"><UserX size={26} /><p>@{username} adında bir West hesabı yok.</p></div></SocialLayout>;
+  if (p === null) return <SocialLayout><div className="s-empty"><UserX size={26} /><p>@{username} {tx("adında bir West hesabı yok.")}</p></div></SocialLayout>;
 
   const hidden = p.is_private && !mine && rel.following !== "accepted";
   const doFollow = async () => {
@@ -456,30 +457,30 @@ export function ProfilePage() {
 
   return (
     <SocialLayout>
-      <div className="s-title"><button className="icon-btn" onClick={() => navigate(-1)}><ArrowLeft size={18} /></button><div><h2 className="row" style={{ gap: 6 }}>{p.display_name || p.username}{p.verified && <BadgeCheck size={18} className="s-verified" />}</h2><span className="muted tiny">{formatCount(p.posts_count)} gönderi</span></div></div>
+      <div className="s-title"><button className="icon-btn" onClick={() => navigate(-1)}><ArrowLeft size={18} /></button><div><h2 className="row" style={{ gap: 6 }}>{p.display_name || p.username}{p.verified && <BadgeCheck size={18} className="s-verified" />}</h2><span className="muted tiny">{formatCount(p.posts_count)} {tx("gönderi")}</span></div></div>
       <div className="s-profile">
         <div className="s-banner">{p.banner_url ? <img src={p.banner_url} alt="" referrerPolicy="no-referrer" /> : <div className="s-banner-ph" />}</div>
         <div className="s-profile-top">
           <div className="s-profile-avatar"><Avatar url={p.avatar_url} name={p.username} size={112} /></div>
           <div className="row" style={{ gap: 8 }}>
             {mine ? (
-              <button className="btn btn-ghost" onClick={() => setEdit(true)}>Profili düzenle</button>
+              <button className="btn btn-ghost" onClick={() => setEdit(true)}>{tx("Profili düzenle")}</button>
             ) : account && (
               <>
                 <Menu
-                  trigger={() => <button className="round-btn sm" aria-label="Daha fazla"><MoreHorizontal size={18} /></button>}
+                  trigger={() => <button className="round-btn sm" aria-label={tx("Daha fazla")}><MoreHorizontal size={18} /></button>}
                   items={[
-                    { label: muted ? "Sessizden çıkar" : "Sessize al", icon: <VolumeX size={14} />, onClick: async () => { await S.setMute(account.userId, p.id, !muted); setMuted(!muted); } },
-                    { label: blocked ? "Engeli kaldır" : "Engelle", icon: <UserX size={14} />, danger: !blocked, onClick: async () => { if (!blocked && !await askConfirm(`@${p.username} engellensin mi?`)) return; await S.setBlock(account.userId, p.id, !blocked); setBlocked(!blocked); setRel({ following: null, followsMe: false }); } },
-                    { label: "Şikâyet et", icon: <Flag size={14} />, danger: true, onClick: async () => { const r = prompt("Şikâyet nedeni:"); if (r?.trim()) { await S.report("profile", p.id, r.trim()); setNotice("Şikâyetin alındı."); } } },
+                    { label: muted ? tx("Sessizden çıkar") : tx("Sessize al"), icon: <VolumeX size={14} />, onClick: async () => { await S.setMute(account.userId, p.id, !muted); setMuted(!muted); } },
+                    { label: blocked ? tx("Engeli kaldır") : tx("Engelle"), icon: <UserX size={14} />, danger: !blocked, onClick: async () => { if (!blocked && !await askConfirm(`@${p.username} engellensin mi?`)) return; await S.setBlock(account.userId, p.id, !blocked); setBlocked(!blocked); setRel({ following: null, followsMe: false }); } },
+                    { label: tx("Şikâyet et"), icon: <Flag size={14} />, danger: true, onClick: async () => { const r = prompt(tx("Şikâyet nedeni:")); if (r?.trim()) { await S.report("profile", p.id, r.trim()); setNotice(tx("Şikâyetin alındı.")); } } },
                   ]}
                 />
                 {!blocked && (
-                  <button className="round-btn sm" title="Mesaj gönder" onClick={async () => { try { navigate(`/social/messages/${await S.startDm(p.id)}`); } catch (e) { setNotice(err(e)); } }}><Mail size={17} /></button>
+                  <button className="round-btn sm" title={tx("Mesaj gönder")} onClick={async () => { try { navigate(`/social/messages/${await S.startDm(p.id)}`); } catch (e) { setNotice(err(e)); } }}><Mail size={17} /></button>
                 )}
                 {!blocked && (
                   <button className={clsx("btn", rel.following ? "btn-ghost follow-on" : "btn-primary")} onClick={() => void doFollow()}>
-                    {rel.following === "accepted" ? <span className="follow-label"><span>Takip ediliyor</span><span>Takibi bırak</span></span> : rel.following === "pending" ? "İstek gönderildi" : rel.followsMe ? "Sen de takip et" : "Takip et"}
+                    {rel.following === "accepted" ? <span className="follow-label"><span>{tx("Takip ediliyor")}</span><span>{tx("Takibi bırak")}</span></span> : rel.following === "pending" ? tx("İstek gönderildi") : rel.followsMe ? tx("Sen de takip et") : tx("Takip et")}
                   </button>
                 )}
               </>
@@ -488,35 +489,35 @@ export function ProfilePage() {
         </div>
         <div className="s-profile-info">
           <h1 className="row" style={{ gap: 6 }}>{p.display_name || p.username}{p.verified && <BadgeCheck size={20} className="s-verified" />}{p.is_private && <Lock size={16} className="muted" />}</h1>
-          <span className="muted">@{p.username} {rel.followsMe && <span className="s-follows-you">Seni takip ediyor</span>}</span>
+          <span className="muted">@{p.username} {rel.followsMe && <span className="s-follows-you">{tx("Seni takip ediyor")}</span>}</span>
           {p.bio && <p className="s-bio"><RichText text={p.bio} /></p>}
           <div className="s-meta">
             {p.location && <span><MapPin size={14} /> {p.location}</span>}
             {p.website && <button className="s-link" onClick={() => void openUrl(p.website!.startsWith("http") ? p.website! : `https://${p.website}`)}><Link2 size={14} /> {p.website.replace(/^https?:\/\//, "")}</button>}
-            {p.mc_username && <span>⛏ Minecraft: <b>{p.mc_username}</b></span>}
-            <span><CalendarDays size={14} /> {joined} tarihinde katıldı</span>
+            {p.mc_username && <span>{tx("⛏ Minecraft:")} <b>{p.mc_username}</b></span>}
+            <span><CalendarDays size={14} /> {joined} {tx("tarihinde katıldı")}</span>
           </div>
           {p.links?.length > 0 && (
             <div className="s-links">{p.links.map((l) => <button key={l.url} className="s-chip" onClick={() => void openUrl(l.url)}><Link2 size={12} /> {l.label || l.url.replace(/^https?:\/\//, "")}</button>)}</div>
           )}
           <div className="s-counts">
-            <button onClick={() => !hidden && setList("following")}><b>{formatCount(p.following_count)}</b> Takip edilen</button>
-            <button onClick={() => !hidden && setList("followers")}><b>{formatCount(p.followers_count)}</b> Takipçi</button>
+            <button onClick={() => !hidden && setList("following")}><b>{formatCount(p.following_count)}</b> {tx("Takip edilen")}</button>
+            <button onClick={() => !hidden && setList("followers")}><b>{formatCount(p.followers_count)}</b> {tx("Takipçi")}</button>
           </div>
           {notice && <p className="muted tiny">{notice}</p>}
         </div>
       </div>
-      {blocked ? <div className="s-empty"><UserX size={26} /><p>@{p.username} adlı kişiyi engelledin.</p></div>
-        : hidden ? <div className="s-empty"><Lock size={26} /><p>Bu hesap gizli. Gönderilerini görmek için takip et; isteğin onaylanınca görürsün.</p></div>
+      {blocked ? <div className="s-empty"><UserX size={26} /><p>@{p.username} {tx("adlı kişiyi engelledin.")}</p></div>
+        : hidden ? <div className="s-empty"><Lock size={26} /><p>{tx("Bu hesap gizli. Gönderilerini görmek için takip et; isteğin onaylanınca görürsün.")}</p></div>
         : (
           <>
             <div className="s-tabs">
-              {([["posts", "Gönderiler"], ["replies", "Yanıtlar"], ["media", "Medya"], ["likes", "Beğeniler"]] as const).map(([k, l]) => (
+              {([["posts", tx("Gönderiler")], ["replies", tx("Yanıtlar")], ["media", tx("Medya")], ["likes", tx("Beğeniler")]] as const).map(([k, l]) => (
                 <button key={k} className={clsx(tab === k && "on")} onClick={() => setTab(k)}>{l}</button>
               ))}
             </div>
             {tab === "posts" && pinned && <PostCard post={pinned} />}
-            <PostList load={load} deps={[p.id, tab]} empty={<><MessageCircle size={26} /><p>{tab === "media" ? "Henüz fotoğraf paylaşılmamış." : tab === "likes" ? "Henüz beğeni yok." : "Henüz gönderi yok."}</p></>} />
+            <PostList load={load} deps={[p.id, tab]} empty={<><MessageCircle size={26} /><p>{tab === "media" ? tx("Henüz fotoğraf paylaşılmamış.") : tab === "likes" ? tx("Henüz beğeni yok.") : tx("Henüz gönderi yok.")}</p></>} />
           </>
         )}
       {mine && <EditProfileModal open={edit} onClose={() => setEdit(false)} profile={p} onSaved={(np) => { setP(np); setMe(np); }} />}
@@ -531,9 +532,9 @@ function FollowListModal({ userId, dir, onClose }: { userId: string; dir: "follo
   const [list, setList] = useState<Profile[] | null>(null);
   useEffect(() => { if (dir) { setList(null); S.followList(userId, dir).then(setList).catch(() => setList([])); } }, [userId, dir]);
   return (
-    <Modal open={!!dir} onClose={onClose} title={dir === "followers" ? "Takipçiler" : "Takip edilenler"} width={460}>
+    <Modal open={!!dir} onClose={onClose} title={dir === "followers" ? tx("Takipçiler") : tx("Takip edilenler")} width={460}>
       <div className="s-follow-list">
-        {list === null ? <div className="center pad muted"><Loader2 size={18} className="spin" /></div> : list.length === 0 ? <p className="muted center pad">Kimse yok.</p>
+        {list === null ? <div className="center pad muted"><Loader2 size={18} className="spin" /></div> : list.length === 0 ? <p className="muted center pad">{tx("Kimse yok.")}</p>
           : list.map((p) => <div key={p.id} onClick={onClose}><UserRow p={p} me={me?.userId} /></div>)}
       </div>
     </Modal>
@@ -550,8 +551,8 @@ function EditProfileModal({ open, onClose, profile, onSaved }: { open: boolean; 
     try {
       // Önce kırpma penceresi: konum, yakınlaştırma, döndürme
       const path = await pickCropped(avatar
-        ? { aspect: 1, round: true, title: "Profil fotoğrafını ayarla", outWidth: 512 }
-        : { aspect: 3, title: "Banner'ı ayarla", outWidth: 1500 });
+        ? { aspect: 1, round: true, title: tx("Profil fotoğrafını ayarla"), outWidth: 512 }
+        : { aspect: 3, title: tx("Banner'ı ayarla"), outWidth: 1500 });
       if (!path) return;
       setBusy(field);
       const url = await api.westUpload(path, avatar ? "avatars" : "banners");
@@ -573,43 +574,43 @@ function EditProfileModal({ open, onClose, profile, onSaved }: { open: boolean; 
     } catch (e) { setError(err(e)); } finally { setBusy(null); }
   };
   return (
-    <Modal open={open} onClose={onClose} title="Profili düzenle" width={620}
-      footer={<><button className="btn btn-ghost" onClick={onClose}>Vazgeç</button><button className="btn btn-primary" disabled={!!busy} onClick={() => void save()}>{busy === "save" && <Loader2 size={15} className="spin" />} Kaydet</button></>}>
+    <Modal open={open} onClose={onClose} title={tx("Profili düzenle")} width={620}
+      footer={<><button className="btn btn-ghost" onClick={onClose}>{tx("Vazgeç")}</button><button className="btn btn-primary" disabled={!!busy} onClick={() => void save()}>{busy === "save" && <Loader2 size={15} className="spin" />} {tx("Kaydet")}</button></>}>
       <div className="s-edit">
         <div className="s-edit-head">
-          <button type="button" className="s-edit-banner" onClick={() => void upload("banner_url")} disabled={!!busy} aria-label="Banner'ı değiştir">
+          <button type="button" className="s-edit-banner" onClick={() => void upload("banner_url")} disabled={!!busy} aria-label={tx("Banner'ı değiştir")}>
             {d.banner_url ? <img src={d.banner_url} alt="" referrerPolicy="no-referrer" /> : <div className="s-banner-ph" />}
-            <span className="s-edit-cam">{busy === "banner_url" ? <Loader2 size={18} className="spin" /> : <ImagePlus size={18} />} Banner'ı değiştir</span>
+            <span className="s-edit-cam">{busy === "banner_url" ? <Loader2 size={18} className="spin" /> : <ImagePlus size={18} />} {tx("Banner'ı değiştir")}</span>
           </button>
-          {d.banner_url && <button type="button" className="s-edit-rm" title="Banner'ı kaldır" onClick={() => setD({ ...d, banner_url: null })}><X size={14} /></button>}
-          <button type="button" className="s-edit-avatar" onClick={() => void upload("avatar_url")} disabled={!!busy} aria-label="Profil fotoğrafını değiştir">
+          {d.banner_url && <button type="button" className="s-edit-rm" title={tx("Banner'ı kaldır")} onClick={() => setD({ ...d, banner_url: null })}><X size={14} /></button>}
+          <button type="button" className="s-edit-avatar" onClick={() => void upload("avatar_url")} disabled={!!busy} aria-label={tx("Profil fotoğrafını değiştir")}>
             <Avatar url={d.avatar_url} name={d.username} size={96} />
             <span className="s-edit-cam round">{busy === "avatar_url" ? <Loader2 size={18} className="spin" /> : <ImagePlus size={18} />}</span>
           </button>
-          {d.avatar_url && <button type="button" className="s-edit-rm avatar" title="Fotoğrafı kaldır" onClick={() => setD({ ...d, avatar_url: null })}><X size={12} /></button>}
+          {d.avatar_url && <button type="button" className="s-edit-rm avatar" title={tx("Fotoğrafı kaldır")} onClick={() => setD({ ...d, avatar_url: null })}><X size={12} /></button>}
         </div>
-        <label className="field"><span>Görünen ad</span><input value={d.display_name ?? ""} maxLength={40} placeholder={d.username} onChange={(e) => setD({ ...d, display_name: e.target.value })} /></label>
-        <label className="field"><span>Biyografi <span className="muted">({(d.bio ?? "").length}/300)</span></span><textarea rows={4} maxLength={300} value={d.bio ?? ""} placeholder="Kendinden bahset: hangi modları seversin, ne oynarsın…" onChange={(e) => setD({ ...d, bio: e.target.value })} /></label>
+        <label className="field"><span>{tx("Görünen ad")}</span><input value={d.display_name ?? ""} maxLength={40} placeholder={d.username} onChange={(e) => setD({ ...d, display_name: e.target.value })} /></label>
+        <label className="field"><span>{tx("Biyografi")} <span className="muted">({(d.bio ?? "").length}/300)</span></span><textarea rows={4} maxLength={300} value={d.bio ?? ""} placeholder={tx("Kendinden bahset: hangi modları seversin, ne oynarsın…")} onChange={(e) => setD({ ...d, bio: e.target.value })} /></label>
         <div className="row" style={{ gap: 10 }}>
-          <label className="field grow"><span>Konum</span><input value={d.location ?? ""} maxLength={40} onChange={(e) => setD({ ...d, location: e.target.value })} /></label>
-          <label className="field grow"><span>Minecraft adı</span><input value={d.mc_username ?? ""} maxLength={16} onChange={(e) => setD({ ...d, mc_username: e.target.value.replace(/[^A-Za-z0-9_]/g, "") })} /></label>
+          <label className="field grow"><span>{tx("Konum")}</span><input value={d.location ?? ""} maxLength={40} onChange={(e) => setD({ ...d, location: e.target.value })} /></label>
+          <label className="field grow"><span>{tx("Minecraft adı")}</span><input value={d.mc_username ?? ""} maxLength={16} onChange={(e) => setD({ ...d, mc_username: e.target.value.replace(/[^A-Za-z0-9_]/g, "") })} /></label>
         </div>
-        <label className="field"><span>Web sitesi</span><input value={d.website ?? ""} maxLength={200} placeholder="https://" onChange={(e) => setD({ ...d, website: e.target.value })} /></label>
+        <label className="field"><span>{tx("Web sitesi")}</span><input value={d.website ?? ""} maxLength={200} placeholder="https://" onChange={(e) => setD({ ...d, website: e.target.value })} /></label>
         <div className="field">
-          <span>Bağlantılar (YouTube, Twitch, Discord sunucusu…)</span>
+          <span>{tx("Bağlantılar (YouTube, Twitch, Discord sunucusu…)")}</span>
           {links.map((l, i) => (
             <div key={i} className="row" style={{ gap: 6, marginTop: 6 }}>
-              <input style={{ width: 140 }} value={l.label} placeholder="Ad" maxLength={30} onChange={(e) => setD({ ...d, links: links.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)) })} />
+              <input style={{ width: 140 }} value={l.label} placeholder={tx("Ad")} maxLength={30} onChange={(e) => setD({ ...d, links: links.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)) })} />
               <input className="grow" value={l.url} placeholder="https://" onChange={(e) => setD({ ...d, links: links.map((x, j) => (j === i ? { ...x, url: e.target.value } : x)) })} />
               <button className="icon-btn" onClick={() => setD({ ...d, links: links.filter((_, j) => j !== i) })}><X size={14} /></button>
             </div>
           ))}
-          {links.length < 5 && <button className="btn btn-ghost btn-sm" style={{ alignSelf: "flex-start", marginTop: 6 }} onClick={() => setD({ ...d, links: [...links, { label: "", url: "" }] })}><Link2 size={13} /> Bağlantı ekle</button>}
+          {links.length < 5 && <button className="btn btn-ghost btn-sm" style={{ alignSelf: "flex-start", marginTop: 6 }} onClick={() => setD({ ...d, links: [...links, { label: "", url: "" }] })}><Link2 size={13} /> {tx("Bağlantı ekle")}</button>}
         </div>
-        <label className="check"><input type="checkbox" checked={d.is_private} onChange={(e) => setD({ ...d, is_private: e.target.checked })} /> <Lock size={14} /> Gizli hesap: gönderilerimi yalnızca onayladığım takipçiler görsün</label>
-        <label className="field"><span>Kimler mesaj atabilir</span>
+        <label className="check"><input type="checkbox" checked={d.is_private} onChange={(e) => setD({ ...d, is_private: e.target.checked })} /> <Lock size={14} /> {tx("Gizli hesap: gönderilerimi yalnızca onayladığım takipçiler görsün")}</label>
+        <label className="field"><span>{tx("Kimler mesaj atabilir")}</span>
           <select value={d.allow_dms} onChange={(e) => setD({ ...d, allow_dms: e.target.value as Profile["allow_dms"] })}>
-            <option value="everyone">Herkes</option><option value="followers">Yalnızca takip ettiklerim</option><option value="none">Kimse</option>
+            <option value="everyone">{tx("Herkes")}</option><option value="followers">{tx("Yalnızca takip ettiklerim")}</option><option value="none">{tx("Kimse")}</option>
           </select>
         </label>
         {error && <p className="hint error">{error}</p>}
@@ -637,44 +638,44 @@ export function PrivacyPage() {
   }, [account]);
   const patch = async (p: Partial<Profile>) => {
     if (!me) return;
-    try { const [np] = await S.updateProfile(me.id, p); setMe(np); setSaved("Kaydedildi"); } catch (e) { setSaved(err(e)); }
+    try { const [np] = await S.updateProfile(me.id, p); setMe(np); setSaved(tx("Kaydedildi")); } catch (e) { setSaved(err(e)); }
   };
   return (
     <SocialLayout>
-      <div className="s-title"><h2><Shield size={20} /> Gizlilik ve güvenlik</h2></div>
+      <div className="s-title"><h2><Shield size={20} /> {tx("Gizlilik ve güvenlik")}</h2></div>
       {me && (
         <section className="s-settings">
           <label className="s-set-row">
-            <span><strong><Lock size={15} /> Gizli hesap</strong><span className="muted small">Gönderilerini ve hikâyelerini yalnızca onayladığın takipçiler görür. Yeni takipçiler istek gönderir.</span></span>
+            <span><strong><Lock size={15} /> {tx("Gizli hesap")}</strong><span className="muted small">{tx("Gönderilerini ve hikâyelerini yalnızca onayladığın takipçiler görür. Yeni takipçiler istek gönderir.")}</span></span>
             <input type="checkbox" className="switch-cb" checked={me.is_private} onChange={(e) => void patch({ is_private: e.target.checked })} />
           </label>
           <label className="s-set-row">
-            <span><strong><Mail size={15} /> Kimler mesaj atabilir</strong><span className="muted small">Mevcut sohbetler etkilenmez.</span></span>
+            <span><strong><Mail size={15} /> {tx("Kimler mesaj atabilir")}</strong><span className="muted small">{tx("Mevcut sohbetler etkilenmez.")}</span></span>
             <select value={me.allow_dms} onChange={(e) => void patch({ allow_dms: e.target.value as Profile["allow_dms"] })}>
-              <option value="everyone">Herkes</option><option value="followers">Takip ettiklerim</option><option value="none">Kimse</option>
+              <option value="everyone">{tx("Herkes")}</option><option value="followers">{tx("Takip ettiklerim")}</option><option value="none">{tx("Kimse")}</option>
             </select>
           </label>
           {saved && <p className="muted tiny">{saved}</p>}
         </section>
       )}
       <section className="s-settings">
-        <h3><UserX size={16} /> Engellenenler</h3>
-        <p className="muted small">Engellediğin kişiler seni göremez, takip edemez ve mesaj atamaz; sen de onları görmezsin.</p>
-        {blocked === null ? <Loader2 size={16} className="spin" /> : blocked.length === 0 ? <p className="muted small">Kimseyi engellemedin.</p>
-          : blocked.map((p) => <UserRow key={p.id} p={p} extra={<button className="btn btn-ghost btn-sm" onClick={async (e) => { e.stopPropagation(); await S.setBlock(account!.userId, p.id, false); setBlocked((b) => b?.filter((x) => x.id !== p.id) ?? null); }}>Engeli kaldır</button>} />)}
+        <h3><UserX size={16} /> {tx("Engellenenler")}</h3>
+        <p className="muted small">{tx("Engellediğin kişiler seni göremez, takip edemez ve mesaj atamaz; sen de onları görmezsin.")}</p>
+        {blocked === null ? <Loader2 size={16} className="spin" /> : blocked.length === 0 ? <p className="muted small">{tx("Kimseyi engellemedin.")}</p>
+          : blocked.map((p) => <UserRow key={p.id} p={p} extra={<button className="btn btn-ghost btn-sm" onClick={async (e) => { e.stopPropagation(); await S.setBlock(account!.userId, p.id, false); setBlocked((b) => b?.filter((x) => x.id !== p.id) ?? null); }}>{tx("Engeli kaldır")}</button>} />)}
       </section>
       <section className="s-settings">
-        <h3><VolumeX size={16} /> Sessize alınanlar</h3>
-        <p className="muted small">Sessize aldığın kişilerin gönderileri akışında görünmez ve senden haberi olmaz.</p>
-        {muted === null ? <Loader2 size={16} className="spin" /> : muted.length === 0 ? <p className="muted small">Kimseyi sessize almadın.</p>
-          : muted.map((p) => <UserRow key={p.id} p={p} extra={<button className="btn btn-ghost btn-sm" onClick={async (e) => { e.stopPropagation(); await S.setMute(account!.userId, p.id, false); setMuted((b) => b?.filter((x) => x.id !== p.id) ?? null); }}>Sesi aç</button>} />)}
+        <h3><VolumeX size={16} /> {tx("Sessize alınanlar")}</h3>
+        <p className="muted small">{tx("Sessize aldığın kişilerin gönderileri akışında görünmez ve senden haberi olmaz.")}</p>
+        {muted === null ? <Loader2 size={16} className="spin" /> : muted.length === 0 ? <p className="muted small">{tx("Kimseyi sessize almadın.")}</p>
+          : muted.map((p) => <UserRow key={p.id} p={p} extra={<button className="btn btn-ghost btn-sm" onClick={async (e) => { e.stopPropagation(); await S.setMute(account!.userId, p.id, false); setMuted((b) => b?.filter((x) => x.id !== p.id) ?? null); }}>{tx("Sesi aç")}</button>} />)}
       </section>
       <section className="s-settings">
-        <h3><Flag size={16} /> Güvenli kal</h3>
+        <h3><Flag size={16} /> {tx("Güvenli kal")}</h3>
         <ul className="small muted" style={{ margin: 0, paddingLeft: 18 }}>
-          <li>Şifreni, e-postanı ya da Minecraft hesap bilgilerini kimseyle paylaşma.</li>
-          <li>Rahatsız eden birini gönderi menüsünden ya da profilinden engelleyebilir ve şikâyet edebilirsin.</li>
-          <li>Tanımadığın kişilerden gelen bağlantılara dikkat et.</li>
+          <li>{tx("Şifreni, e-postanı ya da Minecraft hesap bilgilerini kimseyle paylaşma.")}</li>
+          <li>{tx("Rahatsız eden birini gönderi menüsünden ya da profilinden engelleyebilir ve şikâyet edebilirsin.")}</li>
+          <li>{tx("Tanımadığın kişilerden gelen bağlantılara dikkat et.")}</li>
         </ul>
       </section>
     </SocialLayout>
