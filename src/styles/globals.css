@@ -1771,3 +1771,6 @@ body:has(.modal-backdrop, .mdetail-backdrop, .story-view, .lightbox, .editor-bac
 .solver-offer .grow { display: flex; flex-direction: column; gap: 2px; }
 .solver-card.fixed { border-color: rgb(var(--success) / 0.45); background: rgb(var(--success) / 0.06); }
 .solver-card-title.ok { color: rgb(var(--success)); }
+
+.shop-note { display: flex; gap: 8px; align-items: flex-start; margin: -4px 0 0; padding: 10px 12px; border-radius: 10px; font-size: var(--fs-sm); color: rgb(var(--text-muted)); background: rgb(var(--accent) / 0.07); border: 1px solid rgb(var(--accent) / 0.2); }
+.shop-note svg { flex: none; margin-top: 2px; color: rgb(var(--accent)); }

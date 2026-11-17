@@ -29,8 +29,8 @@ export const SLOT: Record<ShopKind, string> = {
 };
 
 /** Oyun içi öğeler (pelerin, şapka, sırt, aura, menü teması) companion desteği gelene kadar mağazada gizli */
-export const IN_GAME_READY = false;
-const IN_GAME_KINDS: ShopKind[] = ["cape", "hat", "back", "aura", "menuTheme"];
+export const IN_GAME_READY = true;
+export const IN_GAME_KINDS: ShopKind[] = ["cape", "hat", "back", "aura", "menuTheme"];
 export const kindVisible = (k: ShopKind) => IN_GAME_READY || !IN_GAME_KINDS.includes(k);
 
 export const CATEGORIES: { id: ShopKind | "featured"; label: string }[] = [

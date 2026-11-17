@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Check, Clock, Gamepad2, Lock, Sparkles } from "lucide-react";
 import clsx from "clsx";
 import { useWallet } from "@/stores/wallet";
-import { CATEGORIES, FEATURED, kindVisible, meta, SLOT, type ShopItem, type ShopKind } from "@/lib/shop";
+import { CATEGORIES, FEATURED, IN_GAME_KINDS, kindVisible, meta, SLOT, type ShopItem, type ShopKind } from "@/lib/shop";
 import { ShopPreview } from "@/components/ShopPreview";
 import { PlusBadge, PlusMark } from "@/components/PlusBadge";
 import { askConfirm } from "@/components/ConfirmDialog";
@@ -107,6 +107,10 @@ export function ShopPage() {
           </button>
         ))}
       </nav>
+
+      {cat !== "featured" && IN_GAME_KINDS.includes(cat) && (
+        <p className="shop-note"><Gamepad2 size={14} /> {tx("Oyun içi öğeler West Companion yüklü Fabric 26.2 ve 1.21.11 instance'larında görünür. Şimdilik yalnızca sen görürsün (üçüncü şahıs görünümü ve envanter); diğer oyuncular göremez. Kuşandıktan sonra oyunu yeniden başlat.")}</p>
+      )}
 
       <div className="shop-grid">
         {items.map((it) => {

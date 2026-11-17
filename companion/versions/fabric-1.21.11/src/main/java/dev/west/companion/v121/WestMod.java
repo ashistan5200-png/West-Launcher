@@ -40,6 +40,7 @@ public final class WestMod implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(WestMod::tick);
         // Dünya paylaşma: e4mc'nin verdiği herkese açık adresi sohbetten yakala
         net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents.GAME.register((msg, overlay) -> WestHud.safe("tunnel", () -> Game121.onChat(msg)));
+        WestHud.safe("cosmetics", WestCosmetics::register);
         // Vanilla başlık ekranında West ana menüsüne dönüş düğmesi (sağ üst)
         net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.AFTER_INIT.register((client, screen, w, h) -> {
             if (!(screen instanceof net.minecraft.client.gui.screens.TitleScreen) || WestHud.customTitle()) return;
@@ -54,6 +55,7 @@ public final class WestMod implements ClientModInitializer {
     }
 
     private static void tick(Minecraft mc) {
+        WestHud.safe("aura", () -> WestCosmetics.tick(mc));
         WestHud.tick();
         WestHud.safe("music", () -> WestMusic.tick(mc));
         // Minecraft'ın başlık ekranı açıldıysa West ana menüsüyle değiştir
