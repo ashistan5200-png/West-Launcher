@@ -1,5 +1,6 @@
 package dev.west.hud.net;
 
+import dev.west.hud.Tr;
 import dev.west.hud.WestHud;
 
 import java.io.InputStream;
@@ -34,12 +35,12 @@ public final class Upnp {
             String local = null;
             try {
                 String location = discover();
-                if (location == null) return new Result(false, null, localIp(null), "Modemde UPnP bulunamadı; dünya yalnızca aynı ağdakilere açık.");
+                if (location == null) return new Result(false, null, localIp(null), Tr.t("Modemde UPnP bulunamadı; dünya yalnızca aynı ağdakilere açık."));
                 URL base = URI.create(location).toURL();
                 local = localIp(base.getHost());
                 String xml = read(base);
                 String[] svc = findService(xml);
-                if (svc == null) return new Result(false, null, local, "Modem port açmayı desteklemiyor; dünya yalnızca aynı ağdakilere açık.");
+                if (svc == null) return new Result(false, null, local, Tr.t("Modem port açmayı desteklemiyor; dünya yalnızca aynı ağdakilere açık."));
                 serviceType = svc[0];
                 controlUrl = URI.create(location).resolve(svc[1]).toString();
                 soap("AddPortMapping", "<NewRemoteHost></NewRemoteHost><NewExternalPort>" + port + "</NewExternalPort><NewProtocol>TCP</NewProtocol>"
@@ -50,12 +51,12 @@ public final class Upnp {
                 String resp = soap("GetExternalIPAddress", "");
                 Matcher m = Pattern.compile("<NewExternalIPAddress>([^<]+)</NewExternalIPAddress>").matcher(resp);
                 String ext = m.find() ? m.group(1).trim() : null;
-                if (ext == null || ext.isEmpty()) return new Result(false, null, local, "Port açıldı ama dış adres alınamadı.");
-                if (isPrivate(ext)) return new Result(false, ext, local, "İnternet sağlayıcın paylaşımlı adres (CGNAT) kullanıyor; dışarıdan bağlanılamayabilir.");
-                return new Result(true, ext, local, "Port açıldı.");
+                if (ext == null || ext.isEmpty()) return new Result(false, null, local, Tr.t("Port açıldı ama dış adres alınamadı."));
+                if (isPrivate(ext)) return new Result(false, ext, local, Tr.t("İnternet sağlayıcın paylaşımlı adres (CGNAT) kullanıyor; dışarıdan bağlanılamayabilir."));
+                return new Result(true, ext, local, Tr.t("Port açıldı."));
             } catch (Exception e) {
                 WestHud.LOG.info("UPnP başarısız: {}", e.toString());
-                return new Result(false, null, local != null ? local : localIp(null), "Modemde port açılamadı (" + e.getClass().getSimpleName() + "); dünya yalnızca aynı ağdakilere açık.");
+                return new Result(false, null, local != null ? local : localIp(null), Tr.t("Modemde port açılamadı (") + e.getClass().getSimpleName() + Tr.t("); dünya yalnızca aynı ağdakilere açık."));
             }
         });
     }

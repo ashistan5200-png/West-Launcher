@@ -119,6 +119,45 @@ pub const CATALOG: &[Item] = &[
     plus("aura_stars", Kind::Aura),
 ];
 
+/// Oyunda takılan yuvalar (Gardırop)
+pub const GAME_SLOTS: &[&str] = &["cape", "hat", "back", "aura", "menuTheme"];
+
+/// Bir öğenin yuvası
+pub fn slot_of(id: &str) -> &'static str {
+    match id.split('_').next().unwrap_or("") {
+        "cape" => "cape",
+        "hat" => "hat",
+        "back" => "back",
+        "aura" => "aura",
+        "menu" => "menuTheme",
+        "theme" => "theme",
+        "sky" => "sky",
+        "trail" => "trail",
+        _ => "",
+    }
+}
+
+/// Oyunda Gardırop'ta yapılan seçimleri cüzdana geri yaz (yalnızca oyun içi yuvalar ve kullanılabilir öğeler)
+pub fn sync_from_game(root: &Path, chosen: &std::collections::BTreeMap<String, String>) -> Result<()> {
+    let _g = LOCK.lock();
+    let mut w = load(root);
+    let mut changed = false;
+    for slot in GAME_SLOTS {
+        let want = chosen.get(*slot).filter(|id| item(id).map(|it| slot_of(it.id) == *slot && w.can_use(it)).unwrap_or(false));
+        if w.equipped.get(*slot) != want {
+            match want {
+                Some(id) => w.equipped.insert(slot.to_string(), id.clone()),
+                None => w.equipped.remove(*slot),
+            };
+            changed = true;
+        }
+    }
+    if changed {
+        save(root, &w)?;
+    }
+    Ok(())
+}
+
 pub fn item(id: &str) -> Option<&'static Item> {
     CATALOG.iter().find(|i| i.id == id)
 }
@@ -306,6 +345,16 @@ mod tests {
         save(&dir, &w).unwrap();
         let after = buy(&dir, "plus_30").unwrap().plus_until.unwrap();
         assert!((after - before).num_days() == 30);
+        // Oyundan gelen seçim: sahip olunan kabul edilir, olmayan ve yanlış yuva yok sayılır
+        let mut c = std::collections::BTreeMap::new();
+        c.insert("cape".to_string(), "cape_west".to_string());
+        c.insert("hat".to_string(), "hat_crown".to_string());
+        c.insert("back".to_string(), "cape_west".to_string());
+        sync_from_game(&dir, &c).unwrap();
+        let w = load(&dir);
+        assert_eq!(w.equipped.get("cape").map(String::as_str), Some("cape_west"));
+        assert!(w.equipped.get("hat").is_none() && w.equipped.get("back").is_none());
+        assert_eq!(w.equipped.get("trail").map(String::as_str), Some("trail_rainbow"));
         // Plus biterse Plus öğesi otomatik çıkar
         let mut w = load(&dir);
         w.plus_until = Some(Utc::now() - Duration::days(1));

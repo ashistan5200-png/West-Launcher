@@ -1,5 +1,6 @@
 package dev.west.hud.hud;
 
+import dev.west.hud.Tr;
 import dev.west.hud.api.Game;
 import dev.west.hud.api.Gfx;
 import dev.west.hud.ui.Theme;
@@ -10,7 +11,7 @@ public final class Compass extends HudElement {
     private static final String[] NAMES = { "G", "GB", "B", "KB", "K", "KD", "D", "GD" };
 
     public Compass() {
-        super("compass", "Pusula", "Bakış yönünü gösteren kayan pusula şeridi.", false);
+        super("compass", Tr.t("Pusula"), Tr.t("Bakış yönünü gösteren kayan pusula şeridi."), false);
     }
 
     @Override

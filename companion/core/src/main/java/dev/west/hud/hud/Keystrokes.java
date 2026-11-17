@@ -1,5 +1,6 @@
 package dev.west.hud.hud;
 
+import dev.west.hud.Tr;
 import dev.west.hud.api.Game;
 import dev.west.hud.api.Gfx;
 import dev.west.hud.ui.Theme;
@@ -16,7 +17,7 @@ public final class Keystrokes extends HudElement {
     public boolean showMouse = true, showSpace = true;
 
     public Keystrokes(Cps cps) {
-        super("keystrokes", "Tuş göstergesi", "W A S D, fare tuşları (CPS ile) ve boşluk.", true);
+        super("keystrokes", Tr.t("Tuş göstergesi"), Tr.t("W A S D, fare tuşları (CPS ile) ve boşluk."), true);
         this.cps = cps;
     }
 

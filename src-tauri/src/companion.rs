@@ -189,12 +189,27 @@ pub fn apply_prefs(game_dir: &Path, s: &crate::settings::Settings, w: &crate::wa
     }
     o.insert("cosmetics".into(), serde_json::Value::Object(cos));
     o.insert("plus".into(), w.plus_active().into());
+    // Gardırop: kullanılabilir oyun içi öğeler ve bakiye
+    let owned: Vec<serde_json::Value> = crate::wallet::CATALOG
+        .iter()
+        .filter(|it| crate::wallet::GAME_SLOTS.contains(&crate::wallet::slot_of(it.id)) && w.can_use(it))
+        .map(|it| it.id.into())
+        .collect();
+    o.insert("owned".into(), serde_json::Value::Array(owned));
+    o.insert("coins".into(), w.coins.into());
     // Arayüz dili (oyun içi West menüleri de bunu kullanır)
     o.insert("language".into(), if s.language.is_empty() { "tr".into() } else { s.language.clone().into() });
     write_json_atomic(&p, &v)
 }
 
 /// Oyunun grafik ayarlarını hafifletir (options.txt). Var olan değerler yalnızca daha ağırsa düşürülür.
+/// Oyunda (Gardırop'ta) yapılan kozmetik seçimlerini oku
+pub fn read_cosmetics(game_dir: &Path) -> Option<std::collections::BTreeMap<String, String>> {
+    let v: serde_json::Value = serde_json::from_slice(&std::fs::read(config_path(game_dir)).ok()?).ok()?;
+    let m = v.get("cosmetics")?.as_object()?;
+    Some(m.iter().filter_map(|(k, v)| v.as_str().map(|s| (k.clone(), s.to_string()))).collect())
+}
+
 pub fn apply_low_graphics(game_dir: &Path) -> Result<()> {
     let p = game_dir.join("options.txt");
     let text = std::fs::read_to_string(&p).unwrap_or_default();
@@ -275,6 +290,10 @@ mod tests {
         assert_eq!(v["cosmetics"]["cape"], "cape_west");
         assert!(v["cosmetics"]["hat"].is_null());
         assert_eq!(v["plus"], false);
+        // Gardırop listesi: hediye pelerin var, sahip olunmayan taç yok
+        let owned = v["owned"].as_array().unwrap();
+        assert!(owned.iter().any(|x| x == "cape_west"));
+        assert!(!owned.iter().any(|x| x == "hat_crown"));
 
         std::fs::write(dir.join("options.txt"), "renderDistance:4\nparticles:0\nfov:0.0\n").unwrap();
         apply_low_graphics(&dir).unwrap();

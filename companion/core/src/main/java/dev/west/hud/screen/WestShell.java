@@ -1,5 +1,6 @@
 package dev.west.hud.screen;
 
+import dev.west.hud.Tr;
 import dev.west.hud.WestHud;
 import dev.west.hud.api.Game;
 import dev.west.hud.api.Gfx;
@@ -69,7 +70,7 @@ abstract class WestShell implements WestScreen {
         String name = WestHud.game.playerName();
         int nw = g.textBoldWidth(name);
         int rightW = (full ? 2 * (s + 4) + 6 : 0) + s + 7 + nw + 12 + s + (s + 4) + (full ? s + 4 : 0);
-        int brandW = 31 + Math.round(textSpaced(g, "WEST CLIENT", 1.6f));
+        int brandW = 31 + Math.round(textSpaced(g, Tr.t("WEST CLIENT"), 1.6f));
         int[] tw = new int[tabs.length];
         for (int i = 0; i < tabs.length; i++) tw[i] = g.textBoldWidth(tabs[i]);
         boolean showBrand = true, showName = true;
@@ -90,13 +91,13 @@ abstract class WestShell implements WestScreen {
         }
 
         Icons.draw(g, Icon.LOGO, 12, cy - 7, 14, t.accent | 0xFF000000);
-        int bx = showBrand ? brand(g, "WEST CLIENT", 31, cy - 4, 0xFFFFFFFF, 1.6f) : 30;
+        int bx = showBrand ? brand(g, Tr.t("WEST CLIENT"), 31, cy - 4, 0xFFFFFFFF, 1.6f) : 30;
 
         int x = sw - 10 - s;
         if (full) {
-            if (iconButton("quit", Icon.CLOSE, x, cy - s / 2, s, "Oyundan çık", 0xFFE5566E)) WestHud.game.open(Game.Target.QUIT);
+            if (iconButton("quit", Icon.CLOSE, x, cy - s / 2, s, Tr.t("Oyundan çık"), 0xFFE5566E)) WestHud.game.open(Game.Target.QUIT);
             x -= s + 4;
-            if (iconButton("fs", Icon.FULLSCREEN, x, cy - s / 2, s, WestHud.game.fullscreen() ? "Pencere" : "Tam ekran", 0)) WestHud.game.toggleFullscreen();
+            if (iconButton("fs", Icon.FULLSCREEN, x, cy - s / 2, s, WestHud.game.fullscreen() ? Tr.t("Pencere") : Tr.t("Tam ekran"), 0)) WestHud.game.toggleFullscreen();
             x -= 10 + s;
         }
         Ui.round(g, x - 1, cy - s / 2 - 1, s + 2, s + 2, 5, Theme.alpha(t.accent, 0xCC));
@@ -106,12 +107,12 @@ abstract class WestShell implements WestScreen {
             g.textBold(name, x, cy - 4, 0xFFFFFFFF, false);
         }
         x -= 12 + s;
-        if (iconButton("opt", Icon.GEAR, x, cy - s / 2, s, "Minecraft ayarları", 0)) WestHud.game.open(Game.Target.OPTIONS);
+        if (iconButton("opt", Icon.GEAR, x, cy - s / 2, s, Tr.t("Minecraft ayarları"), 0)) WestHud.game.open(Game.Target.OPTIONS);
         x -= s + 4;
-        if (iconButton("west", Icon.SLIDERS, x, cy - s / 2, s, "West menüsü", 0)) WestHud.game.openWestScreen(false);
+        if (iconButton("west", Icon.SLIDERS, x, cy - s / 2, s, Tr.t("West menüsü"), 0)) WestHud.game.openWestScreen(false);
         if (full) {
             x -= s + 4;
-            if (iconButton("lang", Icon.GLOBE, x, cy - s / 2, s, "Dil", 0)) WestHud.game.open(Game.Target.LANGUAGE);
+            if (iconButton("lang", Icon.GLOBE, x, cy - s / 2, s, Tr.t("Dil"), 0)) WestHud.game.open(Game.Target.LANGUAGE);
         }
         int rightStart = x - 12;
 
@@ -190,7 +191,7 @@ abstract class WestShell implements WestScreen {
         int h = 26, y = sh - 18 - h + Math.round((1 - in) * 16);
         int x = 10;
         if (westKey) {
-            String k1 = "Sağ Shift", k2 = "West menüsü";
+            String k1 = Tr.t("Sağ Shift"), k2 = Tr.t("West menüsü");
             int w1 = 29 + Math.max(g.textBoldWidth(k1), small(g, k2)) + 10;
             if (x + w1 <= maxX) {
                 boolean clicked = chip("c1", x, y, w1, h);
@@ -202,14 +203,14 @@ abstract class WestShell implements WestScreen {
             }
         }
         String name = WestHud.game.playerName();
-        int w2 = 29 + Math.max(g.textBoldWidth(name), small(g, "Sen")) + 22;
+        int w2 = 29 + Math.max(g.textBoldWidth(name), small(g, Tr.t("Sen"))) + 22;
         if (x + w2 <= maxX) {
             chip("c2", x, y, w2, h);
             // Yüz kutucuğun içinde dikeyde ortalı (şapka katmanı dahil taşmasın)
             Ui.round(g, x + 6, y + (h - 16) / 2, 16, 16, 4, Theme.alpha(t.accent, 0xAA));
             g.playerFace(x + 7, y + (h - 14) / 2, 14);
             g.textBold(name, x + 29, y + 5, 0xFFFFFFFF, false);
-            smallText(g, "Sen", x + 29, y + 16, 0x99FFFFFF);
+            smallText(g, Tr.t("Sen"), x + 29, y + 16, 0x99FFFFFF);
             Ui.round(g, x + w2 - 13, y + 10, 6, 6, 3, t.ok);
             x += w2 + 6;
         }
@@ -247,11 +248,11 @@ abstract class WestShell implements WestScreen {
         g.push();
         g.translate(21, y);
         g.scale(0.75f);
-        int bw = brand(g, "WEST CLIENT", 0, 0, 0xFFFFFFFF, 1.2f);
+        int bw = brand(g, Tr.t("WEST CLIENT"), 0, 0, 0xFFFFFFFF, 1.2f);
         Game game = WestHud.game;
         String info = game.loaderName() + " " + game.minecraftVersion() + "    West Companion " + WestHud.VERSION;
         g.text(info, bw + 10, 0, 0x88FFFFFF, false);
-        String legal = "Copyright Mojang AB. Do not distribute!";
+        String legal = Tr.t("Copyright Mojang AB. Do not distribute!");
         int lx = Math.round((sw - 10 - 21) / 0.75f) - g.textWidth(legal);
         if (lx > bw + 10 + g.textWidth(info) + 12) g.text(legal, lx, 0, 0x66FFFFFF, false);
         g.pop();
@@ -261,7 +262,7 @@ abstract class WestShell implements WestScreen {
     protected void nameTag(int cx, int bottomY, String name, String sub) {
         Gfx g = ui.g;
         Theme t = ui.t;
-        String you = "Sen";
+        String you = Tr.t("Sen");
         int nw = g.textBoldWidth(name), yw = small(g, you);
         int w = Math.max(nw + 6 + yw, sub == null ? 0 : small(g, sub)) + 14;
         int h = sub == null ? 15 : 24;

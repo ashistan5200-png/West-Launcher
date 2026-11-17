@@ -1,5 +1,6 @@
 package dev.west.hud.screen;
 
+import dev.west.hud.Tr;
 import dev.west.hud.WestHud;
 import dev.west.hud.api.Gfx;
 import dev.west.hud.social.SocialClient;
@@ -19,7 +20,7 @@ import java.util.Locale;
 /** Oyun içi Sosyal: solda mesajlar, ortada arkadaşlar ya da açık sohbet, sağda seni bekleyenler. */
 final class SocialPage {
     private static final String[] STATUSES = { "online", "away", "busy", "invisible" };
-    private static final String[] STATUS_NAMES = { "Çevrimiçi", "Uzakta", "Meşgul", "Görünmez" };
+    private static final String[] STATUS_NAMES = { Tr.t("Çevrimiçi"), Tr.t("Uzakta"), Tr.t("Meşgul"), Tr.t("Görünmez") };
     private static final int[] STATUS_COLORS = { 0xFF4CC38A, 0xFFF2C14E, 0xFFE5566E, 0xFF8A8F98 };
 
     private final SocialClient c = SocialClient.INSTANCE;
@@ -44,8 +45,8 @@ final class SocialPage {
         c.poll(chat);
         if (!c.available()) {
             StatsPage.panel(g, x, y, w, hgt);
-            if (h.iconButton("sback", Icon.BACK, x + 6, y + 6, 18, "Geri", 0)) h.goHome();
-            h.emptyMessage(x + w / 2, y + hgt / 2, "Sosyal için West hesabı gerekli", "Oyunu West Client launcher'ından, West hesabına giriş yapmışken başlat.", null);
+            if (h.iconButton("sback", Icon.BACK, x + 6, y + 6, 18, Tr.t("Geri"), 0)) h.goHome();
+            h.emptyMessage(x + w / 2, y + hgt / 2, Tr.t("Sosyal için West hesabı gerekli"), Tr.t("Oyunu West Client launcher'ından, West hesabına giriş yapmışken başlat."), null);
             return;
         }
         int lw = Math.max(120, Math.min(210, w * 32 / 100));
@@ -86,7 +87,7 @@ final class SocialPage {
         Ui.round(g, x + 8, sy, w - 16, 18, 6, on ? 0x30FFFFFF : 0x1AFFFFFF);
         Ui.round(g, x + 14, sy + 6, 6, 6, 3, STATUS_COLORS[si]);
         String sn = STATUS_NAMES[si];
-        if (w - 16 > g.textBoldWidth(sn) + WestShell.small(g, "Durum") + 44) WestShell.smallText(g, "Durum", x + 25, sy + 6, 0x99FFFFFF);
+        if (w - 16 > g.textBoldWidth(sn) + WestShell.small(g, Tr.t("Durum")) + 44) WestShell.smallText(g, Tr.t("Durum"), x + 25, sy + 6, 0x99FFFFFF);
         g.textBold(sn, x + w - 22 - g.textBoldWidth(sn), sy + 5, 0xFFFFFFFF, false);
         Icons.draw(g, Icon.CHEVRON_DOWN, x + w - 18, sy + 5, 8, 0xCCFFFFFF);
         if (ui.clicked(x + 8, sy, w - 16, 18)) {
@@ -95,7 +96,7 @@ final class SocialPage {
         }
         // Filtre
         int fy = sy + 24;
-        String[] f = { "Tümü", "Direkt", "Gruplar" };
+        String[] f = { Tr.t("Tümü"), Tr.t("Direkt"), Tr.t("Gruplar") };
         int fx = x + 8;
         for (int i = 0; i < f.length; i++) {
             int fw = chipW(g, f[i]);
@@ -111,7 +112,7 @@ final class SocialPage {
             list.add(cv);
         }
         if (list.isEmpty()) {
-            String t = c.loaded ? "Henüz mesaj yok" : "Yükleniyor…";
+            String t = c.loaded ? Tr.t("Henüz mesaj yok") : Tr.t("Yükleniyor…");
             WestShell.smallText(g, t, x + 10, ly + 4, 0x99FFFFFF);
             return;
         }
@@ -145,24 +146,24 @@ final class SocialPage {
         Ui ui = h.ui;
         Gfx g = ui.g;
         StatsPage.panel(g, x, y, w, hgt);
-        if (h.iconButton("sback", Icon.BACK, x + 6, y + 6, 18, "Geri", 0)) {
+        if (h.iconButton("sback", Icon.BACK, x + 6, y + 6, 18, Tr.t("Geri"), 0)) {
             h.goHome();
             return;
         }
-        WestShell.bigText(g, "Arkadaşlar", x + 30, y + 9, 0xFFFFFFFF, w < 330 ? 1.1f : 1.3f);
+        WestShell.bigText(g, Tr.t("Arkadaşlar"), x + 30, y + 9, 0xFFFFFFFF, w < 330 ? 1.1f : 1.3f);
         boolean narrow = w < 330;
-        int addW = narrow ? 20 : g.textBoldWidth("Arkadaş ekle") + 28;
-        if (h.outlineButton("fadd", narrow ? "" : "Arkadaş ekle", Icon.USER_PLUS, x + w - addW - 8, y + 6, addW, 18, false)) {
+        int addW = narrow ? 20 : g.textBoldWidth(Tr.t("Arkadaş ekle")) + 28;
+        if (h.outlineButton("fadd", narrow ? "" : Tr.t("Arkadaş ekle"), Icon.USER_PLUS, x + w - addW - 8, y + 6, addW, 18, false)) {
             adding = !adding;
             focus = adding ? 2 : 0;
             addResult = null;
         }
-        int sx = x + 30 + Math.round(g.textBoldWidth("Arkadaşlar") * (w < 330 ? 1.1f : 1.3f)) + 10;
+        int sx = x + 30 + Math.round(g.textBoldWidth(Tr.t("Arkadaşlar")) * (w < 330 ? 1.1f : 1.3f)) + 10;
         int sw = x + w - addW - 16 - sx;
-        if (sw > 50) field(h, "Arkadaş ara", search, focus == 1, sx, y + 6, sw, 18, 1);
+        if (sw > 50) field(h, Tr.t("Arkadaş ara"), search, focus == 1, sx, y + 6, sw, 18, 1);
 
         int fy = y + 30;
-        String[] f = { "Tümü", "Çevrimiçi", "İstekler" + (c.requests.isEmpty() ? "" : " " + c.requests.size()) };
+        String[] f = { Tr.t("Tümü"), Tr.t("Çevrimiçi"), Tr.t("İstekler") + (c.requests.isEmpty() ? "" : " " + c.requests.size()) };
         int fx = x + 10;
         for (int i = 0; i < f.length; i++) {
             int fw = chipW(g, f[i]);
@@ -174,8 +175,8 @@ final class SocialPage {
         if (adding) {
             Ui.round(g, x + 8, ly, w - 16, 26, 7, 0x14FFFFFF);
             int bw = 50;
-            field(h, "West kullanıcı adı", addName, focus == 2, x + 13, ly + 4, w - 26 - bw - 6, 18, 2);
-            if (h.accentButton("fsend", "Ekle", null, x + w - 13 - bw, ly + 4, bw, 18)) submitAdd();
+            field(h, Tr.t("West kullanıcı adı"), addName, focus == 2, x + 13, ly + 4, w - 26 - bw - 6, 18, 2);
+            if (h.accentButton("fsend", Tr.t("Ekle"), null, x + w - 13 - bw, ly + 4, bw, 18)) submitAdd();
             ly += 30;
             if (addResult != null) {
                 WestShell.smallText(g, ui.fit(addResult, (int) ((w - 20) / 0.8f)), x + 12, ly, 0xCCFFFFFF);
@@ -185,7 +186,7 @@ final class SocialPage {
 
         if (friendFilter == 2) {
             if (c.requests.isEmpty()) {
-                h.emptyMessage(x + w / 2, (ly + y + hgt) / 2, "Bekleyen istek yok", "Biri seni eklediğinde burada görünür.", null);
+                h.emptyMessage(x + w / 2, (ly + y + hgt) / 2, Tr.t("Bekleyen istek yok"), Tr.t("Biri seni eklediğinde burada görünür."), null);
                 return;
             }
             for (Person p : c.requests) {
@@ -204,12 +205,12 @@ final class SocialPage {
         }
         if (list.isEmpty()) {
             if (c.friends.isEmpty()) {
-                if (h.emptyMessage(x + w / 2, (ly + y + hgt) / 2, c.loaded ? "Henüz arkadaşın yok" : "Yükleniyor…", "Kullanıcı adıyla arkadaş ekle; çevrimiçi olunca burada görürsün.", c.loaded ? "Arkadaş ekle" : null)) {
+                if (h.emptyMessage(x + w / 2, (ly + y + hgt) / 2, c.loaded ? Tr.t("Henüz arkadaşın yok") : Tr.t("Yükleniyor…"), Tr.t("Kullanıcı adıyla arkadaş ekle; çevrimiçi olunca burada görürsün."), c.loaded ? Tr.t("Arkadaş ekle") : null)) {
                     adding = true;
                     focus = 2;
                 }
             } else {
-                h.emptyMessage(x + w / 2, (ly + y + hgt) / 2, friendFilter == 1 ? "Kimse çevrimiçi değil" : "Eşleşen yok", friendFilter == 1 ? "Arkadaşların oyuna girince burada görünür." : "Başka bir isim dene.", null);
+                h.emptyMessage(x + w / 2, (ly + y + hgt) / 2, friendFilter == 1 ? Tr.t("Kimse çevrimiçi değil") : Tr.t("Eşleşen yok"), friendFilter == 1 ? Tr.t("Arkadaşların oyuna girince burada görünür.") : Tr.t("Başka bir isim dene."), null);
             }
             return;
         }
@@ -221,11 +222,11 @@ final class SocialPage {
         for (Person p : list) {
             if (p.online() && !onlineHeader) {
                 onlineHeader = true;
-                sectionHead(g, "ÇEVRİMİÇİ — " + online, x + 12, start + 3);
+                sectionHead(g, Tr.t("ÇEVRİMİÇİ — ") + online, x + 12, start + 3);
                 start += 14;
             } else if (!p.online() && !offlineHeader) {
                 offlineHeader = true;
-                sectionHead(g, "ÇEVRİMDIŞI — " + (list.size() - online), x + 12, start + 3);
+                sectionHead(g, Tr.t("ÇEVRİMDIŞI — ") + (list.size() - online), x + 12, start + 3);
                 start += 14;
             }
             if (start + 30 >= ly && start <= y + hgt) personRow(h, p, x + 8, start, w - 16, false);
@@ -246,17 +247,17 @@ final class SocialPage {
         boolean compact = w < 260;
         int actions = request ? (compact ? 46 : 120) : (compact ? 24 : 74);
         g.textBold(ui.fit(p.display(), w - actions - 40), tx, y + 5, 0xFFFFFFFF, false);
-        String sub = request ? "@" + p.username() + " seni eklemek istiyor" : p.online() ? (p.activity().isEmpty() ? statusName(p.status()) : p.activity()) : "Çevrimdışı";
+        String sub = request ? "@" + p.username() + " seni eklemek istiyor" : p.online() ? (p.activity().isEmpty() ? statusName(p.status()) : p.activity()) : Tr.t("Çevrimdışı");
         WestShell.smallText(g, ui.fit(sub, (int) ((w - actions - 40) / 0.8f)), tx, y + 17, p.online() ? 0xCC8EE6B6 : 0x88FFFFFF);
         if (request) {
             if (compact) {
                 if (h.accentButton("acc" + p.id(), "", Icon.CHECK, x + w - 46, y + 6, 20, 18)) c.accept(p.id(), true);
                 if (h.outlineButton("dec" + p.id(), "", Icon.CLOSE, x + w - 23, y + 6, 20, 18, false)) c.accept(p.id(), false);
             } else {
-                if (h.accentButton("acc" + p.id(), "Kabul", Icon.CHECK, x + w - 120, y + 6, 62, 18)) c.accept(p.id(), true);
-                if (h.outlineButton("dec" + p.id(), "Reddet", null, x + w - 54, y + 6, 50, 18, false)) c.accept(p.id(), false);
+                if (h.accentButton("acc" + p.id(), Tr.t("Kabul"), Icon.CHECK, x + w - 120, y + 6, 62, 18)) c.accept(p.id(), true);
+                if (h.outlineButton("dec" + p.id(), Tr.t("Reddet"), null, x + w - 54, y + 6, 50, 18, false)) c.accept(p.id(), false);
             }
-        } else if (h.outlineButton("msg" + p.id(), compact ? "" : "Mesaj", Icon.CHAT, x + w - (compact ? 24 : 74), y + 6, compact ? 20 : 70, 18, false)) {
+        } else if (h.outlineButton("msg" + p.id(), compact ? "" : Tr.t("Mesaj"), Icon.CHAT, x + w - (compact ? 24 : 74), y + 6, compact ? 20 : 70, 18, false)) {
             String title = p.display();
             c.openDm(p.id(), id -> {
                 chat = id;
@@ -280,7 +281,7 @@ final class SocialPage {
         Ui ui = h.ui;
         Gfx g = ui.g;
         StatsPage.panel(g, x, y, w, hgt);
-        if (h.iconButton("cback", Icon.BACK, x + 6, y + 6, 18, "Arkadaşlar", 0)) {
+        if (h.iconButton("cback", Icon.BACK, x + 6, y + 6, 18, Tr.t("Arkadaşlar"), 0)) {
             chat = null;
             focus = 0;
             return;
@@ -313,9 +314,9 @@ final class SocialPage {
             WestShell.smallText(g, time, mine ? bx + bw - WestShell.small(g, time) - 2 : bx + 2, by + bh + 2, 0x77FFFFFF);
         }
         g.noScissor();
-        if (ms.isEmpty()) WestShell.smallText(g, "Henüz mesaj yok. İlk mesajı sen yaz!", x + 12, inputY - 16, 0x88FFFFFF);
+        if (ms.isEmpty()) WestShell.smallText(g, Tr.t("Henüz mesaj yok. İlk mesajı sen yaz!"), x + 12, inputY - 16, 0x88FFFFFF);
         int sendW = 26;
-        field(h, "Mesaj yaz…", draft, focus == 3, x + 8, inputY, w - 16 - sendW - 4, 20, 3);
+        field(h, Tr.t("Mesaj yaz…"), draft, focus == 3, x + 8, inputY, w - 16 - sendW - 4, 20, 3);
         if (h.accentButton("send", "", Icon.ARROW, x + w - 8 - sendW, inputY, sendW, 20)) submitChat();
     }
 
@@ -325,10 +326,10 @@ final class SocialPage {
         Ui ui = h.ui;
         Gfx g = ui.g;
         StatsPage.panel(g, x, y, w, hgt);
-        WestShell.bigText(g, "Seni bekleyenler", x + 10, y + 10, 0xFFFFFFFF, 1.1f);
+        WestShell.bigText(g, Tr.t("Seni bekleyenler"), x + 10, y + 10, 0xFFFFFFFF, 1.1f);
         int ly = y + 30;
         if (c.invites.isEmpty() && c.requests.isEmpty()) {
-            h.emptyMessage(x + w / 2, y + hgt / 2 + 6, "Bekleyen bir şey yok", "Davetler ve istekler burada.", null);
+            h.emptyMessage(x + w / 2, y + hgt / 2 + 6, Tr.t("Bekleyen bir şey yok"), Tr.t("Davetler ve istekler burada."), null);
             return;
         }
         for (Invite inv : c.invites) {
@@ -336,14 +337,14 @@ final class SocialPage {
             Ui.round(g, x + 6, ly, w - 12, 38, 7, 0x14FFFFFF);
             g.textBold(ui.fit(inv.from().display(), w - 70), x + 12, ly + 5, 0xFFFFFFFF, false);
             boolean fits = inv.version().isEmpty() || inv.version().equals(WestHud.game.minecraftVersion());
-            String sub = "Davet: " + inv.world() + (inv.version().isEmpty() ? "" : " · " + inv.version());
+            String sub = Tr.t("Davet: ") + inv.world() + (inv.version().isEmpty() ? "" : " · " + inv.version());
             WestShell.smallText(g, ui.fit(sub, (int) ((w - 70) / 0.8f)), x + 12, ly + 17, 0xBBFFFFFF);
-            if (!fits) WestShell.smallText(g, ui.fit("Bu davet için launcher'dan " + inv.version() + " instance'ı aç", (int) ((w - 24) / 0.8f)), x + 12, ly + 27, 0xFFF2C14E);
-            else if (h.accentButton("join" + inv.at(), "Katıl", Icon.PLAY, x + w - 62, ly + 10, 54, 18)) WestHud.game.connect(inv.world(), inv.address());
+            if (!fits) WestShell.smallText(g, ui.fit(Tr.t("Bu davet için launcher'dan {0} instance'ı aç", inv.version()), (int) ((w - 24) / 0.8f)), x + 12, ly + 27, 0xFFF2C14E);
+            else if (h.accentButton("join" + inv.at(), Tr.t("Katıl"), Icon.PLAY, x + w - 62, ly + 10, 54, 18)) WestHud.game.connect(inv.world(), inv.address());
             ly += 42;
         }
         if (!c.requests.isEmpty() && ly + 20 < y + hgt) {
-            String t = c.requests.size() + " arkadaşlık isteği";
+            String t = c.requests.size() + Tr.t(" arkadaşlık isteği");
             if (h.outlineButton("reqs", t, Icon.USER_PLUS, x + 6, ly, w - 12, 18, true)) {
                 chat = null;
                 friendFilter = 2;
@@ -403,7 +404,7 @@ final class SocialPage {
 
     private static String statusName(String s) {
         int i = java.util.Arrays.asList(STATUSES).indexOf(s);
-        return i < 0 ? "Çevrimiçi" : STATUS_NAMES[i];
+        return i < 0 ? Tr.t("Çevrimiçi") : STATUS_NAMES[i];
     }
 
     private static String clock(String iso) {
@@ -418,7 +419,7 @@ final class SocialPage {
     private static String ago(String iso) {
         try {
             long s = (System.currentTimeMillis() - java.time.OffsetDateTime.parse(iso).toInstant().toEpochMilli()) / 1000;
-            if (s < 60) return "şimdi";
+            if (s < 60) return Tr.t("şimdi");
             if (s < 3600) return (s / 60) + "dk";
             if (s < 86400) return (s / 3600) + "sa";
             return (s / 86400) + "g";
@@ -430,8 +431,8 @@ final class SocialPage {
     private void submitAdd() {
         String n = addName.trim();
         if (n.isEmpty()) return;
-        addResult = "Ekleniyor…";
-        c.add(n, err -> addResult = err == null ? "İstek gönderildi. O da seni eklediğinde arkadaş olursunuz." : err);
+        addResult = Tr.t("Ekleniyor…");
+        c.add(n, err -> addResult = err == null ? Tr.t("İstek gönderildi. O da seni eklediğinde arkadaş olursunuz.") : err);
         addName = "";
     }
 

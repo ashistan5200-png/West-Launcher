@@ -56,6 +56,11 @@ public final class Config {
         public Map<String, Element> elements = new LinkedHashMap<>();
         /** West Coin ile alınıp launcher'da kuşanılan görünümler: yuva → öğe (cape, hat, back, aura, menuTheme) */
         public Map<String, String> cosmetics = new LinkedHashMap<>();
+        /** Sahip olunan (kullanılabilir) oyun içi öğeler ve West Coin bakiyesi (launcher yazar) */
+        public java.util.List<String> owned = new java.util.ArrayList<>();
+        public long coins = 0;
+        /** Arayüz dili: "tr" | "en" | "de" (launcher yazar) */
+        public String language = "tr";
         /** West Plus açık mı (launcher yazar) */
         public boolean plus = false;
     }

@@ -1,5 +1,6 @@
 package dev.west.hud.screen;
 
+import dev.west.hud.Tr;
 import dev.west.hud.WestHud;
 import dev.west.hud.api.Game;
 import dev.west.hud.api.Gfx;
@@ -19,7 +20,11 @@ import java.util.Map;
  * sunucular, sağda Minecraft toplamları ve rekorlar. Sayılar açılışta yumuşakça sayarak gelir.
  */
 final class StatsPage {
-    private static final String[] DAYS = { "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz" };
+    /** Seçili dilde kısa gün adı (Pzt / Mon / Mo) */
+    private static String dayName(java.time.DayOfWeek d) {
+        String s = d.getDisplayName(java.time.format.TextStyle.SHORT, Tr.locale());
+        return s.endsWith(".") ? s.substring(0, s.length() - 1) : s;
+    }
     private static long openedAt = System.nanoTime();
 
     private StatsPage() {}
@@ -52,12 +57,12 @@ final class StatsPage {
 
         // ── Başlık
         panel(g, x, y, w, 26);
-        if (h.iconButton("sback", Icon.BACK, x + 5, y + 4, 18, "Geri", 0)) {
+        if (h.iconButton("sback", Icon.BACK, x + 5, y + 4, 18, Tr.t("Geri"), 0)) {
             h.goHome();
             return;
         }
-        WestShell.bigText(g, "İstatistikler", x + 28, y + 8, 0xFFFFFFFF, 1.25f);
-        String note = "Yalnızca bu bilgisayarda";
+        WestShell.bigText(g, Tr.t("İstatistikler"), x + 28, y + 8, 0xFFFFFFFF, 1.25f);
+        String note = Tr.t("Yalnızca bu bilgisayarda");
         int nw = WestShell.small(g, note) + 22;
         Ui.round(g, x + w - nw - 6, y + 6, nw, 14, 7, 0x1AFFFFFF);
         Icons.draw(g, Icon.SHIELD, x + w - nw, y + 9, 8, 0xAAFFFFFF);
@@ -67,17 +72,17 @@ final class StatsPage {
         int ky = y + 32, kh = 46, gap = 6;
         int kw = (w - gap * 3) / 4;
         float a = grow(0);
-        kpi(h, x, ky, kw, kh, Icon.CLOCK, "TOPLAM", StatsPage.dur((long) (total * a)), sub(st.data.worlds.size() + " dünya, " + st.data.servers.size() + " sunucu"), 0);
-        String delta = prev == 0 ? (week > 0 ? "yeni" : "—") : ((week >= prev ? "+" : "") + Math.round((week - prev) * 100f / prev) + "% geçen haftaya göre");
-        kpi(h, x + (kw + gap), ky, kw, kh, Icon.STATS, "BU HAFTA", dur((long) (week * a)), delta, week >= prev ? 0xFF8EE6B6 : 0xFFFF8094);
-        kpi(h, x + 2 * (kw + gap), ky, kw, kh, Icon.PLAY, "BUGÜN", dur((long) (today * a)), st.current > 0 ? "Şu an oynuyorsun" : "Son 24 saat", 0);
-        kpi(h, x + 3 * (kw + gap), ky, w - 3 * (kw + gap), kh, Icon.STAR, "SERİ", Math.round(streak * a) + " gün", streak > 1 ? "Art arda oynadın" : "Yarın da gel!", 0);
+        kpi(h, x, ky, kw, kh, Icon.CLOCK, "TOPLAM", StatsPage.dur((long) (total * a)), sub(st.data.worlds.size() + Tr.t(" dünya, ") + st.data.servers.size() + " sunucu"), 0);
+        String delta = prev == 0 ? (week > 0 ? "yeni" : "—") : ((week >= prev ? "+" : "") + Math.round((week - prev) * 100f / prev) + Tr.t("% geçen haftaya göre"));
+        kpi(h, x + (kw + gap), ky, kw, kh, Icon.STATS, Tr.t("BU HAFTA"), dur((long) (week * a)), delta, week >= prev ? 0xFF8EE6B6 : 0xFFFF8094);
+        kpi(h, x + 2 * (kw + gap), ky, kw, kh, Icon.PLAY, Tr.t("BUGÜN"), dur((long) (today * a)), st.current > 0 ? Tr.t("Şu an oynuyorsun") : Tr.t("Son 24 saat"), 0);
+        kpi(h, x + 3 * (kw + gap), ky, w - 3 * (kw + gap), kh, Icon.STAR, Tr.t("SERİ"), Math.round(streak * a) + Tr.t(" gün"), streak > 1 ? Tr.t("Art arda oynadın") : Tr.t("Yarın da gel!"), 0);
 
         // ── 14 günlük grafik
         int gy = ky + kh + 6;
         int gh = Math.max(70, Math.min(120, hgt * 30 / 100));
         panel(g, x, gy, w, gh);
-        caps(g, "SON 14 GÜN", x + 10, gy + 8);
+        caps(g, Tr.t("SON 14 GÜN"), x + 10, gy + 8);
         long max = 1;
         for (long v : d14) max = Math.max(max, v);
         int bx0 = x + 10, bw = (w - 20 - 13 * 4) / 14, by = gy + 22, bh = gh - 22 - 16;
@@ -94,13 +99,13 @@ final class StatsPage {
             int col = i == 13 ? t.accent | 0xFF000000 : Theme.alpha(t.accent, on ? 0xE0 : 0x8C);
             Ui.round(g, cx, by + bh - fh, bw, fh, Math.min(3, bw / 2), col);
             LocalDate day = LocalDate.now().minusDays(13 - i);
-            String l = DAYS[day.getDayOfWeek().getValue() - 1];
+            String l = dayName(day.getDayOfWeek());
             if (WestShell.small(g, l) > bw - 2) l = l.substring(0, 1);
             if (bw >= 10 || i % 2 == 1) WestShell.smallText(g, l, cx + (bw - WestShell.small(g, l)) / 2, by + bh + 4, i == 13 ? 0xFFFFFFFF : 0x88FFFFFF);
         }
         if (hover >= 0) {
             LocalDate day = LocalDate.now().minusDays(13 - hover);
-            String tip = day.getDayOfMonth() + " " + month(day.getMonthValue()) + " · " + (d14[hover] == 0 ? "oynanmadı" : dur(d14[hover]));
+            String tip = day.getDayOfMonth() + " " + month(day.getMonthValue()) + " · " + (d14[hover] == 0 ? Tr.t("oynanmadı") : dur(d14[hover]));
             int tw = g.textWidth(tip) + 12;
             int tx = Math.max(x + 4, Math.min(x + w - tw - 4, bx0 + hover * (bw + 4) + bw / 2 - tw / 2));
             Ui.round(g, tx, by - 4, tw, 14, 5, 0xF00C0D12);
@@ -114,25 +119,25 @@ final class StatsPage {
             int half = (w - 6) / 2;
             panel(g, x, ly, half, lh);
             panel(g, x + half + 6, ly, w - half - 6, lh);
-            topList(h, "En çok oynanan dünyalar", Icon.WORLD, st.data.worlds, true, x, ly, half, lh);
-            topList(h, "En çok oynanan sunucular", Icon.SERVER, st.data.servers, false, x + half + 6, ly, w - half - 6, lh);
+            topList(h, Tr.t("En çok oynanan dünyalar"), Icon.WORLD, st.data.worlds, true, x, ly, half, lh);
+            topList(h, Tr.t("En çok oynanan sunucular"), Icon.SERVER, st.data.servers, false, x + half + 6, ly, w - half - 6, lh);
         }
 
         // ── Sağ sütun: toplamlar + rekorlar
         int dy = y, dh = cardY - 8 - y;
         if (dh >= 60) {
             panel(g, cardX, dy, cw, dh);
-            WestShell.bigText(g, "Toplamlar", cardX + 10, dy + 10, 0xFFFFFFFF, 1.15f);
+            WestShell.bigText(g, Tr.t("Toplamlar"), cardX + 10, dy + 10, 0xFFFFFFFF, 1.15f);
             Map<String, Long> v = st.vanilla(WestHud.game.configDir().getParent());
             Object[][] rows = {
-                    { Icon.PIN, "Yürünen", dist(v.getOrDefault("walk_one_cm", 0L)) },
-                    { Icon.GAUGE, "Koşulan", dist(v.getOrDefault("sprint_one_cm", 0L)) },
-                    { Icon.CHEVRON_DOWN, "Zıplama", num(v.getOrDefault("jump", 0L)) },
-                    { Icon.SHIELD, "Yenilen yaratık", num(v.getOrDefault("mob_kills", 0L)) },
-                    { Icon.CLOSE, "Ölüm", num(v.getOrDefault("deaths", 0L)) },
-                    { Icon.STAR, "En uzun oturum", dur(st.data.longestSession) },
-                    { Icon.CLOCK, "Ortalama oturum", dur(st.data.sessions == 0 ? 0 : st.data.sessionSeconds / st.data.sessions) },
-                    { Icon.USER, "Oturum", num(st.data.sessions) },
+                    { Icon.PIN, Tr.t("Yürünen"), dist(v.getOrDefault("walk_one_cm", 0L)) },
+                    { Icon.GAUGE, Tr.t("Koşulan"), dist(v.getOrDefault("sprint_one_cm", 0L)) },
+                    { Icon.CHEVRON_DOWN, Tr.t("Zıplama"), num(v.getOrDefault("jump", 0L)) },
+                    { Icon.SHIELD, Tr.t("Yenilen yaratık"), num(v.getOrDefault("mob_kills", 0L)) },
+                    { Icon.CLOSE, Tr.t("Ölüm"), num(v.getOrDefault("deaths", 0L)) },
+                    { Icon.STAR, Tr.t("En uzun oturum"), dur(st.data.longestSession) },
+                    { Icon.CLOCK, Tr.t("Ortalama oturum"), dur(st.data.sessions == 0 ? 0 : st.data.sessionSeconds / st.data.sessions) },
+                    { Icon.USER, Tr.t("Oturum"), num(st.data.sessions) },
             };
             int ry = dy + 28;
             for (Object[] r : rows) {
@@ -176,8 +181,8 @@ final class StatsPage {
         List<Map.Entry<String, Long>> list = new ArrayList<>(map.entrySet());
         list.sort((p, q) -> Long.compare(q.getValue(), p.getValue()));
         if (list.isEmpty()) {
-            String t1 = worlds ? "Henüz dünya yok" : "Henüz sunucu yok";
-            String t2 = worlds ? "Oynadıkça burada sıralanır." : "Sunucu süreleri bundan sonra sayılıyor.";
+            String t1 = worlds ? Tr.t("Henüz dünya yok") : Tr.t("Henüz sunucu yok");
+            String t2 = worlds ? Tr.t("Oynadıkça burada sıralanır.") : Tr.t("Sunucu süreleri bundan sonra sayılıyor.");
             int cy = y + hgt / 2 + 4;
             g.textBold(t1, x + (w - g.textBoldWidth(t1)) / 2, cy - 8, 0xFFFFFFFF, false);
             String f = ui.fit(t2, (int) ((w - 16) / 0.8f));
@@ -231,7 +236,9 @@ final class StatsPage {
     }
 
     private static String month(int m) {
-        return new String[] { "Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara" }[m - 1];
+        String s = java.time.Month.of(m).getDisplayName(java.time.format.TextStyle.SHORT, Tr.locale());
+        s = s.endsWith(".") ? s.substring(0, s.length() - 1) : s;
+        return s.isEmpty() ? s : Character.toUpperCase(s.charAt(0)) + s.substring(1);
     }
 
     private static String num(long v) {

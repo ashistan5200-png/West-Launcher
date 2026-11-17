@@ -1,5 +1,6 @@
 package dev.west.hud.api;
 
+import dev.west.hud.Tr;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -71,7 +72,7 @@ public interface Game {
     /** Listedeki sunucuya doğrudan bağlan */
     default void joinServer(int index) {}
 
-    default String playerName() { return "Oyuncu"; }
+    default String playerName() { return Tr.t("Oyuncu"); }
 
     record ModInfo(String id, String name, String version, String description) {}
 
@@ -98,7 +99,7 @@ public interface Game {
     /** Oynanan oturum: tek oyunculu mu, dünya/sunucu adı, "Yaratıcı · Normal" gibi ayrıntı, LAN'a açılabilir mi */
     record Session(boolean singleplayer, String title, String detail, boolean canShare) {}
 
-    default Session session() { return new Session(true, "Dünya", "", false); }
+    default Session session() { return new Session(true, Tr.t("Dünya"), "", false); }
 
     /** Tek oyunculu dünyayı ağa aç; açılan port ya da -1. mode: 0-3 oyun modu */
     /** offline: Microsoft hesabı olmayan (offline) oyuncular da girebilsin */

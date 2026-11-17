@@ -1,5 +1,6 @@
 package dev.west.hud.social;
 
+import dev.west.hud.Tr;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -208,7 +209,7 @@ public final class SocialClient {
         f.whenComplete((r, e) -> {
             try {
                 if (e != null) {
-                    error = "Launcher'a ulaşılamadı (West Client açık mı?)";
+                    error = Tr.t("Launcher'a ulaşılamadı (West Client açık mı?)");
                     if (fail != null) fail.accept(error);
                     return;
                 }
@@ -222,7 +223,7 @@ public final class SocialClient {
                 error = null;
                 ok.accept(v);
             } catch (Exception ex) {
-                if (fail != null) fail.accept("Beklenmeyen yanıt");
+                if (fail != null) fail.accept(Tr.t("Beklenmeyen yanıt"));
                 WestHud.LOG.debug("sosyal yanıt okunamadı", ex);
             }
         });

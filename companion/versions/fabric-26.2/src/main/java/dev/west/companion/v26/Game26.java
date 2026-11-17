@@ -1,5 +1,6 @@
 package dev.west.companion.v26;
 
+import dev.west.hud.Tr;
 import dev.west.hud.WestHud;
 import dev.west.hud.api.Game;
 import net.fabricmc.loader.api.FabricLoader;
@@ -282,14 +283,14 @@ public final class Game26 implements Game {
     public Session session() {
         Minecraft m = mc();
         boolean sp = m.hasSingleplayerServer();
-        String mode = m.gameMode == null ? "" : MODE_NAMES[Math.max(0, Math.min(3, m.gameMode.getPlayerMode().getId()))];
+        String mode = m.gameMode == null ? "" : Tr.t(MODE_NAMES[Math.max(0, Math.min(3, m.gameMode.getPlayerMode().getId()))]);
         if (sp) {
             var srv = m.getSingleplayerServer();
             String diff = m.level == null ? "" : m.level.getDifficulty().getDisplayName().getString();
             return new Session(true, srv.getWorldData().getLevelName(), mode + (diff.isEmpty() ? "" : " · " + diff), !srv.isPublished());
         }
         ServerData d = m.getCurrentServer();
-        return new Session(false, d == null ? "Sunucu" : d.name, d == null ? mode : d.ip, false);
+        return new Session(false, d == null ? Tr.t("Sunucu") : d.name, d == null ? mode : d.ip, false);
     }
 
     @Override

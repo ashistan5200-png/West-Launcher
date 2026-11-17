@@ -1,5 +1,6 @@
 package dev.west.hud.hud;
 
+import dev.west.hud.Tr;
 import dev.west.hud.api.Game;
 import dev.west.hud.api.Gfx;
 import dev.west.hud.ui.Theme;
@@ -10,7 +11,7 @@ public final class Armor extends HudElement {
     public boolean showHand = true;
 
     public Armor() {
-        super("armor", "Zırh durumu", "Giydiğin zırh ve eldeki eşya, kalan dayanıklılıkla.", false);
+        super("armor", Tr.t("Zırh durumu"), Tr.t("Giydiğin zırh ve eldeki eşya, kalan dayanıklılıkla."), false);
     }
 
     private int rows() {

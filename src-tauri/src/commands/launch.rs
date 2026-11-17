@@ -232,6 +232,10 @@ pub async fn start_game(app: &AppHandle, id: &str, auth: AuthSession, join_serve
         let mgr = InstanceManager::new(&st.paths);
         if mode == LaunchMode::Play {
             let _ = mgr.record_session(&exit_id, secs);
+            // Gardırop'ta yapılan seçimler cüzdana geçsin
+            if let Some(c) = crate::companion::read_cosmetics(&st.paths.instance_game_dir(&exit_id)) {
+                let _ = crate::wallet::sync_from_game(&st.paths.root, &c);
+            }
             // West Coin: oynanan süre kadar
             if let Ok(coins) = crate::wallet::earn(&st.paths.root, secs) {
                 if coins > 0 {

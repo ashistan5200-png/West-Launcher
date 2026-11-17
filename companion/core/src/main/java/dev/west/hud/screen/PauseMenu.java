@@ -1,5 +1,6 @@
 package dev.west.hud.screen;
 
+import dev.west.hud.Tr;
 import dev.west.hud.WestHud;
 import dev.west.hud.api.Game;
 import dev.west.hud.api.Gfx;
@@ -13,7 +14,7 @@ import dev.west.hud.ui.Ui;
  * "Oyuna dön" ve menü, altta kaydet ve ana menüye dön.
  */
 public final class PauseMenu extends WestShell {
-    private static final String[] TABS = { "Oyun", "Modlar", "Görünüm" };
+    private static final String[] TABS = { Tr.t("Oyun"), Tr.t("Modlar"), Tr.t("Görünüm") };
     private static final int[] PAGES = { -1, 3, 1 };
 
     @Override
@@ -47,7 +48,7 @@ public final class PauseMenu extends WestShell {
         g.push();
         g.translate(cx, y);
         g.scale(0.7f);
-        brand(g, s.singleplayer() ? "TEK OYUNCULU" : "ÇOK OYUNCULU", 0, 0, 0xBBFFFFFF, 1.6f);
+        brand(g, s.singleplayer() ? Tr.t("TEK OYUNCULU") : Tr.t("ÇOK OYUNCULU"), 0, 0, 0xBBFFFFFF, 1.6f);
         g.pop();
         y += 9;
         bigText(g, ui.fit(s.title(), Math.round(colW / 1.35f)), cx, y + 3, 0xFFFFFFFF, 1.35f);
@@ -56,36 +57,38 @@ public final class PauseMenu extends WestShell {
         y += 11;
         if (s.singleplayer()) {
             Icons.draw(g, Icon.PAUSE, cx, y + 1, 7, 0xBBFFFFFF);
-            smallText(g, "Oyun duraklatıldı", cx + 10, y + 1, 0xBBFFFFFF);
+            smallText(g, Tr.t("Oyun duraklatıldı"), cx + 10, y + 1, 0xBBFFFFFF);
             y += 11;
         }
         y += 6;
-        if (accentButton("resume", "Oyuna dön", null, cx, y, colW, 26)) {
+        if (accentButton("resume", Tr.t("Oyuna dön"), null, cx, y, colW, 26)) {
             game.closeScreen();
             ui.end();
             return;
         }
         y += 26 + 6;
 
-        if (item("opt", Icon.GEAR, "Ayarlar", cx, y, colW, itemH)) game.open(Game.Target.OPTIONS);
+        if (item("opt", Icon.GEAR, Tr.t("Ayarlar"), cx, y, colW, itemH)) game.open(Game.Target.OPTIONS);
         y += itemH;
         if (s.singleplayer()) {
-            if (item("wopt", Icon.GLOBE, "Dünya seçenekleri", cx, y, colW, itemH)) go(new ShareMenu(this));
+            if (item("wopt", Icon.GLOBE, Tr.t("Dünya seçenekleri"), cx, y, colW, itemH)) go(new ShareMenu(this));
             y += itemH;
-            if (item("lan", Icon.SHARE, s.canShare() ? "Dünyayı paylaş" : "Dünya paylaşılıyor · davet et", cx, y, colW, itemH)) go(new ShareMenu(this));
+            if (item("lan", Icon.SHARE, s.canShare() ? Tr.t("Dünyayı paylaş") : Tr.t("Dünya paylaşılıyor · davet et"), cx, y, colW, itemH)) go(new ShareMenu(this));
             y += itemH;
         }
-        if (item("adv", Icon.STAR, "Gelişimler", cx, y, colW, itemH)) game.open(Game.Target.ADVANCEMENTS);
+        if (item("wd", Icon.GEM, Tr.t("Gardırop"), cx, y, colW, itemH)) go(new WardrobeScreen(this));
         y += itemH;
-        if (item("stats", Icon.STATS, "İstatistikler", cx, y, colW, itemH)) game.open(Game.Target.STATS);
+        if (item("adv", Icon.STAR, Tr.t("Gelişimler"), cx, y, colW, itemH)) game.open(Game.Target.ADVANCEMENTS);
         y += itemH;
-        if (item("mods", Icon.LIST, "Modlar", cx, y, colW, itemH)) game.openWestScreenPage(3);
+        if (item("stats", Icon.STATS, Tr.t("İstatistikler"), cx, y, colW, itemH)) game.open(Game.Target.STATS);
         y += itemH;
-        if (item("hud", Icon.HUD, "HUD'u düzenle", cx, y, colW, itemH)) game.openWestScreen(true);
+        if (item("mods", Icon.LIST, Tr.t("Modlar"), cx, y, colW, itemH)) game.openWestScreenPage(3);
+        y += itemH;
+        if (item("hud", Icon.HUD, Tr.t("HUD'u düzenle"), cx, y, colW, itemH)) game.openWestScreen(true);
         y += itemH + 4;
         g.fill(cx, y, cx + colW, y + 1, 0x1FFFFFFF);
         y += 5;
-        if (danger("quit", s.singleplayer() ? "Kaydet ve ana menüye dön" : "Bağlantıyı kes", cx, y, colW, 20)) {
+        if (danger("quit", s.singleplayer() ? Tr.t("Kaydet ve ana menüye dön") : Tr.t("Bağlantıyı kes"), cx, y, colW, 20)) {
             dev.west.hud.net.Upnp.close();
             game.open(Game.Target.DISCONNECT);
             ui.end();

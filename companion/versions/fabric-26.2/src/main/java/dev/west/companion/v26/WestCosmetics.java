@@ -151,6 +151,59 @@ public final class WestCosmetics {
         }
     }
 
+    /** Menülerdeki karakter (skin çizici) için çizim hedefi */
+    public interface Sink {
+        void draw(ModelPart part, net.minecraft.client.renderer.rendertype.RenderType type);
+    }
+
+    private static ModelPart capePart;
+
+    /**
+     * Menülerdeki karakterin (Gardırop, ana menü, duraklatma büstü) üzerine kozmetikleri çiz.
+     * root: oyuncu modelinin kökü; poz, modelin çizildiği pozdur.
+     */
+    public static void renderGui(ModelPart root, PoseStack pose, Sink sink) {
+        float age = (System.currentTimeMillis() % 1_000_000L) / 50f;
+        String capeId = equipped("cape");
+        if (capeId != null) {
+            ClientAsset.Texture tex = capeTexture();
+            if (tex != null) {
+                if (capePart == null) {
+                    MeshDefinition mesh = new MeshDefinition();
+                    mesh.getRoot().addOrReplaceChild("cape", CubeListBuilder.create().texOffs(0, 0).addBox(-5f, 0f, -1f, 10f, 16f, 1f), PartPose.ZERO);
+                    capePart = LayerDefinition.create(mesh, 64, 32).bakeRoot();
+                }
+                pose.pushPose();
+                root.translateAndRotate(pose);
+                root.getChild("body").translateAndRotate(pose);
+                pose.translate(0f, 0f, 2f / 16f);
+                pose.mulPose(Axis.XP.rotationDegrees(8f + (float) Math.sin(age * 0.08) * 2f));
+                pose.mulPose(Axis.YP.rotationDegrees(180f));
+                sink.draw(capePart, RenderTypes.entityCutout(tex.texturePath()));
+                pose.popPose();
+            }
+        }
+        for (String slot : new String[] { "hat", "back" }) {
+            Baked b = baked(equipped(slot));
+            if (b == null) continue;
+            var type = RenderTypes.entityCutout(b.texture());
+            for (BakedPart bp : b.parts()) {
+                Cosmetics.Part p = bp.def();
+                pose.pushPose();
+                root.translateAndRotate(pose);
+                root.getChild(p.attach()).translateAndRotate(pose);
+                pose.translate(p.px() / 16f, p.py() / 16f, p.pz() / 16f);
+                switch (p.anim()) {
+                    case BOB -> pose.translate(0, (float) Math.sin(age * 0.12) * 0.03f, 0);
+                    case FLAP -> pose.mulPose(Axis.YP.rotation(-p.side() * (0.35f + (float) Math.sin(age * 0.12) * 0.25f)));
+                    default -> {}
+                }
+                sink.draw(bp.part(), type);
+                pose.popPose();
+            }
+        }
+    }
+
     private static int tick;
 
     /** Aura: oyuncunun etrafında parçacıklar (birinci şahıs görüşte görüşü kapatmasın diye yalnızca üçüncü şahısta) */

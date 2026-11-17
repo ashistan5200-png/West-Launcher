@@ -1,5 +1,6 @@
 package dev.west.hud.screen;
 
+import dev.west.hud.Tr;
 import dev.west.hud.Config;
 import dev.west.hud.WestHud;
 import dev.west.hud.api.Game;
@@ -19,9 +20,9 @@ import java.util.function.BooleanSupplier;
 public final class MenuScreen implements WestScreen {
     private enum Page { MODS, INSTALLED, LOOK, GENERAL }
 
-    private static final String[] PAGE_NAMES = { "Modlar", "Yüklü modlar", "Temalar", "Tercihler" };
+    private static final String[] PAGE_NAMES = { Tr.t("Modlar"), Tr.t("Yüklü modlar"), Tr.t("Temalar"), Tr.t("Tercihler") };
     private static final Icon[] PAGE_ICONS = { Icon.LIST, Icon.BOX, Icon.EDIT, Icon.GEAR };
-    private static final String[] CATS = { "Tümü", "HUD", "Görsel", "Yardımcı" };
+    private static final String[] CATS = { Tr.t("Tümü"), "HUD", Tr.t("Görsel"), Tr.t("Yardımcı") };
     private static final Icon[] CAT_ICONS = { null, Icon.HUD, Icon.SUN, Icon.SLIDERS };
 
     /** Bir mod kartı: West özelliği (HUD öğesi ya da ayar) */
@@ -139,7 +140,7 @@ public final class MenuScreen implements WestScreen {
         g.fill(x + w - 1, y + 10, x + w, y + h - 10, 0x14FFFFFF);
         Icons.draw(g, Icon.LOGO, x + 11, y + 12, 12, t.accent | 0xFF000000);
         float cx = x + 28;
-        for (char c : "WEST CLIENT".toCharArray()) {
+        for (char c : Tr.t("WEST CLIENT").toCharArray()) {
             String ch = String.valueOf(c);
             g.push();
             g.translate(cx, y + 14);
@@ -150,11 +151,11 @@ public final class MenuScreen implements WestScreen {
         }
 
         int by = y + 36;
-        by = section("MODLAR VE SEÇENEKLER", x, by, w);
+        by = section(Tr.t("MODLAR VE SEÇENEKLER"), x, by, w);
         by = navItem(Page.MODS, x, by, w);
         by = navItem(Page.INSTALLED, x, by, w);
         by += 6;
-        by = section("KİŞİSELLEŞTİRME", x, by, w);
+        by = section(Tr.t("KİŞİSELLEŞTİRME"), x, by, w);
         by = navItem(Page.LOOK, x, by, w);
         by = navItem(Page.GENERAL, x, by, w);
 
@@ -165,7 +166,7 @@ public final class MenuScreen implements WestScreen {
         float hv = hov("navhud", on);
         if (hv > 0.01f) Ui.round(g, x + 6, hy, w - 12, 18, 6, Theme.alpha(0xFFFFFFFF, Math.max(1, (int) (0x18 * hv))));
         Icons.draw(g, Icon.HUD, x + 13, hy + 4, 10, 0xDDFFFFFF);
-        g.textBold(ui.fit("HUD'u düzenle", w - 40), x + 29, hy + 5, 0xFFFFFFFF, false);
+        g.textBold(ui.fit(Tr.t("HUD'u düzenle"), w - 40), x + 29, hy + 5, 0xFFFFFFFF, false);
         if (ui.clicked(x + 6, hy, w - 12, 18)) {
             WestHud.game.click();
             WestHud.game.openWestScreen(true);
@@ -258,11 +259,11 @@ public final class MenuScreen implements WestScreen {
             };
             out.add(new Feature(e.name, icon, 1, () -> e.enabled, () -> e.enabled = !e.enabled, e));
         }
-        out.add(new Feature("FullBright", Icon.SUN, 2, () -> d.fullbright, () -> d.fullbright = !d.fullbright, null));
-        out.add(new Feature("Pürüzsüz yazı", Icon.TEXT, 2, () -> d.smoothFont, () -> d.smoothFont = !d.smoothFont, null));
-        out.add(new Feature("Animasyonlar", Icon.STAR, 2, () -> d.animations, () -> d.animations = !d.animations, null));
-        out.add(new Feature("West ana menüsü", Icon.LOGO, 3, () -> d.customTitle, () -> d.customTitle = !d.customTitle, null));
-        out.add(new Feature("Mıknatıslı hizalama", Icon.MAGNET, 3, () -> d.snapping, () -> d.snapping = !d.snapping, null));
+        out.add(new Feature(Tr.t("FullBright"), Icon.SUN, 2, () -> d.fullbright, () -> d.fullbright = !d.fullbright, null));
+        out.add(new Feature(Tr.t("Pürüzsüz yazı"), Icon.TEXT, 2, () -> d.smoothFont, () -> d.smoothFont = !d.smoothFont, null));
+        out.add(new Feature(Tr.t("Animasyonlar"), Icon.STAR, 2, () -> d.animations, () -> d.animations = !d.animations, null));
+        out.add(new Feature(Tr.t("West ana menüsü"), Icon.LOGO, 3, () -> d.customTitle, () -> d.customTitle = !d.customTitle, null));
+        out.add(new Feature(Tr.t("Mıknatıslı hizalama"), Icon.MAGNET, 3, () -> d.snapping, () -> d.snapping = !d.snapping, null));
         return out;
     }
 
@@ -275,7 +276,7 @@ public final class MenuScreen implements WestScreen {
             list.add(f);
         }
         if (list.isEmpty()) {
-            ui.g.text("Eşleşen mod yok.", x, y + 4, 0x99FFFFFF, false);
+            ui.g.text(Tr.t("Eşleşen mod yok."), x, y + 4, 0x99FFFFFF, false);
             return y + 20;
         }
         int gap = 8, cols = Math.max(2, (w + gap) / (100 + gap));
@@ -341,7 +342,7 @@ public final class MenuScreen implements WestScreen {
             list.add(m);
         }
         if (list.isEmpty()) {
-            g.text("Eşleşen mod yok.", x, y + 4, 0x99FFFFFF, false);
+            g.text(Tr.t("Eşleşen mod yok."), x, y + 4, 0x99FFFFFF, false);
             return y + 20;
         }
         int gap = 8, cols = Math.max(2, (w + gap) / (100 + gap));
@@ -374,7 +375,7 @@ public final class MenuScreen implements WestScreen {
         Ui.outline(g, x, y, w, h, 6, searchFocus ? Theme.alpha(t.accent, 0xCC) : 0x26FFFFFF);
         Icons.draw(g, Icon.SEARCH, x + 5, y + (h - 9) / 2, 9, 0x99FFFFFF);
         boolean blink = ((int) (ui.time * 2)) % 2 == 0;
-        String shown = search.isEmpty() && !searchFocus ? "Ara" : search + (searchFocus && blink ? "|" : "");
+        String shown = search.isEmpty() && !searchFocus ? Tr.t("Ara") : search + (searchFocus && blink ? "|" : "");
         g.text(ui.fit(shown, w - 24), x + 18, y + (h - 8) / 2, search.isEmpty() && !searchFocus ? 0x77FFFFFF : 0xFFFFFFFF, false);
         if (ui.clicked(x, y, w, h)) searchFocus = true;
         else if (!on && ui.pressedAt(0, 0, 99999, 99999)) searchFocus = false;
@@ -445,27 +446,27 @@ public final class MenuScreen implements WestScreen {
         Theme t = ui.t;
         boolean changed = false;
 
-        int ny = row("Göster", e.description, x, y, w);
+        int ny = row(Tr.t("Göster"), e.description, x, y, w);
         boolean on = ui.toggle(e.enabled, x + w - 24, y + 4);
         if (on != e.enabled) { e.enabled = on; changed = true; }
         y = ny;
 
-        ny = row("Boyut", String.format(Locale.ROOT, "%%%d", Math.round(e.scale * 100)), x, y, w);
+        ny = row(Tr.t("Boyut"), String.format(Locale.ROOT, "%%%d", Math.round(e.scale * 100)), x, y, w);
         float s = ui.slider(e, e.scale, 0.5f, 2.5f, x + w - 104, y + 8, 100);
         if (Math.abs(s - e.scale) > 0.001f) { e.scale = Math.round(s * 20) / 20f; changed = true; }
         y = ny;
 
-        ny = row("Arka plan", "Öğenin arkasında yarı saydam kutu.", x, y, w);
+        ny = row(Tr.t("Arka plan"), Tr.t("Öğenin arkasında yarı saydam kutu."), x, y, w);
         on = ui.toggle(e.background, x + w - 24, y + 4);
         if (on != e.background) { e.background = on; changed = true; }
         y = ny;
 
-        ny = row("Yazı gölgesi", "Açık zeminlerde okunurluğu artırır.", x, y, w);
+        ny = row(Tr.t("Yazı gölgesi"), Tr.t("Açık zeminlerde okunurluğu artırır."), x, y, w);
         on = ui.toggle(e.shadow, x + w - 24, y + 4);
         if (on != e.shadow) { e.shadow = on; changed = true; }
         y = ny;
 
-        ui.text("Yazı rengi", x, y + 2, t.text);
+        ui.text(Tr.t("Yazı rengi"), x, y + 2, t.text);
         int[] colors = { 0xFFFFFF, 0xE8A25C, 0x6EA8D6, 0x70C48E, 0xEC5A82, 0xF2C14E, 0xA08CB8, 0x111111 };
         for (int i = 0; i < colors.length; i++) {
             if (ui.swatch(colors[i], e.color == colors[i], x + w - (colors.length - i) * 14, y, 10)) { e.color = colors[i]; changed = true; }
@@ -474,25 +475,25 @@ public final class MenuScreen implements WestScreen {
         y += 22;
 
         if (e == WestHud.HUD.keystrokes) {
-            ny = row("Fare tuşları", "Sol/sağ tık ve CPS.", x, y, w);
+            ny = row(Tr.t("Fare tuşları"), Tr.t("Sol/sağ tık ve CPS."), x, y, w);
             on = ui.toggle(WestHud.HUD.keystrokes.showMouse, x + w - 24, y + 4);
             if (on != WestHud.HUD.keystrokes.showMouse) { WestHud.HUD.keystrokes.showMouse = on; changed = true; }
             y = ny;
-            ny = row("Boşluk tuşu", null, x, y, w);
+            ny = row(Tr.t("Boşluk tuşu"), null, x, y, w);
             on = ui.toggle(WestHud.HUD.keystrokes.showSpace, x + w - 24, y + 4);
             if (on != WestHud.HUD.keystrokes.showSpace) { WestHud.HUD.keystrokes.showSpace = on; changed = true; }
             y = ny;
         }
         if (e == WestHud.HUD.armor) {
-            ny = row("Eldeki eşya", "Ana eldeki eşyayı da göster.", x, y, w);
+            ny = row(Tr.t("Eldeki eşya"), Tr.t("Ana eldeki eşyayı da göster."), x, y, w);
             on = ui.toggle(WestHud.HUD.armor.showHand, x + w - 24, y + 4);
             if (on != WestHud.HUD.armor.showHand) { WestHud.HUD.armor.showHand = on; changed = true; }
             y = ny;
         }
 
         y += 4;
-        if (ui.button("Konumunu düzenle", x, y, 110, 18, true)) WestHud.game.openWestScreen(true);
-        if (ui.button("Varsayılana dön", x + 116, y, 100, 18, false)) { e.resetLayout(); changed = true; }
+        if (ui.button(Tr.t("Konumunu düzenle"), x, y, 110, 18, true)) WestHud.game.openWestScreen(true);
+        if (ui.button(Tr.t("Varsayılana dön"), x + 116, y, 100, 18, false)) { e.resetLayout(); changed = true; }
         if (changed) WestHud.save();
         return y + 26;
     }
@@ -501,10 +502,10 @@ public final class MenuScreen implements WestScreen {
         Theme t = ui.t;
         Config.Data d = WestHud.config.data;
         boolean changed = false;
-        ui.text("Tema", x, y, t.text);
+        ui.text(Tr.t("Tema"), x, y, t.text);
         y += 12;
         String[] ids = { "night", "day", "pixel-night", "pixel-day" };
-        String[] names = { "Gece camı", "Gün camı", "Piksel gece", "Piksel gün" };
+        String[] names = { Tr.t("Gece camı"), Tr.t("Gün camı"), Tr.t("Piksel gece"), Tr.t("Piksel gün") };
         int gap = 6, cw = (w - gap * 3) / 4, chh = 58;
         for (int i = 0; i < 4; i++) {
             int ex = x + i * (cw + gap);
@@ -523,21 +524,21 @@ public final class MenuScreen implements WestScreen {
         }
         y += chh + 12;
 
-        int ny = row("Vurgu rengi", "Menülerin ve HUD etiketlerinin rengi.", x, y, w);
+        int ny = row(Tr.t("Vurgu rengi"), Tr.t("Menülerin ve HUD etiketlerinin rengi."), x, y, w);
         for (int i = 0; i < Theme.ACCENTS.length; i++) {
             int c = Theme.ACCENTS[i];
             if (ui.swatch(c, (d.accent & 0xFFFFFF) == c, x + w - (Theme.ACCENTS.length - i) * 14, y + 4, 10)) { d.accent = c; changed = true; }
         }
         y = ny;
-        ny = row("Animasyonlar", "Menü geçişleri ve tuş göstergesi parıltıları.", x, y, w);
+        ny = row(Tr.t("Animasyonlar"), Tr.t("Menü geçişleri ve tuş göstergesi parıltıları."), x, y, w);
         boolean on = ui.toggle(d.animations, x + w - 24, y + 4);
         if (on != d.animations) { d.animations = on; changed = true; }
         y = ny;
-        ny = row("Pürüzsüz yazı tipi", "Kapatırsan Minecraft'ın piksel yazı tipi kullanılır.", x, y, w);
+        ny = row(Tr.t("Pürüzsüz yazı tipi"), Tr.t("Kapatırsan Minecraft'ın piksel yazı tipi kullanılır."), x, y, w);
         on = ui.toggle(d.smoothFont, x + w - 24, y + 4);
         if (on != d.smoothFont) { d.smoothFont = on; changed = true; }
         y = ny;
-        ny = row("Mıknatıslı hizalama", "Düzenleyicide öğeler kenarlara ve birbirine yapışır.", x, y, w);
+        ny = row(Tr.t("Mıknatıslı hizalama"), Tr.t("Düzenleyicide öğeler kenarlara ve birbirine yapışır."), x, y, w);
         on = ui.toggle(d.snapping, x + w - 24, y + 4);
         if (on != d.snapping) { d.snapping = on; changed = true; }
         y = ny;
@@ -548,32 +549,32 @@ public final class MenuScreen implements WestScreen {
     private int generalPage(int x, int y, int w) {
         Config.Data d = WestHud.config.data;
         Theme t = ui.t;
-        int ny = row("FullBright", "Mağarada bile her yer aydınlık. Bazı sunucular buna izin vermez.", x, y, w);
+        int ny = row(Tr.t("FullBright"), Tr.t("Mağarada bile her yer aydınlık. Bazı sunucular buna izin vermez."), x, y, w);
         boolean on = ui.toggle(d.fullbright, x + w - 24, y + 4);
         if (on != d.fullbright) { d.fullbright = on; WestHud.save(); WestHud.game.click(); }
         y = ny;
-        ny = row("West ana menüsü", "Minecraft'ın başlık ekranı yerine West Client ana menüsü.", x, y, w);
+        ny = row(Tr.t("West ana menüsü"), Tr.t("Minecraft'ın başlık ekranı yerine West Client ana menüsü."), x, y, w);
         on = ui.toggle(d.customTitle, x + w - 24, y + 4);
         if (on != d.customTitle) { d.customTitle = on; WestHud.save(); WestHud.game.click(); }
         y = ny;
-        ny = row("Arka plan müziği", "West müziği menülerde çalar. Ses düzeyi: Minecraft → Müzik.", x, y, w);
+        ny = row(Tr.t("Arka plan müziği"), Tr.t("West müziği menülerde çalar. Ses düzeyi: Minecraft → Müzik."), x, y, w);
         on = ui.toggle(d.music, x + w - 24, y + 4);
         if (on != d.music) { d.music = on; WestHud.save(); WestHud.game.click(); }
         y = ny;
-        ny = row("Oyunda da çal", "Dünyadayken Minecraft'ın kendi müziğinin yerine.", x, y, w);
+        ny = row(Tr.t("Oyunda da çal"), Tr.t("Dünyadayken Minecraft'ın kendi müziğinin yerine."), x, y, w);
         on = ui.toggle(d.musicInGame, x + w - 24, y + 4);
         if (on != d.musicInGame) { d.musicInGame = on; WestHud.save(); WestHud.game.click(); }
         y = ny;
-        ny = row("Menü tuşu", "Kontroller → West Companion'dan değiştirebilirsin. Varsayılan: Sağ Shift", x, y, w);
+        ny = row(Tr.t("Menü tuşu"), Tr.t("Kontroller → West Companion'dan değiştirebilirsin. Varsayılan: Sağ Shift"), x, y, w);
         y = ny;
-        ny = row("Tüm HUD'u sıfırla", "Bütün öğeleri varsayılan konum ve boyuta döndürür.", x, y, w);
-        if (ui.button("Sıfırla", x + w - 60, y - 26, 56, 16, false)) {
+        ny = row(Tr.t("Tüm HUD'u sıfırla"), Tr.t("Bütün öğeleri varsayılan konum ve boyuta döndürür."), x, y, w);
+        if (ui.button(Tr.t("Sıfırla"), x + w - 60, y - 26, 56, 16, false)) {
             for (HudElement e : WestHud.HUD.elements) e.resetLayout();
             WestHud.save();
         }
         y = ny;
-        ui.text("West Companion " + WestHud.VERSION, x, y + 4, t.muted);
-        ui.text("West Client launcher'ından ayarlar da canlı uygulanır.", x, y + 16, t.muted);
+        ui.text(Tr.t("West Companion ") + WestHud.VERSION, x, y + 4, t.muted);
+        ui.text(Tr.t("West Client launcher'ından ayarlar da canlı uygulanır."), x, y + 16, t.muted);
         return y + 30;
     }
 

@@ -1,5 +1,6 @@
 package dev.west.hud.hud;
 
+import dev.west.hud.Tr;
 import dev.west.hud.api.Game;
 import dev.west.hud.api.Gfx;
 import dev.west.hud.ui.Theme;
@@ -25,26 +26,26 @@ public final class Hud {
     private static final DateTimeFormatter CLOCK = DateTimeFormatter.ofPattern("HH:mm");
 
     public Hud() {
-        elements.add(new TextElement("fps", "FPS", "Saniyedeki kare sayısı.", true, TextElement.Corner.TOP_LEFT, 0,
+        elements.add(new TextElement("fps", "FPS", Tr.t("Saniyedeki kare sayısı."), true, TextElement.Corner.TOP_LEFT, 0,
                 g -> new String[] { String.valueOf(g.fps()), "FPS" }));
-        elements.add(new TextElement("cps", "CPS", "Saniyedeki sol ve sağ tık sayısı.", false, TextElement.Corner.TOP_LEFT, 1,
+        elements.add(new TextElement("cps", "CPS", Tr.t("Saniyedeki sol ve sağ tık sayısı."), false, TextElement.Corner.TOP_LEFT, 1,
                 g -> new String[] { cps.left() + " | " + cps.right(), "CPS" }));
-        elements.add(new TextElement("coords", "Koordinatlar", "Konumun ve baktığın yön.", false, TextElement.Corner.TOP_LEFT, 2,
+        elements.add(new TextElement("coords", Tr.t("Koordinatlar"), Tr.t("Konumun ve baktığın yön."), false, TextElement.Corner.TOP_LEFT, 2,
                 g -> new String[] { String.format("%d  %d  %d", (int) Math.floor(g.x()), (int) Math.floor(g.y()), (int) Math.floor(g.z())), facing(g.yaw()) }));
-        elements.add(new TextElement("ping", "Ping", "Sunucuya gecikme.", false, TextElement.Corner.TOP_LEFT, 3,
-                g -> g.ping() < 0 ? new String[] { "Tek oyunculu", "" } : new String[] { String.valueOf(g.ping()), "ms" }));
-        elements.add(new TextElement("speed", "Hız", "Yatay hızın (blok/saniye).", false, TextElement.Corner.TOP_LEFT, 4,
+        elements.add(new TextElement("ping", Tr.t("Ping"), Tr.t("Sunucuya gecikme."), false, TextElement.Corner.TOP_LEFT, 3,
+                g -> g.ping() < 0 ? new String[] { Tr.t("Tek oyunculu"), "" } : new String[] { String.valueOf(g.ping()), "ms" }));
+        elements.add(new TextElement("speed", Tr.t("Hız"), Tr.t("Yatay hızın (blok/saniye)."), false, TextElement.Corner.TOP_LEFT, 4,
                 g -> new String[] { String.format("%.1f", speed), "b/s" }));
-        elements.add(new TextElement("clock", "Saat", "Bilgisayarının saati.", false, TextElement.Corner.TOP_RIGHT, 0,
+        elements.add(new TextElement("clock", Tr.t("Saat"), Tr.t("Bilgisayarının saati."), false, TextElement.Corner.TOP_RIGHT, 0,
                 g -> new String[] { LocalTime.now().format(CLOCK), "" }));
-        elements.add(new TextElement("memory", "Bellek", "Oyunun kullandığı bellek.", false, TextElement.Corner.TOP_RIGHT, 1,
+        elements.add(new TextElement("memory", Tr.t("Bellek"), Tr.t("Oyunun kullandığı bellek."), false, TextElement.Corner.TOP_RIGHT, 1,
                 g -> {
                     Runtime r = Runtime.getRuntime();
                     long used = (r.totalMemory() - r.freeMemory()) >> 20, max = r.maxMemory() >> 20;
                     return new String[] { (used * 100 / Math.max(1, max)) + "%", String.format("%.1f/%.1f GB", used / 1024f, max / 1024f) };
                 }));
-        elements.add(new TextElement("server", "Sunucu", "Bağlı olduğun sunucunun adresi.", false, TextElement.Corner.TOP_RIGHT, 2,
-                g -> new String[] { g.server() == null ? "Tek oyunculu" : g.server(), "" }));
+        elements.add(new TextElement("server", Tr.t("Sunucu"), Tr.t("Bağlı olduğun sunucunun adresi."), false, TextElement.Corner.TOP_RIGHT, 2,
+                g -> new String[] { g.server() == null ? Tr.t("Tek oyunculu") : g.server(), "" }));
         elements.add(keystrokes);
         elements.add(armor);
         elements.add(compass);
@@ -60,10 +61,10 @@ public final class Hud {
         float y = ((yaw % 360) + 360) % 360;
         int i = Math.round(y / 90f) % 4;
         return switch (i) {
-            case 0 -> "Güney +Z";
-            case 1 -> "Batı -X";
-            case 2 -> "Kuzey -Z";
-            default -> "Doğu +X";
+            case 0 -> Tr.t("Güney +Z");
+            case 1 -> Tr.t("Batı -X");
+            case 2 -> Tr.t("Kuzey -Z");
+            default -> Tr.t("Doğu +X");
         };
     }
 

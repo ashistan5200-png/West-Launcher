@@ -1,5 +1,6 @@
 package dev.west.hud.screen;
 
+import dev.west.hud.Tr;
 import dev.west.hud.WestHud;
 import dev.west.hud.api.Gfx;
 import dev.west.hud.hud.Hud;
@@ -142,7 +143,7 @@ public final class EditorScreen implements WestScreen {
         if (ty + 16 > sh - 2 || ly > b[1]) ty = b[1] - 20 >= 2 ? b[1] - 20 : b[1] + 2;
         ui.rect(tx - 3, ty - 2, tw + 6, 20, t.panel);
         String[] icons = { "−", "↺", "✕" };
-        String[] tips = { "Küçült", "Varsayılan konum", "Gizle" };
+        String[] tips = { Tr.t("Küçült"), Tr.t("Varsayılan konum"), Tr.t("Gizle") };
         for (int i = 0; i < 3; i++) {
             int x = tx + i * 19;
             boolean hov = ui.hover(x, ty, 16, 16);
@@ -164,8 +165,8 @@ public final class EditorScreen implements WestScreen {
 
     private void topBar(int sw) {
         Theme t = ui.t;
-        String full = "Sürükle: taşı  ·  Tekerlek: boyut  ·  Esc: kaydet";
-        String hint = sw >= 420 ? full : "Sürükle · Tekerlek · Esc";
+        String full = Tr.t("Sürükle: taşı  ·  Tekerlek: boyut  ·  Esc: kaydet");
+        String hint = sw >= 420 ? full : Tr.t("Sürükle · Tekerlek · Esc");
         int bw = 70;
         int w = Math.min(sw - 8, ui.g.textWidth(hint) + bw + 30);
         int x = (sw - w) / 2;
@@ -173,7 +174,7 @@ public final class EditorScreen implements WestScreen {
         ui.border(x, 4, w, 18, t.line);
         ui.text("◆", x + 6, 9, t.accent);
         ui.text(ui.fit(hint, w - bw - 24), x + 16, 9, t.muted);
-        if (ui.button(listOpen && selected == null ? "Kapat" : "Öğeler", x + w - bw - 2, 6, bw, 14, false)) {
+        if (ui.button(listOpen && selected == null ? Tr.t("Kapat") : Tr.t("Öğeler"), x + w - bw - 2, 6, bw, 14, false)) {
             if (selected != null) { selected = null; listOpen = true; } else listOpen = !listOpen;
         }
     }
@@ -185,7 +186,7 @@ public final class EditorScreen implements WestScreen {
         int h = 16 + hud.elements.size() * rowH + 4;
         ui.rect(x, y, w, h, t.panel);
         ui.border(x, y, w, h, t.line);
-        ui.text("Öğeler", x + 6, y + 5, t.text);
+        ui.text(Tr.t("Öğeler"), x + 6, y + 5, t.text);
         int ry = y + 16;
         for (HudElement e : hud.elements) {
             boolean hov = ui.hover(x + 2, ry, w - 4, rowH);
@@ -213,38 +214,38 @@ public final class EditorScreen implements WestScreen {
         int ry = y + 24;
         boolean changed = false;
 
-        ui.text(String.format(Locale.ROOT, "Boyut %%%d", Math.round(e.scale * 100)), x + 8, ry, t.muted);
+        ui.text(String.format(Locale.ROOT, Tr.t("Boyut %%%d"), Math.round(e.scale * 100)), x + 8, ry, t.muted);
         float s = ui.slider(e, e.scale, 0.5f, 2.5f, x + 8, ry + 13, w - 16);
         if (Math.abs(s - e.scale) > 0.001f) { e.scale = Math.round(s * 20) / 20f; }
         ry += 26;
         boolean on;
-        ui.text("Arka plan", x + 8, ry + 2, t.text);
+        ui.text(Tr.t("Arka plan"), x + 8, ry + 2, t.text);
         on = ui.toggle(e.background, x + w - 30, ry);
         if (on != e.background) { e.background = on; changed = true; }
         ry += 18;
-        ui.text("Gölge", x + 8, ry + 2, t.text);
+        ui.text(Tr.t("Gölge"), x + 8, ry + 2, t.text);
         on = ui.toggle(e.shadow, x + w - 30, ry);
         if (on != e.shadow) { e.shadow = on; changed = true; }
         ry += 18;
         if (e == WestHud.HUD.keystrokes) {
-            ui.text("Fare tuşları", x + 8, ry + 2, t.text);
+            ui.text(Tr.t("Fare tuşları"), x + 8, ry + 2, t.text);
             on = ui.toggle(WestHud.HUD.keystrokes.showMouse, x + w - 30, ry);
             if (on != WestHud.HUD.keystrokes.showMouse) { WestHud.HUD.keystrokes.showMouse = on; changed = true; }
             ry += 18;
         }
         if (e == WestHud.HUD.armor) {
-            ui.text("Eldeki eşya", x + 8, ry + 2, t.text);
+            ui.text(Tr.t("Eldeki eşya"), x + 8, ry + 2, t.text);
             on = ui.toggle(WestHud.HUD.armor.showHand, x + w - 30, ry);
             if (on != WestHud.HUD.armor.showHand) { WestHud.HUD.armor.showHand = on; changed = true; }
             ry += 18;
         }
-        ui.text("Renk", x + 8, ry + 2, t.text);
+        ui.text(Tr.t("Renk"), x + 8, ry + 2, t.text);
         int[] colors = { 0xFFFFFF, 0xE8A25C, 0x6EA8D6, 0x70C48E, 0xEC5A82, 0xF2C14E };
         for (int i = 0; i < colors.length; i++) {
             if (ui.swatch(colors[i], e.color == colors[i], x + 8 + i * 13 + 30, ry + 1, 9)) { e.color = colors[i]; changed = true; }
         }
         ry += 18;
-        if (ui.button("Varsayılan konum", x + 8, ry, w - 16, 16, false)) { e.resetLayout(); changed = true; }
+        if (ui.button(Tr.t("Varsayılan konum"), x + 8, ry, w - 16, 16, false)) { e.resetLayout(); changed = true; }
         if (changed) WestHud.save();
     }
 

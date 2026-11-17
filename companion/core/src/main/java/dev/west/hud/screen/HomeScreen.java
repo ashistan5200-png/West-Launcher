@@ -1,5 +1,6 @@
 package dev.west.hud.screen;
 
+import dev.west.hud.Tr;
 import dev.west.hud.WestHud;
 import dev.west.hud.api.Game;
 import dev.west.hud.api.Gfx;
@@ -18,8 +19,8 @@ import java.util.Locale;
  * Dünyalar / Sunucular sayfaları: arama, liste ve seçilenin ayrıntıları.
  */
 public final class HomeScreen extends WestShell {
-    private static final String[] MODES = { "Hayatta kalma", "Yaratıcı", "Macera", "İzleyici" };
-    private static final String[] TABS = { "Oyna", "Modlar", "Görünüm", "Genel" };
+    private static final String[] MODES = { Tr.t("Hayatta kalma"), Tr.t("Yaratıcı"), Tr.t("Macera"), Tr.t("İzleyici") };
+    private static final String[] TABS = { Tr.t("Oyna"), Tr.t("Modlar"), Tr.t("Görünüm"), Tr.t("Genel") };
     private static final int[] PAGES = { -1, 3, 1, 2 };
 
     enum Page { HOME, WORLDS, SERVERS, STATS, SOCIAL }
@@ -124,7 +125,7 @@ public final class HomeScreen extends WestShell {
         int blockH = L + 8 + wordH + 16 + 4 * bh + 3 * gap;
         int top = Math.max(18, (sh - blockH) / 2 - Math.round(sh * 0.03f)) + Math.round((1 - in) * 10);
         Icons.draw(g, Icon.LOGO, cx - L / 2, top, L, 0xFFFFFFFF);
-        String word = "WEST CLIENT";
+        String word = Tr.t("WEST CLIENT");
         float sp = 1.1f;
         int ww = 0;
         for (char c : word.toCharArray()) ww += g.textBoldWidth(String.valueOf(c));
@@ -137,18 +138,18 @@ public final class HomeScreen extends WestShell {
 
         int by = top + L + 8 + wordH + 16;
         int bx = cx - colW / 2;
-        if (slate("sp", Icon.USER, "Tek oyunculu", bx, by, colW, bh, false)) open(Page.WORLDS);
-        if (slate("mp", Icon.USERS, "Çok oyunculu", bx, by + (bh + gap), colW, bh, false)) open(Page.SERVERS);
-        if (slate("st", Icon.STATS, "İstatistikler", bx, by + 2 * (bh + gap), colW, bh, false)) open(Page.STATS);
+        if (slate("sp", Icon.USER, Tr.t("Tek oyunculu"), bx, by, colW, bh, false)) open(Page.WORLDS);
+        if (slate("mp", Icon.USERS, Tr.t("Çok oyunculu"), bx, by + (bh + gap), colW, bh, false)) open(Page.SERVERS);
+        if (slate("st", Icon.STATS, Tr.t("İstatistikler"), bx, by + 2 * (bh + gap), colW, bh, false)) open(Page.STATS);
         int half = (colW - gap) / 2;
-        if (slate("op", Icon.GEAR, "Ayarlar", bx, by + 3 * (bh + gap), half, bh, false)) game.open(Game.Target.OPTIONS);
-        if (slate("md", Icon.SLIDERS, "Modlar", bx + half + gap, by + 3 * (bh + gap), colW - half - gap, bh, false)) game.openWestScreenPage(3);
+        if (slate("op", Icon.GEAR, Tr.t("Ayarlar"), bx, by + 3 * (bh + gap), half, bh, false)) game.open(Game.Target.OPTIONS);
+        if (slate("md", Icon.SLIDERS, Tr.t("Modlar"), bx + half + gap, by + 3 * (bh + gap), colW - half - gap, bh, false)) game.openWestScreenPage(3);
 
         // Sol: hızlı oyna
         int sideW = clamp(Math.round(sw * 0.23f), 130, 250);
         int lx = 12 - Math.round((1 - in) * 20);
         int ly = Math.round(sh * 0.19f);
-        if (slate("qp", Icon.SHARE, "Hızlı oyna", lx, ly, sideW, bh, false)) quickOpen = !quickOpen;
+        if (slate("qp", Icon.SHARE, Tr.t("Hızlı oyna"), lx, ly, sideW, bh, false)) quickOpen = !quickOpen;
         Icons.draw(g, quickOpen ? Icon.CHEVRON_DOWN : Icon.CHEVRON_RIGHT, lx + sideW - bh / 2 - 5, ly + bh / 2 - 4, 8, 0xCCFFFFFF);
         if (quickOpen) {
             int ry = ly + bh + gap;
@@ -156,19 +157,19 @@ public final class HomeScreen extends WestShell {
             for (int i = 0; i < worlds.size() && shown < 2; i++, shown++) {
                 Game.WorldInfo wi = worlds.get(i);
                 String id = wi.id();
-                if (quickRow("qw" + i, wi.name(), "Tek oyunculu · " + mode(wi), wi, null, lx, ry, sideW, Math.round(bh * 1.5f)))
+                if (quickRow("qw" + i, wi.name(), Tr.t("Tek oyunculu · ") + mode(wi), wi, null, lx, ry, sideW, Math.round(bh * 1.5f)))
                     startTransition(() -> WestHud.game.joinWorld(id), sw - 12 - sideW / 2f, sh * 0.35f);
                 ry += Math.round(bh * 1.5f) + gap;
             }
             for (int i = 0; i < servers.size() && shown < 3; i++, shown++) {
                 Game.ServerInfo si = servers.get(i);
                 int idx = i;
-                if (quickRow("qs" + i, si.name(), "Çok oyunculu · " + si.address(), null, si, lx, ry, sideW, Math.round(bh * 1.5f)))
+                if (quickRow("qs" + i, si.name(), Tr.t("Çok oyunculu · ") + si.address(), null, si, lx, ry, sideW, Math.round(bh * 1.5f)))
                     startTransition(() -> WestHud.game.joinServer(idx), sw - 12 - sideW / 2f, sh * 0.35f);
                 ry += Math.round(bh * 1.5f) + gap;
             }
             if (shown == 0) {
-                smallText(g, "Henüz dünya ya da sunucu yok", lx + 8, ry + 2, 0xAAFFFFFF);
+                smallText(g, Tr.t("Henüz dünya ya da sunucu yok"), lx + 8, ry + 2, 0xAAFFFFFF);
             }
         }
 
@@ -199,41 +200,41 @@ public final class HomeScreen extends WestShell {
             game.click();
             open(Page.SOCIAL);
         }
-        if (slate("host", Icon.SHARE, "Dünyayı paylaş", rx, by + (bh + gap), sideW, bh, false)) open(Page.WORLDS);
+        if (slate("host", Icon.SHARE, Tr.t("Dünyayı paylaş"), rx, by + (bh + gap), sideW, bh, false)) open(Page.WORLDS);
         boolean pending = social.pendingCount() > 0;
-        if (slate("soc", Icon.CHAT, "Sosyal", rx, by + 2 * (bh + gap), sideW, bh, false)) open(Page.SOCIAL);
+        if (slate("soc", Icon.CHAT, Tr.t("Sosyal"), rx, by + 2 * (bh + gap), sideW, bh, false)) open(Page.SOCIAL);
         if (pending) Ui.round(g, rx + sideW - 14, by + 2 * (bh + gap) + bh / 2 - 3, 6, 6, 3, t.accent | 0xFF000000);
-        if (slate("wd", Icon.GEM, "Gardırop", rx, by + 3 * (bh + gap), sideW, bh, false)) game.open(Game.Target.WARDROBE);
+        if (slate("wd", Icon.GEM, Tr.t("Gardırop"), rx, by + 3 * (bh + gap), sideW, bh, false)) go(new WardrobeScreen(this));
 
         // Sağ üst simgeler
         int s = clamp(bh, 18, 30), x = sw - 10 - s, y = 10;
-        if (topIcon("quit", Icon.CLOSE, x, y, s, "Oyundan çık", 0xFFE5566E)) game.open(Game.Target.QUIT);
+        if (topIcon("quit", Icon.CLOSE, x, y, s, Tr.t("Oyundan çık"), 0xFFE5566E)) game.open(Game.Target.QUIT);
         x -= s + 6;
-        if (topIcon("fs", Icon.FULLSCREEN, x, y, s, game.fullscreen() ? "Pencere" : "Tam ekran", 0)) game.toggleFullscreen();
+        if (topIcon("fs", Icon.FULLSCREEN, x, y, s, game.fullscreen() ? Tr.t("Pencere") : Tr.t("Tam ekran"), 0)) game.toggleFullscreen();
         x -= s + 6;
-        if (topIcon("bell", Icon.BELL, x, y, s, "Bildirimler", 0)) open(Page.SOCIAL);
+        if (topIcon("bell", Icon.BELL, x, y, s, Tr.t("Bildirimler"), 0)) open(Page.SOCIAL);
         if (pending) Ui.round(g, x + s - 7, y + 3, 5, 5, 3, t.accent | 0xFF000000);
         x -= s + 6;
         boolean musicOn = WestHud.config.data.music;
-        if (topIcon("music", musicOn ? Icon.NOTE : Icon.NOTE_OFF, x, y, s, musicOn ? "Müziği kapat" : "Müziği aç", 0)) {
+        if (topIcon("music", musicOn ? Icon.NOTE : Icon.NOTE_OFF, x, y, s, musicOn ? Tr.t("Müziği kapat") : Tr.t("Müziği aç"), 0)) {
             WestHud.config.data.music = !musicOn;
             WestHud.save();
         }
         x -= s + 6;
-        if (topIcon("lang", Icon.GLOBE, x, y, s, "Dil", 0)) game.open(Game.Target.LANGUAGE);
+        if (topIcon("lang", Icon.GLOBE, x, y, s, Tr.t("Dil"), 0)) game.open(Game.Target.LANGUAGE);
         x -= s + 6;
-        if (topIcon("west", Icon.LOGO, x, y, s, "West menüsü", 0)) game.openWestScreen(false);
+        if (topIcon("west", Icon.LOGO, x, y, s, Tr.t("West menüsü"), 0)) game.openWestScreen(false);
 
         // Alt orta: yüklü modlar
         int cs = s;
-        if (topIcon("mods", Icon.BOX, cx - cs / 2, sh - cs - 8, cs, "Yüklü modlar", 0)) game.openWestScreenPage(4);
+        if (topIcon("mods", Icon.BOX, cx - cs / 2, sh - cs - 8, cs, Tr.t("Yüklü modlar"), 0)) game.openWestScreenPage(4);
 
         // Alt köşeler
         int fy = sh - 13;
         Icons.draw(g, Icon.LOGO, 10, fy - 2, 10, 0xFFFFFFFF);
-        int e = brand(g, "WEST CLIENT", 24, fy, 0xFFFFFFFF, 0.6f);
+        int e = brand(g, Tr.t("WEST CLIENT"), 24, fy, 0xFFFFFFFF, 0.6f);
         g.text(game.loaderName() + " " + game.minecraftVersion(), e + 8, fy, 0xAAFFFFFF, false);
-        String legal = "Copyright Mojang AB. Do not distribute!";
+        String legal = Tr.t("Copyright Mojang AB. Do not distribute!");
         g.push();
         g.translate(sw - 10 - small(g, legal), fy + 1);
         g.scale(0.8f);
@@ -323,7 +324,7 @@ public final class HomeScreen extends WestShell {
 
     /** Alt sayfalardaki üst çubuk; tıklanan sekmenin sırası ya da -1 */
     private int topTabs(int sw, float in, int active) {
-        String[] tabs = { "Oyna", "İstatistikler", "Sosyal", "Modlar", "Görünüm" };
+        String[] tabs = { Tr.t("Oyna"), Tr.t("İstatistikler"), Tr.t("Sosyal"), Tr.t("Modlar"), Tr.t("Görünüm") };
         int[] pages = { -1, -1, -1, 3, 1 };
         // WestShell.topBar ilk sekmeyi etkin sayar; sekmeleri etkin olan başta olacak şekilde döndür
         String[] order = new String[tabs.length];
@@ -383,7 +384,7 @@ public final class HomeScreen extends WestShell {
         anim.put("seg", slide);
         int half = sww / 2;
         Ui.round(g, sx + 2 + Math.round(slide * (half - 2)), sy + 2, half - 2, 16, 6, t.accent | 0xFF000000);
-        String[] labels = { "Tek oyunculu", "Çok oyunculu" };
+        String[] labels = { Tr.t("Tek oyunculu"), Tr.t("Çok oyunculu") };
         for (int i = 0; i < 2; i++) {
             int lx = sx + i * half;
             boolean active = i == tab;
@@ -411,15 +412,15 @@ public final class HomeScreen extends WestShell {
         String label;
         Runnable action;
         if (count == 0) {
-            label = sp ? "Dünya oluştur" : "Sunucu ekle";
+            label = sp ? Tr.t("Dünya oluştur") : Tr.t("Sunucu ekle");
             action = () -> game.open(sp ? Game.Target.CREATE_WORLD : Game.Target.ADD_SERVER);
         } else if (sp) {
             Game.WorldInfo wi = worlds.get(Math.min(selWorld, count - 1));
-            label = "Oyna";
+            label = Tr.t("Oyna");
             action = () -> startTransition(() -> game.joinWorld(wi.id()), g.width() / 2f, g.height() / 2f);
         } else {
             int si = Math.min(selServer, count - 1);
-            label = "Katıl";
+            label = Tr.t("Katıl");
             action = () -> startTransition(() -> game.joinServer(si), g.width() / 2f, g.height() / 2f);
         }
         if (accentButton("play", label, count == 0 ? Icon.PLUS : Icon.PLAY, x + 6, cy, w - 12, 26)) action.run();
@@ -427,9 +428,9 @@ public final class HomeScreen extends WestShell {
         g.fill(x + 1, cy, x + w - 1, cy + 1, 0x14FFFFFF);
         cy += 1;
 
-        smallText(g, count + " kayıtlı", x + 9, cy + 5, 0x88FFFFFF);
+        smallText(g, count + Tr.t(" kayıtlı"), x + 9, cy + 5, 0x88FFFFFF);
         boolean onList = page != Page.HOME;
-        String all = onList ? "Ana sayfa" : sp ? "Tüm dünyalar" : "Tüm sunucular";
+        String all = onList ? Tr.t("Ana sayfa") : sp ? Tr.t("Tüm dünyalar") : Tr.t("Tüm sunucular");
         int aw = small(g, all) + 18;
         int ax = x + w - 6 - aw;
         float hv = hov("all", ui.hover(ax, cy + 1, aw, 13));
@@ -459,9 +460,9 @@ public final class HomeScreen extends WestShell {
         Ui.outline(g, x, y + 4, box, box, 8, 0x1FFFFFFF);
         Icons.draw(g, sp ? Icon.WORLD : Icon.GLOBE, x + 10, y + 14, 20, 0xDDFFFFFF);
         int tx = x + box + 8;
-        g.textBold(ui.fit(sp ? "Henüz dünya yok" : "Henüz sunucu yok", w - box - 8), tx, y + 7, 0xFFFFFFFF, false);
-        smallText(g, ui.fit(sp ? "İlk dünyanı oluştur" : "Oynamak için bir tane ekle", (int) ((w - box - 8) / 0.8f)), tx, y + 19, 0x99FFFFFF);
-        String add = sp ? "Oluştur" : "Ekle";
+        g.textBold(ui.fit(sp ? Tr.t("Henüz dünya yok") : Tr.t("Henüz sunucu yok"), w - box - 8), tx, y + 7, 0xFFFFFFFF, false);
+        smallText(g, ui.fit(sp ? Tr.t("İlk dünyanı oluştur") : Tr.t("Oynamak için bir tane ekle"), (int) ((w - box - 8) / 0.8f)), tx, y + 19, 0x99FFFFFF);
+        String add = sp ? Tr.t("Oluştur") : Tr.t("Ekle");
         int bw = small(g, add) + 22;
         boolean on = ui.hover(tx, y + 30, bw, 14);
         Ui.round(g, tx, y + 30, bw, 14, 4, Theme.mix(0x10FFFFFF, Theme.alpha(t.accent, 0x50), hov("emptyadd", on)));
@@ -502,7 +503,7 @@ public final class HomeScreen extends WestShell {
         int tx = ix + is + 7, tw = w - (tx - x) - 6;
         boolean wide = h >= 32;
         if (wide && (on || selected)) {
-            String act = sp ? "Oyna" : "Katıl";
+            String act = sp ? Tr.t("Oyna") : Tr.t("Katıl");
             int bw = g.textBoldWidth(act) + 30;
             if (accentButton(ns + "act" + i, act, Icon.PLAY, x + w - bw - 6, y + (h - 18) / 2, bw, 18)) {
                 joinRow(sp, i);
@@ -557,7 +558,7 @@ public final class HomeScreen extends WestShell {
     }
 
     private static String mode(Game.WorldInfo wi) {
-        return wi.hardcore() ? "Zorlu" : MODES[Math.max(0, Math.min(3, wi.mode()))];
+        return wi.hardcore() ? Tr.t("Zorlu") : MODES[Math.max(0, Math.min(3, wi.mode()))];
     }
 
     // ───────── Dünyalar / Sunucular sayfası ─────────
@@ -573,15 +574,15 @@ public final class HomeScreen extends WestShell {
         int hh = 26;
         Ui.round(g, x, y, w, hh, 9, 0xC20D0E15);
         Ui.outline(g, x, y, w, hh, 9, 0x1FFFFFFF);
-        if (iconButton("back", Icon.BACK, x + 5, y + 4, 18, "Geri", 0)) {
+        if (iconButton("back", Icon.BACK, x + 5, y + 4, 18, Tr.t("Geri"), 0)) {
             goHome();
             return;
         }
-        String title = sp ? "Dünyalar" : "Sunucular";
+        String title = sp ? Tr.t("Dünyalar") : Tr.t("Sunucular");
         float ts = 1.25f;
         bigText(g, title, x + 28, y + 8, 0xFFFFFFFF, ts);
         int afterTitle = x + 28 + Math.round(g.textBoldWidth(title) * ts) + 10;
-        String add = sp ? "Dünya oluştur" : "Sunucu ekle";
+        String add = sp ? Tr.t("Dünya oluştur") : Tr.t("Sunucu ekle");
         int bw = g.textBoldWidth(add) + 30;
         boolean compact = afterTitle + 60 + bw + 12 > x + w;
         if (compact) bw = 24;
@@ -592,7 +593,7 @@ public final class HomeScreen extends WestShell {
         if (addClicked) WestHud.game.open(sp ? Game.Target.CREATE_WORLD : Game.Target.ADD_SERVER);
         // Arama
         int sx = afterTitle, sww = bx - 6 - sx;
-        if (sww > 40) searchBox(sx, y + 4, sww, 18, sp ? "Dünya ara" : "Sunucu ara");
+        if (sww > 40) searchBox(sx, y + 4, sww, 18, sp ? Tr.t("Dünya ara") : Tr.t("Sunucu ara"));
 
         // Liste paneli
         int ly = y + hh + 8;
@@ -609,11 +610,11 @@ public final class HomeScreen extends WestShell {
             int cx = x + w / 2, cy = (ly + lb) / 2;
             if (total == 0) {
                 boolean b = sp
-                        ? emptyMessage(cx, cy, "Henüz dünya yok", "Oynamaya başlamak için bir dünya oluştur.", "Dünya oluştur")
-                        : emptyMessage(cx, cy, "Kayıtlı sunucu yok", "Bir sunucu ekle ya da doğrudan bağlan.", "Sunucu ekle");
+                        ? emptyMessage(cx, cy, Tr.t("Henüz dünya yok"), Tr.t("Oynamaya başlamak için bir dünya oluştur."), Tr.t("Dünya oluştur"))
+                        : emptyMessage(cx, cy, Tr.t("Kayıtlı sunucu yok"), Tr.t("Bir sunucu ekle ya da doğrudan bağlan."), Tr.t("Sunucu ekle"));
                 if (b) WestHud.game.open(sp ? Game.Target.CREATE_WORLD : Game.Target.ADD_SERVER);
             } else {
-                emptyMessage(cx, cy, "Eşleşen yok", "\"" + search + "\" için sonuç bulunamadı.", null);
+                emptyMessage(cx, cy, Tr.t("Eşleşen yok"), "\"" + search + Tr.t("\" için sonuç bulunamadı."), null);
             }
         } else {
             int rh = 36, gap = 4;
@@ -678,7 +679,7 @@ public final class HomeScreen extends WestShell {
         Ui.outline(g, x, y, w, h, 10, 0x1AFFFFFF);
         int count = sp ? worlds.size() : servers.size();
         if (count == 0) {
-            emptyMessage(x + w / 2, y + h / 2, sp ? "Dünya seçilmedi" : "Sunucu seçilmedi", sp ? "Ayrıntılar için bir dünya seç." : "Ayrıntılar için bir sunucu seç.", null);
+            emptyMessage(x + w / 2, y + h / 2, sp ? Tr.t("Dünya seçilmedi") : Tr.t("Sunucu seçilmedi"), sp ? Tr.t("Ayrıntılar için bir dünya seç.") : Tr.t("Ayrıntılar için bir sunucu seç."), null);
             return;
         }
         int i = Math.min(sp ? selWorld : selServer, count - 1);
@@ -700,20 +701,20 @@ public final class HomeScreen extends WestShell {
         }
         int by = y + h - pad - 20;
         int half = (w - pad * 2 - 6) / 2;
-        if (accentButton("dplay", sp ? "Oyna" : "Katıl", Icon.PLAY, x + pad, by, half, 20)) joinRow(sp, i);
-        if (outlineButton("dedit", "Düzenle", Icon.EDIT, x + pad + half + 6, by, w - pad * 2 - half - 6, 20, false)) {
+        if (accentButton("dplay", sp ? Tr.t("Oyna") : Tr.t("Katıl"), Icon.PLAY, x + pad, by, half, 20)) joinRow(sp, i);
+        if (outlineButton("dedit", Tr.t("Düzenle"), Icon.EDIT, x + pad + half + 6, by, w - pad * 2 - half - 6, 20, false)) {
             WestHud.game.open(sp ? Game.Target.SINGLEPLAYER : Game.Target.MULTIPLAYER);
         }
     }
 
     private static String ago(long millis) {
-        if (millis <= 0) return "Hiç oynanmadı";
+        if (millis <= 0) return Tr.t("Hiç oynanmadı");
         long s = (System.currentTimeMillis() - millis) / 1000;
-        if (s < 60) return "Az önce";
-        if (s < 3600) return (s / 60) + " dk önce";
-        if (s < 86400) return (s / 3600) + " saat önce";
-        if (s < 86400 * 30) return (s / 86400) + " gün önce";
-        return (s / (86400 * 30)) + " ay önce";
+        if (s < 60) return Tr.t("Az önce");
+        if (s < 3600) return Tr.t("{0} dk önce", s / 60);
+        if (s < 86400) return Tr.t("{0} sa önce", s / 3600);
+        if (s < 86400 * 30) return Tr.t("{0} gün önce", s / 86400);
+        return Tr.t("{0} ay önce", s / (86400 * 30));
     }
 
     // ───────── Olaylar ─────────

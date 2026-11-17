@@ -217,6 +217,49 @@ public final class Cosmetics {
         return px;
     }
 
+    /** Gardırop yuvaları: kimlik → başlık (Türkçe; Tr.t ile çevrilir) */
+    public static final String[][] SLOTS = {
+            { "cape", "Pelerin" }, { "hat", "Şapka" }, { "back", "Sırt" }, { "aura", "Aura" }, { "menuTheme", "Menü teması" } };
+
+    /** Görünen adlar (Türkçe; Tr.t ile çevrilir) */
+    public static final java.util.Map<String, String> NAMES = java.util.Map.ofEntries(
+            java.util.Map.entry("cape_west", "West pelerini"), java.util.Map.entry("cape_sunset", "Gün batımı pelerini"),
+            java.util.Map.entry("cape_ocean", "Okyanus pelerini"), java.util.Map.entry("cape_forest", "Orman pelerini"),
+            java.util.Map.entry("cape_sakura", "Kiraz pelerini"), java.util.Map.entry("cape_nether", "Nether pelerini"),
+            java.util.Map.entry("cape_end", "End pelerini"), java.util.Map.entry("cape_plus", "Plus pelerini"),
+            java.util.Map.entry("hat_cap", "Kasket"), java.util.Map.entry("hat_catears", "Kedi kulakları"),
+            java.util.Map.entry("hat_tophat", "Silindir şapka"), java.util.Map.entry("hat_wizard", "Büyücü şapkası"),
+            java.util.Map.entry("hat_crown", "Taç"), java.util.Map.entry("hat_halo", "Hale"),
+            java.util.Map.entry("back_bag", "Sırt çantası"), java.util.Map.entry("back_wings", "Melek kanatları"),
+            java.util.Map.entry("back_dragon", "Ejderha kanatları"), java.util.Map.entry("back_plus_wings", "Altın kanatlar"),
+            java.util.Map.entry("aura_hearts", "Kalp aurası"), java.util.Map.entry("aura_notes", "Nota aurası"),
+            java.util.Map.entry("aura_flame", "Alev aurası"), java.util.Map.entry("aura_stars", "Yıldız aurası"),
+            java.util.Map.entry("menu_ocean", "Okyanus menüsü"), java.util.Map.entry("menu_forest", "Orman menüsü"),
+            java.util.Map.entry("menu_nether", "Nether menüsü"), java.util.Map.entry("menu_end", "End menüsü"),
+            java.util.Map.entry("menu_gold", "Altın menü"));
+
+    /** Kart rengi (önizleme) */
+    public static int swatch(String id) {
+        return switch (id) {
+            case "cape_sunset" -> 0xFFFF9A5A; case "cape_ocean", "menu_ocean" -> 0xFF5FB2C9; case "cape_forest", "menu_forest" -> 0xFF79C08A;
+            case "cape_sakura" -> 0xFFF2A6C4; case "cape_nether", "menu_nether", "aura_flame" -> 0xFFFF7A45; case "cape_end", "menu_end", "back_dragon" -> 0xFFB28CFF;
+            case "cape_plus", "hat_halo", "back_plus_wings", "aura_stars", "menu_gold", "hat_crown" -> 0xFFF2B654;
+            case "hat_tophat" -> 0xFFC43C3C; case "hat_wizard" -> 0xFF7B5CFF; case "hat_catears", "aura_hearts" -> 0xFFFF6F9C;
+            case "back_wings" -> 0xFFF4F7FF; case "back_bag" -> 0xFFB07A45; case "aura_notes" -> 0xFF6AD0FF;
+            default -> 0xFFE8A25C;
+        };
+    }
+
+    /** Bir öğe hangi yuvaya takılır */
+    public static String slotOf(String id) {
+        if (id.startsWith("cape_")) return "cape";
+        if (id.startsWith("hat_")) return "hat";
+        if (id.startsWith("back_")) return "back";
+        if (id.startsWith("aura_")) return "aura";
+        if (id.startsWith("menu_")) return "menuTheme";
+        return null;
+    }
+
     /** Aura parçacığı türü: "heart" | "note" | "flame" | "star" */
     public static String aura(String id) {
         if (id == null) return null;
