@@ -3,6 +3,9 @@
 [build]
   publish = "site"
   command = ""
+  # Kredi tasarrufu: main'e yapılan her launcher/mod sürümü siteyi yeniden yayınlamasın.
+  # Yalnızca site/ veya bu dosya değiştiyse derle (çıkış kodu 0 = derlemeyi atla).
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- site/ netlify.toml"
 
 # Supabase e-posta bağlantıları (kayıt doğrulama, şifre sıfırlama) buraya gelir
 [[redirects]]
