@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import clsx from "clsx";
 import { useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import {
+import { Languages,
   Accessibility as AccessIcon, ArrowUpCircle, Brain, Check, Coffee, Cpu, Download, Gamepad2, KeyRound, Loader2, Palette, RefreshCw, Shield, SlidersHorizontal, Sparkles, Trash2,
 } from "lucide-react";
 import type { Hardware, JavaInstall } from "@/lib/types";
@@ -14,7 +14,7 @@ import { useUpdate } from "@/stores/update";
 import { aiReady, MODELS, useAi } from "@/stores/ai";
 import { PasswordField } from "@/components/SetupWizard";
 import { AiSetupBadge } from "@/components/AiSetup";
-import { tx } from "@/lib/i18n";
+import { getLang, LANGS, setLang, tx, type Lang } from "@/lib/i18n";
 
 const TABS = [
   { id: "genel", label: tx("Genel"), icon: SlidersHorizontal },
@@ -121,6 +121,16 @@ function GeneralTab() {
           <Toggle label={tx("Otomatik indir")} on={settings.autoUpdate} onChange={(v) => void update({ autoUpdate: v })} />
         </Row>
         {error && <p className="hint error set-note">{error}</p>}
+      </Group>
+
+      <Group title={tx("Dil")}>
+        <Row title={<><Languages size={15} /> {tx("Dil")}</>} desc={tx("Arayüz dili. Değiştirince West Client yeniden yüklenir; oyun içi West menüleri de bir sonraki açılışta bu dilde olur.")}>
+          <div className="segmented">
+            {LANGS.map((l) => (
+              <button key={l.id} className={getLang() === l.id ? "active" : ""} onClick={() => void changeLang(l.id)}>{l.label}</button>
+            ))}
+          </div>
+        </Row>
       </Group>
 
       <Group title={tx("Oyuncu")}>
@@ -427,4 +437,11 @@ function SecurityTab() {
       {msg && <p className={clsx("hint set-note", !msg.ok && "error")}>{msg.text}</p>}
     </Group>
   );
+}
+
+async function changeLang(l: Lang) {
+  if (l === getLang()) return;
+  await useSettings.getState().update({ language: l });
+  setLang(l);
+  location.reload();
 }

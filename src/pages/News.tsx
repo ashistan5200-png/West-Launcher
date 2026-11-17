@@ -8,10 +8,10 @@ import { api, isTauri } from "@/lib/ipc";
 import { formatCount } from "@/lib/format";
 import type { AssetDiff, ManifestEntry, ModUpdate, NewSound, NewTexture, PatchNote } from "@/lib/types";
 import { ContentIcon } from "@/components/ContentIcon";
-import { tx } from "@/lib/i18n";
+import { locale, tx } from "@/lib/i18n";
 
 type Tab = "minecraft" | "mods" | "assets";
-const dateTR = (iso: string) => new Date(iso).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" });
+const dateTR = (iso: string) => new Date(iso).toLocaleDateString(locale(), { day: "numeric", month: "long", year: "numeric" });
 
 /** Mojang'ın sürüm notu HTML'ini güvenli hale getirir: betik, iframe ve olay öznitelikleri atılır. */
 function sanitize(html: string): string {

@@ -175,7 +175,7 @@ export function AshiPorter({ instance, open, onClose }: { instance: Instance; op
                     <>
                       <button className="btn btn-ghost" onClick={() => setStep("target")}>{tx("Geri")}</button>
                       <span className="muted tiny grow">{undecided > 0 ? tx("{0} içerik için karar ver", undecided) : ""}</span>
-                      <button className="btn btn-primary" disabled={undecided > 0} onClick={() => void run()}><ArrowRight size={15} /> {mc} {tx("sürümüne taşı")}</button>
+                      <button className="btn btn-primary" disabled={undecided > 0} onClick={() => void run()}><ArrowRight size={15} /> {tx("{0} sürümüne taşı", mc)}</button>
                     </>
                   ) : <span className="muted small row" style={{ gap: 8 }}><Loader2 size={15} className="spin" /> {tx("Taşınıyor… İlerleme sağ altta görünür.")}</span>}
                 </div>

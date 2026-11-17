@@ -22,7 +22,7 @@ import { Modal } from "@/components/Modal";
 import { Menu } from "@/components/instance/Menu";
 import { formatCount } from "@/lib/format";
 import { askConfirm } from "@/components/ConfirmDialog";
-import { tx } from "@/lib/i18n";
+import { locale, tx } from "@/lib/i18n";
 
 const err = (e: unknown) => String(e).replace(/^Error: /, "");
 
@@ -453,7 +453,7 @@ export function ProfilePage() {
       else { await S.follow(account.userId, p.id); const st = p.is_private ? "pending" : "accepted"; setRel({ ...rel, following: st }); if (st === "accepted") setP({ ...p, followers_count: p.followers_count + 1 }); }
     } catch (e) { setNotice(err(e)); }
   };
-  const joined = new Date(p.created_at).toLocaleDateString("tr-TR", { month: "long", year: "numeric" });
+  const joined = new Date(p.created_at).toLocaleDateString(locale(), { month: "long", year: "numeric" });
 
   return (
     <SocialLayout>
@@ -495,7 +495,7 @@ export function ProfilePage() {
             {p.location && <span><MapPin size={14} /> {p.location}</span>}
             {p.website && <button className="s-link" onClick={() => void openUrl(p.website!.startsWith("http") ? p.website! : `https://${p.website}`)}><Link2 size={14} /> {p.website.replace(/^https?:\/\//, "")}</button>}
             {p.mc_username && <span>{tx("⛏ Minecraft:")} <b>{p.mc_username}</b></span>}
-            <span><CalendarDays size={14} /> {joined} {tx("tarihinde katıldı")}</span>
+            <span><CalendarDays size={14} /> {tx("{0} tarihinde katıldı", joined)}</span>
           </div>
           {p.links?.length > 0 && (
             <div className="s-links">{p.links.map((l) => <button key={l.url} className="s-chip" onClick={() => void openUrl(l.url)}><Link2 size={12} /> {l.label || l.url.replace(/^https?:\/\//, "")}</button>)}</div>

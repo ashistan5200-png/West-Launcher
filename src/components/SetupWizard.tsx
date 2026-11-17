@@ -237,7 +237,7 @@ export function SetupWizard() {
                   <p className="muted small"><Loader2 size={13} className="spin" /> {tx("Bilgisayarındaki launcher'lara bakıyorum…")}</p>
                 ) : launchers.length ? (
                   <>
-                    <p>{tx("Bilgisayarında")} <strong>{launchers.join(", ")}</strong> buldum ({found!.length} {tx("instance). Modlarını, ayarlarını ve paketlerini West Client'a taşıyabilirim; orijinallerine dokunmam.")}</p>
+                    <p>{tx("Bilgisayarında {0} buldum ({1} instance). Modlarını, ayarlarını ve paketlerini West Client'a taşıyabilirim; orijinallerine dokunmam.", launchers.join(", "), found!.length)}</p>
                     <label className="check"><input type="checkbox" checked={importAfter} onChange={(e) => setImportAfter(e.target.checked)} /> <Import size={14} /> {tx("Kurulum bitince aktarım sihirbazını aç")}</label>
                   </>
                 ) : (

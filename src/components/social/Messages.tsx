@@ -10,7 +10,7 @@ import { useSocial } from "@/stores/social";
 import { Modal } from "@/components/Modal";
 import { Avatar, RichText, ago } from "./PostCard";
 import { askConfirm } from "@/components/ConfirmDialog";
-import { tx } from "@/lib/i18n";
+import { locale, tx } from "@/lib/i18n";
 import { parseInvite, useInvites } from "@/stores/invites";
 
 const err = (e: unknown) => String(e).replace(/^Error: /, "");
@@ -19,7 +19,7 @@ const dayLabel = (iso: string) => {
   const y = new Date(t); y.setDate(t.getDate() - 1);
   if (d.toDateString() === t.toDateString()) return tx("Bugün");
   if (d.toDateString() === y.toDateString()) return tx("Dün");
-  return d.toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: d.getFullYear() === t.getFullYear() ? undefined : "numeric" });
+  return d.toLocaleDateString(locale(), { day: "numeric", month: "long", year: d.getFullYear() === t.getFullYear() ? undefined : "numeric" });
 };
 
 /** Mesajlar: solda sohbetler, sağda seçili sohbet. */
@@ -167,7 +167,7 @@ function Chat({ conv, onActivity }: { conv: S.Conversation; onActivity: () => vo
                   {quoted && <div className="dm-quote">{quoted.body ?? tx("📷 Fotoğraf")}</div>}
                   {m.media.map((x) => <img key={x.url} src={x.url} alt="" referrerPolicy="no-referrer" />)}
                   {m.body && (parseInvite(m.body) ? <InviteBubble msg={m} mine={mine} from={mine ? null : other ?? null} /> : <p><RichText text={m.body} /></p>)}
-                  <span className="dm-time">{new Date(m.created_at).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}</span>
+                  <span className="dm-time">{new Date(m.created_at).toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit" })}</span>
                 </div>
                 <div className="dm-tools">
                   <button className="icon-btn sm" title={tx("Yanıtla")} onClick={() => setReply(m)}><CornerUpLeft size={14} /></button>

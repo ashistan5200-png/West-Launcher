@@ -14,7 +14,7 @@ import type { Post } from "@/lib/social";
 import { useSocial } from "@/stores/social";
 import { useWest } from "@/stores/west";
 import { askConfirm } from "@/components/ConfirmDialog";
-import { tx } from "@/lib/i18n";
+import { locale, tx } from "@/lib/i18n";
 
 /** "3 dk", "2 sa", "5 g", tarih */
 export const ago = (iso: string) => {
@@ -23,7 +23,7 @@ export const ago = (iso: string) => {
   if (s < 3600) return `${Math.floor(s / 60)} dk`;
   if (s < 86400) return `${Math.floor(s / 3600)} sa`;
   if (s < 7 * 86400) return `${Math.floor(s / 86400)} g`;
-  return new Date(iso).toLocaleDateString("tr-TR", { day: "numeric", month: "short", year: new Date(iso).getFullYear() === new Date().getFullYear() ? undefined : "numeric" });
+  return new Date(iso).toLocaleDateString(locale(), { day: "numeric", month: "short", year: new Date(iso).getFullYear() === new Date().getFullYear() ? undefined : "numeric" });
 };
 
 export function Avatar({ url, name, size = 42 }: { url?: string | null; name: string; size?: number }) {
@@ -198,7 +198,7 @@ export function PostCard({ post: initial, onChanged, onDeleted, onOpenMedia, det
           <MediaGrid media={post.media} onOpen={(i) => onOpenMedia?.(post.media, i)} />
           {post.poll && <PollView post={post} onVoted={update} />}
           {post.quote_of && <QuoteEmbed id={post.quote_of} />}
-          {detail && <div className="muted small s-when">{new Date(post.created_at).toLocaleString("tr-TR", { dateStyle: "long", timeStyle: "short" })} · <b>{formatCount(post.view_count)}</b> {tx("görüntülenme")}</div>}
+          {detail && <div className="muted small s-when">{new Date(post.created_at).toLocaleString(locale(), { dateStyle: "long", timeStyle: "short" })} · <b>{formatCount(post.view_count)}</b> {tx("görüntülenme")}</div>}
           <div className="s-actions" onClick={(e) => e.stopPropagation()}>
             <button className="s-act reply" title={tx("Yanıtla")} onClick={() => need() && openCompose({ replyTo: post.id })}><MessageCircle size={17} /> <span>{post.reply_count ? formatCount(post.reply_count) : ""}</span></button>
             <Menu

@@ -189,6 +189,8 @@ pub fn apply_prefs(game_dir: &Path, s: &crate::settings::Settings, w: &crate::wa
     }
     o.insert("cosmetics".into(), serde_json::Value::Object(cos));
     o.insert("plus".into(), w.plus_active().into());
+    // Arayüz dili (oyun içi West menüleri de bunu kullanır)
+    o.insert("language".into(), if s.language.is_empty() { "tr".into() } else { s.language.clone().into() });
     write_json_atomic(&p, &v)
 }
 

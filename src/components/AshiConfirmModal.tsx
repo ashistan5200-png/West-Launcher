@@ -48,7 +48,7 @@ export function AshiConfirmModal() {
           </div>
           <div className="stack">
             <p className="ashi-bubble">
-              <strong>{confirm.name}</strong> {tx("içindeki")} <strong>{plan.modCount} modu</strong> {tx("ikiye bölerek tarayacağım. Her turda oyunu açıp ana menüye ulaşıp ulaşmadığına bakacağım.")}
+              {tx("{0} içindeki {1} modu ikiye bölerek tarayacağım. Her turda oyunu açıp ana menüye ulaşıp ulaşmadığına bakacağım.", confirm.name, plan.modCount)}
             </p>
 
             <div className="warn-box">
@@ -56,7 +56,7 @@ export function AshiConfirmModal() {
               <div>
                 <strong>{tx("Bu işlem biraz uzun sürebilir.")}</strong>
                 <span className="small">
-                  {tx("En fazla ~")}{plan.maxRounds} {tx("tur · tahminen")} <strong>{lo}–{hi} dakika</strong>
+                  {tx("En fazla ~{0} tur · tahminen", plan.maxRounds)} <strong>{tx("{0}–{1} dakika", lo, hi)}</strong>
                 </span>
               </div>
             </div>

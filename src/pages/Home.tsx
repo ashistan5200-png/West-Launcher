@@ -89,7 +89,7 @@ export function HomePage() {
         <Stat icon={Timer} label={tx("Toplam oyun süresi")} value={formatDuration(totalSecs)} />
         <Stat icon={Boxes} label={tx("Instance")} value={String(playable.length)} onClick={() => navigate("/library")} />
         <Stat icon={UserRound} label={tx("Hesap")} value={account?.username ?? tx("Ekle")} sub={account ? (account.kind === "microsoft" ? tx("Microsoft") : tx("Offline")) : undefined} onClick={() => navigate("/skins")} />
-        <Stat icon={Download} label={tx("İçerik bul")} value="Keşfet" sub={tx("Modrinth")} onClick={() => navigate("/browse")} />
+        <Stat icon={Download} label={tx("İçerik bul")} value={tx("Keşfet")} sub={tx("Modrinth")} onClick={() => navigate("/browse")} />
       </section>
 
       {playable.length > 1 && (

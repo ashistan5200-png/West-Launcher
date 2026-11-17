@@ -13,10 +13,10 @@ import { LOADER_LABEL, formatCount, formatRelative } from "@/lib/format";
 import type { ContentHit, Instance, ProjectDetail, ProjectVersion } from "@/lib/types";
 import { ContentIcon } from "./ContentIcon";
 import { InstallMenu } from "./InstallMenu";
-import { tx } from "@/lib/i18n";
+import { locale, tx } from "@/lib/i18n";
 
 type Tab = "about" | "gallery" | "versions";
-const dateTR = (iso: string) => new Date(iso).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" });
+const dateTR = (iso: string) => new Date(iso).toLocaleDateString(locale(), { day: "numeric", month: "long", year: "numeric" });
 const SIDE: Record<string, string> = { required: tx("Gerekli"), optional: tx("İsteğe bağlı"), unsupported: tx("Gerekmez"), unknown: tx("Bilinmiyor") };
 const VTYPE: Record<string, string> = { release: tx("Kararlı"), beta: tx("Beta"), alpha: tx("Alfa") };
 

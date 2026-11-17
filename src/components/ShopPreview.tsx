@@ -1,6 +1,7 @@
 import { Backpack, Cat, Crown, Feather, Flame, GraduationCap, Heart, Music, Sparkles, Star } from "lucide-react";
 import { PlusMark } from "@/components/PlusBadge";
 import { meta, SKIES, THEME_PACKS, type ShopItem } from "@/lib/shop";
+import { tx } from "@/lib/i18n";
 
 const rgb = (s: string) => `rgb(${s})`;
 
@@ -14,7 +15,7 @@ export function ShopPreview({ item }: { item: ShopItem }) {
     return (
       <div className="sp sp-plus" style={bg}>
         <PlusMark size={58} />
-        <span className="sp-days">{item.days >= 365 ? "1 YIL" : `${item.days} GÜN`}</span>
+        <span className="sp-days">{item.days >= 365 ? tx("1 YIL") : tx("{0} GÜN", item.days)}</span>
       </div>
     );
   }

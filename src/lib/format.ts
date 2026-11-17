@@ -1,9 +1,9 @@
 import { tx } from "@/lib/i18n";
 export const formatDuration = (secs: number) => {
-  if (secs < 60) return `${secs} sn`;
+  if (secs < 60) return tx("{0} sn", secs);
   const h = Math.floor(secs / 3600);
   const m = Math.floor((secs % 3600) / 60);
-  return h ? `${h} sa ${m} dk` : `${m} dk`;
+  return h ? tx("{0} sa {1} dk", h, m) : tx("{0} dk", m);
 };
 
 export const formatRelative = (iso: string | null) => {
@@ -37,4 +37,4 @@ export const STAGE_LABEL: Record<string, string> = {
 };
 
 export const formatCount = (n: number) =>
-  n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1).replace(".0", "")} M` : n >= 1_000 ? `${(n / 1_000).toFixed(1).replace(".0", "")} B` : String(n);
+  n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1).replace(".0", "")} M` : n >= 1_000 ? `${(n / 1_000).toFixed(1).replace(".0", "")} ${tx("B")}` : String(n);

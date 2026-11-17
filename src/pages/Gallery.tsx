@@ -9,7 +9,7 @@ import { api, isTauri } from "@/lib/ipc";
 import type { Screenshot } from "@/lib/types";
 import { ScreenshotEditor } from "@/components/ScreenshotEditor";
 import { askConfirm } from "@/components/ConfirmDialog";
-import { tx } from "@/lib/i18n";
+import { locale, tx } from "@/lib/i18n";
 
 const src = (p: string) => (isTauri() ? convertFileSrc(p) : p);
 const fmtSize = (b: number) => (b > 1_048_576 ? `${(b / 1_048_576).toFixed(1)} MB` : `${Math.round(b / 1024)} KB`);
@@ -20,7 +20,7 @@ function dayLabel(iso: string) {
   const diff = Math.floor((new Date(today.toDateString()).getTime() - new Date(d.toDateString()).getTime()) / 86_400_000);
   if (diff === 0) return tx("Bugün");
   if (diff === 1) return tx("Dün");
-  return d.toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: today.getFullYear() === d.getFullYear() ? undefined : "numeric" });
+  return d.toLocaleDateString(locale(), { day: "numeric", month: "long", year: today.getFullYear() === d.getFullYear() ? undefined : "numeric" });
 }
 
 export function GalleryPage() {
@@ -128,7 +128,7 @@ function ShotCard({ s, layout }: { s: Screenshot; layout: "grid" | "list" }) {
       </div>
       <div className="shot-meta">
         <span className="truncate small">{s.file}</span>
-        <span className="muted tiny">{s.instanceName} · {new Date(s.modified).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })} · {fmtSize(s.size)}</span>
+        <span className="muted tiny">{s.instanceName} · {new Date(s.modified).toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit" })} · {fmtSize(s.size)}</span>
       </div>
       {layout === "list" && <Actions s={s} />}
     </motion.div>
@@ -167,7 +167,7 @@ function Lightbox({ shot, list }: { shot: Screenshot; list: Screenshot[] }) {
       <div className="lb-bar" onClick={(e) => e.stopPropagation()}>
         <div className="grow">
           <strong className="truncate">{shot.file}</strong>
-          <span className="muted tiny">{shot.instanceName} · {new Date(shot.modified).toLocaleString("tr-TR")} · {fmtSize(shot.size)} · {i + 1}/{list.length}</span>
+          <span className="muted tiny">{shot.instanceName} · {new Date(shot.modified).toLocaleString(locale())} · {fmtSize(shot.size)} · {i + 1}/{list.length}</span>
         </div>
         <Actions s={shot} />
         <button className="icon-btn" title={tx("Klasörde göster")} onClick={async () => api.openPath(await api.screenshotsFolder(shot.instanceId))}><FolderOpen size={15} /></button>

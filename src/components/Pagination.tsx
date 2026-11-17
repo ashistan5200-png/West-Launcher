@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import clsx from "clsx";
-import { tx } from "@/lib/i18n";
+import { locale, tx } from "@/lib/i18n";
 
 /** Sayfa düğmeleri: ilk, önceki, numaralar, sonraki, son ve "sayfaya git". */
 export function Pagination({ page, pages, onChange, disabled }: { page: number; pages: number; onChange: (p: number) => void; disabled?: boolean }) {
@@ -26,7 +26,7 @@ export function Pagination({ page, pages, onChange, disabled }: { page: number; 
       <div className="pg-nums">
         {nums.map((n, i) =>
           n === "…" ? <span key={`e${i}`} className="pg-gap">…</span> : (
-            <button key={n} className={clsx("pg-num", n === page && "on")} disabled={disabled} onClick={() => go(n)}>{n.toLocaleString("tr-TR")}</button>
+            <button key={n} className={clsx("pg-num", n === page && "on")} disabled={disabled} onClick={() => go(n)}>{n.toLocaleString(locale())}</button>
           ),
         )}
       </div>
@@ -35,7 +35,7 @@ export function Pagination({ page, pages, onChange, disabled }: { page: number; 
       <form className="pg-jump" onSubmit={(e) => { e.preventDefault(); const n = parseInt(jump, 10); if (!Number.isNaN(n)) go(n); }}>
         <span className="muted small">{tx("Sayfa")}</span>
         <input inputMode="numeric" value={jump} onChange={(e) => setJump(e.target.value.replace(/\D/g, ""))} aria-label={tx("Sayfa numarası")} />
-        <span className="muted small">/ {pages.toLocaleString("tr-TR")}</span>
+        <span className="muted small">/ {pages.toLocaleString(locale())}</span>
         <button className="btn btn-ghost btn-sm" type="submit" disabled={disabled}>{tx("Git")}</button>
       </form>
     </nav>

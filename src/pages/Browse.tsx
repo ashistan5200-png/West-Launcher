@@ -18,7 +18,7 @@ import { ModDetail } from "@/components/ModDetail";
 import { AnimatePresence } from "framer-motion";
 import { LOADER_LABEL, formatCount, formatRelative } from "@/lib/format";
 import { catLabel } from "@/lib/categories";
-import { tx } from "@/lib/i18n";
+import { locale, tx } from "@/lib/i18n";
 
 const KINDS: { id: ContentKind; label: string }[] = [
   { id: "mod", label: tx("Modlar") },
@@ -276,7 +276,7 @@ export function BrowsePage() {
         </nav>
 
         <div className="bmeta muted small">
-          {loading && hits.length === 0 ? tx("Aranıyor…") : tx("{0} sonuç · sayfa {1} / {2}", formatCount(total), page, pages.toLocaleString("tr-TR"))}
+          {loading && hits.length === 0 ? tx("Aranıyor…") : tx("{0} sonuç · sayfa {1} / {2}", formatCount(total), page, pages.toLocaleString(locale()))}
           {fromInstance && <span> · <strong>{fromInstance.name}</strong> ile uyumlu</span>}
           {kind === "modpack" && <span> {tx("· Modpack'ler kendi sürümüyle yeni bir instance olarak kurulur")}</span>}
         </div>

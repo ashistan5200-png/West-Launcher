@@ -4,7 +4,7 @@ import { ArrowUpCircle, Check, ExternalLink, Loader2 } from "lucide-react";
 import { open as openUrl } from "@tauri-apps/plugin-shell";
 import { Modal } from "./Modal";
 import { useUpdate } from "@/stores/update";
-import { tx } from "@/lib/i18n";
+import { locale, tx } from "@/lib/i18n";
 
 const fmtMB = (b: number) => `${(b / 1_048_576).toFixed(1)} MB`;
 
@@ -95,7 +95,7 @@ export function UpdateModal() {
         <div><span className="muted tiny">{tx("Yeni")}</span><strong className="accent">v{info.version}</strong></div>
         <span className="grow" />
         <span className="muted tiny">
-          {info.publishedAt ? new Date(info.publishedAt).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" }) : ""}
+          {info.publishedAt ? new Date(info.publishedAt).toLocaleDateString(locale(), { day: "numeric", month: "long", year: "numeric" }) : ""}
           {info.size ? ` · ${fmtMB(info.size)}` : ""}
         </span>
       </div>
