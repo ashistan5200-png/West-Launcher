@@ -14,9 +14,7 @@ import { useUpdate } from "@/stores/update";
 import { aiReady, MODELS, useAi } from "@/stores/ai";
 import { PasswordField } from "@/components/SetupWizard";
 import { AiSetupBadge } from "@/components/AiSetup";
-import { locale, tx } from "@/lib/i18n";
-import { usePlus } from "@/stores/plus";
-import { PlusBadge } from "@/components/PlusBadge";
+import { tx } from "@/lib/i18n";
 
 const TABS = [
   { id: "genel", label: tx("Genel"), icon: SlidersHorizontal },
@@ -124,8 +122,6 @@ function GeneralTab() {
         </Row>
         {error && <p className="hint error set-note">{error}</p>}
       </Group>
-
-      <PlusGroup />
 
       <Group title={tx("Oyuncu")}>
         <Row title={tx("Offline kullanıcı adı")} desc={tx("Microsoft hesabı olmadan oynarken görünen isim.")}>
@@ -429,18 +425,6 @@ function SecurityTab() {
         <button className="btn btn-primary btn-sm" disabled={pw.length < 4} onClick={() => void save(pw)}><KeyRound size={14} /> {has ? tx("Değiştir") : tx("Kilitle")}</button>
       </div>
       {msg && <p className={clsx("hint set-note", !msg.ok && "error")}>{msg.text}</p>}
-    </Group>
-  );
-}
-
-function PlusGroup() {
-  const { active, expiresAt, openModal } = usePlus();
-  const until = expiresAt ? new Date(expiresAt).toLocaleDateString(locale(), { day: "numeric", month: "long", year: "numeric" }) : "";
-  return (
-    <Group title="West Plus">
-      <Row title={<PlusBadge size={16} />} desc={active ? tx("Aktif · {0} tarihine kadar", until) : tx("Aylık 79,99 TL'den başlayan fiyatlarla. Kodun varsa buradan kullanabilirsin.")}>
-        <button className="btn btn-ghost btn-sm" onClick={openModal}>{active ? tx("Kod kullan") : tx("İncele")}</button>
-      </Row>
     </Group>
   );
 }

@@ -10,8 +10,6 @@ import { useInstances } from "@/stores/instances";
 import { Logo } from "./Logo";
 import { UpdateButton } from "./UpdateCenter";
 import { tx } from "@/lib/i18n";
-import { PlusBadge, PlusMark } from "./PlusBadge";
-import { usePlus } from "@/stores/plus";
 
 const win = () => (isTauri() ? getCurrentWindow() : null);
 
@@ -22,26 +20,14 @@ export function TitleBar() {
   const loadWest = useWest((s) => s.load);
   useEffect(() => void loadWest(), [loadWest]);
   const name = west?.username ?? account?.username;
-  const plus = usePlus((s) => s.active);
-  const openPlus = usePlus((s) => s.openModal);
   return (
     <header className="titlebar" data-tauri-drag-region>
       <div className="titlebar-brand" data-tauri-drag-region>
         <Logo size={20} />
         <span className="wordmark" data-tauri-drag-region>{tx("West")}<b>{tx("Client")}</b></span>
-        {plus && (
-          <button className="tb-plus" onClick={openPlus} title="West Plus">
-            <PlusBadge size={15} />
-          </button>
-        )}
       </div>
       <div className="titlebar-actions">
         <RunningPill />
-        {!plus && (
-          <button className="tb-getplus" onClick={openPlus} title={tx("West Plus'ı keşfet")}>
-            <PlusMark size={14} /> <span>West Plus</span>
-          </button>
-        )}
         <UpdateButton />
         <button className="tb-account" onClick={() => navigate("/skins")} title={tx("Hesap ve skin")}>
           <span className="tb-avatar">{(name ?? "?").slice(0, 1).toUpperCase()}</span>
