@@ -335,10 +335,10 @@ pub fn apply(mods_dir: &Path, mods: &[ModInfo], enabled: &BTreeSet<usize>) -> Re
         let off = mods_dir.join(format!("{}{OFF_SUFFIX}", m.file));
         if enabled.contains(&i) {
             if off.exists() && !on.exists() {
-                std::fs::rename(&off, &on)?;
+                crate::util::retry(|| std::fs::rename(&off, &on)).map_err(|e| crate::error::AppError::at(std::path::Path::new(&off), e))?;
             }
         } else if on.exists() {
-            std::fs::rename(&on, &off)?;
+            crate::util::retry(|| std::fs::rename(&on, &off)).map_err(|e| crate::error::AppError::at(std::path::Path::new(&on), e))?;
         }
     }
     Ok(())

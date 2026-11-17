@@ -160,14 +160,13 @@ pub async fn start_game(app: &AppHandle, id: &str, auth: AuthSession, join_serve
         crate::companion::remove(&state.paths.instance_game_dir(id));
     }
 
-    let natives = state.paths.instance_natives(id);
-    {
+    let natives = {
         let archives = libs.natives.clone();
-        let dest = natives.clone();
+        let dest = state.paths.instance_natives(id);
         tokio::task::spawn_blocking(move || extract_natives(&archives, &dest))
             .await
-            .map_err(|e| AppError::msg(e.to_string()))??;
-    }
+            .map_err(|e| AppError::msg(e.to_string()))??
+    };
 
     // 4) JVM optimizasyonu
     let hw = hardware();

@@ -83,12 +83,30 @@ pub fn resolve_libraries(paths: &Paths, libs: &[Library], features: &Features) -
     out
 }
 
-/// Native kütüphaneleri düz olarak hedef klasöre çıkarır (LWJGL 2 & 3 uyumlu).
-pub fn extract_natives(archives: &[PathBuf], dest: &Path) -> Result<()> {
-    if dest.exists() {
-        std::fs::remove_dir_all(dest)?;
+/// Native kütüphaneleri düz olarak bir klasöre çıkarır (LWJGL 2 & 3 uyumlu) ve kullanılan klasörü döner.
+///
+/// Windows'ta önceki oyun tam kapanmadıysa ya da antivirüs tarıyorsa DLL'ler kilitli kalır ve klasör silinemez.
+/// Bu durumda hata vermek yerine yanına yeni bir klasör açılır (natives-<zaman>); eski kopyalar sonra temizlenir.
+pub fn extract_natives(archives: &[PathBuf], dest: &Path) -> Result<PathBuf> {
+    let parent = dest.parent().map(Path::to_path_buf).unwrap_or_default();
+    let base = dest.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| "natives".into());
+    let dest = if !dest.exists() || crate::util::retry(|| std::fs::remove_dir_all(dest)).is_ok() {
+        dest.to_path_buf()
+    } else {
+        let alt = parent.join(format!("{base}-{}", chrono::Utc::now().timestamp_millis()));
+        tracing::warn!("natives klasörü kilitli ({}); {} kullanılıyor", dest.display(), alt.display());
+        alt
+    };
+    // Önceki seferlerden kalan yedek klasörleri sessizce temizle (kilitliyse kalsın)
+    if let Ok(rd) = std::fs::read_dir(&parent) {
+        for e in rd.flatten() {
+            let n = e.file_name().to_string_lossy().to_string();
+            if n.starts_with(&format!("{base}-")) && e.path() != dest {
+                let _ = std::fs::remove_dir_all(e.path());
+            }
+        }
     }
-    std::fs::create_dir_all(dest)?;
+    std::fs::create_dir_all(&dest).map_err(|e| crate::error::AppError::at(&dest, e))?;
     for archive in archives {
         let Ok(file) = std::fs::File::open(archive) else { continue };
         let mut zip = zip::ZipArchive::new(file)?;
@@ -115,10 +133,11 @@ pub fn extract_natives(archives: &[PathBuf], dest: &Path) -> Result<()> {
             let file_name = Path::new(&name).file_name().unwrap().to_owned();
             let mut buf = Vec::with_capacity(entry.size() as usize);
             entry.read_to_end(&mut buf)?;
-            std::fs::write(dest.join(file_name), buf)?;
+            let out = dest.join(file_name);
+            crate::util::retry(|| std::fs::write(&out, &buf)).map_err(|e| crate::error::AppError::at(&out, e))?;
         }
     }
-    Ok(())
+    Ok(dest)
 }
 
 /// Bir sürümün oynanabilmesi için gereken her şeyi indirir.

@@ -249,8 +249,8 @@ pub fn fix_bad_paths(mods_dir: &Path, file: &str, bad_location: Option<&str>) ->
     }
     // 3) Orijinali yedekle, düzeltilmişi yerine koy
     let backup = format!("{file}{BACKUP_SUFFIX}");
-    std::fs::rename(&src, mods_dir.join(&backup))?;
-    std::fs::rename(&tmp, mods_dir.join(&out_name))?;
+    crate::util::retry(|| std::fs::rename(&src, mods_dir.join(&backup))).map_err(|e| crate::error::AppError::at(std::path::Path::new(&src), e))?;
+    crate::util::retry(|| std::fs::rename(&tmp, mods_dir.join(&out_name))).map_err(|e| crate::error::AppError::at(std::path::Path::new(&tmp), e))?;
     Ok(FixReport { file: out_name, backup, renamed, patched_classes: classes, patched_files: texts, examples })
 }
 
@@ -267,7 +267,7 @@ pub fn undo(mods_dir: &Path, fixed: &str, backup: &str) -> Result<()> {
         return Err(AppError::msg("Yedek bulunamadı"));
     }
     let _ = std::fs::remove_file(mods_dir.join(fixed));
-    std::fs::rename(b, mods_dir.join(orig))?;
+    crate::util::retry(|| std::fs::rename(&b, mods_dir.join(orig))).map_err(|e| crate::error::AppError::at(std::path::Path::new(&b), e))?;
     Ok(())
 }
 

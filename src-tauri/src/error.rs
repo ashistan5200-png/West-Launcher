@@ -2,7 +2,7 @@ use serde::{Serialize, Serializer};
 
 #[derive(Debug, thiserror::Error)]
 pub enum AppError {
-    #[error("I/O hatası: {0}")]
+    #[error("{}", io_text(.0))]
     Io(#[from] std::io::Error),
     #[error("Ağ hatası: {0}")]
     Http(#[from] reqwest::Error),
@@ -18,7 +18,25 @@ pub enum AppError {
     Msg(String),
 }
 
+/// Dosya hatalarını anlaşılır anlat. Windows'ta "Erişim engellendi" (os error 5) çoğunlukla dosyanın başka bir
+/// program tarafından kullanıldığı anlamına gelir: henüz tam kapanmamış oyun ya da dosyayı tarayan antivirüs.
+fn io_text(e: &std::io::Error) -> String {
+    match e.kind() {
+        std::io::ErrorKind::PermissionDenied => format!(
+            "Bir dosyaya erişilemedi; başka bir program kullanıyor olabilir (hâlâ kapanmakta olan oyun ya da antivirüs). Birkaç saniye bekleyip tekrar dene. ({e})"
+        ),
+        std::io::ErrorKind::StorageFull => format!("Diskte yer kalmadı. Biraz yer açıp tekrar dene. ({e})"),
+        _ => format!("Dosya hatası: {e}"),
+    }
+}
+
 impl AppError {
+    /// Dosya hatasına hangi dosyada olduğunu ekle
+    pub fn at(path: &std::path::Path, e: std::io::Error) -> Self {
+        let kind = e.kind();
+        AppError::Io(std::io::Error::new(kind, format!("{}: {e}", path.display())))
+    }
+
     pub fn msg(s: impl Into<String>) -> Self {
         AppError::Msg(s.into())
     }

@@ -10,9 +10,25 @@ pub fn write_json_atomic<T: Serialize + ?Sized>(path: &Path, value: &T) -> Resul
         std::fs::create_dir_all(parent)?;
     }
     let tmp = path.with_extension("tmp");
-    std::fs::write(&tmp, serde_json::to_vec_pretty(value)?)?;
-    std::fs::rename(&tmp, path)?;
+    std::fs::write(&tmp, serde_json::to_vec_pretty(value)?).map_err(|e| crate::error::AppError::at(&tmp, e))?;
+    retry(|| std::fs::rename(&tmp, path)).map_err(|e| crate::error::AppError::at(path, e))?;
     Ok(())
+}
+
+/// Windows'ta antivirüs ya da kapanmakta olan bir işlem dosyayı kısa süre kilitleyebilir:
+/// "Erişim engellendi" alınırsa birkaç kez kısa aralıklarla yeniden dene.
+pub fn retry<T>(mut f: impl FnMut() -> std::io::Result<T>) -> std::io::Result<T> {
+    let mut wait = 60;
+    for _ in 0..6 {
+        match f() {
+            Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
+                std::thread::sleep(std::time::Duration::from_millis(wait));
+                wait = (wait * 2).min(800);
+            }
+            r => return r,
+        }
+    }
+    f()
 }
 
 pub fn sha1_file(path: &Path) -> std::io::Result<String> {

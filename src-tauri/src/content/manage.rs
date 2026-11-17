@@ -418,7 +418,7 @@ pub fn set_enabled(game_dir: &Path, ids: &[String], enabled: bool) -> Result<()>
         }
         let name = path.file_name().unwrap().to_string_lossy().to_string();
         let target = if enabled { name.trim_end_matches(DISABLED).to_string() } else { format!("{name}{DISABLED}") };
-        std::fs::rename(&path, path.with_file_name(target))?;
+        crate::util::retry(|| std::fs::rename(&path, path.with_file_name(&target))).map_err(|e| crate::error::AppError::at(std::path::Path::new(&path), e))?;
     }
     Ok(())
 }

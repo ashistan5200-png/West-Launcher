@@ -381,7 +381,7 @@ pub fn disable_mods(state: State<'_, AppState>, id: String, files: Vec<String>) 
         }
         let src = dir.join(&f);
         if src.exists() {
-            std::fs::rename(&src, dir.join(format!("{f}.disabled")))?;
+            crate::util::retry(|| std::fs::rename(&src, dir.join(format!("{f}.disabled")))).map_err(|e| crate::error::AppError::at(std::path::Path::new(&src), e))?;
             done.push(f);
         }
     }
