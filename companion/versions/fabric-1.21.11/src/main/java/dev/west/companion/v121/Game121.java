@@ -27,23 +27,10 @@ final class Game121 implements Game {
         return Minecraft.getInstance();
     }
 
-    @Override public boolean inWorld() { return mc().player != null && mc().level != null && !MenuWorld.active; }
+    @Override public boolean inWorld() { return mc().player != null && mc().level != null; }
 
-    @Override public boolean liveBackground() { return MenuWorld.cameraReady(); }
 
-    @Override public boolean liveLoading() { return MenuWorld.active && !MenuWorld.cameraReady(); }
 
-    @Override
-    public void homeStyleChanged() {
-        Minecraft m = mc();
-        if (!(m.screen instanceof WestHost h)) return;
-        if (MenuWorld.enabled()) {
-            if (!MenuWorld.active && m.level == null) MenuWorld.start(m, h);
-        } else if (MenuWorld.active) {
-            MenuWorld.stop(m);
-            m.setScreen(h);
-        }
-    }
     @Override public boolean hudHidden() { return mc().options.hideGui; }
     @Override public boolean debugOpen() { return mc().getDebugOverlay().showDebugScreen(); }
     @Override public int fps() { return mc().getFps(); }
@@ -131,10 +118,7 @@ final class Game121 implements Game {
             case MULTIPLAYER -> m.setScreen(new net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen(parent));
             case OPTIONS -> m.setScreen(new net.minecraft.client.gui.screens.options.OptionsScreen(parent, m.options));
             case LANGUAGE -> m.setScreen(new net.minecraft.client.gui.screens.options.LanguageSelectScreen(parent, m.options, m.getLanguageManager()));
-            case QUIT -> {
-                MenuWorld.stop(m);
-                m.stop();
-            }
+            case QUIT -> m.stop();
             case CREATE_WORLD -> net.minecraft.client.gui.screens.worldselection.CreateWorldScreen.openFresh(m, () -> m.setScreen(parent));
             case ADVANCEMENTS -> { if (m.player != null) m.setScreen(new net.minecraft.client.gui.screens.advancements.AdvancementsScreen(m.player.connection.getAdvancements(), parent)); }
             case STATS -> { if (m.player != null) m.setScreen(new net.minecraft.client.gui.screens.achievement.StatsScreen(parent, m.player.getStats())); }

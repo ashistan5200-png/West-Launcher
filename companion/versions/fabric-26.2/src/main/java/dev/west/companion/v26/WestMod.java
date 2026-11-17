@@ -53,28 +53,17 @@ public final class WestMod implements ClientModInitializer {
                 (g, delta) -> WestHud.renderHud(new Gfx26(g)));
     }
 
-    private static WestHost pendingMenuWorld;
-
     private static void tick(Minecraft mc) {
         WestHud.tick();
         WestHud.safe("music", () -> WestMusic.tick(mc));
-        if (pendingMenuWorld != null && mc.level == null) {
-            WestHost h = pendingMenuWorld;
-            pendingMenuWorld = null;
-            if (mc.gui.screen() == h) WestHud.safe("menuworld", () -> MenuWorld.start(mc, h));
-        }
-        WestHud.safe("menuworld-tick", () -> MenuWorld.tick(mc));
         WestHud.safe("westshader", () -> WestShader.tick(mc));
         // Minecraft'ın başlık ekranı açıldıysa West ana menüsüyle değiştir
         if (mc.gui.screen() instanceof net.minecraft.client.gui.screens.TitleScreen && WestHud.customTitle()) {
             Game26.refreshWorlds();
-            WestHost h = new WestHost(WestHud.home());
-            mc.gui.setScreen(h);
-            // Ana menünün arkasında canlı dünya (bir sonraki tick'te, ekran yerleştikten sonra)
-            pendingMenuWorld = h;
+            mc.gui.setScreen(new WestHost(WestHud.home()));
         }
         // Duraklatma menüsü (Esc) → West duraklatma menüsü (F3+Esc ile açılan menüsüz duraklatma hariç)
-        if (!MenuWorld.active && mc.gui.screen() instanceof net.minecraft.client.gui.screens.PauseScreen ps && ps.showsPauseMenu() && WestHud.customTitle()) {
+        if (mc.gui.screen() instanceof net.minecraft.client.gui.screens.PauseScreen ps && ps.showsPauseMenu() && WestHud.customTitle()) {
             mc.gui.setScreen(new WestHost(WestHud.pause()));
         }
         while (MENU.consumeClick()) {

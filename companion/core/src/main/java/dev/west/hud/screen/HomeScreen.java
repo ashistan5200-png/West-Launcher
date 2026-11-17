@@ -48,36 +48,12 @@ public final class HomeScreen extends WestShell {
         if (++worldsTries % 120 == 0) servers = game.servers(64);
         int sw = g.width(), sh = g.height();
         float in = appear();
-        if (transition != null) ui.mx = ui.my = -9999; // geçiş sırasında tıklama yok
 
-        // Geçiş: karaktere yakınlaş + beyaz ışık
-        float tp = 0;
-        boolean zoomed = transition != null;
-        if (zoomed) {
-            tp = Math.min(1, (System.nanoTime() - transitionStart) / 1e9f / 1.1f);
-            float z = 1 + ease(tp) * 0.85f;
-            g.push();
-            g.translate(pivotX, pivotY);
-            g.scale(z);
-            g.translate(-pivotX, -pivotY);
-        }
-
-        boolean live = !perf() && WestHud.game.liveBackground();
-        if (live) {
-            // Gerçek dünya arkada çiziliyor: yalnızca okunurluk için hafif karartma
-            parX = parY = 0;
-            // Canlı dünya yeni hazırlandıysa fotoğraftan dünyaya yumuşak geçiş
-            if (liveSince == 0) liveSince = System.nanoTime();
-            float fade = 1 - Math.min(1, (System.nanoTime() - liveSince) / 1e9f / 1.2f);
-            if (fade > 0.01f) photo(g, sw, sh, mx, my, fade);
-        } else {
-            liveSince = 0;
-            photo(g, sw, sh, mx, my);
-        }
-        if (page == Page.HOME && perf()) {
+        // Arka plan: dönen köy panoraması + hafif karartma ve süzülen ışık zerreleri
+        g.panorama(delta);
+        motes(g, sw, sh);
+        if (page == Page.HOME) {
             home(sw, sh, in);
-        } else if (page == Page.HOME) {
-            classic(sw, sh, in);
         } else {
             g.blurBehind();
             g.fill(0, 0, sw, sh, 0x8C080A10);
@@ -96,24 +72,11 @@ public final class HomeScreen extends WestShell {
             footer(sw, sh);
         }
 
-        if (zoomed) {
-            g.pop();
-            int a = (int) (255 * Math.max(0, Math.min(1, (tp - 0.35f) / 0.5f)));
-            g.nextLayer();
-            g.fill(0, 0, sw, sh, (a << 24) | 0xFFFFFF);
-            if (tp >= 1 && !transitionFired) {
-                transitionFired = true;
-                transition.run();
-            }
-        }
         ui.end();
     }
 
-    private long liveSince;
-
     // ───────── Arka plan fotoğrafı ─────────
 
-    private float parX, parY;
     private static final float[][] MOTES = new float[34][];
 
     static {
@@ -121,121 +84,24 @@ public final class HomeScreen extends WestShell {
         for (int i = 0; i < MOTES.length; i++) MOTES[i] = new float[] { r.nextFloat(), r.nextFloat(), 0.6f + r.nextFloat() * 1.6f, r.nextFloat() * 6.28f, 0.4f + r.nextFloat() };
     }
 
-    /** Fotoğrafın ekrana yerleşimi (paralaks dahil): x, y, ölçek */
-    float photoX, photoY, photoScale;
 
-    /** Performans modu: fotoğraf + sade düzen; normal: blok üstünde karakterli sahne */
-    static boolean perf() {
-        return WestHud.config.data.performanceMode || WestHud.config.data.homeStyle == 1;
-    }
-
-    /** İki ana menü stili arasında geçiş */
-    private void toggleStyle() {
-        var d = WestHud.config.data;
-        d.homeStyle = d.homeStyle == 1 ? 0 : 1;
-        WestHud.save();
-        WestHud.game.homeStyleChanged();
-    }
-
-    String photoId() {
-        // Canlı dünya hazırlanırken de bekleme hissi olmasın: sade menünün fotoğrafı görünür
-        return "home";
-    }
-
-    void photo(Gfx g, int sw, int sh, int mx, int my) {
-        photo(g, sw, sh, mx, my, 1f);
-    }
-
-    void photo(Gfx g, int sw, int sh, int mx, int my, float alpha) {
-        int[] size = g.imageSize(photoId());
-        float tx = transition != null ? parX : (mx - sw / 2f) / (sw / 2f) * 9;
-        float ty = transition != null ? parY : (my - sh / 2f) / (sh / 2f) * 5;
-        parX += (tx - parX) * Math.min(1, dt * 4);
-        parY += (ty - parY) * Math.min(1, dt * 4);
-        if (size == null) {
-            g.panorama(0);
-            return;
-        }
-        photoScale = Math.max(sw / (float) size[0], sh / (float) size[1]) * 1.07f;
-        float dw = size[0] * photoScale, dh = size[1] * photoScale;
-        photoX = (sw - dw) / 2 - parX;
-        photoY = (sh - dh) / 2 - parY;
-        g.image(photoId(), photoX, photoY, dw, dh, 0, 0, size[0], size[1], ((int) (255 * alpha) << 24) | 0xFFFFFF);
-        if (alpha < 1) return;
-        // Havada süzülen sıcak ışık zerreleri (öndeki katman: daha çok kayar)
+    /** Havada süzülen sıcak ışık zerreleri ve okunurluk için hafif karartma */
+    private void motes(Gfx g, int sw, int sh) {
         float time = ui.time;
         for (float[] m : MOTES) {
             float y = (m[1] - time * 0.012f * m[4]) % 1f;
             if (y < 0) y += 1;
             float x = m[0] + 0.015f * (float) Math.sin(time * 0.6f * m[4] + m[3]);
-            int px = Math.round(x * sw - parX * 1.8f), py = Math.round(y * sh - parY * 1.8f);
+            int px = Math.round(x * sw), py = Math.round(y * sh);
             float tw = 0.5f + 0.5f * (float) Math.sin(time * 1.7f * m[4] + m[3]);
             int s = Math.max(1, Math.round(m[2]));
             int a = (int) (40 + 110 * tw * Math.min(1, y * 3));
             Ui.round(g, px, py, s + 1, s + 1, (s + 1) / 2, (a << 24) | 0xFFE2B0);
         }
-        g.fill(0, 0, sw, sh, 0x1A05060A);
+        g.fill(0, 0, sw, sh, 0x2605060A);
     }
 
-    // ───────── Normal ana sayfa: sahnede blok üstünde duran karakter ─────────
-
-    /** Sahne fotoğrafında bloğun üst yüzeyi (fotoğraf oranları) ve oyuncu boyu */
-    private static final float FEET_X = 0.4651f, FEET_Y = 0.6175f, PLAYER_H = 0.2046f;
-    private float lookYaw, lookTarget;
-    private float nextLook = 2.5f;
-
-    private void classic(int sw, int sh, float in) {
-        Gfx g = ui.g;
-        int[] size = g.imageSize("scene");
-        // Ara sıra etrafa bak: birkaç saniyede bir yeni bir yöne yumuşakça dön
-        if (ui.time > nextLook) {
-            double r = Math.random();
-            lookTarget = r < 0.35 ? 0 : (float) ((Math.random() * 2 - 1) * 50);
-            nextLook = ui.time + 2.5f + (float) Math.random() * 3.5f;
-        }
-        lookYaw += (lookTarget - lookYaw) * Math.min(1, dt * 2.2f);
-        if (WestHud.game.liveBackground()) {
-            // Karakter gerçek dünyada; isim etiketi ortaya yakın
-            pivotDefaultX = sw * 0.5f;
-            pivotDefaultY = sh * 0.5f;
-        } else if (size != null && photoScale > 0) {
-            float fx = photoX + FEET_X * size[0] * photoScale;
-            float fy = photoY + FEET_Y * size[1] * photoScale;
-            int ph = Math.round(PLAYER_H * size[1] * photoScale);
-            g.playerStanding(Math.round(fx), Math.round(fy), ph, lookYaw);
-            g.nextLayer();
-            pivotDefaultX = fx;
-            pivotDefaultY = fy - ph * 0.6f;
-            // Bloğun çevresinde zeminden yükselen küçük ışıltılar
-            for (int i = 0; i < 7; i++) {
-                float ph2 = (ui.time * 0.35f + i / 7f) % 1f;
-                float ax = fx + (float) Math.sin(i * 2.4f + ui.time * 0.8f) * ph * 0.35f;
-                float ay = fy - ph2 * ph * 0.9f;
-                int a = (int) (180 * Math.sin(ph2 * Math.PI));
-                Ui.round(g, Math.round(ax), Math.round(ay), 2, 2, 1, (a << 24) | 0xFFF0C8);
-            }
-            nameTag(Math.round(fx), Math.round(fy - ph - 6), WestHud.game.playerName(), null);
-        }
-        g.gradient(0, 0, sw, TOP + 30, 0x99080A10, 0x00080A10);
-        g.gradient(0, sh * 2 / 3, sw, sh, 0x00060709, 0x99060709);
-        int cw = clamp(Math.round(sw * 0.32f), 158, 218);
-        int cardX = sw - cw - 10;
-        playCard(cardX, sh, cw, in);
-        chips(sh, cardX - 12, in, true);
-        int clicked = topTabs(sw, in, 0);
-        if (clicked == 1) open(Page.STATS);
-        else if (clicked == 2) open(Page.SOCIAL);
-        footer(sw, sh);
-        // Müzik düğmesi (sol üstte, markanın yanında değil: sağ kümeye yer kalmadığında da görünsün)
-        boolean musicOn = WestHud.config.data.music;
-        if (iconButton("music", musicOn ? Icon.NOTE : Icon.NOTE_OFF, 10, sh - 18 - 26 - 26, 20, musicOn ? "Müziği kapat" : "Müziği aç", 0)) {
-            WestHud.config.data.music = !musicOn;
-            WestHud.save();
-        }
-        if (iconButton("style", Icon.HUD, 34, sh - 18 - 26 - 26, 20, "Sade menüye geç", 0)) toggleStyle();
-    }
-
-    // ───────── Performans modu ana sayfası ─────────
+    // ───────── Ana sayfa ─────────
 
     private boolean quickOpen = true;
 
@@ -317,8 +183,6 @@ public final class HomeScreen extends WestShell {
             int bxx = rx + (sideW - bw) / 2;
             g.playerBust(bxx, bustTop, bw, bustH, yaw);
             g.nextLayer();
-            pivotDefaultX = bxx + bw / 2f;
-            pivotDefaultY = bustTop + bustH * 0.4f;
             // Alt kenarı fotoğrafa doğru yumuşakça erit
             fadeIntoPhoto(g, bxx - 2, bustTop + bustH - Math.max(10, bustH / 4), bw + 4, Math.max(10, bustH / 4) + 1);
         }
@@ -359,10 +223,6 @@ public final class HomeScreen extends WestShell {
         if (topIcon("lang", Icon.GLOBE, x, y, s, "Dil", 0)) game.open(Game.Target.LANGUAGE);
         x -= s + 6;
         if (topIcon("west", Icon.LOGO, x, y, s, "West menüsü", 0)) game.openWestScreen(false);
-        if (!WestHud.config.data.performanceMode) {
-            x -= s + 6;
-            if (topIcon("style", Icon.HUD, x, y, s, "Canlı dünya menüsüne geç", 0)) toggleStyle();
-        }
 
         // Alt orta: yüklü modlar
         int cs = s;
@@ -381,19 +241,16 @@ public final class HomeScreen extends WestShell {
         g.pop();
     }
 
-    /** Modelin alt kenarını, aynı fotoğraf parçasını giderek opaklaşan şeritlerle üstüne çizerek eritir */
+    /** Modelin alt kenarı arka plana doğru yumuşakça solar (kenarlarda da) */
     private void fadeIntoPhoto(Gfx g, int x, int y, int w, int h) {
-        int[] size = g.imageSize(photoId());
-        if (size == null || photoScale <= 0) return;
-        int strips = Math.max(6, h / 2);
-        for (int i = 0; i < strips; i++) {
-            float y0 = y + h * i / (float) strips, y1 = y + h * (i + 1) / (float) strips;
-            int a = (int) (255 * Math.pow((i + 1) / (float) strips, 1.4));
-            float sx = (x - photoX) / photoScale, sy = (y0 - photoY) / photoScale;
-            g.image(photoId(), x, y0, w, y1 - y0, sx, sy, w / photoScale, (y1 - y0) / photoScale, (a << 24) | 0xFFFFFF);
+        int cols = 28, x0 = x - w / 6, fw = w + w / 3;
+        for (int i = 0; i < cols; i++) {
+            float u = (i + 0.5f) / cols;
+            float e = Math.min(1, Math.min(u, 1 - u) / 0.3f);
+            e = e * e * (3 - 2 * e);
+            int a = Math.round(0xD8 * e);
+            g.gradient(x0 + fw * i / cols, y, x0 + fw * (i + 1) / cols, y + h, 0x000B0D12, (a << 24) | 0x0B0D12);
         }
-        // Genel karartma ve zerreler bu bölgede de aynı kalsın
-        g.fill(x, y, x + w, y + h, 0x1A05060A);
     }
 
     private void slateBg(int x, int y, int w, int h, float hv) {
@@ -480,26 +337,11 @@ public final class HomeScreen extends WestShell {
         return hit;
     }
 
-    // ───────── Geçiş ─────────
-
-    private Runnable transition;
-    private long transitionStart;
-    private boolean transitionFired;
-    private float pivotX, pivotY, pivotDefaultX, pivotDefaultY;
-
+    /** Dünyaya / sunucuya doğrudan gir (geçiş animasyonu yok) */
     void startTransition(Runnable action, float px, float py) {
-        if (transition != null) return;
-        transition = action;
-        transitionStart = System.nanoTime();
-        transitionFired = false;
-        pivotX = page == Page.HOME && pivotDefaultX > 0 ? pivotDefaultX : px;
-        pivotY = page == Page.HOME && pivotDefaultY > 0 ? pivotDefaultY : py;
+        action.run();
     }
 
-    @Override
-    public void removed() {
-        transition = null;
-    }
 
     void goHome() {
         page = Page.HOME;

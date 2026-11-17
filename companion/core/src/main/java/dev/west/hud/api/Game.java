@@ -115,14 +115,8 @@ public interface Game {
     /** Dünya açıksa portu, değilse -1 */
     default int publishedPort() { return -1; }
 
-    /** Ana menünün arkasındaki canlı dünya hazır mı (true ise menü fotoğraf/sahne çizmez) */
-    default boolean liveBackground() { return false; }
 
-    /** Ana menü stili değişti: canlı dünyayı başlat / kapat */
-    default void homeStyleChanged() {}
 
-    /** Canlı dünya yükleniyor mu */
-    default boolean liveLoading() { return false; }
 
     /** Bir sunucu adresine doğrudan bağlan (davetle katılma) */
     default void connect(String name, String address) {}
