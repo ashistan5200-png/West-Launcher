@@ -101,7 +101,8 @@ public interface Game {
     default Session session() { return new Session(true, "Dünya", "", false); }
 
     /** Tek oyunculu dünyayı ağa aç; açılan port ya da -1. mode: 0-3 oyun modu */
-    default int publishWorld(int mode, boolean cheats) { return -1; }
+    /** offline: Microsoft hesabı olmayan (offline) oyuncular da girebilsin */
+    default int publishWorld(int mode, boolean cheats, boolean offline) { return -1; }
 
     /** Her ağda çalışan tünel (e4mc) kurulu mu */
     default boolean hasTunnel() { return false; }

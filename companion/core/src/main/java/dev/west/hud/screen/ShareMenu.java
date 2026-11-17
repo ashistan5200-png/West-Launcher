@@ -25,7 +25,7 @@ public final class ShareMenu extends WestShell {
     private final WestScreen back;
     private final SocialClient c = SocialClient.INSTANCE;
     private int vis, mode, tab = 1;
-    private boolean cheats, upnp = true, notify = true;
+    private boolean cheats, upnp = true, notify = true, offline;
     private final Set<String> picked = new LinkedHashSet<>();
     private String search = "";
     private boolean searchFocus;
@@ -47,7 +47,7 @@ public final class ShareMenu extends WestShell {
         g.blurBehind();
         g.fill(0, 0, sw, sh, (int) (0x8C * in) << 24 | 0x06070B);
 
-        int pw = Math.min(560, sw - 16), ph = Math.min(330, sh - 16);
+        int pw = Math.min(560, sw - 16), ph = Math.min(360, sh - 16);
         int px = (sw - pw) / 2, py = (sh - ph) / 2 + Math.round((1 - in) * 10);
         Ui.round(g, px - 1, py + 3, pw + 2, ph + 2, 14, 0x50000000);
         Ui.round(g, px, py, pw, ph, 13, 0xF20E1016);
@@ -119,7 +119,7 @@ public final class ShareMenu extends WestShell {
         if (tab == 1) {
             List<Person> list = new ArrayList<>();
             for (Person p : c.friends) if (q.isEmpty() || p.display().toLowerCase(Locale.ROOT).contains(q)) list.add(p);
-            if (list.isEmpty()) smallText(g, c.loaded ? "Henüz arkadaş yok" : "Yükleniyor…", x + 12, ly + 2, 0x99FFFFFF);
+            if (list.isEmpty()) smallText(g, c.loaded ? "Henüz arkadaş yok" : c.error != null ? "Launcher'a ulaşılamadı, yeniden deneniyor…" : "Yükleniyor…", x + 12, ly + 2, 0x99FFFFFF);
             for (Person p : list) {
                 if (ly + 24 > y + h - 8) break;
                 boolean sel = picked.contains(p.id());
@@ -159,39 +159,46 @@ public final class ShareMenu extends WestShell {
         g.text(ui.fit(s.title(), w - 50), x + 14, y + 27, 0xBBFFFFFF, false);
         if (iconButton("rx", Icon.CLOSE, x + w - 26, y + 10, 18, null, 0)) close();
         g.fill(x + 1, y + 42, x + w - 1, y + 43, 0x1AFFFFFF);
-        smallText(g, ui.fit("Bu dünyanın arkadaşların için nasıl açılacağını seç.", (int) ((w - 28) / 0.8f)), x + 14, y + 50, 0x88FFFFFF);
-
-        int ry = y + 64, rh = 24, ctlW = Math.min(170, w / 2);
-        int cx = x + w - 14 - ctlW;
-        boolean published = WestHud.game.publishedPort() > 0;
-        row("Kime açık", ry, x);
-        if (pill("vis", "Görünürlük", VIS[vis], cx, ry, ctlW, rh, true)) vis = (vis + 1) % VIS.length;
-        ry += rh + 6;
-        row("Oyun modu", ry, x);
-        if (!published && pill("mode", "Mod", MODES[mode], cx, ry, ctlW, rh, true)) mode = (mode + 1) % MODES.length;
-        if (published) pill("mode", "Mod", MODES[mode], cx, ry, ctlW, rh, false);
-        ry += rh + 6;
-        row("Hileler", ry, x);
-        if (toggle("cheats", "Hilelere izin ver", cheats, cx, ry, ctlW, rh) && !published) cheats = !cheats;
-        ry += rh + 6;
-        row("İnternet", ry, x);
-        if (WestHud.game.hasTunnel()) toggle("upnp", "Her ağdan bağlanılabilir", true, cx, ry, ctlW, rh);
-        else if (toggle("upnp", "Modem portunu aç", upnp, cx, ry, ctlW, rh) && !published) upnp = !upnp;
-        ry += rh + 6;
-        row("Davet", ry, x);
-        if (toggle("notify", picked.isEmpty() ? "Arkadaş seç (solda)" : picked.size() + " arkadaşa gönder", notify, cx, ry, ctlW, rh)) notify = !notify;
-        ry += rh + 6;
-
+        // Sonuç mesajı (varsa) açıklamanın yerine, en fazla iki satır
+        int ry = y + 50;
         if (result != null) {
             List<String> lines = wrap(g, result, (int) ((w - 28) / 0.8f));
-            for (String l : lines) {
-                if (ry > y + h - 40) break;
-                smallText(g, l, x + 14, ry, 0xDDFFFFFF);
+            for (int i = 0; i < Math.min(2, lines.size()); i++) {
+                smallText(g, lines.get(i), x + 14, ry, 0xFF8EE6B6);
                 ry += 9;
             }
+        } else {
+            smallText(g, ui.fit("Bu dünyanın arkadaşların için nasıl açılacağını seç.", (int) ((w - 28) / 0.8f)), x + 14, ry, 0x88FFFFFF);
+            ry += 9;
         }
+        ry += 5;
+        int by = y + h - 32;
+        // Satırlar ekrana sığsın: 6 satır, aralık 5
+        int gap = 5, rh = Math.max(16, Math.min(24, (by - 6 - ry) / 6 - gap));
+        int ctlW = Math.min(180, w * 55 / 100);
+        int cx = x + w - 14 - ctlW;
+        boolean published = WestHud.game.publishedPort() > 0;
+        row("Kime açık", ry, rh, x);
+        if (pill("vis", "Görünürlük", VIS[vis], cx, ry, ctlW, rh, true)) vis = (vis + 1) % VIS.length;
+        ry += rh + gap;
+        row("Oyun modu", ry, rh, x);
+        if (!published && pill("mode", "Mod", MODES[mode], cx, ry, ctlW, rh, true)) mode = (mode + 1) % MODES.length;
+        if (published) pill("mode", "Mod", MODES[mode], cx, ry, ctlW, rh, false);
+        ry += rh + gap;
+        row("Hesap", ry, rh, x);
+        if (toggle("offline", "Offline hesaplar da", offline, cx, ry, ctlW, rh) && !published) offline = !offline;
+        ry += rh + gap;
+        row("Hileler", ry, rh, x);
+        if (toggle("cheats", "Hilelere izin ver", cheats, cx, ry, ctlW, rh) && !published) cheats = !cheats;
+        ry += rh + gap;
+        row("İnternet", ry, rh, x);
+        if (WestHud.game.hasTunnel()) toggle("upnp", "Her ağdan bağlanılabilir", true, cx, ry, ctlW, rh);
+        else if (toggle("upnp", "Modem portunu aç", upnp, cx, ry, ctlW, rh) && !published) upnp = !upnp;
+        ry += rh + gap;
+        row("Davet", ry, rh, x);
+        if (toggle("notify", picked.isEmpty() ? "Arkadaş seç (solda)" : picked.size() + " arkadaşa gönder", notify, cx, ry, ctlW, rh)) notify = !notify;
 
-        int by = y + h - 32, bw = (w - 28 - 8) / 2;
+        int bw = (w - 28 - 8) / 2;
         if (outlineButton("close", "Kapat", Icon.CLOSE, x + 14, by, bw, 22, false)) close();
         String label = busy ? "Açılıyor…" : published ? "Davet gönder" : "Paylaş";
         if (accentButton("share", label, Icon.CHEVRON_RIGHT, x + 14 + bw + 8, by, w - 28 - bw - 8, 22) && !busy) share(published);
@@ -210,7 +217,7 @@ public final class ShareMenu extends WestShell {
             tunnelWaitSince = 0;
             busy = false;
             result = "Dünya herkese açıldı (her ağdan bağlanılabilir): " + addr;
-            sendInvites(world, addr);
+            sendInvites(world, addr, "tunnel");
         } else if (game.tunnelFailed() || System.currentTimeMillis() - tunnelWaitSince > 25_000) {
             tunnelWaitSince = 0;
             result = "Herkese açık adres alınamadı; modem yolu deneniyor…";
@@ -220,7 +227,7 @@ public final class ShareMenu extends WestShell {
 
     private void share(boolean already) {
         Game game = WestHud.game;
-        int port = already ? game.publishedPort() : game.publishWorld(mode, cheats);
+        int port = already ? game.publishedPort() : game.publishWorld(mode, cheats, offline);
         if (port <= 0) {
             result = "Dünya açılamadı. Tek oyunculu bir dünyada olduğundan emin ol.";
             return;
@@ -231,7 +238,7 @@ public final class ShareMenu extends WestShell {
             String addr = game.tunnelAddress();
             if (addr != null) {
                 result = "Dünya herkese açık: " + addr;
-                sendInvites(world, addr);
+                sendInvites(world, addr, "tunnel");
                 return;
             }
             busy = true;
@@ -247,7 +254,7 @@ public final class ShareMenu extends WestShell {
         if (!upnp) {
             String lan = Upnp.localIp(null) + ":" + port;
             result = "Dünya aynı ağdakilere açıldı: " + lan;
-            sendInvites(world, lan);
+            sendInvites(world, lan, "lan");
             return;
         }
         busy = true;
@@ -255,19 +262,19 @@ public final class ShareMenu extends WestShell {
         Upnp.open(port, "West Client: " + world).thenAccept(r -> {
             busy = false;
             String address = (r.ok() ? r.externalIp() : r.localIp()) + ":" + port;
-            result = (r.ok() ? "Dünya internete açıldı: " : r.message() + " Adres: ") + address;
-            sendInvites(world, address);
+            result = (r.ok() ? "Dünya internete açıldı: " : r.message() + " Yalnızca aynı ağdakiler katılabilir: ") + address;
+            sendInvites(world, address, r.ok() ? "upnp" : "lan");
         });
     }
 
-    private void sendInvites(String world, String address) {
+    private void sendInvites(String world, String address, String kind) {
         if (!notify || picked.isEmpty() || !c.available()) return;
         List<String> users = new ArrayList<>(picked);
-        c.invite(users, world, address, n -> result = result + " · " + n + " arkadaşa davet gönderildi.");
+        c.invite(users, world, address, kind, offline, n -> result = result + " · " + n + " arkadaşa davet gönderildi.");
     }
 
-    private void row(String label, int y, int x) {
-        ui.g.textBold(label, x + 14, y + 8, 0xFFFFFFFF, false);
+    private void row(String label, int y, int h, int x) {
+        ui.g.textBold(label, x + 14, y + (h - 8) / 2, 0xFFFFFFFF, false);
     }
 
     private boolean pill(String id, String key, String value, int x, int y, int w, int h, boolean enabled) {

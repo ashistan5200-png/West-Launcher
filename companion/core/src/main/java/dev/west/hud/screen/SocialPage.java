@@ -335,8 +335,11 @@ final class SocialPage {
             if (ly + 40 > y + hgt - 4) break;
             Ui.round(g, x + 6, ly, w - 12, 38, 7, 0x14FFFFFF);
             g.textBold(ui.fit(inv.from().display(), w - 70), x + 12, ly + 5, 0xFFFFFFFF, false);
-            WestShell.smallText(g, ui.fit("Davet: " + inv.world(), (int) ((w - 70) / 0.8f)), x + 12, ly + 17, 0xBBFFFFFF);
-            if (h.accentButton("join" + inv.at(), "Katıl", Icon.PLAY, x + w - 62, ly + 10, 54, 18)) WestHud.game.connect(inv.world(), inv.address());
+            boolean fits = inv.version().isEmpty() || inv.version().equals(WestHud.game.minecraftVersion());
+            String sub = "Davet: " + inv.world() + (inv.version().isEmpty() ? "" : " · " + inv.version());
+            WestShell.smallText(g, ui.fit(sub, (int) ((w - 70) / 0.8f)), x + 12, ly + 17, 0xBBFFFFFF);
+            if (!fits) WestShell.smallText(g, ui.fit("Bu davet için launcher'dan " + inv.version() + " instance'ı aç", (int) ((w - 24) / 0.8f)), x + 12, ly + 27, 0xFFF2C14E);
+            else if (h.accentButton("join" + inv.at(), "Katıl", Icon.PLAY, x + w - 62, ly + 10, 54, 18)) WestHud.game.connect(inv.world(), inv.address());
             ly += 42;
         }
         if (!c.requests.isEmpty() && ly + 20 < y + hgt) {

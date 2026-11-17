@@ -11,6 +11,7 @@ import { Modal } from "@/components/Modal";
 import { Avatar, RichText, ago } from "./PostCard";
 import { askConfirm } from "@/components/ConfirmDialog";
 import { tx } from "@/lib/i18n";
+import { parseInvite, useInvites } from "@/stores/invites";
 
 const err = (e: unknown) => String(e).replace(/^Error: /, "");
 const dayLabel = (iso: string) => {
@@ -57,7 +58,7 @@ export function MessagesView() {
                 <Avatar url={other?.avatar_url} name={other?.username ?? "?"} size={44} />
                 <span className="grow" style={{ minWidth: 0 }}>
                   <span className="row" style={{ gap: 6 }}><strong className="truncate">{name}</strong><span className="muted tiny">{c.last ? ago(c.last.created_at) : ""}</span></span>
-                  <span className="muted small truncate">{c.last ? `${c.last.sender_id === me?.userId ? tx("Sen: ") : ""}${c.last.body ?? tx("📷 Fotoğraf")}` : tx("Sohbet başladı")}</span>
+                  <span className="muted small truncate">{c.last ? `${c.last.sender_id === me?.userId ? tx("Sen: ") : ""}${parseInvite(c.last.body) ? tx("🎮 Dünya daveti") : c.last.body ?? tx("📷 Fotoğraf")}` : tx("Sohbet başladı")}</span>
                 </span>
                 {c.unread && <span className="dm-dot" />}
               </button>
@@ -165,7 +166,7 @@ function Chat({ conv, onActivity }: { conv: S.Conversation; onActivity: () => vo
                 <div className="dm-bubble">
                   {quoted && <div className="dm-quote">{quoted.body ?? tx("📷 Fotoğraf")}</div>}
                   {m.media.map((x) => <img key={x.url} src={x.url} alt="" referrerPolicy="no-referrer" />)}
-                  {m.body && <p><RichText text={m.body} /></p>}
+                  {m.body && (parseInvite(m.body) ? <InviteBubble msg={m} mine={mine} from={mine ? null : other ?? null} /> : <p><RichText text={m.body} /></p>)}
                   <span className="dm-time">{new Date(m.created_at).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}</span>
                 </div>
                 <div className="dm-tools">
@@ -224,5 +225,26 @@ function NewMessageModal({ open, onClose, onStarted }: { open: boolean; onClose:
         {!list.length && <p className="muted center pad small">{q ? tx("Kimse bulunamadı.") : tx("Bir kullanıcı adı yaz.")}</p>}
       </div>
     </Modal>
+  );
+}
+
+/** Sohbetteki dünya daveti: ham metin yerine tıklanabilir kart */
+function InviteBubble({ msg, mine, from }: { msg: S.Message; mine: boolean; from: S.Profile | null }) {
+  const d = parseInvite(msg.body)!;
+  const open = useInvites((s) => s.open);
+  const fresh = Date.now() - new Date(msg.created_at).getTime() < 2 * 60 * 60 * 1000;
+  return (
+    <div className="dm-invite">
+      <span className="invite-eyebrow">{tx("Dünya daveti")}</span>
+      <strong>{d.world}</strong>
+      <span className="muted tiny">{d.version ? `${d.loader ? d.loader + " " : ""}${d.version}` : tx("Sürüm bilinmiyor")}</span>
+      {mine ? (
+        <span className="muted tiny">{tx("Davet gönderildi")}</span>
+      ) : fresh ? (
+        <button className="btn btn-primary btn-sm" onClick={() => open({ ...d, id: msg.id, conversationId: msg.conversation_id, from, fromId: msg.sender_id, at: msg.created_at })}>{tx("Katıl")}</button>
+      ) : (
+        <span className="muted tiny">{tx("Bu davetin süresi doldu")}</span>
+      )}
+    </div>
   );
 }

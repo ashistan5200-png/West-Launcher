@@ -20,7 +20,7 @@ import java.util.Comparator;
 import java.util.List;
 
 /** 26.x oyun bilgisi köprüsü. */
-final class Game26 implements Game {
+public final class Game26 implements Game {
     private List<ModInfo> mods;
 
     private static Minecraft mc() {
@@ -156,11 +156,13 @@ final class Game26 implements Game {
     private static final java.util.regex.Pattern TUNNEL = java.util.regex.Pattern.compile("([a-z0-9-]+(?:\\.[a-z0-9-]+)*\\.e4mc\\.link)");
 
     /** Sohbet mesajlarından e4mc adresini yakala */
-    static void onChat(net.minecraft.network.chat.Component msg) {
+    public static void onChat(net.minecraft.network.chat.Component msg) {
+        // Metin + bileşen ağacı (gizli adres "kopyalamak için tıkla" olayının içindedir)
         String s = msg.getString() + " " + msg;
+        if (s.contains("e4mc_minecraft.domainAssigned") || s.contains("e4mc.link")) dev.west.hud.WestHud.LOG.info("e4mc: {}", msg.getString());
         if (s.contains("e4mc_minecraft.closeServer") || s.contains("no longer publicly hosted")) {
             tunnel = null;
-        tunnelFailed = false;
+            tunnelFailed = false;
             return;
         }
         if (s.contains("e4mc_minecraft.error") || s.contains("An error occurred in e4mc")) {
@@ -189,13 +191,32 @@ final class Game26 implements Game {
     }
 
     @Override
-    public int publishWorld(int mode, boolean cheats) {
+    public int publishWorld(int mode, boolean cheats, boolean offline) {
         var srv = mc().getSingleplayerServer();
         if (srv == null) return -1;
         if (srv.isPublished()) return srv.getPort();
         tunnel = null;
+        tunnelFailed = false;
+        // Varsayılan: yalnızca Microsoft hesapları (oturum doğrulanır). İstenirse offline hesaplar da girebilir.
+        srv.setUsesAuthentication(!offline);
         int port = net.minecraft.util.HttpUtil.getAvailablePort();
-        return srv.publishServer(net.minecraft.server.MinecraftServer.MultiplayerScope.LAN, net.minecraft.world.level.GameType.byId(mode), cheats, port) ? port : -1;
+        boolean ok = srv.publishServer(net.minecraft.server.MinecraftServer.MultiplayerScope.LAN, net.minecraft.world.level.GameType.byId(mode), cheats, port);
+        if (ok && System.getProperty("west.debugTunnel") != null) debugTunnel(System.getProperty("west.debugTunnel"));
+        return ok ? port : -1;
+    }
+
+    /** Yalnızca test: e4mc'nin adres mesajının birebir aynısını sohbete yazar (gizli adres + kopyalama tıklaması) */
+    private void debugTunnel(String domain) {
+        new Thread(() -> {
+            try { Thread.sleep(2000); } catch (InterruptedException ignored) {}
+            mc().execute(() -> {
+                var hidden = net.minecraft.network.chat.Component.translatable("text.e4mc_minecraft.hiddenDomain")
+                        .withStyle(st -> st.withClickEvent(new net.minecraft.network.chat.ClickEvent.CopyToClipboard(domain)));
+                var m = net.minecraft.network.chat.Component.translatable("text.e4mc_minecraft.domainAssigned", hidden)
+                        .append(net.minecraft.network.chat.Component.translatable("text.e4mc_minecraft.clickToStop"));
+                mc().gui.hud.getChat().addClientSystemMessage(m);
+            });
+        }, "west-debug-tunnel").start();
     }
 
     @Override

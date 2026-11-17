@@ -25,7 +25,6 @@ const DEFAULT: Settings = {
   autoUpdate: true,
   music: true,
   musicInGame: true,
-  shaders: false,
   language: "",
   accessibility: {
     performanceMode: false, westMenus: true, westHud: true, gameAnimations: true,

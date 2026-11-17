@@ -176,8 +176,8 @@ pub fn apply_prefs(game_dir: &Path, s: &crate::settings::Settings) -> Result<()>
     o.insert("hudEnabled".into(), a.west_hud.into());
     o.insert("animations".into(), a.game_animations.into());
     o.insert("smoothFont".into(), a.smooth_font.into());
-    // West shader: Vulkan'da da çalışan kendi efektimiz (Iris paketi açıkken kendiliğinden devre dışı)
-    o.insert("westShader".into(), (s.shaders && !a.performance_mode).into());
+    // West shader kaldırıldı; eski ayar dosyalarında kalmasın
+    o.remove("westShader");
     write_json_atomic(&p, &v)
 }
 

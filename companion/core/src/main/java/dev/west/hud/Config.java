@@ -53,8 +53,6 @@ public final class Config {
         public boolean performanceMode = false;
         /** West HUD öğeleri gösterilsin mi (launcher'daki Erişilebilirlik'ten) */
         public boolean hudEnabled = true;
-        /** West shader'ı (bloom, sıcak renk, kenar kararması). Vulkan'da da çalışır; Iris shader'ı açıksa devre dışı kalır. */
-        public boolean westShader = false;
         public Map<String, Element> elements = new LinkedHashMap<>();
     }
 

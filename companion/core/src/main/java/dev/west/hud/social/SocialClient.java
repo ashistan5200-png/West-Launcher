@@ -32,7 +32,7 @@ public final class SocialClient {
 
     public record Message(String sender, String body, String at) {}
 
-    public record Invite(Person from, String world, String address, String at) {}
+    public record Invite(Person from, String world, String address, String at, String version) {}
 
     public static final SocialClient INSTANCE = new SocialClient();
     private static final Gson GSON = new Gson();
@@ -133,7 +133,7 @@ public final class SocialClient {
             for (JsonElement e : o.getAsJsonArray("invites")) {
                 JsonObject i = e.getAsJsonObject();
                 Person from = i.has("from") && i.get("from").isJsonObject() ? person(i.getAsJsonObject("from")) : new Person("", "?", "?", false, "", "");
-                inv.add(new Invite(from, str(i, "world"), str(i, "address"), str(i, "at")));
+                inv.add(new Invite(from, str(i, "world"), str(i, "address"), str(i, "at"), str(i, "version")));
             }
             requests = f;
             invites = inv;
@@ -170,13 +170,21 @@ public final class SocialClient {
         }, result);
     }
 
-    public void invite(List<String> users, String world, String address, Consumer<Integer> sent) {
+    /**
+     * Dünya daveti. kind: "tunnel" (her ağdan), "upnp" (modem portu), "lan" (yalnızca aynı ağ).
+     * Sürüm ve yükleyici, davet edilen kişinin launcher'ında uygun instance'ı seçmek için gider.
+     */
+    public void invite(List<String> users, String world, String address, String kind, boolean offline, Consumer<Integer> sent) {
         JsonObject b = new JsonObject();
         JsonArray a = new JsonArray();
         users.forEach(a::add);
         b.add("users", a);
         b.addProperty("world", world);
         b.addProperty("address", address);
+        b.addProperty("kind", kind);
+        b.addProperty("offline", offline);
+        b.addProperty("version", dev.west.hud.WestHud.game.minecraftVersion());
+        b.addProperty("loader", dev.west.hud.WestHud.game.loaderName());
         post("/invite", b, v -> sent.accept(v.getAsJsonObject().get("sent").getAsInt()));
     }
 

@@ -56,7 +56,6 @@ public final class WestMod implements ClientModInitializer {
     private static void tick(Minecraft mc) {
         WestHud.tick();
         WestHud.safe("music", () -> WestMusic.tick(mc));
-        WestHud.safe("westshader", () -> WestShader.tick(mc));
         // Minecraft'ın başlık ekranı açıldıysa West ana menüsüyle değiştir
         if (mc.screen instanceof net.minecraft.client.gui.screens.TitleScreen && WestHud.customTitle()) {
             Game121.refreshWorlds();

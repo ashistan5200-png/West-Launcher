@@ -170,12 +170,6 @@ function AppearanceTab() {
         </Row>
       </Group>
 
-      <Group title={tx("Grafik")}>
-        <Row title={tx("Shader'lar")} desc={tx("Yerleşik West shader'ı: ışıma, sıcak renkler ve kenar kararması. Hiçbir ek mod (Iris vb.) indirmez; OpenGL ve Vulkan'da çalışır. Performans modunda kapalıdır.")}>
-          <Toggle label={tx("Shader'lar")} on={settings.shaders} onChange={(v) => void useSettings.getState().update({ shaders: v })} />
-        </Row>
-      </Group>
-
       <Group title={tx("Ses")}>
         <Row title={tx("Arka plan müziği")} desc={tx("West'e özel sakin bir müzik. Launcher açıkken ve oyunun menülerinde çalar.")}>
           <Toggle label={tx("Arka plan müziği")} on={settings.music} onChange={(v) => void useSettings.getState().update({ music: v })} />

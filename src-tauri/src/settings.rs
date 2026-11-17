@@ -102,8 +102,6 @@ pub struct Settings {
     pub music: bool,
     /// Müzik oyunun içinde de çalsın (Minecraft'ın kendi müziğinin yerine)
     pub music_in_game: bool,
-    /// West shader (ışıma, sıcak renkler); OpenGL ve Vulkan'da çalışır, ek indirme yok
-    pub shaders: bool,
     /// Arayüz dili: "tr" | "en" | "de". Boş → ilk açılışta sistem dilinden seçilir.
     /// Eski ayar dosyalarında alan yoksa Türkçe kalır.
     #[serde(default = "legacy_language")]
@@ -137,7 +135,6 @@ impl Default for Settings {
             auto_update: true,
             music: true,
             music_in_game: true,
-            shaders: false,
             language: String::new(),
             accessibility: Accessibility::default(),
         }

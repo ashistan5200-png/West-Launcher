@@ -290,7 +290,8 @@ async fn route(http: &Http, root: &PathBuf, method: &str, path: &str, query: &st
                     let d: Value = serde_json::from_str(b).ok()?;
                     Some(json!({
                         "from": who.iter().find(|p| p["id"] == m["sender_id"]).cloned().unwrap_or(Value::Null),
-                        "world": d["world"], "address": d["address"], "at": m["created_at"], "conversation": m["conversation_id"]
+                        "world": d["world"], "address": d["address"], "at": m["created_at"], "conversation": m["conversation_id"],
+                        "version": d["version"], "loader": d["loader"], "kind": d["kind"], "offline": d["offline"]
                     }))
                 })
                 .collect();
@@ -325,9 +326,14 @@ async fn route(http: &Http, root: &PathBuf, method: &str, path: &str, query: &st
         }
         ("POST", "/invite") => {
             let users: Vec<String> = body["users"].as_array().cloned().unwrap_or_default().iter().filter_map(|u| u.as_str().map(String::from)).filter(|u| uuid_ok(u)).take(20).collect();
+            let s = |k: &str, n: usize| body[k].as_str().unwrap_or("").chars().take(n).collect::<String>();
             let payload = json!({
-                "world": body["world"].as_str().unwrap_or("").chars().take(60).collect::<String>(),
-                "address": body["address"].as_str().unwrap_or("").chars().take(80).collect::<String>(),
+                "world": s("world", 60),
+                "address": s("address", 80),
+                "kind": s("kind", 10),
+                "version": s("version", 20),
+                "loader": s("loader", 20),
+                "offline": body["offline"].as_bool().unwrap_or(false),
             });
             let mut sent = 0;
             for u in users {

@@ -81,8 +81,6 @@ export interface Settings {
   /** West arka plan müziği (launcher ve oyun menüleri) */
   music: boolean;
   musicInGame: boolean;
-  /** Yerleşik West shader'ı (ek mod indirmez) */
-  shaders: boolean;
   /** Arayüz dili; boş → sistem dilinden seçilir */
   language: "" | "tr" | "en" | "de";
   accessibility: Accessibility;
