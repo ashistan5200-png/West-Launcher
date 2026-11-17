@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Check, Clock, Gamepad2, Lock, Sparkles } from "lucide-react";
 import clsx from "clsx";
 import { useWallet } from "@/stores/wallet";
-import { CATEGORIES, FEATURED, meta, SLOT, type ShopItem, type ShopKind } from "@/lib/shop";
+import { CATEGORIES, FEATURED, kindVisible, meta, SLOT, type ShopItem, type ShopKind } from "@/lib/shop";
 import { ShopPreview } from "@/components/ShopPreview";
 import { PlusBadge, PlusMark } from "@/components/PlusBadge";
 import { askConfirm } from "@/components/ConfirmDialog";
@@ -39,7 +39,7 @@ export function ShopPage() {
 
   const items = useMemo(() => {
     const all = view?.catalog ?? [];
-    if (cat === "featured") return FEATURED.map((id) => all.find((i) => i.id === id)).filter((x): x is ShopItem => !!x);
+    if (cat === "featured") return FEATURED.map((id) => all.find((i) => i.id === id)).filter((x): x is ShopItem => !!x && kindVisible(x.kind)).slice(0, 8);
     return all.filter((i) => i.kind === cat);
   }, [view, cat]);
 
@@ -101,7 +101,7 @@ export function ShopPage() {
       </header>
 
       <nav className="shop-cats">
-        {CATEGORIES.map((c) => (
+        {CATEGORIES.filter((c) => c.id === "featured" || kindVisible(c.id)).map((c) => (
           <button key={c.id} className={clsx("pill-tab", cat === c.id && "on")} onClick={() => setCat(c.id)}>
             {c.id === "plus" ? <PlusMark size={13} /> : null} {c.label}
           </button>

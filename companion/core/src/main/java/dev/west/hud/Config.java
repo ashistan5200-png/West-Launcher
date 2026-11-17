@@ -54,6 +54,10 @@ public final class Config {
         /** West HUD öğeleri gösterilsin mi (launcher'daki Erişilebilirlik'ten) */
         public boolean hudEnabled = true;
         public Map<String, Element> elements = new LinkedHashMap<>();
+        /** West Coin ile alınıp launcher'da kuşanılan görünümler: yuva → öğe (cape, hat, back, aura, menuTheme) */
+        public Map<String, String> cosmetics = new LinkedHashMap<>();
+        /** West Plus açık mı (launcher yazar) */
+        public boolean plus = false;
     }
 
     private final Path path;

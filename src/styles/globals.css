@@ -1766,3 +1766,8 @@ body:has(.modal-backdrop, .mdetail-backdrop, .story-view, .lightbox, .editor-bac
 }
 :root[data-pack="aurora"][data-effects="off"] body::before { animation: none; }
 @media (max-width: 900px) { .shop-hero { grid-template-columns: 1fr; } }
+
+.solver-offer { display: flex; gap: 10px; align-items: center; margin-top: 12px; padding: 12px 14px; border-radius: 12px; background: rgb(var(--accent) / 0.1); border: 1px dashed rgb(var(--accent) / 0.5); }
+.solver-offer .grow { display: flex; flex-direction: column; gap: 2px; }
+.solver-card.fixed { border-color: rgb(var(--success) / 0.45); background: rgb(var(--success) / 0.06); }
+.solver-card-title.ok { color: rgb(var(--success)); }

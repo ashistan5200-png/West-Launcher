@@ -425,3 +425,24 @@ pub async fn analyze_crash(state: State<'_, AppState>, id: String, file: Option<
         .await
         .map_err(|e| crate::error::AppError::msg(e.to_string()))
 }
+
+/// Ashi Çözücü onarımı: geçersiz dosya adları yüzünden çöken modu düzeltip yeniden paketler.
+#[tauri::command]
+pub async fn fix_mod(state: State<'_, AppState>, id: String, file: String, location: Option<String>) -> Result<crate::crash::fixer::FixReport> {
+    if state.running.lock().contains_key(&id) {
+        return Err(AppError::msg("Oyun açıkken mod düzeltilemez; önce oyunu kapat"));
+    }
+    let mods = state.paths.instance_game_dir(&id).join("mods");
+    tokio::task::spawn_blocking(move || crate::crash::fixer::fix_bad_paths(&mods, &file, location.as_deref()))
+        .await
+        .map_err(|e| AppError::msg(e.to_string()))?
+}
+
+/// Onarımı geri al
+#[tauri::command]
+pub fn undo_fix(state: State<'_, AppState>, id: String, fixed: String, backup: String) -> Result<()> {
+    if state.running.lock().contains_key(&id) {
+        return Err(AppError::msg("Oyun açıkken geri alınamaz; önce oyunu kapat"));
+    }
+    crate::crash::fixer::undo(&state.paths.instance_game_dir(&id).join("mods"), &fixed, &backup)
+}

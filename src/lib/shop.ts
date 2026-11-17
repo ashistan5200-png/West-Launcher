@@ -28,6 +28,11 @@ export const SLOT: Record<ShopKind, string> = {
   plus: "plus", theme: "theme", sky: "sky", trail: "trail", menuTheme: "menuTheme", cape: "cape", hat: "hat", back: "back", aura: "aura",
 };
 
+/** Oyun içi öğeler (pelerin, şapka, sırt, aura, menü teması) companion desteği gelene kadar mağazada gizli */
+export const IN_GAME_READY = false;
+const IN_GAME_KINDS: ShopKind[] = ["cape", "hat", "back", "aura", "menuTheme"];
+export const kindVisible = (k: ShopKind) => IN_GAME_READY || !IN_GAME_KINDS.includes(k);
+
 export const CATEGORIES: { id: ShopKind | "featured"; label: string }[] = [
   { id: "featured", label: tx("Öne çıkanlar") },
   { id: "plus", label: "West Plus" },
@@ -41,7 +46,7 @@ export const CATEGORIES: { id: ShopKind | "featured"; label: string }[] = [
   { id: "menuTheme", label: tx("Oyun içi menü") },
 ];
 
-export const FEATURED = ["plus_30", "back_wings", "hat_crown", "cape_sakura", "theme_end", "sky_sakura", "trail_fire", "aura_flame"];
+export const FEATURED = ["plus_30", "back_wings", "hat_crown", "cape_sakura", "theme_end", "sky_sakura", "trail_fire", "aura_flame", "theme_aurora", "sky_aurora", "theme_ocean", "trail_hearts"];
 
 export const META: Record<string, ItemMeta> = {
   plus_30: { name: tx("West Plus · 30 gün"), desc: tx("Plus logosu, Plus'a özel her şey ve saatte 150 coin."), colors: ["#3a2a12", "#f2b654"] },

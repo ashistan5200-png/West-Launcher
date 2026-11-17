@@ -54,6 +54,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             // ayarlar & sistem
             commands::ashi::analyze_crash,
+            commands::ashi::fix_mod,
+            commands::ashi::undo_fix,
             commands::wallet::wallet_get,
             commands::wallet::wallet_buy,
             commands::wallet::wallet_equip,

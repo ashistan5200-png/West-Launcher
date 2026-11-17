@@ -38,6 +38,25 @@ public final class Theme {
         };
     }
 
+    /**
+     * West Coin ile alınan oyun içi menü teması: zemin, panel ve vurgu renkleri değişir.
+     * Bilinmeyen ya da boş paket → temel tema olduğu gibi.
+     */
+    public static Theme pack(String id, Theme base) {
+        if (id == null || base.pixel || base.id.equals("day")) return base;
+        int[] c = switch (id) {
+            // panel, side, accent
+            case "menu_ocean" -> new int[] { 0xEE0C1622, 0xEE101C2A, 0x5FB2C9 };
+            case "menu_forest" -> new int[] { 0xEE0D1410, 0xEE121C16, 0x79C08A };
+            case "menu_nether" -> new int[] { 0xEE160909, 0xEE1E0C0C, 0xFF7A45 };
+            case "menu_end" -> new int[] { 0xEE0F0B1A, 0xEE150F24, 0xB28CFF };
+            case "menu_gold" -> new int[] { 0xEE100D07, 0xEE18130A, 0xF2B654 };
+            default -> null;
+        };
+        if (c == null) return base;
+        return new Theme(base.id + "+" + id, base.backdrop, c[0], c[1], base.card, base.cardHover, base.line, base.text, base.muted, 0xFF000000 | c[2], base.radius, false);
+    }
+
     public static double luminance(int argb) {
         int r = (argb >> 16) & 255, g = (argb >> 8) & 255, b = argb & 255;
         return (0.299 * r + 0.587 * g + 0.114 * b) / 255.0;

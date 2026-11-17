@@ -3,5 +3,6 @@
 
 pub mod analyze;
 pub mod bisect;
+pub mod fixer;
 pub mod modinfo;
 pub mod fingerprint;

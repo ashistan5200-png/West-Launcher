@@ -511,6 +511,7 @@ export interface PortResult { instance: Instance; report: PortReport }
 // ───────── Ashi Çözücü ─────────
 export type CrashCause = "badResourcePath" | "outOfMemory" | "mixinFailed" | "missingClass" | "missingDependency" | "javaVersion" | "graphics" | "duplicateMod" | "unknown";
 export interface CrashCulprit { file: string; name: string; ids: string[]; ours: boolean; library: boolean }
+export interface FixReport { file: string; backup: string; renamed: number; patchedClasses: number; patchedFiles: number; examples: [string, string][] }
 export interface CrashAnalysis {
   source: string;
   cause: CrashCause;

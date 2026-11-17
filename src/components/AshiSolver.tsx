@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { open as openUrl } from "@tauri-apps/plugin-shell";
-import { AlertTriangle, ChevronDown, Cpu, Download, FileWarning, Package, PowerOff, Search, Wrench } from "lucide-react";
+import { AlertTriangle, ChevronDown, Cpu, Download, FileWarning, Package, Play, PowerOff, Search, Sparkles, Undo2, Wrench } from "lucide-react";
 import { Modal } from "@/components/Modal";
 import { AshiHead } from "@/components/AshiHead";
 import { api } from "@/lib/ipc";
 import { useSolver } from "@/stores/solver";
-import type { CrashCause } from "@/lib/types";
+import type { CrashCause, FixReport } from "@/lib/types";
+import { useInstances } from "@/stores/instances";
+import { useSettings } from "@/stores/settings";
 import { useAshi } from "@/stores/ashi";
 import { tx } from "@/lib/i18n";
 
@@ -76,6 +78,8 @@ export function AshiSolver() {
   const [details, setDetails] = useState(false);
   const [done, setDone] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [fixing, setFixing] = useState(false);
+  const [fixed, setFixed] = useState<FixReport | null>(null);
 
   if (!open) return <Modal open={false} title="" onClose={close}>{null}</Modal>;
   const { a, instanceId, name, modCount } = open;
@@ -92,6 +96,36 @@ export function AshiSolver() {
       setErr(String(e));
     }
   };
+  // Ashi'nin onarabildiği hatalar: şimdilik geçersiz dosya adı
+  const canFix = !!c && !c.ours && a?.cause === "badResourcePath";
+  const fix = async () => {
+    if (!c) return;
+    setErr(null);
+    setFixing(true);
+    try {
+      setFixed(await api.fixMod(instanceId, c.file, a?.detail ?? null));
+    } catch (e) {
+      setErr(String(e));
+    } finally {
+      setFixing(false);
+    }
+  };
+  const undo = async () => {
+    if (!fixed) return;
+    try {
+      await api.undoFix(instanceId, fixed.file, fixed.backup);
+      setFixed(null);
+      setDone(tx("Geri aldım; mod eski haline döndü."));
+    } catch (e) {
+      setErr(String(e));
+    }
+  };
+  const play = () => {
+    reset();
+    close();
+    void useInstances.getState().launch(instanceId, useSettings.getState().offlineName);
+  };
+  const reset = () => { setDone(null); setErr(null); setDetails(false); setFixed(null); setFixing(false); };
   const goContent = () => {
     close();
     navigate(`/instance/${instanceId}`, { state: { tab: "content" } });
@@ -114,7 +148,7 @@ export function AshiSolver() {
       : tx("Suçlu modu kesin bulamadım ama nedeni belli.");
 
   return (
-    <Modal open title={tx("Ashi Çözücü")} onClose={() => { setDone(null); setErr(null); setDetails(false); close(); }} width={560}>
+    <Modal open title={tx("Ashi Çözücü")} onClose={() => { reset(); close(); }} width={560}>
       <div className="solver-head">
         <AshiHead size={44} />
         <div className="grow">
@@ -145,9 +179,32 @@ export function AshiSolver() {
 
       {c?.library && <p className="hint warn"><AlertTriangle size={14} /> {tx("Bu bir kütüphane; kapatırsan ona bağlı modlar da çalışmaz. Önce güncellemeyi dene.")}</p>}
 
-      {done ? <p className="hint ok">{done}</p> : (
+      {canFix && !fixed && !done && (
+        <div className="solver-offer">
+          <AshiHead size={30} />
+          <div className="grow">
+            <strong>{tx("İstersen modun bozuk kısmını ben düzeltebilirim.")}</strong>
+            <span className="muted small">{tx("Dosya adlarındaki geçersiz harfleri düzeltip modu yeniden paketlerim. Orijinali yedeklenir; beğenmezsen tek tıkla geri alırsın.")}</span>
+          </div>
+        </div>
+      )}
+
+      {fixed && (
+        <div className="solver-card fixed">
+          <div className="solver-card-title ok"><Sparkles size={15} /> {tx("Düzelttim!")}</div>
+          <p>{tx("{0} dosya adı, {1} kod dosyası ve {2} ayar dosyası düzeltildi. Oyunu yeniden başlatıp dene.", fixed.renamed, fixed.patchedClasses, fixed.patchedFiles)}</p>
+          {fixed.examples.length > 0 && <pre className="solver-detail">{fixed.examples.slice(0, 4).map(([x, y]) => `${x.split("/").pop()} → ${y.split("/").pop()}`).join("\n")}</pre>}
+          <div className="solver-actions">
+            <button className="btn btn-primary" onClick={play}><Play size={15} /> {tx("Oyunu başlat")}</button>
+            <button className="btn btn-ghost" onClick={() => void undo()}><Undo2 size={15} /> {tx("Geri al")}</button>
+          </div>
+        </div>
+      )}
+
+      {fixed ? null : done ? <p className="hint ok">{done}</p> : (
         <div className="solver-actions">
-          {c && !c.ours && !c.library && <button className="btn btn-primary" onClick={() => void disable()}><PowerOff size={15} /> {tx("Bu modu kapat")}</button>}
+          {canFix && <button className="btn btn-primary" disabled={fixing} onClick={() => void fix()}><Wrench size={15} /> {fixing ? tx("Düzeltiyorum…") : tx("Evet, düzelt")}</button>}
+          {c && !c.ours && !c.library && <button className={canFix ? "btn btn-ghost" : "btn btn-primary"} onClick={() => void disable()}><PowerOff size={15} /> {tx("Bu modu kapat")}</button>}
           {c && !c.ours && <button className="btn btn-ghost" onClick={goContent}><Download size={15} /> {tx("Güncelleme ara")}</button>}
           {c?.ours && <button className="btn btn-primary" onClick={() => void openUrl("https://github.com/ashistan5200-png/West-Launcher/issues")}>{tx("Hatayı bize bildir")}</button>}
           {a?.cause === "outOfMemory" && <button className="btn btn-primary" onClick={goSettings}><Cpu size={15} /> {tx("Belleği ayarla")}</button>}

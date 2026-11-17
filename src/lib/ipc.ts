@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import type { CrashAnalysis,
+import type { CrashAnalysis, FixReport,
   ProjectDetail, ProjectVersion,
   ContentTags, WestStatus, WestAccount, WestSignupResult,
   ContentFile, UpdateReport, World, LogFile, FileEntry, ExportReport,
@@ -68,6 +68,8 @@ export const api = {
   startHunt: (id: string, offlineName: string) => invoke<HuntPlan>("start_hunt", { id, auth: null, offlineName }),
   cancelHunt: (id: string) => invoke<void>("cancel_hunt", { id }),
   disableMods: (id: string, files: string[]) => invoke<string[]>("disable_mods", { id, files }),
+  fixMod: (id: string, file: string, location: string | null) => invoke<FixReport>("fix_mod", { id, file, location }),
+  undoFix: (id: string, fixed: string, backup: string) => invoke<void>("undo_fix", { id, fixed, backup }),
   analyzeCrash: (id: string, file?: string) => invoke<CrashAnalysis | null>("analyze_crash", { id, file: file ?? null }),
   ashiSkin: () => invoke<AshiSkin>("ashi_skin"),
 

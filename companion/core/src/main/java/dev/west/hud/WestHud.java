@@ -38,9 +38,18 @@ public final class WestHud {
         LOG.info("West Companion {} hazır ({} {})", VERSION, g.loaderName(), g.minecraftVersion());
     }
 
+    private static String themeKey;
+    private static int themeAccent;
+
     public static Theme theme() {
         Config.Data d = config.data;
-        if (theme == null || !theme.id.equals(d.theme) || (theme.accent & 0xFFFFFF) != (d.accent & 0xFFFFFF)) theme = Theme.of(d.theme, d.accent);
+        String pack = d.cosmetics == null ? null : d.cosmetics.get("menuTheme");
+        String key = d.theme + "|" + pack;
+        if (theme == null || !key.equals(themeKey) || (themeAccent & 0xFFFFFF) != (d.accent & 0xFFFFFF)) {
+            theme = Theme.pack(pack, Theme.of(d.theme, d.accent));
+            themeKey = key;
+            themeAccent = d.accent;
+        }
         return theme;
     }
 
