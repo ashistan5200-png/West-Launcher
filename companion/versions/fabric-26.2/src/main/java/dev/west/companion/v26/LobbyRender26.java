@@ -365,13 +365,24 @@ public final class LobbyRender26 {
             mesh.put(layer, x + ox, y + oy, z + oz, mul(color, shade(biome, sky, blk)), u, v, nx, ny, nz, 0);
         }
 
-        @Override public VertexConsumer addVertex(float x, float y, float z) { return this; }
-        @Override public VertexConsumer setColor(int r, int g, int b, int a) { return this; }
-        @Override public VertexConsumer setColor(int c) { return this; }
-        @Override public VertexConsumer setUv(float u, float v) { return this; }
+        // Zincirleme yazım (sıvı çizici böyle yazar): addVertex → setColor → setUv → setLight → setNormal
+        private boolean pend;
+        private float px, py, pz, pu, pv;
+        private int pc = 0xFFFFFFFF, pl = 0xF000F0;
+
+        private void flush(float nx, float ny, float nz) {
+            if (!pend) return;
+            pend = false;
+            addVertex(px, py, pz, pc, pu, pv, 0, pl, nx, ny, nz);
+        }
+
+        @Override public VertexConsumer addVertex(float x, float y, float z) { flush(0, 1, 0); pend = true; px = x; py = y; pz = z; pc = 0xFFFFFFFF; pl = 0xF000F0; return this; }
+        @Override public VertexConsumer setColor(int r, int g, int b, int a) { pc = (a << 24) | (r << 16) | (g << 8) | b; return this; }
+        @Override public VertexConsumer setColor(int c) { pc = c; return this; }
+        @Override public VertexConsumer setUv(float u, float v) { pu = u; pv = v; return this; }
         @Override public VertexConsumer setUv1(int u, int v) { return this; }
-        @Override public VertexConsumer setUv2(int u, int v) { return this; }
-        @Override public VertexConsumer setNormal(float x, float y, float z) { return this; }
+        @Override public VertexConsumer setUv2(int u, int v) { pl = (v << 16) | (u & 0xFFFF); return this; }
+        @Override public VertexConsumer setNormal(float x, float y, float z) { flush(x, y, z); return this; }
         @Override public VertexConsumer setLineWidth(float w) { return this; }
     }
 

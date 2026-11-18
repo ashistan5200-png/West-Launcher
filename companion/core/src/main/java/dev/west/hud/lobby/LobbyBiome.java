@@ -6,6 +6,7 @@ package dev.west.hud.lobby;
  */
 public enum LobbyBiome {
     //        id          ad (Türkçe anahtar)  gök üst    gök ufuk   sis        sisBaş sisSon  gökIşığı parçacık
+    FOREST("forest", "Gece Ormanı", 0xFF0A1226, 0xFF223355, 0xFF1C2A48, 18f, 56f, 0.6f, Particle.FIREFLIES),
     SNOWY("snowy", "Karlı", 0xFF6F8FB5, 0xFFC7D5E4, 0xFFC3D1E0, 18f, 54f, 0.86f, Particle.SNOW),
     BADLANDS("badlands", "Badlands", 0xFF6FA0D8, 0xFFF0C69A, 0xFFEBC196, 22f, 60f, 1.0f, Particle.DUST),
     DESERT("desert", "Çöl", 0xFF7BB1E6, 0xFFF1E3BC, 0xFFEDDFB8, 22f, 60f, 1.0f, Particle.NONE),
@@ -13,7 +14,7 @@ public enum LobbyBiome {
     END("end", "End", 0xFF07050D, 0xFF1E1530, 0xFF1B1329, 18f, 56f, 0.55f, Particle.ENDER),
     NETHER("nether", "Nether", 0xFF1C0505, 0xFF4A1210, 0xFF4A1512, 14f, 48f, 0.0f, Particle.EMBERS);
 
-    public enum Particle { NONE, SNOW, DUST, PETALS, ENDER, EMBERS }
+    public enum Particle { NONE, SNOW, DUST, PETALS, ENDER, EMBERS, FIREFLIES }
 
     public final String id, name;
     public final int skyTop, skyHorizon, fog;
@@ -34,7 +35,7 @@ public enum LobbyBiome {
 
     public static LobbyBiome of(String id) {
         for (LobbyBiome b : values()) if (b.id.equals(id)) return b;
-        return SNOWY;
+        return FOREST;
     }
 
     /** Nether'de yüzler daha eşit aydınlanır (oyundaki gibi) */

@@ -117,15 +117,31 @@ public final class LobbyScreen extends WestShell {
         return null;
     }
 
+    /** Lobi arayüzünün ölçeği: büyük arayüz ölçeklerinde (ör. 1080p'de 4×) paneller daha kibar görünsün */
+    private float uk = 1;
+    private int vsh;
+
+    private static float uiScale(Gfx g) {
+        int gs = Math.max(1, g.guiScale());
+        float screenH = g.height() * gs;
+        float target = Math.max(1.5f, screenH / 430f);
+        return Math.min(1f, target / gs);
+    }
+
     @Override
     public void render(Gfx g, int mx, int my, float delta) {
-        beginFrame(g, mx, my);
+        uk = uiScale(g);
+        beginFrame(g, Math.round(mx / uk), Math.round(my / uk));
         Game game = WestHud.game;
-        int sw = g.width(), sh = g.height();
         if (servers == null || ++serverTries % 240 == 0) servers = game.servers(64);
         backdrop(g);
+        int sw = Math.round(g.width() / uk), sh = Math.round(g.height() / uk);
+        vsh = sh;
+        g.push();
+        g.scale(uk);
         if (zoom > 0.02f || wardrobe) {
-            wardrobeUi(g, mx, my, sw, sh);
+            wardrobeUi(g, ui.mx, ui.my, sw, sh);
+            g.pop();
             ui.end();
             return;
         }
@@ -153,6 +169,7 @@ public final class LobbyScreen extends WestShell {
                 default -> {}
             }
         }
+        g.pop();
         ui.end();
     }
 
@@ -380,7 +397,7 @@ public final class LobbyScreen extends WestShell {
             if (a.alpha < 0.3f) continue;
             float[] p = frame.camera.project(a.x, a.y + 2.15f, a.z);
             if (p == null) continue;
-            int cx = Math.round(p[0]), bottom = Math.round(p[1]);
+            int cx = Math.round(p[0] / uk), bottom = Math.round(p[1] / uk);
             LobbyClient.Person person = person(a.key);
             boolean leader = client.ready() ? person != null && person.leader() : i == 0;
             // Sunucu satırı (adın üstünde)
@@ -891,7 +908,7 @@ public final class LobbyScreen extends WestShell {
         if (toast == null || System.currentTimeMillis() - toastAt > 4500) return;
         float a = Math.min(1, (4500 - (System.currentTimeMillis() - toastAt)) / 400f);
         int w = g.textWidth(toast) + 20;
-        int x = (sw - w) / 2, y = ui.g.height() - 58;
+        int x = (sw - w) / 2, y = vsh - 58;
         Ui.round(g, x, y, w, 16, 8, Theme.alpha(0xE00B0D14, (int) (0xE0 * a)));
         g.text(toast, x + 10, y + 4, Theme.alpha(0xFFFFFFFF, (int) (255 * a)), false);
     }
@@ -1181,7 +1198,7 @@ public final class LobbyScreen extends WestShell {
             particles.clear();
             return;
         }
-        int want = kind == LobbyBiome.Particle.SNOW ? 260 : kind == LobbyBiome.Particle.PETALS ? 120 : kind == LobbyBiome.Particle.EMBERS ? 110 : 70;
+        int want = kind == LobbyBiome.Particle.SNOW ? 260 : kind == LobbyBiome.Particle.PETALS ? 120 : kind == LobbyBiome.Particle.EMBERS ? 110 : kind == LobbyBiome.Particle.FIREFLIES ? 90 : 70;
         if (WestHud.config.data.lobbyLight || WestHud.config.data.performanceMode) want /= 3;
         float cx = frame.camera.target.x, cz = frame.camera.target.z;
         while (particles.size() > want) particles.remove(particles.size() - 1);
@@ -1207,14 +1224,22 @@ public final class LobbyScreen extends WestShell {
                 case PETALS -> 0xF4B6CF;
                 case EMBERS -> (i % 3 == 0) ? 0xFFC861 : 0xFF7A2E;
                 case ENDER -> 0xC08BFF;
+                case FIREFLIES -> 0xE4F58A;
                 case DUST -> 0xF3D2A6;
                 default -> 0xFFFFFF;
             };
             int a = Math.round((kind == LobbyBiome.Particle.DUST ? 110 : 225) * fade);
+            // Ateş böcekleri yavaşça yanıp söner, etraflarında hafif bir ışık halesi olur
+            if (kind == LobbyBiome.Particle.FIREFLIES) {
+                float blink = 0.35f + 0.65f * Math.max(0, (float) Math.sin(bgTime * (0.8f + (i % 7) * 0.13f) + i));
+                a = Math.round(a * blink);
+                int gx = Math.round(s[0]), gy = Math.round(s[1]), gr = Math.max(2, sz * 3);
+                if (a > 30) Ui.round(g, gx - gr / 2, gy - gr / 2, gr, gr, gr / 2, (Math.round(a * 0.18f) << 24) | 0xD8F27A);
+            }
             if (a < 6) continue;
             int x = Math.round(s[0]), y = Math.round(s[1]);
             if (x < -4 || y < -4 || x > sw + 4 || y > sh + 4) continue;
-            if (kind == LobbyBiome.Particle.SNOW || kind == LobbyBiome.Particle.DUST) Ui.round(g, x, y, sz, sz, sz / 2, (a << 24) | col);
+            if (kind == LobbyBiome.Particle.SNOW || kind == LobbyBiome.Particle.DUST || kind == LobbyBiome.Particle.FIREFLIES) Ui.round(g, x, y, sz, sz, sz / 2, (a << 24) | col);
             else g.fill(x, y, x + sz, y + Math.max(1, sz - (kind == LobbyBiome.Particle.PETALS ? sz / 3 : 0)), (a << 24) | col);
         }
     }
@@ -1226,6 +1251,7 @@ public final class LobbyScreen extends WestShell {
             case SNOW -> new float[] { x, anywhere ? baseY + rnd.nextFloat() * 18 : baseY + 16 + rnd.nextFloat() * 4, z, 0.35f, -1.1f - rnd.nextFloat() * 0.8f, 0.1f, 30, rnd.nextFloat() * 6 };
             case PETALS -> new float[] { x, anywhere ? baseY + rnd.nextFloat() * 14 : baseY + 12 + rnd.nextFloat() * 4, z, 0.8f, -0.55f - rnd.nextFloat() * 0.4f, 0.2f, 40, rnd.nextFloat() * 6 };
             case EMBERS -> new float[] { x, anywhere ? baseY + rnd.nextFloat() * 10 : baseY + rnd.nextFloat(), z, (rnd.nextFloat() - 0.5f) * 0.4f, 0.6f + rnd.nextFloat() * 0.9f, (rnd.nextFloat() - 0.5f) * 0.4f, 4 + rnd.nextFloat() * 8, 0 };
+            case FIREFLIES -> new float[] { x, baseY + 0.3f + rnd.nextFloat() * 3.5f, z, (rnd.nextFloat() - 0.5f) * 0.5f, (rnd.nextFloat() - 0.5f) * 0.25f, (rnd.nextFloat() - 0.5f) * 0.5f, 6 + rnd.nextFloat() * 10, rnd.nextFloat() * 6 };
             case ENDER -> new float[] { x, baseY + rnd.nextFloat() * 8, z, (rnd.nextFloat() - 0.5f) * 0.2f, 0.15f + rnd.nextFloat() * 0.2f, (rnd.nextFloat() - 0.5f) * 0.2f, 3 + rnd.nextFloat() * 6, 0 };
             default -> new float[] { x, baseY + rnd.nextFloat() * 8, z, 0.4f, 0.05f, 0.1f, 6 + rnd.nextFloat() * 8, 0 };
         };
@@ -1244,8 +1270,10 @@ public final class LobbyScreen extends WestShell {
 
     @Override
     public void mouseClicked(double x, double y, int button) {
+        x /= uk;
+        y /= uk;
         if (wardrobe) {
-            int sw = ui.g == null ? 0 : ui.g.width();
+            int sw = ui.g == null ? 0 : Math.round(ui.g.width() / uk);
             if (button == 0 && x < sw / 2.0) {
                 draggingModel = true;
                 dragLastX = x;
@@ -1258,6 +1286,7 @@ public final class LobbyScreen extends WestShell {
 
     @Override
     public void mouseDragged(double x, double y, int button) {
+        x /= uk;
         if (draggingModel) {
             wardrobeYaw += (float) (x - dragLastX) * 1.6f;
             dragLastX = x;

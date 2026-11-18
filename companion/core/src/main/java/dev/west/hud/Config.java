@@ -67,8 +67,8 @@ public final class Config {
         // ───── Lobi (ana menü) ─────
         /** Ana menü olarak 3B lobi (kapalıysa klasik West ana menüsü) */
         public boolean lobby = true;
-        /** Seçili biyom: snowy, badlands, desert, cherry, end, nether */
-        public String lobbyBiome = "snowy";
+        /** Seçili biyom: forest, snowy, badlands, desert, cherry, end, nether */
+        public String lobbyBiome = "forest";
         /** Kameranın çok yavaş sinematik kayması */
         public boolean lobbyCinematic = true;
         /** Lobi sesleri (ışınlanma) */

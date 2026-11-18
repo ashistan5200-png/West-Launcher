@@ -28,6 +28,7 @@ public final class SceneGen {
         LobbyScene s = new LobbyScene(b);
         Random r = new Random(0x5EED_0000L + b.ordinal() * 7919L);
         switch (b) {
+            case FOREST -> forest(s, r);
             case SNOWY -> snowy(s, r);
             case BADLANDS -> badlands(s, r);
             case DESERT -> desert(s, r);
@@ -108,6 +109,119 @@ public final class SceneGen {
             if (dx * dx + dz * dz < dist * dist) return true;
         }
         return false;
+    }
+
+    // ───────── Gece ormanı ─────────
+
+    private static void forest(LobbyScene s, Random r) {
+        long seed = 91;
+        for (int x = MIN_X; x <= MAX_X; x++)
+            for (int z = MIN_Z; z <= MAX_Z; z++) {
+                int h = height(x, z, seed, 7);
+                column(s, x, z, h, "grass_block[snowy=false]", "dirt", "stone");
+            }
+        // Dere: karakterlerin arkasından yatay geçer, solda öne kıvrılır
+        for (int x = MIN_X; x <= MAX_X; x++) {
+            double cz = (x < 0 ? -7.6 : -7.6 - x * 0.6) + Math.sin(x * 0.21) * 0.8;
+            if (x < -9) cz += (-9 - x) * 0.85;
+            double w = 1.3 + Math.sin(x * 0.17 + 1) * 0.4;
+            for (int z = (int) Math.floor(cz - w - 1); z <= cz + w + 1; z++) {
+                if (z < MIN_Z || z > MAX_Z) continue;
+                double d = Math.abs(z - cz);
+                if (d > w + 0.5) continue;
+                if (x >= 2 && x <= 7 && z >= -8) continue;
+                int top = s.top(x, z);
+                for (int y = GROUND; y <= top; y++) s.set(x, y, z, "air");
+                s.set(x, GROUND - 1, z, d < w - 0.6 ? "gravel" : "dirt");
+                s.set(x, GROUND, z, "water");
+                if (d > w - 0.2 && r.nextInt(5) == 0) s.set(x, GROUND, z, "mossy_cobblestone");
+            }
+        }
+        // Karakterlerle dere arasını düzle: dere ön plandan görünsün
+        for (int x = -16; x <= 16; x++)
+            for (int z = -9; z <= -1; z++) {
+                if (s.get(x, GROUND, z).contains("water")) continue;
+                int top = s.top(x, z);
+                if (top <= GROUND) continue;
+                for (int y = GROUND + 1; y <= top; y++) s.set(x, y, z, "air");
+                s.set(x, GROUND, z, "grass_block[snowy=false]");
+            }
+        // Ağaçlar: meşe, huş, koyu meşe — arkada ve yanlarda
+        int[][] trees = new int[70][];
+        int n = 0;
+        for (int i = 0; i < 500 && n < trees.length; i++) {
+            int[] p = spot(r, 2, true);
+            if (near(trees, n, p[0], p[1], 5)) continue;
+            int y = s.top(p[0], p[1]);
+            if (!s.get(p[0], y, p[1]).startsWith("minecraft:grass_block")) continue;
+            trees[n++] = p;
+            int k = r.nextInt(10);
+            if (k < 4) roundTree(s, r, p[0], y, p[1], "birch_log[axis=y]", "birch_leaves[persistent=true]", 5 + r.nextInt(3), 2.4);
+            else if (k < 8) roundTree(s, r, p[0], y, p[1], "oak_log[axis=y]", "oak_leaves[persistent=true]", 4 + r.nextInt(3), 2.8);
+            else roundTree(s, r, p[0], y, p[1], "dark_oak_log[axis=y]", "dark_oak_leaves[persistent=true]", 6 + r.nextInt(3), 3.4);
+        }
+        // Yerde çiçek, ot, eğrelti
+        for (int x = MIN_X; x <= MAX_X; x++)
+            for (int z = MIN_Z; z <= MAX_Z; z++) {
+                int y = s.top(x, z);
+                if (!s.get(x, y, z).startsWith("minecraft:grass_block")) continue;
+                if (Math.abs(x) <= 3 && z >= -2 && z <= 3) continue;
+                double k = r.nextDouble();
+                if (k < 0.16) s.set(x, y + 1, z, "short_grass");
+                else if (k < 0.19) s.set(x, y + 1, z, "fern");
+                else if (k < 0.215) s.set(x, y + 1, z, pick(r, "poppy", "dandelion", "poppy", "cornflower"));
+                else if (k < 0.225) {
+                    s.set(x, y + 1, z, "tall_grass[half=lower]");
+                    s.set(x, y + 2, z, "tall_grass[half=upper]");
+                }
+            }
+        // Kamp ateşi ve oturma kütükleri: liderin arkasında, biraz sağda (örnekteki gibi görünür yerde)
+        // Zemini kamp alanında düzle (tepeler ateşi gömmesin)
+        for (int x = 2; x <= 7; x++)
+            for (int z = -9; z <= -4; z++) {
+                for (int y = GROUND + 1; y <= GROUND + 8; y++) s.set(x, y, z, "air");
+                if (!s.get(x, GROUND, z).contains("water")) s.set(x, GROUND, z, "grass_block[snowy=false]");
+            }
+        int g = GROUND + 1;
+        s.set(4, g, -6, "campfire[lit=true,facing=south]");
+        s.set(6, g, -6, "oak_log[axis=z]");
+        s.set(6, g, -7, "oak_log[axis=z]");
+        s.set(3, g, -8, "oak_log[axis=x]");
+        s.set(4, g, -8, "oak_log[axis=x]");
+        // Çit üstünde fenerler
+        int[][] posts = { { 9, -7 }, { -9, -4 }, { 11, 2 }, { -12, 5 }, { 16, -14 } };
+        for (int[] p : posts) {
+            int y = s.top(p[0], p[1]);
+            String b = s.get(p[0], y, p[1]);
+            if (!b.startsWith("minecraft:grass_block") && !b.startsWith("minecraft:dirt")) {
+                s.set(p[0], y, p[1], "air");
+                y = s.top(p[0], p[1]);
+            }
+            if (s.get(p[0], y, p[1]).contains("water")) continue;
+            s.set(p[0], y + 1, p[1], "oak_fence");
+            s.set(p[0], y + 2, p[1], "oak_fence");
+            s.set(p[0], y + 3, p[1], "lantern");
+        }
+    }
+
+    /** Dikdörtgen alanı zemin üstünden temizler (bitkileri kaldırır) */
+    private static void clear(LobbyScene s, int x0, int x1, int z0, int z1) {
+        for (int x = x0; x <= x1; x++)
+            for (int z = z0; z <= z1; z++)
+                for (int y = GROUND + 1; y <= GROUND + 3; y++) s.set(x, y, z, "air");
+    }
+
+    private static void roundTree(LobbyScene s, Random r, int x, int ground, int z, String log, String leaves, int h, double rad) {
+        for (int y = 1; y <= h; y++) s.set(x, ground + y, z, log);
+        int cy = ground + h;
+        int ri = (int) Math.ceil(rad);
+        for (int dx = -ri; dx <= ri; dx++)
+            for (int dy = -2; dy <= 2; dy++)
+                for (int dz = -ri; dz <= ri; dz++) {
+                    double d = dx * dx + dz * dz + dy * dy * 1.8 + (dy > 0 ? dy * 1.5 : 0);
+                    if (d > rad * rad + r.nextDouble() * 1.2) continue;
+                    s.setIfAir(x + dx, cy + dy, z + dz, leaves);
+                }
     }
 
     // ───────── Karlı ─────────

@@ -54,10 +54,15 @@ create table if not exists public.lobbies (
   id         uuid primary key default gen_random_uuid(),
   leader_id  uuid not null unique references public.profiles(id) on delete cascade,
   privacy    text not null default 'friends' check (privacy in ('open', 'friends', 'private')),
-  biome      text not null default 'snowy' check (biome in ('snowy', 'badlands', 'desert', 'cherry', 'end', 'nether')),
+  biome      text not null default 'forest',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- Biyom listesi (yeni biyom eklenince güncellenir)
+alter table public.lobbies drop constraint if exists lobbies_biome_check;
+alter table public.lobbies add constraint lobbies_biome_check check (biome in ('forest', 'snowy', 'badlands', 'desert', 'cherry', 'end', 'nether'));
+alter table public.lobbies alter column biome set default 'forest';
 
 -- Herkes aynı anda tek bir lobidedir
 create table if not exists public.lobby_members (
