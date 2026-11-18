@@ -459,4 +459,28 @@ public final class Game26 implements Game {
     public void openWestScreen(boolean editor) {
         mc().gui.setScreen(new WestHost(editor ? WestHud.editor(WestHud.menu()) : WestHud.menu()));
     }
+
+    @Override
+    public boolean pushToTalkDown() {
+        var mc = mc();
+        // Sohbet yazarken ya da başka bir ekranda konuşma başlamasın; oyunda ve West ekranlarında çalışır
+        if (mc.gui.screen() != null && !WestHost.isOpen()) return false;
+        var key = net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper.getBoundKeyOf(WestMod.TALK);
+        long win = mc.getWindow().handle();
+        return switch (key.getType()) {
+            case KEYSYM -> key.getValue() > 0 && org.lwjgl.glfw.GLFW.glfwGetKey(win, key.getValue()) == org.lwjgl.glfw.GLFW.GLFW_PRESS;
+            case MOUSE -> org.lwjgl.glfw.GLFW.glfwGetMouseButton(win, key.getValue()) == org.lwjgl.glfw.GLFW.GLFW_PRESS;
+            default -> false;
+        };
+    }
+
+    @Override
+    public String pushToTalkKey() {
+        return WestMod.TALK.getTranslatedKeyMessage().getString();
+    }
+
+    @Override
+    public boolean modLoaded(String id) {
+        return net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded(id);
+    }
 }

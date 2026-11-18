@@ -49,6 +49,7 @@ public final class Hud {
         elements.add(keystrokes);
         elements.add(armor);
         elements.add(compass);
+        elements.add(new dev.west.hud.voice.VoiceHud());
     }
 
     public HudElement byId(String id) {

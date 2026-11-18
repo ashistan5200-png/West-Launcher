@@ -11,6 +11,7 @@ import dev.west.hud.lobby.LobbyFrame;
 import dev.west.hud.lobby.LobbyFx;
 import dev.west.hud.lobby.LobbyScene;
 import dev.west.hud.lobby.SceneGen;
+import dev.west.hud.voice.VoiceEngine;
 import dev.west.hud.ui.Icons;
 import dev.west.hud.ui.Icons.Icon;
 import dev.west.hud.ui.Theme;
@@ -453,7 +454,12 @@ public final class LobbyScreen extends WestShell {
             int yw = you == null ? 0 : small(g, you) + 4;
             int w = nw + yw + 10, h = 11;
             int x = cx - w / 2, y = bottom - h - (leader ? 10 : 0);
+            boolean talking = a.self ? VoiceEngine.INSTANCE.transmitting : VoiceEngine.INSTANCE.speaking(a.key);
             Ui.round(g, x, y, w, h, 4, 0xD40D0F16);
+            if (talking) {
+                Ui.outline(g, x - 1, y - 1, w + 2, h + 2, 5, t.ok);
+                Icons.draw(g, Icon.SPEAKER, x - 12, y + 1, 9, t.ok);
+            }
             smallText(g, name, x + 5, y + 2, 0xFFFFFFFF);
             if (you != null) smallText(g, you, x + 5 + nw + 4, y + 2, 0x99FFFFFF);
             if (leader) {
@@ -534,6 +540,27 @@ public final class LobbyScreen extends WestShell {
         x -= 21;
         if (iconButton("bell", Icon.BELL, x, 8, 18, Tr.t("Bildirimler"), 0)) go(new HomeScreen(this, HomeScreen.Page.SOCIAL));
         if (pending > 0) Ui.round(g, x + 13, 9, 5, 5, 3, t.accent | 0xFF000000);
+        // Grup sesli sohbeti: mikrofon ve kulaklık
+        if (d.voice) {
+            VoiceEngine v = VoiceEngine.INSTANCE;
+            x -= 25;
+            boolean deaf = d.voiceDeafened;
+            if (deaf) Ui.round(g, x, 8, 18, 18, 6, 0xB0E5566E);
+            if (iconButton("deaf", deaf ? Icon.HEADPHONES_OFF : Icon.HEADPHONES, x, 8, 18, deaf ? Tr.t("Sesi aç") : Tr.t("Sağırlaştır (kimseyi duyma)"), 0)) {
+                d.voiceDeafened = !deaf;
+                WestHud.save();
+            }
+            x -= 21;
+            boolean muted = d.voiceMuted || deaf;
+            if (muted) Ui.round(g, x, 8, 18, 18, 6, 0xB0E5566E);
+            else if (v.transmitting) Ui.round(g, x, 8, 18, 18, 6, Theme.alpha(t.ok, 0xC0));
+            String tip = muted ? Tr.t("Mikrofonu aç") : client.voiceGroup() < 2 ? Tr.t("Sesli sohbet: lobine biri katılınca başlar") : Tr.t("Mikrofonu kapat");
+            if (iconButton("mic", muted ? Icon.MIC_OFF : Icon.MIC, x, 8, 18, tip, 0)) {
+                if (deaf) d.voiceDeafened = false;
+                d.voiceMuted = !muted;
+                WestHud.save();
+            }
+        }
     }
 
     private int keyIndex() {
@@ -666,8 +693,10 @@ public final class LobbyScreen extends WestShell {
         boolean hv = visible && vh > 0 && ui.hover(x, vy, w, vh);
         if (hv) Ui.round(g, x, y, w, h, 6, 0x14FFFFFF);
         boolean online = p.online() || me;
-        Ui.round(g, x + 4, y + 7, 6, 6, 3, online ? t.ok : 0x66FFFFFF);
         boolean inLobby = client.members.stream().anyMatch(m -> m.id().equals(p.id()));
+        boolean talking = inLobby && (me ? VoiceEngine.INSTANCE.transmitting : VoiceEngine.INSTANCE.speaking(p.id()));
+        if (talking) Ui.round(g, x + 2, y + 5, 10, 10, 5, Theme.alpha(t.ok, 0x70));
+        Ui.round(g, x + 4, y + 7, 6, 6, 3, online ? t.ok : 0x66FFFFFF);
         String name = p.display() + (me ? "  " + Tr.t("(sen)") : "");
         String sub = !online ? Tr.t("Çevrimdışı") : p.singleplayer() ? Tr.t("Tek oyunculu dünyada")
                 : p.server() != null ? (p.serverName() != null ? p.serverName() : p.server()) : inLobby ? Tr.t("Lobide") : Tr.t("Menüde");
@@ -712,11 +741,28 @@ public final class LobbyScreen extends WestShell {
             }
             bx -= 3;
         }
+        // Sesli sohbette bu kişiyi sustur (yalnızca senin için)
+        Config.Data vd = WestHud.config.data;
+        if (vd.voice && inLobby && !me && memberCount >= 2) {
+            boolean m = vd.voiceMutedPeople.contains(p.id());
+            bx -= 14;
+            boolean mh = visible && ui.hover(bx, y + 5, 12, 12);
+            if (m || mh) Ui.round(g, bx, y + 5, 12, 12, 6, m ? 0xB0E5566E : 0x30FFFFFF);
+            Icons.draw(g, m ? Icon.MIC_OFF : Icon.SPEAKER, bx + 2, y + 7, 8, m || mh ? 0xFFFFFFFF : 0x88FFFFFF);
+            if (visible && ui.clicked(bx, y + 5, 12, 12)) {
+                WestHud.game.click();
+                if (m) vd.voiceMutedPeople.remove(p.id());
+                else vd.voiceMutedPeople.add(p.id());
+                WestHud.save();
+            }
+            bx -= 3;
+            actions.add("_");
+        }
         if (!actions.isEmpty()) textW = bx - x - 15;
         smallText(g, ui.fit(name, Math.round(textW / 0.8f)), x + 14, y + 3, 0xFFFFFFFF);
         smallText(g, ui.fit(sub, Math.round(textW / 0.8f)), x + 14, y + 12, 0x88FFFFFF);
         // Satıra tıklayınca ek seçenek (engelle)
-        if (visible && vh > 0 && !me && ui.clicked(x, vy, w, vh)) expanded = p.id().equals(expanded) ? null : p.id();
+        if (visible && vh > 0 && !me && ui.clicked(x, vy, Math.max(1, bx - x), vh)) expanded = p.id().equals(expanded) ? null : p.id();
         y += h;
         if (p.id().equals(expanded)) {
             String b = Tr.t("Engelle");
@@ -1094,6 +1140,7 @@ public final class LobbyScreen extends WestShell {
         cy += 20;
         smallText(g, Tr.t("Esc dışında bir tuş seçilirse Esc yalnızca açık pencereleri kapatır."), col, cy, 0x88FFFFFF);
         cy += 14;
+        cy = voiceSettings(g, col, right, cy);
         cy = section(g, Tr.t("Görünüm"), col, cy);
         String[][] toggles = { { "cinematic", Tr.t("Sinematik kamera kayması") }, { "sound", Tr.t("Lobi sesleri (ışınlanma)") },
                 { "light", Tr.t("Hafif lobi (3B dünya çizilmez)") } };
@@ -1173,6 +1220,159 @@ public final class LobbyScreen extends WestShell {
         float content = cy + Math.round(moduleScroll) - top;
         moduleScroll = Math.max(0, Math.min(Math.max(0, content - (bottom - top)), moduleScroll));
         if (changed) WestHud.save();
+    }
+
+    // ───────── Grup sesli sohbeti: ayarlar ─────────
+
+    private List<String> mics;
+
+    private int voiceSettings(Gfx g, int col, int right, int cy) {
+        Theme t = ui.t;
+        Config.Data d = WestHud.config.data;
+        VoiceEngine v = VoiceEngine.INSTANCE;
+        boolean changed = false;
+        cy = section(g, Tr.t("Grup sesli sohbeti"), col, cy + 4);
+        g.text(Tr.t("Lobidekilerle sesli konuş"), col, cy + 2, 0xEEFFFFFF, false);
+        boolean nv = ui.toggle(d.voice, right - 22, cy);
+        if (nv != d.voice) {
+            d.voice = nv;
+            if (!nv) v.test = false;
+            changed = true;
+        }
+        cy += 18;
+        if (d.voice) {
+            String[] modes = { "auto", "vad", "ptt" };
+            String[] names = { Tr.t("Otomatik"), Tr.t("Sesle"), Tr.t("Bas-konuş") };
+            int sel = 0;
+            for (int i = 0; i < modes.length; i++) if (modes[i].equals(d.voiceMode)) sel = i;
+            int c = segments(g, "vmode", names, sel, col, cy, right - col);
+            if (c >= 0) {
+                d.voiceMode = modes[c];
+                changed = true;
+            }
+            cy += 20;
+            String hint = v.pushToTalk() ? Tr.t("Konuşmak için {0} tuşunu basılı tut (Kontroller'den değiştirilebilir).", WestHud.game.pushToTalkKey())
+                    : Tr.t("Konuşmaya başlayınca mikrofon kendiliğinden açılır.");
+            if (v.otherVoiceMod) hint += " " + Tr.t("Simple Voice Chat da yüklü: ikisi birlikte çalışır. Otomatik modda West bas-konuş kullanır; böylece konuşman iki sisteme birden kendiliğinden gitmez.");
+            for (String line : wrap(g, hint, Math.round((right - col) / 0.8f))) {
+                smallText(g, line, col, cy, 0x99FFFFFF);
+                cy += 9;
+            }
+            cy += 5;
+            g.text(Tr.t("Gürültü engelleme"), col, cy + 2, 0xEEFFFFFF, false);
+            nv = ui.toggle(d.voiceNoise, right - 22, cy);
+            if (nv != d.voiceNoise) {
+                d.voiceNoise = nv;
+                changed = true;
+            }
+            cy += 13;
+            for (String line : wrap(g, Tr.t("Fan, klima, klavye ve uğultu gibi sürekli sesleri bastırır; konuşman korunur."), Math.round((right - col) / 0.8f))) {
+                smallText(g, line, col, cy, 0x88FFFFFF);
+                cy += 9;
+            }
+            cy += 6;
+            // Hassasiyet ve canlı mikrofon seviyesi
+            if (!v.pushToTalk()) {
+                g.text(Tr.t("Hassasiyet"), col, cy + 4, 0xEEFFFFFF, false);
+                int[] th = { -36, -44, -52 };
+                String[] tn = { Tr.t("Düşük"), Tr.t("Orta"), Tr.t("Yüksek") };
+                int ts = 1;
+                for (int i = 0; i < th.length; i++) if (th[i] == d.voiceSensitivity) ts = i;
+                int lw = g.textWidth(Tr.t("Hassasiyet")) + 10;
+                c = segments(g, "vsens", tn, ts, col + lw, cy, right - col - lw);
+                if (c >= 0) {
+                    d.voiceSensitivity = th[c];
+                    changed = true;
+                }
+                cy += 20;
+            }
+            int mw = right - col;
+            Ui.round(g, col, cy, mw, 6, 3, 0x22FFFFFF);
+            float lv = Math.max(0, Math.min(1, (v.micDb + 70) / 70f));
+            if (v.capturing) Ui.round(g, col, cy, Math.max(6, Math.round(mw * lv)), 6, 3, v.transmitting || (v.test && v.micDb > d.voiceSensitivity) ? t.ok : 0x88FFFFFF);
+            if (!v.pushToTalk()) {
+                int tx = col + Math.round(mw * Math.max(0, Math.min(1, (d.voiceSensitivity + 70) / 70f)));
+                g.fill(tx, cy - 2, tx + 1, cy + 8, 0xFFFFFFFF);
+            }
+            cy += 10;
+            String state = v.micError != null ? v.micError
+                    : v.capturing ? (v.test ? Tr.t("Test: kendi sesini duyuyorsun") : Tr.t("Mikrofon açık"))
+                    : d.voiceMuted || d.voiceDeafened ? Tr.t("Mikrofonun kapalı (üst çubuktan açabilirsin).")
+                    : Tr.t("Mikrofon yalnızca lobinde biri varken açılır.");
+            for (String line : wrap(g, state, Math.round((right - col) / 0.8f))) {
+                smallText(g, line, col, cy, v.micError != null ? 0xFFFF8A8A : 0x88FFFFFF);
+                cy += 9;
+            }
+            cy += 3;
+            String test = v.test ? Tr.t("Testi bitir") : Tr.t("Mikrofonu dene");
+            int bw = g.textBoldWidth(test) + 30;
+            if (outlineButton("vtest", test, Icon.MIC, col, cy, bw, 16, v.test)) v.test = !v.test;
+            // Mikrofon seçimi
+            if (mics == null) mics = VoiceEngine.microphones();
+            String micName = d.voiceMic == null || d.voiceMic.isBlank() ? Tr.t("Varsayılan mikrofon") : d.voiceMic;
+            int mx = col + bw + 6;
+            if (outlineButton("vmic", ui.fit(micName, right - mx - 24), Icon.CHEVRON_RIGHT, mx, cy, right - mx, 16, false)) {
+                List<String> all = new ArrayList<>();
+                all.add("");
+                all.addAll(mics);
+                int i = all.indexOf(d.voiceMic == null ? "" : d.voiceMic);
+                d.voiceMic = all.get((i + 1) % all.size());
+                v.restartMic();
+                changed = true;
+            }
+            cy += 22;
+            // Ses seviyeleri
+            float[] vols = { 0.5f, 1f, 1.5f };
+            String[] vn = { "%50", "%100", "%150" };
+            String[] rowNames = { Tr.t("Mikrofon"), Tr.t("Arkadaşların") };
+            for (int r = 0; r < 2; r++) {
+                g.text(rowNames[r], col, cy + 4, 0xEEFFFFFF, false);
+                float cur = r == 0 ? d.voiceInVol : d.voiceOutVol;
+                int vs = 1;
+                for (int i = 0; i < vols.length; i++) if (Math.abs(vols[i] - cur) < 0.01f) vs = i;
+                int lw = Math.max(g.textWidth(rowNames[0]), g.textWidth(rowNames[1])) + 10;
+                c = segments(g, "vvol" + r, vn, vs, col + lw, cy, right - col - lw);
+                if (c >= 0) {
+                    if (r == 0) d.voiceInVol = vols[c];
+                    else d.voiceOutVol = vols[c];
+                    changed = true;
+                }
+                cy += 20;
+            }
+            String err = v.speakerError != null ? v.speakerError : client.voiceError;
+            if (err != null) {
+                for (String line : wrap(g, err, Math.round((right - col) / 0.8f))) {
+                    smallText(g, line, col, cy, 0xFFFF8A8A);
+                    cy += 9;
+                }
+                cy += 3;
+            }
+            for (String line : wrap(g, Tr.t("Ses yalnızca lobindeki kişilere, şifreli bağlantıyla anlık iletilir; hiçbir yerde kaydedilmez. Bir kişiyi susturmak için lobi listesinde adının yanındaki hoparlöre tıkla."), Math.round((right - col) / 0.8f))) {
+                smallText(g, line, col, cy, 0x88FFFFFF);
+                cy += 9;
+            }
+            cy += 6;
+        }
+        if (changed) WestHud.save();
+        return cy;
+    }
+
+    /** Bölmeli seçim düğmesi; tıklanan bölmenin sırası ya da -1 */
+    private int segments(Gfx g, String id, String[] labels, int sel, int x, int y, int w) {
+        Theme t = ui.t;
+        int segW = w / labels.length, out = -1;
+        for (int i = 0; i < labels.length; i++) {
+            int bx = x + i * segW;
+            boolean on = i == sel, hv = ui.hover(bx, y, segW - 4, 16);
+            Ui.round(g, bx, y, segW - 4, 16, 8, on ? t.accent | 0xFF000000 : hv ? 0x30FFFFFF : 0x18FFFFFF);
+            String l = ui.fit(labels[i], segW - 10);
+            g.text(l, bx + (segW - 4 - g.textWidth(l)) / 2, y + 4, on ? t.onAccent : 0xEEFFFFFF, false);
+            if (!on && ui.clicked(bx, y, segW - 4, 16)) {
+                WestHud.game.click();
+                out = i;
+            }
+        }
+        return out;
     }
 
     private int section(Gfx g, String title, int x, int y) {

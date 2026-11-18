@@ -66,6 +66,7 @@ public final class WestHud {
     }
 
     public static void renderHud(Gfx g) {
+        if (config != null && !editorOpen) safe("voice-hud", () -> dev.west.hud.voice.VoiceHud.renderAlways(g, HUD.byId("voice")));
         if (config != null && !config.data.hudEnabled && !editorOpen) return;
         safe("hud", () -> HUD.render(g, game, theme(), editorOpen));
     }

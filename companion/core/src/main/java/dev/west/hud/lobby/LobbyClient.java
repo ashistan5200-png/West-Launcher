@@ -121,7 +121,11 @@ public final class LobbyClient {
     // ───────── Yaşam döngüsü (her istemci tick'inde) ─────────
 
     public void tick(Game game) {
-        if (status == Status.NO_BRIDGE) return;
+        if (status == Status.NO_BRIDGE) {
+            // Lobi yok: yalnızca mikrofon testi çalışabilir
+            dev.west.hud.voice.VoiceEngine.INSTANCE.tick(game, 0);
+            return;
+        }
         long now = System.currentTimeMillis();
         // Durum: Realtime açıkken yalnızca bildirim gelince (ve 2 dk'da bir güvence), kapalıyken 15 sn'de bir
         long every = realtime ? 120_000 : 15_000;
@@ -144,6 +148,8 @@ public final class LobbyClient {
             a.addProperty("server_name", name);
             rpc("lobby_presence_set", a, v -> {}, e -> {});
         }
+        // Grup sesli sohbeti: lobide en az 2 kişi varken lobinin gizli ses kanalı
+        voiceTick(game);
         // Gerçek zamanlı bağlantı
         if (myId != null && (status == Status.READY || status == Status.UNVERIFIED)) {
             if (socket == null && now - lastConnectTry > 15_000) {
@@ -411,6 +417,7 @@ public final class LobbyClient {
             JsonObject o = v.getAsJsonObject();
             String url = str(o, "url"), token = str(o, "token"), user = str(o, "user");
             if (url == null || token == null) return;
+            accessToken = token;
             lastTokenRefresh = System.currentTimeMillis();
             http.newWebSocketBuilder().connectTimeout(Duration.ofSeconds(8)).buildAsync(URI.create(url), new Listener()).thenAccept(ws -> {
                 socket = ws;
@@ -445,9 +452,12 @@ public final class LobbyClient {
         get("/lobby/realtime", v -> {
             String token = str(v.getAsJsonObject(), "token");
             if (token == null) return;
+            accessToken = token;
             JsonObject p = new JsonObject();
             p.addProperty("access_token", token);
             send(TOPIC, "access_token", p, false);
+            String vt = voiceTopic;
+            if (vt != null) send(vt, "access_token", p, false);
         }, e -> {});
     }
 
@@ -456,9 +466,14 @@ public final class LobbyClient {
         send("phoenix", "heartbeat", new JsonObject(), false);
     }
 
-    private synchronized void send(String topic, String event, JsonObject payload, boolean join) {
+    private void send(String topic, String event, JsonObject payload, boolean join) {
+        send(topic, event, payload, join, true);
+    }
+
+    /** track: yanıt beklenen ileti (gecikme ölçümü); ses yayınları beklenmez */
+    private synchronized boolean send(String topic, String event, JsonObject payload, boolean join, boolean track) {
         WebSocket ws = socket;
-        if (ws == null) return;
+        if (ws == null) return false;
         String r = String.valueOf(ref++);
         JsonObject m = new JsonObject();
         m.addProperty("topic", topic);
@@ -466,13 +481,26 @@ public final class LobbyClient {
         m.add("payload", payload);
         m.addProperty("ref", r);
         if (join) m.addProperty("join_ref", r);
-        pending.put(r, System.currentTimeMillis());
-        ws.sendText(GSON.toJson(m), true);
+        if (track) {
+            pending.put(r, System.currentTimeMillis());
+            if (pending.size() > 200) pending.clear();
+        }
+        // Java WebSocket aynı anda tek gönderim ister: öncekinin bitmesini bekle
+        try {
+            sending = sending.thenCompose(x -> ws.sendText(GSON.toJson(m), true)).exceptionally(e -> null);
+        } catch (Exception e) {
+            return false;
+        }
+        return true;
     }
+
+    private java.util.concurrent.CompletableFuture<?> sending = java.util.concurrent.CompletableFuture.completedFuture(null);
 
     private void closeSocket() {
         WebSocket ws = socket;
         socket = null;
+        voiceTopic = null;
+        voiceReady = false;
         realtime = false;
         pingMs = -1;
         if (ws != null) ws.abort();
@@ -495,6 +523,8 @@ public final class LobbyClient {
         public CompletionStage<?> onClose(WebSocket ws, int code, String reason) {
             if (socket == ws) {
                 socket = null;
+                voiceTopic = null;
+                voiceReady = false;
                 realtime = false;
                 pingMs = -1;
             }
@@ -505,6 +535,8 @@ public final class LobbyClient {
         public void onError(WebSocket ws, Throwable error) {
             if (socket == ws) {
                 socket = null;
+                voiceTopic = null;
+                voiceReady = false;
                 realtime = false;
                 pingMs = -1;
             }
@@ -524,21 +556,110 @@ public final class LobbyClient {
                 JsonObject p = m.getAsJsonObject("payload");
                 String st = p == null ? null : str(p, "status");
                 if ("phoenix".equals(str(m, "topic")) && sent != null) pingMs = System.currentTimeMillis() - sent;
-                if (TOPIC.equals(str(m, "topic")) && "ok".equals(st)) {
+                String vt = voiceTopic;
+                if (vt != null && vt.equals(str(m, "topic")) && r != null && r.equals(voiceJoinRef)) {
+                    voiceReady = "ok".equals(st);
+                    voiceError = voiceReady ? null : Tr.t("Ses kanalına bağlanılamadı (Supabase'te lobby.sql'i yeniden çalıştır)");
+                    if (!voiceReady) WestHud.LOG.warn("Lobi ses kanalına katılınamadı: {}", text);
+                } else if (TOPIC.equals(str(m, "topic")) && "ok".equals(st)) {
                     realtime = true;
                     refreshNow();
                 } else if (TOPIC.equals(str(m, "topic")) && "error".equals(st)) {
                     WestHud.LOG.warn("Lobi Realtime kanalına katılınamadı: {}", text);
                     realtime = false;
                 }
+            } else if ("broadcast".equals(event) && voiceTopic != null && voiceTopic.equals(str(m, "topic"))) {
+                voiceIn(m.getAsJsonObject("payload"));
             } else if ("postgres_changes".equals(event)) {
                 refreshNow();
             } else if ("phx_error".equals(event) || "phx_close".equals(event)) {
-                realtime = false;
+                if (voiceTopic != null && voiceTopic.equals(str(m, "topic"))) {
+                    voiceTopic = null;
+                    voiceReady = false;
+                } else realtime = false;
             }
         } catch (Exception e) {
             WestHud.LOG.debug("Lobi Realtime iletisi okunamadı: {}", e.toString());
         }
+    }
+
+    // ───────── Grup sesli sohbeti (lobinin gizli Realtime kanalı) ─────────
+
+    /** Ses kanalına bağlı mı; bağlanamadıysa nedeni */
+    public volatile boolean voiceReady;
+    public volatile String voiceError;
+    private volatile String voiceTopic, voiceJoinRef, accessToken;
+
+    /** Konuşma grubu: lobideki kişiler (sen dahil) */
+    public int voiceGroup() {
+        return ready() && lobbyId != null ? members.size() : 0;
+    }
+
+    private void voiceTick(Game game) {
+        var engine = dev.west.hud.voice.VoiceEngine.INSTANCE;
+        boolean on = WestHud.config.data.voice && realtime && socket != null && lobbyId != null && members.size() >= 2;
+        String want = on ? "realtime:voice:" + lobbyId : null;
+        String cur = voiceTopic;
+        if (cur != null && !cur.equals(want)) {
+            send(cur, "phx_leave", new JsonObject(), false, false);
+            voiceTopic = null;
+            voiceReady = false;
+        }
+        if (want != null && voiceTopic == null && accessToken != null) {
+            JsonObject cfg = new JsonObject();
+            JsonObject bc = new JsonObject();
+            bc.addProperty("self", false);
+            bc.addProperty("ack", false);
+            cfg.add("broadcast", bc);
+            // Gizli kanal: yalnızca bu lobinin üyeleri katılabilir (Supabase RLS, lobby.sql)
+            cfg.addProperty("private", true);
+            JsonObject payload = new JsonObject();
+            payload.add("config", cfg);
+            payload.addProperty("access_token", accessToken);
+            voiceTopic = want;
+            synchronized (this) {
+                voiceJoinRef = String.valueOf(ref);
+            }
+            send(want, "phx_join", payload, true, false);
+        }
+        engine.sink = voiceReady ? this::voiceOut : null;
+        engine.tick(game, voiceReady ? members.size() : 0);
+    }
+
+    private boolean voiceOut(int seq, List<byte[]> frames) {
+        String t = voiceTopic;
+        if (t == null || !voiceReady || myId == null) return false;
+        StringBuilder d = new StringBuilder();
+        for (byte[] f : frames) {
+            if (d.length() > 0) d.append(',');
+            d.append(java.util.Base64.getEncoder().encodeToString(f));
+        }
+        JsonObject inner = new JsonObject();
+        inner.addProperty("f", myId);
+        inner.addProperty("s", seq);
+        inner.addProperty("d", d.toString());
+        JsonObject p = new JsonObject();
+        p.addProperty("type", "broadcast");
+        p.addProperty("event", "v");
+        p.add("payload", inner);
+        return send(t, "broadcast", p, false, false);
+    }
+
+    private void voiceIn(JsonObject p) {
+        if (p == null || !"v".equals(str(p, "event"))) return;
+        JsonObject v = p.getAsJsonObject("payload");
+        String from = str(v, "f");
+        // Yalnızca lobideki kişilerden (kendinden değil)
+        if (from == null || from.equals(myId) || members.stream().noneMatch(x -> x.id().equals(from))) return;
+        String d = str(v, "d");
+        if (d == null || d.isEmpty() || d.length() > 20_000) return;
+        List<byte[]> frames = new ArrayList<>();
+        for (String part : d.split(",")) {
+            byte[] f = java.util.Base64.getDecoder().decode(part);
+            if (f.length > 0 && f.length <= 1275) frames.add(f);
+            if (frames.size() > 10) break;
+        }
+        dev.west.hud.voice.VoiceEngine.INSTANCE.receive(from, v.get("s").getAsInt(), frames);
     }
 
     // ───────── Köprü ─────────

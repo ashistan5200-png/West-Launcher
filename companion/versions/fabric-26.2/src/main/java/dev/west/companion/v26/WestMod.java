@@ -18,6 +18,8 @@ public final class WestMod implements ClientModInitializer {
     /** West menüsü: varsayılan Sağ Shift (Kontroller'den değiştirilebilir) */
     public static final KeyMapping MENU = new KeyMapping("key.west_companion.menu", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_RIGHT_SHIFT, CATEGORY);
     /** HUD düzenleyici: varsayılan atanmamış */
+    /** Grup sesli sohbeti bas-konuş: varsayılan G (Simple Voice Chat'in tuşlarıyla çakışmaz) */
+    public static final KeyMapping TALK = new KeyMapping("key.west_companion.talk", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_G, CATEGORY);
     public static final KeyMapping EDITOR = new KeyMapping("key.west_companion.editor", InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), CATEGORY);
 
     @Override
@@ -37,6 +39,7 @@ public final class WestMod implements ClientModInitializer {
         });
         KeyMappingHelper.registerKeyMapping(MENU);
         KeyMappingHelper.registerKeyMapping(EDITOR);
+        KeyMappingHelper.registerKeyMapping(TALK);
         ClientTickEvents.END_CLIENT_TICK.register(WestMod::tick);
         // Dünya paylaşma: e4mc'nin verdiği herkese açık adresi sohbetten yakala
         net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents.GAME.register((msg, overlay) -> WestHud.safe("tunnel", () -> Game26.onChat(msg)));

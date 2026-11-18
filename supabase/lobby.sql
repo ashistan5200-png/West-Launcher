@@ -649,3 +649,31 @@ begin
     execute format('grant execute on function public.%s to authenticated', f);
   end loop;
 end $$;
+
+-- ───────── Grup sesli sohbeti ─────────
+-- Ses, lobinin gizli Realtime yayın kanalında ("voice:<lobi id>") taşınır. Sunucuda ses saklanmaz.
+-- Kanala yalnızca o lobinin üyeleri (lobide en az 2 kişi varken) katılıp gönderebilir.
+create or replace function public.lobby_voice_allowed(t text) returns boolean
+language sql stable security definer set search_path = public as $$
+  select t is not null and t like 'voice:%' and exists (
+    select 1 from lobby_members m
+    where m.user_id = auth.uid()
+      and 'voice:' || m.lobby_id::text = t
+      and (select count(*) from lobby_members x where x.lobby_id = m.lobby_id) >= 2
+  )
+$$;
+revoke all on function public.lobby_voice_allowed(text) from public, anon;
+grant execute on function public.lobby_voice_allowed(text) to authenticated;
+
+do $$
+begin
+  -- realtime.messages Supabase'de vardır (Realtime yetkilendirmesi); yoksa (yerel test) atla
+  if exists (select 1 from information_schema.tables where table_schema = 'realtime' and table_name = 'messages') then
+    execute 'drop policy if exists west_voice_listen on realtime.messages';
+    execute 'create policy west_voice_listen on realtime.messages for select to authenticated
+             using (realtime.messages.extension = ''broadcast'' and public.lobby_voice_allowed(realtime.topic()))';
+    execute 'drop policy if exists west_voice_send on realtime.messages';
+    execute 'create policy west_voice_send on realtime.messages for insert to authenticated
+             with check (realtime.messages.extension = ''broadcast'' and public.lobby_voice_allowed(realtime.topic()))';
+  end if;
+end $$;

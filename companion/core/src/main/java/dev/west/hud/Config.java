@@ -79,6 +79,22 @@ public final class Config {
         public String lobbyMenuKey = "esc";
         /** Sol alt bilgi panelinde gösterilenler */
         public Map<String, Boolean> lobbyInfo = new LinkedHashMap<>();
+
+        // ───── Grup sesli sohbeti ─────
+        /** Aynı lobideki (gruptaki) arkadaşlarla sesli konuşma */
+        public boolean voice = true;
+        /** auto (başka ses modu varsa bas-konuş, yoksa sesle), vad (sesle etkinleşme), ptt (bas-konuş) */
+        public String voiceMode = "auto";
+        /** Gürültü engelleme (fan, klima, klavye uğultusu) */
+        public boolean voiceNoise = true;
+        /** Sesle etkinleşme eşiği (dBFS): daha düşük = daha hassas */
+        public int voiceSensitivity = -44;
+        public float voiceInVol = 1f, voiceOutVol = 1f;
+        public boolean voiceMuted = false, voiceDeafened = false;
+        /** Seçili mikrofon (boş = sistem varsayılanı) */
+        public String voiceMic = "";
+        /** Sesini duymak istemediğin kişiler (West hesap kimliği) */
+        public java.util.List<String> voiceMutedPeople = new java.util.ArrayList<>();
     }
 
     private final Path path;
@@ -98,6 +114,8 @@ public final class Config {
                     // Eski (sürüm 1) dosyada fpsOverlay varsayılan kapalıydı; yoksa açık say
                     if (!o.has("fpsOverlay")) d.fpsOverlay = true;
                     if (d.elements == null) d.elements = new LinkedHashMap<>();
+                    if (d.voiceMutedPeople == null) d.voiceMutedPeople = new java.util.ArrayList<>();
+                    if (d.voiceMode == null) d.voiceMode = "auto";
                     data = d;
                 }
             }
