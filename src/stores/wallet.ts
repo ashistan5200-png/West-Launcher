@@ -18,7 +18,7 @@ export interface WalletData {
   equipped: Record<string, string>;
   history: { at: string; amount: number; reason: string }[];
 }
-interface WalletView { wallet: WalletData; plus: boolean; catalog: ShopItem[]; coinsPerHour: number; plusBonusPct: number }
+interface WalletView { wallet: WalletData; plus: boolean; catalog: ShopItem[]; coinsPerHour: number; plusBonusPct: number; loggedIn?: boolean; offline?: boolean }
 
 const CACHE = "west.walletView";
 
@@ -108,6 +108,10 @@ export function startWallet() {
     void useWallet.getState().load();
     useWallet.setState({ earned: { coins: e.payload.coins, at: Date.now() } });
   });
+  // West hesabına giriş/çıkışta yenile
+  void import("./west").then(({ useWest }) => useWest.subscribe((s, p) => {
+    if (s.account?.userId !== p.account?.userId) void useWallet.getState().load();
+  }));
   // Plus süresi dolarsa görünüm geri alınsın
   window.setInterval(() => void useWallet.getState().load(), 10 * 60 * 1000);
 }

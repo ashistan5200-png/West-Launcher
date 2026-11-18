@@ -1311,5 +1311,7 @@
  "{0} dk": "{0} min",
  "B": "K",
  "1 YIL": "1 YEAR",
- "{0} GÜN": "{0} DAYS"
+ "{0} GÜN": "{0} DAYS",
+ "West Coin'ler West hesabında tutulur; böylece her bilgisayarda aynıdır ve kaybolmaz. Kazanmak ve harcamak için West hesabına giriş yap.": "West Coins are stored in your West account, so they're the same on every computer and never get lost. Sign in to your West account to earn and spend them.",
+ "West sunucusuna ulaşılamadı; son bilinen bakiyen gösteriliyor. Satın alma ve kuşanma internet gelince çalışır.": "Couldn't reach the West server; showing your last known balance. Buying and equipping will work once you're back online."
 }

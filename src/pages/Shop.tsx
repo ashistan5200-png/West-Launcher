@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Check, Clock, Gamepad2, Lock, Sparkles } from "lucide-react";
 import clsx from "clsx";
 import { useWallet } from "@/stores/wallet";
@@ -32,6 +33,7 @@ export function CoinIcon({ size = 16 }: { size?: number }) {
 }
 
 export function ShopPage() {
+  const navigate = useNavigate();
   const { view, load, buy, equip } = useWallet();
   const [cat, setCat] = useState<ShopKind | "featured">("featured");
   const [msg, setMsg] = useState<{ id: string; text: string; ok: boolean } | null>(null);
@@ -45,6 +47,18 @@ export function ShopPage() {
 
   if (!view) {
     return <div className="page shop-page"><p className="muted">{tx("Mağaza yükleniyor…")}</p></div>;
+  }
+  if (view.loggedIn === false) {
+    return (
+      <div className="page shop-page">
+        <div className="shop-login">
+          <CoinIcon size={46} />
+          <h2>{tx("West Coin mağazası")}</h2>
+          <p className="muted">{tx("West Coin'ler West hesabında tutulur; böylece her bilgisayarda aynıdır ve kaybolmaz. Kazanmak ve harcamak için West hesabına giriş yap.")}</p>
+          <button className="btn btn-primary" onClick={() => navigate("/social")}>{tx("Giriş yap")}</button>
+        </div>
+      </div>
+    );
   }
   const w = view.wallet;
   const rate = view.plus ? (view.coinsPerHour * view.plusBonusPct) / 100 : view.coinsPerHour;
@@ -99,6 +113,8 @@ export function ShopPage() {
           <div><span className="muted tiny">{tx("Sahip olunan")}</span><strong>{w.owned.length}</strong></div>
         </div>
       </header>
+
+      {view.offline && <p className="shop-note">{tx("West sunucusuna ulaşılamadı; son bilinen bakiyen gösteriliyor. Satın alma ve kuşanma internet gelince çalışır.")}</p>}
 
       <nav className="shop-cats">
         {CATEGORIES.filter((c) => c.id === "featured" || kindVisible(c.id)).map((c) => (

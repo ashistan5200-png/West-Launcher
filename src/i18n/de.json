@@ -1316,5 +1316,7 @@
  "{0} dk": "{0} Min.",
  "B": "Tsd.",
  "1 YIL": "1 JAHR",
- "{0} GÜN": "{0} TAGE"
+ "{0} GÜN": "{0} TAGE",
+ "West Coin'ler West hesabında tutulur; böylece her bilgisayarda aynıdır ve kaybolmaz. Kazanmak ve harcamak için West hesabına giriş yap.": "West Coins werden in deinem West-Konto gespeichert – auf jedem Computer gleich und gehen nie verloren. Melde dich bei deinem West-Konto an, um sie zu verdienen und auszugeben.",
+ "West sunucusuna ulaşılamadı; son bilinen bakiyen gösteriliyor. Satın alma ve kuşanma internet gelince çalışır.": "West-Server nicht erreichbar; dein letztes bekanntes Guthaben wird angezeigt. Kaufen und Anlegen funktionieren wieder, sobald du online bist."
 }

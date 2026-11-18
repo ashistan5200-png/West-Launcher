@@ -24,7 +24,7 @@ export function TitleBar() {
   useEffect(() => void loadWest(), [loadWest]);
   const name = west?.username ?? account?.username;
   const plus = usePlusActive();
-  const coins = useWallet((s) => s.view?.wallet.coins ?? null);
+  const coins = useWallet((s) => (s.view?.loggedIn === false ? null : s.view?.wallet.coins ?? null));
   return (
     <header className="titlebar" data-tauri-drag-region>
       <div className="titlebar-brand" data-tauri-drag-region>

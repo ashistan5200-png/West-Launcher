@@ -105,7 +105,15 @@ pub async fn start_game(app: &AppHandle, id: &str, auth: AuthSession, join_serve
         let prefs = state.settings.read().clone();
         let gd = state.paths.instance_game_dir(id);
         if enabled {
-            let wallet = crate::wallet::load(&state.paths.root);
+            // Kozmetikler için güncel cüzdan; sunucuya ulaşılamazsa son bilinen, giriş yoksa boş.
+            // Oyun süresini sunucu buradan ölçmeye başlar (coin kazancı için).
+            let logged = crate::cloud::current_user(&state.http, &state.paths.root).await.is_some();
+            let wallet = if logged {
+                crate::wallet::session_start(&state.http, &state.paths.root).await;
+                crate::wallet::cached(&state.paths.root).unwrap_or_default()
+            } else {
+                crate::wallet::Wallet::default()
+            };
             if let Err(e) = crate::companion::apply_prefs(&gd, &prefs, &wallet) {
                 tracing::warn!("companion ayarları yazılamadı: {e}");
             }
@@ -232,16 +240,24 @@ pub async fn start_game(app: &AppHandle, id: &str, auth: AuthSession, join_serve
         let mgr = InstanceManager::new(&st.paths);
         if mode == LaunchMode::Play {
             let _ = mgr.record_session(&exit_id, secs);
-            // Gardırop'ta yapılan seçimler cüzdana geçsin
-            if let Some(c) = crate::companion::read_cosmetics(&st.paths.instance_game_dir(&exit_id)) {
-                let _ = crate::wallet::sync_from_game(&st.paths.root, &c);
-            }
-            // West Coin: oynanan süre kadar
-            if let Ok(coins) = crate::wallet::earn(&st.paths.root, secs) {
-                if coins > 0 {
-                    let _ = exit_app.emit("wallet-earned", serde_json::json!({ "coins": coins, "secs": secs }));
+            // Gardırop seçimleri ve kazanılan coin'ler hesaba (sunucuya) yazılır
+            let chosen = crate::companion::read_cosmetics(&st.paths.instance_game_dir(&exit_id));
+            let (http, root, app2) = (st.http.clone(), st.paths.root.clone(), exit_app.clone());
+            tauri::async_runtime::spawn(async move {
+                if crate::cloud::current_user(&http, &root).await.is_none() {
+                    return;
                 }
-            }
+                if let Some(c) = chosen {
+                    let _ = crate::wallet::sync_from_game(&http, &root, &c).await;
+                }
+                match crate::wallet::earn(&http, &root, secs).await {
+                    Ok(coins) if coins > 0 => {
+                        let _ = app2.emit("wallet-earned", serde_json::json!({ "coins": coins, "secs": secs }));
+                    }
+                    Ok(_) => {}
+                    Err(e) => tracing::info!("West Coin kazancı yazılamadı: {e}"),
+                }
+            });
         }
         if let Some(w) = st.watchers.lock().get(&exit_id) {
             let _ = w.send(GameSignal::Exit(code));

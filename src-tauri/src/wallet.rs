@@ -2,14 +2,17 @@
 //!
 //! Oyunda geçirilen her saat 100 West Coin kazandırır (West Plus'ta 150). Coin'ler yalnızca görünüm
 //! öğelerine (tema, arka plan, imleç izi, oyun içi menü teması, pelerin ve aksesuarlar) ve West Plus'a
-//! harcanır. Hiçbiri oyunda avantaj sağlamaz. Cüzdan bu bilgisayarda tutulur; sunucu gerekmez.
+//! harcanır. Hiçbiri oyunda avantaj sağlamaz.
 //!
-//! Fiyatlar ve hangi öğenin West Plus'a özel olduğu burada, tek yerde tanımlıdır.
+//! Cüzdan West hesabına bağlı olarak Supabase'de tutulur (supabase/wallet.sql). Bakiye, sahip olunan ve
+//! kuşanılan öğeler yalnızca sunucudaki fonksiyonlarla değişir; fiyatlar da sunucudaki listeden okunur.
+//! Buradaki katalog yalnızca mağaza ekranını çizmek içindir (sunucudakiyle aynı listeden üretilir).
+//! Sunucuya ulaşılamazsa son bilinen cüzdan yerel bir önbellekten gösterilir; değişiklik yapılamaz.
 
 use crate::error::{AppError, Result};
-use chrono::{DateTime, Duration, Utc};
-use parking_lot::Mutex;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use crate::core::http::Http;
 use std::path::{Path, PathBuf};
 
 /// Saat başına coin
@@ -137,27 +140,6 @@ pub fn slot_of(id: &str) -> &'static str {
     }
 }
 
-/// Oyunda Gardırop'ta yapılan seçimleri cüzdana geri yaz (yalnızca oyun içi yuvalar ve kullanılabilir öğeler)
-pub fn sync_from_game(root: &Path, chosen: &std::collections::BTreeMap<String, String>) -> Result<()> {
-    let _g = LOCK.lock();
-    let mut w = load(root);
-    let mut changed = false;
-    for slot in GAME_SLOTS {
-        let want = chosen.get(*slot).filter(|id| item(id).map(|it| slot_of(it.id) == *slot && w.can_use(it)).unwrap_or(false));
-        if w.equipped.get(*slot) != want {
-            match want {
-                Some(id) => w.equipped.insert(slot.to_string(), id.clone()),
-                None => w.equipped.remove(*slot),
-            };
-            changed = true;
-        }
-    }
-    if changed {
-        save(root, &w)?;
-    }
-    Ok(())
-}
-
 pub fn item(id: &str) -> Option<&'static Item> {
     CATALOG.iter().find(|i| i.id == id)
 }
@@ -180,10 +162,11 @@ pub struct Wallet {
     pub earned_total: u64,
     pub owned: Vec<String>,
     pub plus_until: Option<DateTime<Utc>>,
-    /// Kuşanılan öğeler: tür → öğe kimliği
+    /// Kuşanılan öğeler: yuva → öğe kimliği
     pub equipped: std::collections::BTreeMap<String, String>,
     pub history: Vec<HistoryEntry>,
-    pub welcomed: bool,
+    /// Bilgisayardaki eski cüzdan hesaba aktarıldı mı
+    pub imported: bool,
 }
 
 impl Wallet {
@@ -195,112 +178,131 @@ impl Wallet {
     pub fn can_use(&self, it: &Item) -> bool {
         it.price == 0 && !it.plus_only || self.owned.iter().any(|o| o == it.id) || it.plus_only && self.plus_active()
     }
-
-    fn log(&mut self, amount: i64, reason: impl Into<String>) {
-        self.history.push(HistoryEntry { at: Utc::now(), amount, reason: reason.into() });
-        let n = self.history.len();
-        if n > 60 {
-            self.history.drain(0..n - 60);
-        }
-    }
-
-    /// Süresi biten Plus öğelerini çıkar
-    fn drop_expired(&mut self) {
-        let ids: Vec<(String, String)> = self.equipped.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
-        for (k, v) in ids {
-            if let Some(it) = item(&v) {
-                if !self.can_use(it) {
-                    self.equipped.remove(&k);
-                }
-            }
-        }
-    }
 }
 
-static LOCK: Mutex<()> = Mutex::new(());
+/// Sunucudan dönen cüzdan (+ isteğe bağlı "earned")
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+struct ServerWallet {
+    coins: i64,
+    carry_secs: i64,
+    earned_total: i64,
+    owned: Vec<String>,
+    plus_until: Option<DateTime<Utc>>,
+    equipped: std::collections::BTreeMap<String, String>,
+    history: Vec<HistoryEntry>,
+    imported: bool,
+    earned: i64,
+}
 
-fn file(root: &Path) -> PathBuf {
+fn from_server(v: serde_json::Value) -> Result<(Wallet, u64)> {
+    let s: ServerWallet = serde_json::from_value(v)?;
+    let w = Wallet {
+        coins: s.coins.max(0) as u64,
+        carry_secs: s.carry_secs.max(0) as u64,
+        earned_total: s.earned_total.max(0) as u64,
+        owned: s.owned,
+        plus_until: s.plus_until,
+        equipped: s.equipped,
+        history: s.history,
+        imported: s.imported,
+    };
+    Ok((w, s.earned.max(0) as u64))
+}
+
+fn cache_file(root: &Path) -> PathBuf {
+    root.join("wallet-cache.json")
+}
+
+/// Eski (yalnızca bu bilgisayarda tutulan) cüzdan dosyası
+fn legacy_file(root: &Path) -> PathBuf {
     root.join("wallet.json")
 }
 
-pub fn load(root: &Path) -> Wallet {
-    let mut w: Wallet = std::fs::read(file(root)).ok().and_then(|b| serde_json::from_slice(&b).ok()).unwrap_or_default();
-    if !w.welcomed {
-        w.welcomed = true;
-        w.coins += WELCOME_BONUS;
-        w.earned_total += WELCOME_BONUS;
-        w.log(WELCOME_BONUS as i64, "welcome");
-        let _ = crate::util::write_json_atomic(&file(root), &w);
-    }
-    w.drop_expired();
-    w
+/// Son bilinen cüzdan (sunucuya ulaşılamazken gösterim ve oyun içi görünüm için)
+pub fn cached(root: &Path) -> Option<Wallet> {
+    std::fs::read(cache_file(root)).ok().and_then(|b| serde_json::from_slice(&b).ok())
 }
 
-fn save(root: &Path, w: &Wallet) -> Result<()> {
-    crate::util::write_json_atomic(&file(root), w)
+fn remember(root: &Path, w: &Wallet) {
+    let _ = crate::util::write_json_atomic(&cache_file(root), w);
 }
 
-/// Oyun oturumu bitti: süreye göre coin ekle. Kazanılan coin sayısını döner.
-pub fn earn(root: &Path, secs: u64) -> Result<u64> {
-    let _g = LOCK.lock();
-    let mut w = load(root);
-    let rate = if w.plus_active() { COINS_PER_HOUR * PLUS_BONUS_PCT / 100 } else { COINS_PER_HOUR };
-    // Bir oturumda en fazla 12 saat sayılır (açık unutulan oyun)
-    let total = w.carry_secs + secs.min(12 * 3600);
-    let coins = total * rate / 3600;
-    w.carry_secs = total - coins * 3600 / rate;
-    if coins > 0 {
-        w.coins += coins;
-        w.earned_total += coins;
-        w.log(coins as i64, "play");
+/// Sunucu hata metnini kullanıcıya anlaşılır hale getir
+fn friendly(e: AppError) -> AppError {
+    let s = e.to_string();
+    if s.contains("login") || s.contains("giriş yapmalısın") || s.contains("JWT") {
+        return AppError::msg("West Coin için West hesabına giriş yap");
     }
-    save(root, &w)?;
-    Ok(coins)
-}
-
-pub fn buy(root: &Path, id: &str) -> Result<Wallet> {
-    let _g = LOCK.lock();
-    let mut w = load(root);
-    let it = item(id).ok_or_else(|| AppError::msg("Böyle bir öğe yok"))?;
-    if it.plus_only {
-        return Err(AppError::msg("Bu öğe West Plus'a özel; West Plus açıkken ücretsiz kullanılır"));
-    }
-    if it.kind != Kind::Plus && w.owned.iter().any(|o| o == id) {
-        return Err(AppError::msg("Bu öğe zaten sende"));
-    }
-    if w.coins < it.price {
-        return Err(AppError::msg(format!("Yeterli West Coin yok ({} gerekiyor)", it.price)));
-    }
-    w.coins -= it.price;
-    if it.kind == Kind::Plus {
-        let from = w.plus_until.filter(|u| *u > Utc::now()).unwrap_or_else(Utc::now);
-        w.plus_until = Some(from + Duration::days(it.days as i64));
-    } else {
-        w.owned.push(id.to_string());
-    }
-    w.log(-(it.price as i64), id);
-    save(root, &w)?;
-    Ok(w)
-}
-
-/// Kuşan ya da çıkar (id None → o türü çıkar)
-pub fn equip(root: &Path, kind: &str, id: Option<&str>) -> Result<Wallet> {
-    let _g = LOCK.lock();
-    let mut w = load(root);
-    match id {
-        None => {
-            w.equipped.remove(kind);
+    // PostgREST hata gövdesinden "message" alanı
+    if let Some(i) = s.find("\"message\":\"") {
+        let rest = &s[i + 11..];
+        if let Some(j) = rest.find('"') {
+            return AppError::msg(rest[..j].to_string());
         }
-        Some(id) => {
-            let it = item(id).ok_or_else(|| AppError::msg("Böyle bir öğe yok"))?;
-            if !w.can_use(it) {
-                return Err(AppError::msg(if it.plus_only { "Bu öğe için West Plus gerekiyor" } else { "Önce bu öğeyi satın almalısın" }));
+    }
+    e
+}
+
+async fn rpc(http: &Http, root: &Path, name: &str, body: serde_json::Value) -> Result<(Wallet, u64)> {
+    let v = crate::cloud::api(http, root, "POST", &format!("/rest/v1/rpc/{name}"), &[], Some(body), None).await.map_err(friendly)?;
+    let (w, earned) = from_server(v)?;
+    remember(root, &w);
+    Ok((w, earned))
+}
+
+/// Cüzdanı getir. İlk kez giriş yapılan bilgisayarda eski yerel cüzdan bir kez hesaba aktarılır.
+pub async fn get(http: &Http, root: &Path) -> Result<Wallet> {
+    let (w, _) = rpc(http, root, "wallet_get", serde_json::json!({})).await?;
+    let legacy = legacy_file(root);
+    if !w.imported && legacy.is_file() {
+        if let Some(old) = std::fs::read(&legacy).ok().and_then(|b| serde_json::from_slice::<serde_json::Value>(&b).ok()) {
+            let body = serde_json::json!({
+                "p_coins": old["coins"].as_i64().unwrap_or(0).saturating_sub(WELCOME_BONUS as i64).max(0),
+                "p_owned": old["owned"].clone(),
+                "p_plus_until": old["plusUntil"].clone(),
+                "p_equipped": old["equipped"].clone(),
+            });
+            if let Ok((w2, _)) = rpc(http, root, "wallet_import", body).await {
+                let _ = std::fs::rename(&legacy, root.join("wallet.json.aktarildi"));
+                return Ok(w2);
             }
-            w.equipped.insert(kind.to_string(), id.to_string());
         }
     }
-    save(root, &w)?;
     Ok(w)
+}
+
+pub async fn buy(http: &Http, root: &Path, id: &str) -> Result<Wallet> {
+    rpc(http, root, "wallet_buy", serde_json::json!({ "p_item": id })).await.map(|x| x.0)
+}
+
+pub async fn equip(http: &Http, root: &Path, slot: &str, id: Option<&str>) -> Result<Wallet> {
+    rpc(http, root, "wallet_equip", serde_json::json!({ "p_slot": slot, "p_item": id })).await.map(|x| x.0)
+}
+
+/// Oyun açıldı: sunucu süreyi buradan ölçmeye başlar
+pub async fn session_start(http: &Http, root: &Path) {
+    if let Err(e) = rpc(http, root, "wallet_session_start", serde_json::json!({})).await {
+        tracing::info!("West Coin oturumu başlatılamadı: {e}");
+    }
+}
+
+/// Oyun kapandı: oynanan süre kadar coin. Sunucu, oturum başından beri geçen süreden fazlasını saymaz.
+pub async fn earn(http: &Http, root: &Path, secs: u64) -> Result<u64> {
+    rpc(http, root, "wallet_earn", serde_json::json!({ "p_secs": secs.min(i32::MAX as u64) })).await.map(|x| x.1)
+}
+
+/// Oyunda Gardırop'ta yapılan seçimleri hesaba yaz (yalnızca değişen oyun içi yuvalar)
+pub async fn sync_from_game(http: &Http, root: &Path, chosen: &std::collections::BTreeMap<String, String>) -> Result<()> {
+    let Some(w) = cached(root) else { return Ok(()) };
+    for slot in GAME_SLOTS {
+        let want = chosen.get(*slot);
+        if w.equipped.get(*slot) != want {
+            // Sunucu sahip olunmayan ya da yanlış yuvadaki öğeyi reddeder
+            let _ = equip(http, root, slot, want.map(String::as_str)).await;
+        }
+    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -308,58 +310,25 @@ mod tests {
     use super::*;
 
     #[test]
-    fn earning_buying_and_plus() {
-        let dir = std::env::temp_dir().join(format!("west-wallet-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        std::fs::create_dir_all(&dir).unwrap();
-        // Hediye
-        assert_eq!(load(&dir).coins, WELCOME_BONUS);
-        // 1,5 saat → 150 coin
-        assert_eq!(earn(&dir, 5400).unwrap(), 150);
-        // Artan saniyeler kaybolmaz: 30 sn + 6 sn = 1 coin
-        assert_eq!(earn(&dir, 30).unwrap(), 0);
-        assert_eq!(earn(&dir, 6).unwrap(), 1);
-        assert_eq!(load(&dir).coins, WELCOME_BONUS + 151);
-        // Yetmeyen coin
-        assert!(buy(&dir, "plus_30").is_err());
-        // Satın al, tekrar alma, kuşan
-        let w = buy(&dir, "trail_stars").unwrap();
-        assert_eq!(w.coins, WELCOME_BONUS + 151 - 300);
-        assert!(buy(&dir, "trail_stars").is_err());
-        assert!(equip(&dir, "trail", Some("trail_stars")).is_ok());
-        assert!(equip(&dir, "trail", Some("trail_fire")).is_err());
-        // Plus'a özel öğe Plus olmadan kuşanılamaz
-        assert!(equip(&dir, "trail", Some("trail_rainbow")).is_err());
-        // Plus al (coin ekleyerek), Plus öğesini kuşan, Plus'ta kazanç %150
-        let mut w = load(&dir);
-        w.coins += 5000;
-        save(&dir, &w).unwrap();
-        let w = buy(&dir, "plus_30").unwrap();
-        assert!(w.plus_active());
-        assert!(equip(&dir, "trail", Some("trail_rainbow")).is_ok());
-        assert_eq!(earn(&dir, 3600).unwrap(), 150);
-        // İkinci Plus üstüne eklenir
-        let before = load(&dir).plus_until.unwrap();
-        let mut w = load(&dir);
-        w.coins += 2500;
-        save(&dir, &w).unwrap();
-        let after = buy(&dir, "plus_30").unwrap().plus_until.unwrap();
-        assert!((after - before).num_days() == 30);
-        // Oyundan gelen seçim: sahip olunan kabul edilir, olmayan ve yanlış yuva yok sayılır
-        let mut c = std::collections::BTreeMap::new();
-        c.insert("cape".to_string(), "cape_west".to_string());
-        c.insert("hat".to_string(), "hat_crown".to_string());
-        c.insert("back".to_string(), "cape_west".to_string());
-        sync_from_game(&dir, &c).unwrap();
-        let w = load(&dir);
-        assert_eq!(w.equipped.get("cape").map(String::as_str), Some("cape_west"));
-        assert!(w.equipped.get("hat").is_none() && w.equipped.get("back").is_none());
-        assert_eq!(w.equipped.get("trail").map(String::as_str), Some("trail_rainbow"));
-        // Plus biterse Plus öğesi otomatik çıkar
-        let mut w = load(&dir);
-        w.plus_until = Some(Utc::now() - Duration::days(1));
-        save(&dir, &w).unwrap();
-        assert!(load(&dir).equipped.get("trail").is_none());
-        let _ = std::fs::remove_dir_all(&dir);
+    fn server_json_maps() {
+        let v = serde_json::json!({
+            "coins": 4250, "earnedTotal": 6800, "carrySecs": 20, "plus": true,
+            "plusUntil": "2030-01-01T00:00:00Z", "owned": ["cape_sakura"], "equipped": {"cape": "cape_sakura"},
+            "imported": true, "history": [{"at": "2026-11-18T10:00:00Z", "amount": 100, "reason": "play"}], "earned": 150
+        });
+        let (w, earned) = from_server(v).unwrap();
+        assert_eq!((w.coins, earned), (4250, 150));
+        assert!(w.plus_active() && w.imported);
+        assert!(w.can_use(item("cape_sakura").unwrap()));
+        assert!(w.can_use(item("hat_halo").unwrap())); // Plus'a özel, Plus açık
+        assert!(!w.can_use(item("hat_crown").unwrap()));
+        assert_eq!(slot_of("menu_end"), "menuTheme");
+    }
+
+    #[test]
+    fn friendly_errors() {
+        let e = friendly(AppError::msg(r#"400: {"code":"P0001","message":"Yeterli West Coin yok (2500 gerekiyor)"}"#));
+        assert_eq!(e.to_string(), "Yeterli West Coin yok (2500 gerekiyor)");
+        assert_eq!(friendly(AppError::msg("Bunun için West hesabına giriş yapmalısın.")).to_string(), "West Coin için West hesabına giriş yap");
     }
 }
