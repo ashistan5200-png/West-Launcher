@@ -359,6 +359,9 @@ pub async fn api(http: &Http, root: &Path, method: &str, path: &str, query: &[(S
         let msg = v["message"].as_str().or(v["msg"].as_str()).unwrap_or(&text).to_string();
         // Yalnızca tablo/fonksiyonun kendisi yoksa "SQL çalıştırılmamış" de; başka hatalar olduğu gibi görünsün
         if msg.contains("schema cache") || (msg.contains("does not exist") && msg.contains("\"public.")) {
+            if path.contains("depot") || path.contains("role") {
+                return Err(AppError::msg(crate::i18n::t("Depo için Supabase'te supabase/depot.sql dosyası henüz çalıştırılmamış.")));
+            }
             return Err(AppError::msg(crate::i18n::t("Sosyal özellikler için Supabase'te supabase/social.sql dosyası henüz çalıştırılmamış.")));
         }
         return Err(AppError::msg(msg));
@@ -417,7 +420,7 @@ pub async fn realtime(http: &Http, root: &Path) -> Result<serde_json::Value> {
 /// Görsel yükler (avatar, banner, gönderi, hikâye, mesaj) ve herkese açık adresini döner.
 pub async fn upload(http: &Http, root: &Path, local: &Path, folder: &str) -> Result<String> {
     let c = cfg()?;
-    if !["avatars", "banners", "posts", "stories", "messages"].contains(&folder) {
+    if !["avatars", "banners", "posts", "stories", "messages", "depot"].contains(&folder) {
         return Err(AppError::msg(crate::i18n::t("Geçersiz klasör")));
     }
     let (tok, uid) = token(http, root).await.ok_or_else(|| AppError::msg(crate::i18n::t("Bunun için West hesabına giriş yapmalısın.")))?;
@@ -454,6 +457,85 @@ pub async fn upload(http: &Http, root: &Path, local: &Path, folder: &str) -> Res
         return Err(AppError::msg(crate::i18n::tf("Yükleme başarısız: {0}", &[&t.chars().take(200).collect::<String>()])));
     }
     Ok(format!("{}/storage/v1/object/public/media/{name}", c.supabase_url))
+}
+
+// ───────── Depo (topluluk dosyaları) ─────────
+
+/// Depo dosyasını kullanıcının kendi klasörüne yükler; depodaki yolunu döner. Yalnızca Onaylı ve
+/// üstü roller yükleyebilir (Supabase depolama kuralı); dosya önceden doğrulanmış olmalı.
+pub async fn upload_depot(http: &Http, root: &Path, local: &Path, file_name: &str) -> Result<String> {
+    let c = cfg()?;
+    let (tok, uid) = token(http, root).await.ok_or_else(|| AppError::msg(crate::i18n::t("Bunun için West hesabına giriş yapmalısın.")))?;
+    let bytes = tokio::fs::read(local).await?;
+    if bytes.len() as u64 > crate::depot::MAX_SIZE {
+        return Err(AppError::msg(crate::i18n::t("Dosya en fazla 50 MB olabilir. Büyük dünyaları küçültmek için gereksiz bölgeleri silip yeniden sıkıştır.")));
+    }
+    let name = format!("{uid}/{}/{}", uuid::Uuid::new_v4(), crate::depot::safe_name(file_name));
+    let resp = http
+        .client
+        .post(format!("{}/storage/v1/object/depot/{name}", c.supabase_url))
+        .timeout(std::time::Duration::from_secs(600))
+        .header("apikey", &c.supabase_anon_key)
+        .bearer_auth(&tok)
+        .header("Content-Type", "application/octet-stream")
+        .header("x-upsert", "false")
+        .body(bytes)
+        .send()
+        .await
+        .map_err(|e| AppError::msg(crate::i18n::tf("Yükleme başarısız: {0}", &[&e])))?;
+    if !resp.status().is_success() {
+        let t = resp.text().await.unwrap_or_default();
+        if t.contains("Bucket not found") {
+            return Err(AppError::msg(crate::i18n::t("Depo henüz kurulmamış: Supabase'te supabase/depot.sql dosyasını çalıştır.")));
+        }
+        if t.contains("row-level security") || t.contains("Unauthorized") || t.contains("403") {
+            return Err(AppError::msg(crate::i18n::t("Depo'ya yalnızca Onaylı kullanıcılar dosya yükleyebilir.")));
+        }
+        if t.contains("Payload too large") || t.contains("exceeded the maximum") {
+            return Err(AppError::msg(crate::i18n::t("Dosya Supabase'in boyut sınırını aşıyor (en fazla 50 MB).")));
+        }
+        return Err(AppError::msg(crate::i18n::tf("Yükleme başarısız: {0}", &[&t.chars().take(200).collect::<String>()])));
+    }
+    Ok(name)
+}
+
+/// Depodaki bir dosyayı siler (sahibi ya da moderatör; kuralı Supabase uygular)
+pub async fn delete_depot(http: &Http, root: &Path, path: &str) -> Result<()> {
+    let c = cfg()?;
+    if path.contains("..") || path.starts_with('/') {
+        return Err(AppError::msg(crate::i18n::t("Geçersiz istek")));
+    }
+    let (tok, _) = token(http, root).await.ok_or_else(|| AppError::msg(crate::i18n::t("Bunun için West hesabına giriş yapmalısın.")))?;
+    let resp = http
+        .client
+        .delete(format!("{}/storage/v1/object/depot/{path}", c.supabase_url))
+        .timeout(std::time::Duration::from_secs(30))
+        .header("apikey", &c.supabase_anon_key)
+        .bearer_auth(&tok)
+        .send()
+        .await
+        .map_err(|e| AppError::msg(crate::i18n::tf("West sunucusuna ulaşılamadı: {0}", &[&e])))?;
+    if !resp.status().is_success() && resp.status() != reqwest::StatusCode::NOT_FOUND {
+        let t = resp.text().await.unwrap_or_default();
+        return Err(AppError::msg(t.chars().take(200).collect::<String>()));
+    }
+    Ok(())
+}
+
+/// Depodaki dosyanın herkese açık indirme adresi
+pub fn depot_url(path: &str) -> Result<String> {
+    let c = cfg()?;
+    if path.contains("..") || path.starts_with('/') {
+        return Err(AppError::msg(crate::i18n::t("Geçersiz istek")));
+    }
+    let enc: Vec<String> = path.split('/').map(|p| urlencoding_encode(p)).collect();
+    Ok(format!("{}/storage/v1/object/public/depot/{}", c.supabase_url, enc.join("/")))
+}
+
+fn urlencoding_encode(s: &str) -> String {
+    s.bytes()
+        .map(|b| if b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_' | b'.' | b'~' | b'+') { (b as char).to_string() } else { format!("%{b:02X}") })
+        .collect()
 }
 
 #[cfg(test)]

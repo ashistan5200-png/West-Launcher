@@ -33,6 +33,7 @@ export const STAGE_LABEL: Record<string, string> = {
   files: tx("Dosyalar indiriliyor"),
   java: tx("Java hazırlanıyor"),
   update: tx("İçerik güncelleniyor"),
+  depot: tx("Depo'dan indiriliyor"),
   done: tx("Hazır"),
 };
 

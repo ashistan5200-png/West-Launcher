@@ -38,6 +38,7 @@ import { ContentToasts } from "@/components/ContentToasts";
 import { InviteCenter } from "@/components/InviteCenter";
 import { AshiSolver } from "@/components/AshiSolver";
 import { ShopPage } from "@/pages/Shop";
+import { DepotPage } from "@/pages/Depot";
 import { CoinToast } from "@/components/CoinToast";
 import { startWallet } from "@/stores/wallet";
 import { useSettings } from "@/stores/settings";
@@ -92,6 +93,7 @@ export default function App() {
                   <Route path="/browse" element={<BrowsePage />} />
                   <Route path="/skins" element={<SkinsPage />} />
                   <Route path="/shop" element={<ShopPage />} />
+                  <Route path="/depot" element={<DepotPage />} />
                   <Route path="/gallery" element={<GalleryPage />} />
                   <Route path="/news" element={<NewsPage />} />
                   <Route path="/social" element={<SocialFeedPage />} />

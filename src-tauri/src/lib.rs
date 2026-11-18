@@ -23,6 +23,7 @@ pub mod updater;
 pub mod util;
 pub mod i18n;
 pub mod wallet;
+pub mod depot;
 
 use paths::Paths;
 use state::AppState;
@@ -121,6 +122,10 @@ pub fn run() {
             commands::cloud::west_reset_password,
             commands::cloud::west_api,
             commands::cloud::west_upload,
+            commands::depot::depot_inspect,
+            commands::depot::depot_upload,
+            commands::depot::depot_delete_file,
+            commands::depot::depot_install,
             commands::content::list_content,
             commands::content::refresh_content,
             commands::content::set_content_enabled,
