@@ -85,6 +85,12 @@ public interface Gfx {
     /** Bir sonraki çizimler öncekilerin (3B model dahil) üstünde kalsın */
     default void nextLayer() {}
 
+    /**
+     * Lobinin 3B sahnesi (biyom dünyası + karakterler) tüm ekrana. Arka plan saydam kalır
+     * (gökyüzü önceden çizilir). Sahne henüz hazırlanıyorsa ya da desteklenmiyorsa false.
+     */
+    default boolean lobby(dev.west.hud.lobby.LobbyFrame frame) { return false; }
+
     /** Dünyanın küçük resmi; yoksa false */
     default boolean worldIcon(String id, String iconPath, int x, int y, int size) { return false; }
 }

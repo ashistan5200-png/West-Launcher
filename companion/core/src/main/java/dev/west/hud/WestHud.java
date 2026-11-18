@@ -61,6 +61,7 @@ public final class WestHud {
         // Launcher'ın yaptığı ayar değişikliklerini ~2 sn'de bir yakala
         if (++ticks % 40 == 0) safe("config", () -> config.reloadIfChanged(HUD));
         safe("stats", () -> stats.tick(game));
+        safe("lobby", () -> dev.west.hud.lobby.LobbyClient.INSTANCE.tick(game));
         if (ticks % 20 == 0) safe("presence", () -> dev.west.hud.social.SocialClient.INSTANCE.heartbeat(game.inWorld() ? "Oynuyor · " + game.session().title() : "Menüde"));
     }
 
@@ -78,6 +79,7 @@ public final class WestHud {
     }
 
     public static WestScreen home() {
+        if (config != null && config.data.lobby) return new dev.west.hud.screen.LobbyScreen();
         return new dev.west.hud.screen.HomeScreen();
     }
 

@@ -58,6 +58,8 @@ public final class WestMod implements ClientModInitializer {
         WestHud.safe("aura", () -> WestCosmetics.tick(mc));
         WestHud.tick();
         WestHud.safe("music", () -> WestMusic.tick(mc));
+        WestHud.safe("lobby-release", () -> LobbyRender26.releaseIfIdle(mc.level != null));
+        WestHud.safe("pinger", Game26::tickPinger);
         // Minecraft'ın başlık ekranı açıldıysa West ana menüsüyle değiştir
         if (mc.gui.screen() instanceof net.minecraft.client.gui.screens.TitleScreen && WestHud.customTitle()) {
             Game26.refreshWorlds();

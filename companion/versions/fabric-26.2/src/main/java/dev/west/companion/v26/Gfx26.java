@@ -219,6 +219,17 @@ public final class Gfx26 implements Gfx {
     }
 
     @Override
+    public boolean lobby(dev.west.hud.lobby.LobbyFrame frame) {
+        int w = g.guiWidth(), h = g.guiHeight();
+        boolean ready = frame.light || LobbyRender26.mesh(frame.scene.biome) != null;
+        var bounds = new net.minecraft.client.gui.navigation.ScreenRectangle(0, 0, w, h);
+        g.guiRenderState.addPicturesInPictureState(new LobbyRender26.State(frame, 0, 0, w, h, 1f, null, bounds));
+        // Sonraki çizimler (isim etiketleri, paneller) sahnenin üstünde kalsın
+        g.nextStratum();
+        return ready;
+    }
+
+    @Override
     public void nextLayer() {
         g.nextStratum();
     }

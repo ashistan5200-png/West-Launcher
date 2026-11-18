@@ -22,6 +22,8 @@ public final class WestMod implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        // Lobi sahnesinin çizicisi (GUI'de "resim içinde resim")
+        net.fabricmc.fabric.api.client.rendering.v1.SpecialGuiElementRegistry.register(ctx -> new LobbyRender121.Renderer(ctx.vertexConsumers()));
         WestHud.init(new Game121());
         // Tüm Minecraft yazılarını pürüzsüz yapan dahili kaynak paketi (Kaynak Paketleri'nden kapatılabilir)
         net.fabricmc.loader.api.FabricLoader.getInstance().getModContainer("west_companion").ifPresent(c ->
@@ -58,6 +60,8 @@ public final class WestMod implements ClientModInitializer {
         WestHud.safe("aura", () -> WestCosmetics.tick(mc));
         WestHud.tick();
         WestHud.safe("music", () -> WestMusic.tick(mc));
+        WestHud.safe("lobby-release", () -> LobbyRender121.releaseIfIdle(mc.level != null));
+        WestHud.safe("pinger", Game121::tickPinger);
         // Minecraft'ın başlık ekranı açıldıysa West ana menüsüyle değiştir
         if (mc.screen instanceof net.minecraft.client.gui.screens.TitleScreen && WestHud.customTitle()) {
             Game121.refreshWorlds();

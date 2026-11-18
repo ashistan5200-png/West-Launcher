@@ -122,4 +122,30 @@ public interface Game {
 
     /** Bir sunucu adresine doğrudan bağlan (davetle katılma) */
     default void connect(String name, String address) {}
+
+    // ───────── Lobi ─────────
+
+    /** Sunucu listesindeki bir sunucunun durumu. state: 0 sorgulanıyor, 1 çevrimiçi, 2 ulaşılamıyor, 3 uyumsuz sürüm */
+    record ServerStatus(int state, int online, int max, long ping) {}
+
+    /** Sunucuya ping atar (ilk istekte başlar, ~30 sn önbellek); bilinmiyorsa null */
+    default ServerStatus serverStatus(String address) { return null; }
+
+    /** Oyunun kendi sesini çal (ör. "entity.player.teleport") */
+    default void playSound(String id, float volume, float pitch) {}
+
+    /** Oyuncunun Minecraft UUID'si (çevrimdışı hesapta isimden türetilir) */
+    default java.util.UUID playerUuid() { return null; }
+
+    /** Microsoft ile doğrulanmış (çevrimiçi) bir hesap mı */
+    default boolean onlineAccount() { return false; }
+
+    /**
+     * Mojang oturum sunucusuna "katılma" kaydı bırakır: lobi sunucusu bu kaydı hasJoined ile kontrol
+     * ederek hesabın gerçekten bu oyuncuya ait olduğunu doğrular. Başarılıysa true.
+     */
+    default boolean mojangJoin(String serverId) { return false; }
+
+    /** Oyun içindeki yerleşik ses seviyesi (0–1, ana ses) */
+    default float masterVolume() { return 1f; }
 }

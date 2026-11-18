@@ -219,6 +219,16 @@ public final class Gfx121 implements Gfx {
     }
 
     @Override
+    public boolean lobby(dev.west.hud.lobby.LobbyFrame frame) {
+        int w = g.guiWidth(), h = g.guiHeight();
+        boolean ready = frame.light || LobbyRender121.mesh(frame.scene.biome) != null;
+        var bounds = new net.minecraft.client.gui.navigation.ScreenRectangle(0, 0, w, h);
+        g.guiRenderState.submitPicturesInPictureState(new LobbyRender121.State(frame, 0, 0, w, h, 1f, null, bounds));
+        g.nextStratum();
+        return ready;
+    }
+
+    @Override
     public void nextLayer() {
         g.nextStratum();
     }

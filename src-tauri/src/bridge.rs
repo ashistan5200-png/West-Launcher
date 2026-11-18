@@ -362,6 +362,31 @@ async fn route(http: &Http, root: &PathBuf, method: &str, path: &str, query: &st
             }
             db(http, root, "GET", "profiles", vec![("select", PROFILE_COLS.into()), ("username", format!("ilike.*{q}*")), ("limit", "10".into())], None, None).await
         }
+        // ───── Ana menü lobisi ─────
+        ("POST", "/lobby/rpc") => {
+            const ALLOWED: [&str; 14] = [
+                "lobby_verify_start", "lobby_state", "lobby_invite", "lobby_accept", "lobby_decline", "lobby_join", "lobby_leave", "lobby_kick",
+                "lobby_set_privacy", "lobby_set_biome", "lobby_presence_set", "lobby_settings_set", "lobby_block", "lobby_delete_my_data",
+            ];
+            let f = body["fn"].as_str().unwrap_or_default();
+            if !ALLOWED.contains(&f) {
+                return Err(AppError::msg("bilinmeyen istek"));
+            }
+            let args = if body["args"].is_object() { body["args"].clone() } else { json!({}) };
+            match cloud::api(http, root, "POST", &format!("/rest/v1/rpc/{f}"), &[], Some(args), None).await {
+                Ok(v) => Ok(json!({ "result": v })),
+                Err(e) if e.to_string().contains("social.sql") => Err(AppError::msg(crate::i18n::t("Lobi için Supabase'te supabase/lobby.sql dosyası henüz çalıştırılmamış."))),
+                Err(e) => Err(e),
+            }
+        }
+        ("POST", "/lobby/verify") => {
+            let name = body["name"].as_str().unwrap_or_default();
+            if name.is_empty() || name.len() > 16 || !name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
+                return Err(AppError::msg(crate::i18n::t("Geçersiz istek")));
+            }
+            cloud::function(http, root, "lobby-verify", json!({ "name": name })).await
+        }
+        ("GET", "/lobby/realtime") => cloud::realtime(http, root).await,
         _ => Err(AppError::msg("bilinmeyen istek")),
     }
 }

@@ -19,6 +19,8 @@ public final class Ui {
     public boolean animate = true;
     /** Basılı tutulan kaydırıcı */
     public Object dragging;
+    /** Üstte bir pencere açıkken alttaki öğeler fareye tepki vermesin */
+    public boolean suspended;
 
     public void begin(Gfx g, Theme t, int mx, int my, float time) {
         this.g = g;
@@ -41,12 +43,13 @@ public final class Ui {
     }
 
     public boolean hover(int x, int y, int w, int h) {
+        if (suspended) return false;
         return mx >= x && my >= y && mx < x + w && my < y + h;
     }
 
     /** Bu alana sol tıklandı mı (bir tıklama yalnızca bir kez sayılır). */
     public boolean clicked(int x, int y, int w, int h) {
-        if (consumed || clickX < 0 || clickButton != 0) return false;
+        if (suspended || consumed || clickX < 0 || clickButton != 0) return false;
         if (clickX >= x && clickY >= y && clickX < x + w && clickY < y + h) {
             consumed = true;
             return true;

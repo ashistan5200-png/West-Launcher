@@ -238,6 +238,80 @@ public final class Game121 implements Game {
         return mc().getUser().getName();
     }
 
+    // ───── Lobi ─────
+    private static final net.minecraft.client.multiplayer.ServerStatusPinger PINGER = new net.minecraft.client.multiplayer.ServerStatusPinger();
+    private static final java.util.Map<String, ServerData> PINGS = new java.util.HashMap<>();
+    private static final java.util.Map<String, Long> PINGED_AT = new java.util.HashMap<>();
+
+    /** İstemci tick'inde: açık ping bağlantılarını ilerlet */
+    static void tickPinger() {
+        PINGER.tick();
+    }
+
+    @Override
+    public ServerStatus serverStatus(String address) {
+        if (address == null || address.isBlank()) return null;
+        long now = System.currentTimeMillis();
+        ServerData d = PINGS.get(address);
+        Long at = PINGED_AT.get(address);
+        if (d == null || at == null || now - at > 30_000) {
+            ServerData nd = new ServerData(address, address, ServerData.Type.OTHER);
+            nd.setState(ServerData.State.PINGING);
+            PINGS.put(address, d == null ? nd : d);
+            PINGED_AT.put(address, now);
+            ServerData target = d == null ? nd : d;
+            target.setState(ServerData.State.PINGING);
+            java.util.concurrent.CompletableFuture.runAsync(() -> {
+                try {
+                    PINGER.pingServer(target, () -> {}, () -> {}, net.minecraft.server.network.EventLoopGroupHolder.remote(mc().options.useNativeTransport()));
+                } catch (Exception e) {
+                    target.setState(ServerData.State.UNREACHABLE);
+                }
+            });
+            if (d == null) return new ServerStatus(0, 0, 0, -1);
+        }
+        return switch (d.state()) {
+            case SUCCESSFUL -> new ServerStatus(1, d.players == null ? 0 : d.players.online(), d.players == null ? 0 : d.players.max(), d.ping);
+            case UNREACHABLE -> new ServerStatus(2, 0, 0, -1);
+            case INCOMPATIBLE -> new ServerStatus(3, d.players == null ? 0 : d.players.online(), d.players == null ? 0 : d.players.max(), d.ping);
+            default -> new ServerStatus(0, 0, 0, -1);
+        };
+    }
+
+    @Override
+    public void playSound(String id, float volume, float pitch) {
+        var ev = net.minecraft.core.registries.BuiltInRegistries.SOUND_EVENT.getOptional(net.minecraft.resources.Identifier.parse(id));
+        ev.ifPresent(s -> mc().getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(s, pitch, volume)));
+    }
+
+    @Override
+    public java.util.UUID playerUuid() {
+        return mc().getUser().getProfileId();
+    }
+
+    @Override
+    public boolean onlineAccount() {
+        var u = mc().getUser();
+        return u.getXuid().isPresent() || (u.getAccessToken() != null && u.getAccessToken().chars().filter(c -> c == '.').count() == 2);
+    }
+
+    @Override
+    public boolean mojangJoin(String serverId) {
+        try {
+            var u = mc().getUser();
+            mc().services().sessionService().joinServer(u.getProfileId(), u.getAccessToken(), serverId);
+            return true;
+        } catch (Exception e) {
+            WestHud.LOG.warn("Mojang oturum doğrulaması başarısız: {}", e.toString());
+            return false;
+        }
+    }
+
+    @Override
+    public float masterVolume() {
+        return mc().options.getSoundSourceVolume(net.minecraft.sounds.SoundSource.MASTER);
+    }
+
     // ───── Dünyalar ─────
     static volatile List<WorldInfo> worldCache;
     private static volatile boolean worldsLoading;

@@ -63,6 +63,22 @@ public final class Config {
         public String language = "tr";
         /** West Plus açık mı (launcher yazar) */
         public boolean plus = false;
+
+        // ───── Lobi (ana menü) ─────
+        /** Ana menü olarak 3B lobi (kapalıysa klasik West ana menüsü) */
+        public boolean lobby = true;
+        /** Seçili biyom: snowy, badlands, desert, cherry, end, nether */
+        public String lobbyBiome = "snowy";
+        /** Kameranın çok yavaş sinematik kayması */
+        public boolean lobbyCinematic = true;
+        /** Lobi sesleri (ışınlanma) */
+        public boolean lobbySound = true;
+        /** Hafif lobi: 3B dünya çizilmez, yalnızca karakterler ve sade arka plan */
+        public boolean lobbyLight = false;
+        /** Modül menüsünü açan tuş: esc, rshift, m, tab */
+        public String lobbyMenuKey = "esc";
+        /** Sol alt bilgi panelinde gösterilenler */
+        public Map<String, Boolean> lobbyInfo = new LinkedHashMap<>();
     }
 
     private final Path path;
