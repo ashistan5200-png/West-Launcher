@@ -618,17 +618,16 @@ public final class LobbyScreen extends WestShell {
         String sub = !online ? Tr.t("Çevrimdışı") : p.singleplayer() ? Tr.t("Tek oyunculu dünyada")
                 : p.server() != null ? (p.serverName() != null ? p.serverName() : p.server()) : inLobby ? Tr.t("Lobide") : Tr.t("Menüde");
         if (p.leader()) sub = Tr.t("Lider") + " · " + sub;
-        if (!p.verified()) sub = Tr.t("Minecraft hesabı doğrulanmamış");
         // Satırdaki düğmeler (sağdan sola): çıkar / katıl / istek at + davet et
         List<String> actions = new ArrayList<>();
-        boolean otherLobby = !inLobby && p.online() && p.verified() && p.lobbyId() != null;
+        boolean otherLobby = !inLobby && p.online() && p.lobbyId() != null;
         if (inLobby && leader && !me) actions.add("kick");
         else if (otherLobby && p.lobbyJoinable()) {
             actions.add("join");
             if (memberCount < 7) actions.add("invite");
         } else {
             if (otherLobby) actions.add(p.lobbyRequested() ? "requested" : "request");
-            if (!inLobby && p.online() && p.verified() && memberCount < 7) actions.add("invite");
+            if (!inLobby && p.online() && memberCount < 7) actions.add("invite");
         }
         int textW = w - 16;
         int bx = x + w - 2;

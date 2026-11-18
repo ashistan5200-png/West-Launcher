@@ -5,8 +5,8 @@
 --
 --  Kurallar:
 --  • İstemciler tablolara doğrudan yazamaz; her değişiklik aşağıdaki fonksiyonlardan geçer.
---  • Lobi özellikleri için West hesabı + Mojang ile doğrulanmış bir Minecraft hesabı gerekir.
---    Doğrulamayı yalnızca "lobby-verify" Edge Function'ı yazar (supabase/functions/lobby-verify).
+--  • Lobi için West hesabı yeterlidir. Microsoft hesabıyla oynayanların Minecraft hesabı Mojang üzerinden
+--    doğrulanır (adı ve skini lobide görünür); doğrulamayı yalnızca "lobby-verify" Edge Function'ı yazar.
 --  • Arkadaş = karşılıklı takipleşen ve birbirini engellememiş iki kişi.
 --  • Gerçek zamanlı: kişiyi ilgilendiren her değişiklikte lobby_events'e bir satır düşer; istemci
 --    Supabase Realtime (WebSocket) ile yalnızca kendi satırlarını dinler ve durumu yeniden okur.
@@ -186,10 +186,8 @@ create or replace function public.lobby_require() returns uuid
 language plpgsql stable security definer set search_path = public as $$
 declare me uuid := auth.uid();
 begin
+  -- West hesabı (e-posta + şifre) yeterli; Mojang ile doğrulanmış Minecraft hesabı varsa adı ve skini kullanılır
   if me is null then raise exception 'West hesabına giriş yapılmamış'; end if;
-  if not exists (select 1 from mc_links where user_id = me) then
-    raise exception 'Minecraft hesabın doğrulanmamış';
-  end if;
   return me;
 end $$;
 
@@ -352,9 +350,6 @@ begin
   if me is null then raise exception 'West hesabına giriş yapılmamış'; end if;
   linked := exists (select 1 from mc_links where user_id = me);
   select * into st from lobby_settings where user_id = me;
-  if not linked then
-    return jsonb_build_object('me', lobby_person(me, me), 'verified', false);
-  end if;
   lid := lobby_of(me);
   select * into lob from lobbies where id = lid;
   select coalesce(jsonb_agg(lobby_person(me, m.user_id) || jsonb_build_object('leader', m.user_id = lob.leader_id) order by m.joined_at), '[]'::jsonb)
@@ -384,7 +379,7 @@ begin
     into requests from lobby_requests q
    where q.lobby_id = lid and lob.leader_id = me and q.created_at > now() - interval '10 minutes' and not is_blocked(me, q.from_id);
   return jsonb_build_object(
-    'verified', true,
+    'verified', linked,
     'me', lobby_person(me, me),
     'lobby', jsonb_build_object('id', lob.id, 'leader_id', lob.leader_id, 'leader_name', lobby_name(lob.leader_id), 'privacy', lob.privacy, 'biome', lob.biome, 'members', members),
     'friends', friends,

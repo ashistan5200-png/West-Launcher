@@ -183,20 +183,18 @@ public final class LobbyClient {
         myId = str(me, "id");
         myMcUuid = uuid(str(me, "mc_uuid"));
         boolean verified = o.has("verified") && o.get("verified").getAsBoolean();
-        // Doğrulanmamış ya da başka bir Minecraft hesabıyla oynanıyor: bu hesabı doğrula
+        // Microsoft hesabıyla oynanıyor ama doğrulanmamış (ya da başka bir Minecraft hesabı): arka planda doğrula.
+        // Doğrulama lobiyi kullanmak için şart değil; yalnızca gerçek Minecraft adı ve skini için.
         UUID playing = game.playerUuid();
-        if (!verified || (playing != null && myMcUuid != null && !playing.equals(myMcUuid))) {
-            if (!game.onlineAccount()) {
-                status = verified ? Status.READY : Status.OFFLINE_ACCOUNT;
-                if (!verified) return;
-            } else if (!verifyTried) {
-                verifyTried = true;
-                verify(game);
-                if (!verified) return;
-            } else if (!verified) {
-                if (status != Status.VERIFYING) status = Status.UNVERIFIED;
-                return;
-            }
+        boolean mismatch = playing != null && myMcUuid != null && !playing.equals(myMcUuid);
+        if (game.onlineAccount() && !verifyTried && (!verified || mismatch)) {
+            verifyTried = true;
+            verify(game);
+        }
+        if (!o.has("lobby") || o.get("lobby").isJsonNull()) {
+            // Sunucudaki lobby.sql eski sürüm: doğrulamasız lobi yok
+            if (status != Status.VERIFYING) status = game.onlineAccount() ? Status.UNVERIFIED : Status.OFFLINE_ACCOUNT;
+            return;
         }
         JsonObject lob = o.getAsJsonObject("lobby");
         String oldLobby = lobbyId;
@@ -254,31 +252,35 @@ public final class LobbyClient {
     /** Mojang oturum sunucusu üzerinden (sunuculara girerken yapılanın aynısı) hesabı West hesabına bağlar */
     public void verify(Game game) {
         if (!game.onlineAccount()) {
-            status = Status.OFFLINE_ACCOUNT;
+            if (lobbyId == null) status = Status.OFFLINE_ACCOUNT;
             return;
         }
-        status = Status.VERIFYING;
+        if (lobbyId == null) status = Status.VERIFYING;
         rpc("lobby_verify_start", new JsonObject(), v -> {
             String nonce = v.getAsString();
             CompletableFuture.runAsync(() -> {
                 if (!game.mojangJoin(nonce)) {
-                    status = Status.UNVERIFIED;
+                    if (lobbyId == null) status = Status.UNVERIFIED;
                     fail(Tr.t("Mojang oturumu doğrulanamadı; oyunu launcher'dan Microsoft hesabıyla yeniden başlat."));
                     return;
                 }
                 JsonObject b = new JsonObject();
                 b.addProperty("name", game.playerName());
                 post("/lobby/verify", b, ok -> {
-                    status = Status.CONNECTING;
+                    if (lobbyId == null) status = Status.CONNECTING;
                     refreshNow();
                 }, e -> {
-                    status = Status.UNVERIFIED;
-                    fail(e);
+                    if (lobbyId == null) {
+                        status = Status.UNVERIFIED;
+                        fail(e);
+                    }
                 });
             });
         }, e -> {
-            status = Status.UNVERIFIED;
-            fail(e);
+            if (lobbyId == null) {
+                status = Status.UNVERIFIED;
+                fail(e);
+            }
         });
     }
 
