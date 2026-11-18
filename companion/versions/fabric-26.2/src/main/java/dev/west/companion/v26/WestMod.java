@@ -54,12 +54,28 @@ public final class WestMod implements ClientModInitializer {
                 (g, delta) -> WestHud.renderHud(new Gfx26(g)));
     }
 
+    private static boolean debugPublished;
+
+    /** Yalnızca test: -Dwest.debugPublish=port:offline ile dünya açılınca otomatik paylaş */
+    private static void debugPublish(Minecraft mc) {
+        String v = System.getProperty("west.debugPublish");
+        if (v == null || debugPublished || mc.player == null || mc.getSingleplayerServer() == null) return;
+        debugPublished = true;
+        String[] p = v.split(":");
+        var srv = mc.getSingleplayerServer();
+        srv.setUsesAuthentication(!(p.length > 1 && p[1].equals("offline")));
+        boolean ok = srv.publishServer(net.minecraft.server.MinecraftServer.MultiplayerScope.LAN, net.minecraft.world.level.GameType.SURVIVAL, false, Integer.parseInt(p[0]));
+        WestHud.LOG.info("debugPublish {} -> {}", v, ok);
+    }
+
     private static void tick(Minecraft mc) {
         WestHud.safe("aura", () -> WestCosmetics.tick(mc));
         WestHud.tick();
         WestHud.safe("music", () -> WestMusic.tick(mc));
         WestHud.safe("lobby-release", () -> LobbyRender26.releaseIfIdle(mc.level != null));
         WestHud.safe("pinger", Game26::tickPinger);
+        WestHud.safe("restore-ops", Game26::restoreOps);
+        WestHud.safe("debug-publish", () -> debugPublish(mc));
         // Minecraft'ın başlık ekranı açıldıysa West ana menüsüyle değiştir
         if (mc.gui.screen() instanceof net.minecraft.client.gui.screens.TitleScreen && WestHud.customTitle()) {
             Game26.refreshWorlds();

@@ -307,6 +307,59 @@ public final class Game26 implements Game {
         }
     }
 
+    // ───── Paylaşılan dünyadaki oyuncular ve OP ─────
+    private static int opTick;
+
+    /** Dünya sahibinin bu dünyada OP verdiği arkadaşlar yeniden girince OP'leri geri verilir */
+    static void restoreOps() {
+        if (++opTick % 40 != 0) return;
+        var srv = Minecraft.getInstance().getSingleplayerServer();
+        if (srv == null || !srv.isPublished()) return;
+        var world = srv.getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT);
+        srv.execute(() -> {
+            var list = srv.getPlayerList();
+            for (var p : list.getPlayers()) {
+                var id = p.nameAndId();
+                if (srv.isSingleplayerOwner(id) || list.isOp(id)) continue;
+                if (dev.west.hud.share.PlayerIdentity.isSavedOp(world, id.name())) list.op(id);
+            }
+        });
+    }
+
+    @Override
+    public List<SharedPlayer> sharedPlayers() {
+        var srv = mc().getSingleplayerServer();
+        if (srv == null) return List.of();
+        List<SharedPlayer> out = new ArrayList<>();
+        try {
+            var list = srv.getPlayerList();
+            for (var p : new ArrayList<>(list.getPlayers())) {
+                var id = p.nameAndId();
+                if (srv.isSingleplayerOwner(id)) continue;
+                out.add(new SharedPlayer(id.name(), id.id().toString(), list.isOp(id)));
+            }
+        } catch (Exception ignored) {
+        }
+        return out;
+    }
+
+    @Override
+    public void setOp(String uuid, boolean op) {
+        var srv = mc().getSingleplayerServer();
+        if (srv == null) return;
+        srv.execute(() -> {
+            var list = srv.getPlayerList();
+            for (var p : list.getPlayers()) {
+                var id = p.nameAndId();
+                if (!id.id().toString().equals(uuid) || srv.isSingleplayerOwner(id)) continue;
+                if (op) list.op(id);
+                else list.deop(id);
+                dev.west.hud.share.PlayerIdentity.setSavedOp(srv.getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT), id.name(), op);
+                p.sendSystemMessage(net.minecraft.network.chat.Component.literal(op ? Tr.t("Dünya sahibi sana OP verdi") : Tr.t("Dünya sahibi OP yetkini aldı")));
+            }
+        });
+    }
+
     @Override
     public float masterVolume() {
         return mc().options.getSoundSourceVolume(net.minecraft.sounds.SoundSource.MASTER);

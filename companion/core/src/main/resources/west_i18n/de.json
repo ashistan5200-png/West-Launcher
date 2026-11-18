@@ -412,5 +412,16 @@
  "+{0} istek daha": "+{0} weitere Anfragen",
  "Kabul edersen lobine ışınlanır": "Wenn du annimmst, teleportiert die Person in deine Lobby",
  "{0} lobine katılmak istiyor": "{0} möchte deiner Lobby beitreten",
- "Kabul et": "Annehmen"
+ "Kabul et": "Annehmen",
+ "Oyuncular": "Spieler",
+ "OP al": "OP entziehen",
+ "OP ver": "OP geben",
+ "Operatör": "Operator",
+ "OP: komut kullanabilir (oyun modu, ışınlanma…)": "OP: darf Befehle nutzen (Spielmodus, Teleport…)",
+ "{0} artık OP değil": "{0} ist kein OP mehr",
+ "{0} artık OP": "{0} ist jetzt OP",
+ "Dünya sahibi sana OP verdi": "Der Weltbesitzer hat dir OP gegeben",
+ "Dünya sahibi OP yetkini aldı": "Der Weltbesitzer hat dir OP entzogen",
+ "Dünyanda henüz arkadaşın yok. Katılanlar burada görünür; istediğine OP verebilirsin.": "Noch keine Freunde in deiner Welt. Wer beitritt, erscheint hier; du kannst jedem OP geben.",
+ "Dünyayı paylaşınca katılan arkadaşların burada görünür; istediğine OP verebilirsin.": "Sobald du die Welt teilst, erscheinen beitretende Freunde hier; du kannst jedem OP geben."
 }

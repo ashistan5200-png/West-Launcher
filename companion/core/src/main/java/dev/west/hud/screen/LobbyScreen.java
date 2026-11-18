@@ -623,8 +623,10 @@ public final class LobbyScreen extends WestShell {
         List<String> actions = new ArrayList<>();
         boolean otherLobby = !inLobby && p.online() && p.verified() && p.lobbyId() != null;
         if (inLobby && leader && !me) actions.add("kick");
-        else if (otherLobby && p.lobbyJoinable()) actions.add("join");
-        else {
+        else if (otherLobby && p.lobbyJoinable()) {
+            actions.add("join");
+            if (memberCount < 7) actions.add("invite");
+        } else {
             if (otherLobby) actions.add(p.lobbyRequested() ? "requested" : "request");
             if (!inLobby && p.online() && p.verified() && memberCount < 7) actions.add("invite");
         }

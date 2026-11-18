@@ -146,6 +146,15 @@ public interface Game {
      */
     default boolean mojangJoin(String serverId) { return false; }
 
+    /** Paylaşılan dünyaya bağlı arkadaş (dünya sahibi hariç) */
+    record SharedPlayer(String name, String uuid, boolean op) {}
+
+    /** Paylaşılan dünyadaki diğer oyuncular */
+    default List<SharedPlayer> sharedPlayers() { return List.of(); }
+
+    /** Bir oyuncuya OP ver / al (yalnızca dünya sahibi) */
+    default void setOp(String uuid, boolean op) {}
+
     /** Oyun içindeki yerleşik ses seviyesi (0–1, ana ses) */
     default float masterVolume() { return 1f; }
 }

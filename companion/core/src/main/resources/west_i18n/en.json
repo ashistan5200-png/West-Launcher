@@ -413,5 +413,16 @@
  "+{0} istek daha": "+{0} more requests",
  "Kabul edersen lobine ışınlanır": "If you accept, they teleport to your lobby",
  "{0} lobine katılmak istiyor": "{0} wants to join your lobby",
- "Kabul et": "Accept"
+ "Kabul et": "Accept",
+ "Oyuncular": "Players",
+ "OP al": "Remove OP",
+ "OP ver": "Give OP",
+ "Operatör": "Operator",
+ "OP: komut kullanabilir (oyun modu, ışınlanma…)": "OP: can use commands (game mode, teleport…)",
+ "{0} artık OP değil": "{0} is no longer OP",
+ "{0} artık OP": "{0} is now OP",
+ "Dünya sahibi sana OP verdi": "The world owner made you OP",
+ "Dünya sahibi OP yetkini aldı": "The world owner removed your OP",
+ "Dünyanda henüz arkadaşın yok. Katılanlar burada görünür; istediğine OP verebilirsin.": "No friends in your world yet. Players who join appear here; you can make anyone OP.",
+ "Dünyayı paylaşınca katılan arkadaşların burada görünür; istediğine OP verebilirsin.": "Once you share the world, friends who join appear here; you can make anyone OP."
 }

@@ -96,17 +96,26 @@ public final class ShareMenu extends WestShell {
 
         // Sekmeler
         int ty = cy + 28;
-        String[] tabs = { Tr.t("Sohbetler"), Tr.t("Arkadaşlar") };
-        int half = (w - 20) / 2;
+        String[] tabs = { Tr.t("Sohbetler"), Tr.t("Arkadaşlar"), Tr.t("Oyuncular") };
+        int third = (w - 20) / 3;
         Ui.round(g, x + 10, ty, w - 20, 18, 6, 0x66000000);
-        for (int i = 0; i < 2; i++) {
-            int bx = x + 10 + i * half;
-            if (tab == i) Ui.round(g, bx + 1, ty + 1, half - 2, 16, 5, t.accent | 0xFF000000);
-            g.textBold(tabs[i], bx + (half - g.textBoldWidth(tabs[i])) / 2, ty + 5, tab == i ? t.onAccent : 0xCCFFFFFF, false);
-            if (ui.clicked(bx, ty, half, 18)) tab = i;
+        for (int i = 0; i < 3; i++) {
+            int bx = x + 10 + i * third;
+            if (tab == i) Ui.round(g, bx + 1, ty + 1, third - 2, 16, 5, t.accent | 0xFF000000);
+            String l = ui.fit(tabs[i], Math.round((third - 6) / 0.85f));
+            g.push();
+            g.translate(bx + (third - g.textBoldWidth(l) * 0.85f) / 2f, ty + 5.5f);
+            g.scale(0.85f);
+            g.textBold(l, 0, 0, tab == i ? t.onAccent : 0xCCFFFFFF, false);
+            g.pop();
+            if (ui.clicked(bx, ty, third, 18)) tab = i;
         }
 
         int ly = ty + 24;
+        if (tab == 2) {
+            players(x, ly, w, y + h - 8);
+            return;
+        }
         if (!c.available()) {
             List<String> lines = wrap(g, Tr.t("Arkadaşlarını davet etmek için oyunu West Client launcher'ından, West hesabına giriş yapmışken başlat."), (int) ((w - 24) / 0.8f));
             for (String l : lines) {
@@ -146,6 +155,46 @@ public final class ShareMenu extends WestShell {
                 if (cv.unread()) Ui.round(g, x + w - 16, ly + 9, 5, 5, 3, t.accent | 0xFF000000);
                 ly += 28;
             }
+        }
+        g.noScissor();
+    }
+
+    /** Dünyaya bağlı arkadaşlar: OP ver / al (yalnızca dünya sahibi; kim alacağını sen seçersin) */
+    private void players(int x, int ly, int w, int bottom) {
+        Gfx g = ui.g;
+        Theme t = ui.t;
+        List<Game.SharedPlayer> list = WestHud.game.sharedPlayers();
+        if (list.isEmpty()) {
+            String msg = WestHud.game.publishedPort() > 0 ? Tr.t("Dünyanda henüz arkadaşın yok. Katılanlar burada görünür; istediğine OP verebilirsin.")
+                    : Tr.t("Dünyayı paylaşınca katılan arkadaşların burada görünür; istediğine OP verebilirsin.");
+            for (String l : wrap(g, msg, (int) ((w - 24) / 0.8f))) {
+                smallText(g, l, x + 12, ly, 0xAAFFFFFF);
+                ly += 9;
+            }
+            return;
+        }
+        smallText(g, ui.fit(Tr.t("OP: komut kullanabilir (oyun modu, ışınlanma…)"), (int) ((w - 24) / 0.8f)), x + 12, ly, 0x88FFFFFF);
+        ly += 12;
+        g.scissor(x, ly, x + w, bottom);
+        for (Game.SharedPlayer p : list) {
+            if (ly + 24 > bottom) break;
+            boolean hv = ui.hover(x + 8, ly, w - 16, 24);
+            if (hv) Ui.round(g, x + 8, ly, w - 16, 24, 6, 0x14FFFFFF);
+            letter(g, p.name(), x + 12, ly + 4, 16, true);
+            String btn = p.op() ? Tr.t("OP al") : Tr.t("OP ver");
+            int bw = small(g, btn) + 14;
+            int bx = x + w - 12 - bw;
+            g.textBold(ui.fit(p.name(), bx - x - 40), x + 33, ly + 4, 0xFFFFFFFF, false);
+            smallText(g, p.op() ? Tr.t("Operatör") : Tr.t("Oyuncu"), x + 33, ly + 14, p.op() ? t.accent | 0xFF000000 : 0x88FFFFFF);
+            boolean bh = ui.hover(bx, ly + 5, bw, 14);
+            Ui.round(g, bx, ly + 5, bw, 14, 7, p.op() ? (bh ? 0xCCE5566E : 0x40E5566E) : bh ? t.accent | 0xFF000000 : Theme.alpha(t.accent, 0x55));
+            smallText(g, btn, bx + 7, ly + 9, p.op() || !bh ? 0xFFFFFFFF : t.onAccent);
+            if (ui.clicked(bx, ly + 5, bw, 14)) {
+                WestHud.game.click();
+                WestHud.game.setOp(p.uuid(), !p.op());
+                result = p.op() ? Tr.t("{0} artık OP değil", p.name()) : Tr.t("{0} artık OP", p.name());
+            }
+            ly += 26;
         }
         g.noScissor();
     }
