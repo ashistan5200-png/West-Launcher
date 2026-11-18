@@ -52,7 +52,7 @@ struct Pagination {
 async fn get<T: DeserializeOwned>(http: &Http, key: &str, path: &str, query: &[(&str, String)]) -> Result<(T, Option<u64>)> {
     let resp = http.client.get(format!("{API}{path}")).header("x-api-key", key).query(query).send().await?;
     if resp.status() == reqwest::StatusCode::FORBIDDEN || resp.status() == reqwest::StatusCode::UNAUTHORIZED {
-        return Err(AppError::msg("CurseForge API anahtarı geçersiz"));
+        return Err(AppError::msg(crate::i18n::t("CurseForge API anahtarı geçersiz")));
     }
     let env: Envelope<T> = resp.error_for_status()?.json().await?;
     Ok((env.data, env.pagination.map(|p| p.total_count)))
@@ -225,5 +225,5 @@ pub async fn best_file(http: &Http, key: &str, mod_id: u64, game_version: &str, 
         .find(|f| f.release_type == 1)
         .or_else(|| files.first())
         .cloned()
-        .ok_or_else(|| AppError::NotFound(format!("{game_version} için uyumlu CurseForge dosyası")))
+        .ok_or_else(|| AppError::NotFound(crate::i18n::tf("{0} için uyumlu CurseForge dosyası", &[&game_version])))
 }

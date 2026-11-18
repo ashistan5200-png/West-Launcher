@@ -137,17 +137,17 @@ pub async fn install(ctx: &PackCtx<'_>, source: Source, project_id: &str) -> Res
         Source::Modrinth => {
             let p = modrinth::project(ctx.http, project_id).await?;
             let versions: Vec<modrinth::Version> = ctx.http.json(&format!("{}/project/{}/version", modrinth::API, p.id)).await?;
-            let v = versions.iter().find(|v| v.version_type == "release").or_else(|| versions.first()).ok_or_else(|| AppError::NotFound("modpack sürümü".into()))?;
-            let f = v.primary_file().ok_or_else(|| AppError::NotFound("mrpack dosyası".into()))?;
+            let v = versions.iter().find(|v| v.version_type == "release").or_else(|| versions.first()).ok_or_else(|| AppError::NotFound(crate::i18n::t("modpack sürümü").into()))?;
+            let f = v.primary_file().ok_or_else(|| AppError::NotFound(crate::i18n::t("mrpack dosyası").into()))?;
             ctx.http.download(&DownloadTask { url: f.url.clone(), path: archive.clone(), sha1: f.hashes.get("sha1").cloned(), size: Some(f.size) }).await?;
             p.title
         }
         Source::Curseforge => {
-            let key = ctx.cf_key.ok_or_else(|| AppError::msg("CurseForge için API anahtarı gerekli"))?;
-            let id: u64 = project_id.parse().map_err(|_| AppError::msg("geçersiz kimlik"))?;
+            let key = ctx.cf_key.ok_or_else(|| AppError::msg(crate::i18n::t("CurseForge için API anahtarı gerekli")))?;
+            let id: u64 = project_id.parse().map_err(|_| AppError::msg(crate::i18n::t("geçersiz kimlik")))?;
             let m = curseforge::get_mod(ctx.http, key, id).await?;
             let (files, _) = cf_latest_files(ctx.http, key, id).await?;
-            let f = files.into_iter().next().ok_or_else(|| AppError::NotFound("modpack dosyası".into()))?;
+            let f = files.into_iter().next().ok_or_else(|| AppError::NotFound(crate::i18n::t("modpack dosyası").into()))?;
             ctx.http.download(&DownloadTask { url: f.url(), path: archive.clone(), sha1: f.sha1(), size: None }).await?;
             m.name
         }
@@ -158,7 +158,7 @@ pub async fn install(ctx: &PackCtx<'_>, source: Source, project_id: &str) -> Res
     let result = if let Some(bytes) = read_zip_entry(&mut zip, "modrinth.index.json") {
         // 2a) Modrinth
         let idx: MrIndex = serde_json::from_slice(&bytes)?;
-        let mc = idx.dependencies.get("minecraft").cloned().ok_or_else(|| AppError::msg("paket MC sürümü belirtmiyor"))?;
+        let mc = idx.dependencies.get("minecraft").cloned().ok_or_else(|| AppError::msg(crate::i18n::t("paket MC sürümü belirtmiyor")))?;
         let mut inst = mgr.create(NewInstance { name: if idx.name.is_empty() { title.clone() } else { idx.name }, mc_version: mc, loader: mr_loader(&idx.dependencies), icon: None, group: Some("Modpack".into()) })?;
         let game = ctx.paths.instance_game_dir(&inst.id);
         let mut tasks = Vec::new();
@@ -177,7 +177,7 @@ pub async fn install(ctx: &PackCtx<'_>, source: Source, project_id: &str) -> Res
         inst
     } else if let Some(bytes) = read_zip_entry(&mut zip, "manifest.json") {
         // 2b) CurseForge
-        let key = ctx.cf_key.ok_or_else(|| AppError::msg("Bu CurseForge paketi için API anahtarı gerekli"))?;
+        let key = ctx.cf_key.ok_or_else(|| AppError::msg(crate::i18n::t("Bu CurseForge paketi için API anahtarı gerekli")))?;
         let man: CfManifest = serde_json::from_slice(&bytes)?;
         let mut inst = mgr.create(NewInstance { name: man.name.clone(), mc_version: man.minecraft.version.clone(), loader: cf_loader(&man.minecraft.mod_loaders), icon: None, group: Some("Modpack".into()) })?;
         let game = ctx.paths.instance_game_dir(&inst.id);
@@ -215,7 +215,7 @@ pub async fn install(ctx: &PackCtx<'_>, source: Source, project_id: &str) -> Res
         inst.imported_from = Some("curseforge".into());
         inst
     } else {
-        return Err(AppError::msg("Tanınmayan modpack biçimi"));
+        return Err(AppError::msg(crate::i18n::t("Tanınmayan modpack biçimi")));
     };
 
     let _ = std::fs::remove_file(&archive);

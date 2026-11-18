@@ -189,7 +189,7 @@ impl<'a> InstanceManager<'a> {
     pub fn delete(&self, id: &str) -> Result<()> {
         let dir = self.paths.instance_dir(id);
         if !dir.starts_with(self.paths.instances()) || id.is_empty() || id.contains("..") {
-            return Err(AppError::msg("Geçersiz instance kimliği"));
+            return Err(AppError::msg(crate::i18n::t("Geçersiz instance kimliği")));
         }
         std::fs::remove_dir_all(dir)?;
         Ok(())

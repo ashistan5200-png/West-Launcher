@@ -42,7 +42,7 @@ pub async fn news_export(state: State<'_, AppState>, dest: String, version: Opti
     let bytes = match (hash, version, path) {
         (Some(h), _, _) => news::read_sound(&state.http, &state.paths, &h).await?,
         (None, Some(v), Some(p)) => news::read_texture(&state.paths, &v, &p)?,
-        _ => return Err(crate::error::AppError::msg("dışa aktarılacak dosya belirtilmedi")),
+        _ => return Err(crate::error::AppError::msg(crate::i18n::t("dışa aktarılacak dosya belirtilmedi"))),
     };
     std::fs::write(dest, bytes)?;
     Ok(())

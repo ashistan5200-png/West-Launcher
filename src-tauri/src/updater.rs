@@ -99,7 +99,7 @@ pub async fn check_against(http: &Http, current: &str) -> Result<Option<UpdateIn
         return Ok(None); // henüz sürüm yok
     }
     if resp.status() == reqwest::StatusCode::FORBIDDEN || resp.status() == reqwest::StatusCode::TOO_MANY_REQUESTS {
-        return Err(AppError::msg("GitHub şu an çok fazla istek alıyor; güncelleme kontrolü daha sonra tekrar denenecek"));
+        return Err(AppError::msg(crate::i18n::t("GitHub şu an çok fazla istek alıyor; güncelleme kontrolü daha sonra tekrar denenecek")));
     }
     let rel: GhRelease = resp.error_for_status()?.json().await?;
     if rel.draft || rel.prerelease || !is_newer(&rel.tag_name, current) {

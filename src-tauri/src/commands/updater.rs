@@ -84,7 +84,7 @@ async fn fetch(app: &AppHandle) -> Result<PathBuf> {
         }
         u.downloading = true;
         u.error = None;
-        u.info.clone().ok_or_else(|| AppError::msg("İndirilecek güncelleme yok"))?
+        u.info.clone().ok_or_else(|| AppError::msg(crate::i18n::t("İndirilecek güncelleme yok")))?
     };
     emit(app);
     let dir = st.paths.cache().join("updates");
@@ -105,7 +105,7 @@ async fn fetch(app: &AppHandle) -> Result<PathBuf> {
         u.downloading = false;
         match &res {
             Ok(f) => u.file = Some(f.clone()),
-            Err(e) => u.error = Some(format!("Güncelleme indirilemedi: {e}")),
+            Err(e) => u.error = Some(crate::i18n::tf("Güncelleme indirilemedi: {0}", &[&e])),
         }
     }
     emit(app);
@@ -141,7 +141,7 @@ pub async fn check_update(app: AppHandle) -> Result<UpdateStatus> {
 #[tauri::command]
 pub async fn install_update(app: AppHandle) -> Result<()> {
     if !app.state::<AppState>().running.lock().is_empty() {
-        return Err(AppError::msg("Önce açık oyunu kapat; güncelleme sırasında launcher yeniden başlar"));
+        return Err(AppError::msg(crate::i18n::t("Önce açık oyunu kapat; güncelleme sırasında launcher yeniden başlar")));
     }
     let file = fetch(&app).await?;
     updater::install(&file)?;

@@ -70,7 +70,7 @@ pub async fn prepare(http: &Http, paths: &Paths, resource_dir: &Path, inst: &Ins
     if !same {
         remove(&game);
         if let Err(e) = std::fs::create_dir_all(&mods).and_then(|_| std::fs::copy(&src, &target)) {
-            rep.notes.push(format!("West Companion kurulamadı: {e}"));
+            rep.notes.push(crate::i18n::tf("West Companion kurulamadı: {0}", &[&e]));
             return rep;
         }
     }
@@ -90,12 +90,12 @@ pub async fn prepare(http: &Http, paths: &Paths, resource_dir: &Path, inst: &Ins
                 progress,
             };
             match install(&ctx, Source::Modrinth, "fabric-api", Kind::Mod).await {
-                Ok(_) => rep.notes.push("West Companion için Fabric API kuruldu".into()),
+                Ok(_) => rep.notes.push(crate::i18n::t("West Companion için Fabric API kuruldu")),
                 Err(e) => {
                     // Fabric API olmadan mod yüklenemez → oyunu bozmamak için kaldır
                     remove(&game);
                     rep.installed = false;
-                    rep.notes.push(format!("Fabric API kurulamadığı için West Companion bu açılışta devre dışı: {e}"));
+                    rep.notes.push(crate::i18n::tf("Fabric API kurulamadığı için West Companion bu açılışta devre dışı: {0}", &[&e]));
                 }
             }
         }

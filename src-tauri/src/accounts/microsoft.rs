@@ -59,14 +59,14 @@ pub fn code_from_redirect(url: &str) -> Option<Result<String>> {
         return Some(Err(AppError::msg(LOGIN_CANCELLED)));
     }
     let desc = param("error_description").or(param("error")).unwrap_or_else(|| "bilinmeyen hata".into());
-    Some(Err(AppError::msg(format!("Microsoft girişi iptal edildi veya başarısız: {desc}"))))
+    Some(Err(AppError::msg(crate::i18n::tf("Microsoft girişi iptal edildi veya başarısız: {0}", &[&desc]))))
 }
 
 async fn live_token(http: &Http, form: &[(&str, &str)]) -> Result<(String, String)> {
     let r: TokenResp = http.client.post(LIVE_TOKEN).timeout(STEP_TIMEOUT).form(form).send().await?.json().await?;
     match (r.access_token, r.refresh_token) {
         (Some(a), Some(rt)) => Ok((a, rt)),
-        _ => Err(AppError::msg(format!("Microsoft oturumu alınamadı: {}", r.error_description.or(r.error).unwrap_or_default()))),
+        _ => Err(AppError::msg(crate::i18n::tf("Microsoft oturumu alınamadı: {0}", &[&r.error_description.or(r.error).unwrap_or_default()]))),
     }
 }
 
@@ -77,7 +77,7 @@ pub async fn live_exchange(http: &Http, code: &str) -> Result<(String, String)> 
 async fn live_refresh(http: &Http, refresh: &str) -> Result<(String, String)> {
     live_token(http, &[("client_id", LIVE_CLIENT_ID), ("refresh_token", refresh), ("grant_type", "refresh_token"), ("redirect_uri", LIVE_REDIRECT), ("scope", LIVE_SCOPE)])
         .await
-        .map_err(|_| AppError::msg("Microsoft oturumu sona erdi; hesabı yeniden ekle"))
+        .map_err(|_| AppError::msg(crate::i18n::t("Microsoft oturumu sona erdi; hesabı yeniden ekle")))
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -112,7 +112,7 @@ pub async fn start(http: &Http, client_id: &str) -> Result<DeviceCode> {
     let resp = http.client.post(DEVICE_CODE).form(&[("client_id", client_id), ("scope", SCOPE)]).send().await?;
     if !resp.status().is_success() {
         let t = resp.text().await.unwrap_or_default();
-        return Err(AppError::msg(format!("Microsoft girişi başlatılamadı: {}", t.chars().take(200).collect::<String>())));
+        return Err(AppError::msg(crate::i18n::tf("Microsoft girişi başlatılamadı: {0}", &[&t.chars().take(200).collect::<String>()])));
     }
     Ok(resp.json().await?)
 }
@@ -130,9 +130,9 @@ pub async fn poll(http: &Http, client_id: &str, device_code: &str) -> Result<Pol
         (Some(a), Some(rt), _) => Ok(Poll::Done { access: a, refresh: rt }),
         (_, _, Some("authorization_pending")) => Ok(Poll::Pending),
         (_, _, Some("slow_down")) => Ok(Poll::SlowDown),
-        (_, _, Some("expired_token")) => Err(AppError::msg("Kodun süresi doldu, girişi yeniden başlat")),
-        (_, _, Some("authorization_declined")) => Err(AppError::msg("Giriş reddedildi")),
-        (_, _, e) => Err(AppError::msg(format!("Microsoft girişi başarısız: {}", r.error_description.or(e.map(String::from)).unwrap_or_default()))),
+        (_, _, Some("expired_token")) => Err(AppError::msg(crate::i18n::t("Kodun süresi doldu, girişi yeniden başlat"))),
+        (_, _, Some("authorization_declined")) => Err(AppError::msg(crate::i18n::t("Giriş reddedildi"))),
+        (_, _, e) => Err(AppError::msg(crate::i18n::tf("Microsoft girişi başarısız: {0}", &[&r.error_description.or(e.map(String::from)).unwrap_or_default()]))),
     }
 }
 
@@ -147,7 +147,7 @@ async fn refresh_ms(http: &Http, client_id: &str, refresh: &str) -> Result<(Stri
         .await?;
     match (r.access_token, r.refresh_token) {
         (Some(a), Some(rt)) => Ok((a, rt)),
-        _ => Err(AppError::msg("Microsoft oturumu sona erdi; hesabı yeniden ekle")),
+        _ => Err(AppError::msg(crate::i18n::t("Microsoft oturumu sona erdi; hesabı yeniden ekle"))),
     }
 }
 
@@ -208,9 +208,9 @@ async fn minecraft_chain(http: &Http, ms_access: &str, live: bool, stage: Stage<
     let (first, second) = if live { (ms_access.to_string(), format!("d={ms_access}")) } else { (format!("d={ms_access}"), ms_access.to_string()) };
     let xbl = match xbl_auth(http, first).await {
         Ok(v) => v,
-        Err(_) => xbl_auth(http, second).await.map_err(|e| AppError::msg(format!("Xbox Live girişi başarısız: {e}")))?,
+        Err(_) => xbl_auth(http, second).await.map_err(|e| AppError::msg(crate::i18n::tf("Xbox Live girişi başarısız: {0}", &[&e])))?,
     };
-    let xbl_token = xbl["Token"].as_str().ok_or_else(|| AppError::msg("Xbox Live token alınamadı"))?;
+    let xbl_token = xbl["Token"].as_str().ok_or_else(|| AppError::msg(crate::i18n::t("Xbox Live token alınamadı")))?;
     let uhs = xbl["DisplayClaims"]["xui"][0]["uhs"].as_str().unwrap_or_default().to_string();
 
     stage("Xbox hesabı doğrulanıyor…");
@@ -226,30 +226,30 @@ async fn minecraft_chain(http: &Http, ms_access: &str, live: bool, stage: Stage<
         .await?;
     if resp.status() == reqwest::StatusCode::UNAUTHORIZED {
         let v: serde_json::Value = resp.json().await.unwrap_or_default();
-        return Err(AppError::msg(match v["XErr"].as_u64() {
+        return Err(AppError::msg(crate::i18n::t(match v["XErr"].as_u64() {
             Some(2148916233) => "Bu Microsoft hesabının bir Xbox profili yok. xbox.com'da bir profil oluşturup tekrar dene.",
             Some(2148916235) => "Xbox Live bu ülkede kullanılamıyor.",
             Some(2148916238) => "Bu bir çocuk hesabı; bir yetişkinin hesabı aile grubuna eklemesi gerekiyor.",
             _ => "Xbox Live yetkilendirmesi başarısız.",
-        }));
+        })));
     }
     let xsts: serde_json::Value = resp.error_for_status()?.json().await?;
-    let xsts_token = xsts["Token"].as_str().ok_or_else(|| AppError::msg("XSTS token alınamadı"))?;
+    let xsts_token = xsts["Token"].as_str().ok_or_else(|| AppError::msg(crate::i18n::t("XSTS token alınamadı")))?;
     let xuid = xsts["DisplayClaims"]["xui"][0]["xid"].as_str().map(String::from);
 
     stage("Minecraft'a giriş yapılıyor…");
     let resp = http.client.post(MC_LOGIN).timeout(STEP_TIMEOUT).json(&json!({ "identityToken": format!("XBL3.0 x={uhs};{xsts_token}") })).send().await?;
     if resp.status() == reqwest::StatusCode::FORBIDDEN {
-        return Err(AppError::msg("Minecraft Services bu uygulama kimliğini kabul etmedi. Azure uygulamasının Mojang tarafından onaylanmış olması gerekir."));
+        return Err(AppError::msg(crate::i18n::t("Minecraft Services bu uygulama kimliğini kabul etmedi. Azure uygulamasının Mojang tarafından onaylanmış olması gerekir.")));
     }
     let mc: serde_json::Value = resp.error_for_status()?.json().await?;
-    let token = mc["access_token"].as_str().ok_or_else(|| AppError::msg("Minecraft token alınamadı"))?.to_string();
+    let token = mc["access_token"].as_str().ok_or_else(|| AppError::msg(crate::i18n::t("Minecraft token alınamadı")))?.to_string();
     let expires = mc["expires_in"].as_i64().unwrap_or(86_400);
 
     stage("Minecraft profili alınıyor…");
     let resp = http.client.get(MC_PROFILE).timeout(STEP_TIMEOUT).bearer_auth(&token).send().await?;
     if resp.status() == reqwest::StatusCode::NOT_FOUND {
-        return Err(AppError::msg("Bu Microsoft hesabında Minecraft: Java Edition yok."));
+        return Err(AppError::msg(crate::i18n::t("Bu Microsoft hesabında Minecraft: Java Edition yok.")));
     }
     let profile: Profile = resp.error_for_status()?.json().await?;
     Ok((token, expires, xuid, profile))
@@ -292,11 +292,11 @@ pub async fn upload_skin(http: &Http, token: &str, png: Vec<u8>, slim: bool) -> 
     let form = reqwest::multipart::Form::new().text("variant", if slim { "slim" } else { "classic" }).part("file", part);
     let resp = http.client.post(format!("{MC_PROFILE}/skins")).bearer_auth(token).multipart(form).send().await?;
     if resp.status() == reqwest::StatusCode::TOO_MANY_REQUESTS {
-        return Err(AppError::msg("Mojang çok sık skin değişikliğine izin vermiyor; bir dakika sonra tekrar dene."));
+        return Err(AppError::msg(crate::i18n::t("Mojang çok sık skin değişikliğine izin vermiyor; bir dakika sonra tekrar dene.")));
     }
     if !resp.status().is_success() {
         let t = resp.text().await.unwrap_or_default();
-        return Err(AppError::msg(format!("Skin yüklenemedi: {}", t.chars().take(200).collect::<String>())));
+        return Err(AppError::msg(crate::i18n::tf("Skin yüklenemedi: {0}", &[&t.chars().take(200).collect::<String>()])));
     }
     Ok(())
 }

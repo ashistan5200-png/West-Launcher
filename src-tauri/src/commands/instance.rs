@@ -52,7 +52,7 @@ pub fn create_from_template(state: State<'_, AppState>, template_id: String, nam
 #[tauri::command]
 pub fn delete_instance(state: State<'_, AppState>, id: String) -> Result<()> {
     if state.running.lock().contains_key(&id) {
-        return Err(AppError::msg("Çalışan bir instance silinemez"));
+        return Err(AppError::msg(crate::i18n::t("Çalışan bir instance silinemez")));
     }
     InstanceManager::new(&state.paths).delete(&id)
 }
@@ -72,7 +72,7 @@ pub fn set_instance_image(state: State<'_, AppState>, id: String, kind: String, 
     let prefix = match kind.as_str() {
         "icon" => "icon",
         "banner" => "banner",
-        _ => return Err(AppError::msg("Geçersiz görsel türü")),
+        _ => return Err(AppError::msg(crate::i18n::t("Geçersiz görsel türü"))),
     };
     // Eski kopyaları temizle
     if let Ok(rd) = std::fs::read_dir(&dir) {
@@ -88,10 +88,10 @@ pub fn set_instance_image(state: State<'_, AppState>, id: String, kind: String, 
             let src = std::path::PathBuf::from(&p);
             let ext = src.extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();
             if !["png", "jpg", "jpeg", "webp", "gif"].contains(&ext.as_str()) {
-                return Err(AppError::msg("Yalnızca PNG, JPG, WEBP veya GIF görseller kullanılabilir"));
+                return Err(AppError::msg(crate::i18n::t("Yalnızca PNG, JPG, WEBP veya GIF görseller kullanılabilir")));
             }
             if std::fs::metadata(&src)?.len() > 12 * 1024 * 1024 {
-                return Err(AppError::msg("Görsel en fazla 12 MB olabilir"));
+                return Err(AppError::msg(crate::i18n::t("Görsel en fazla 12 MB olabilir")));
             }
             // Dosya adına zaman damgası: arayüz önbelleği eski görseli göstermesin
             let dest = dir.join(format!("{prefix}-{}.{ext}", chrono::Utc::now().timestamp_millis()));
@@ -114,7 +114,7 @@ use crate::instance::modes::{self, ApplyReport, GameMode, Modes};
 
 fn not_running(state: &AppState, id: &str) -> Result<()> {
     if state.running.lock().contains_key(id) {
-        return Err(AppError::msg("Oyun açıkken mod değiştirilemez; önce oyunu kapat."));
+        return Err(AppError::msg(crate::i18n::t("Oyun açıkken mod değiştirilemez; önce oyunu kapat.")));
     }
     Ok(())
 }

@@ -77,7 +77,7 @@ pub fn optimize(java_major: u32, hw: &Hardware, memory_mb: u32) -> JvmProfile {
             memory_mb,
             gc: Gc::GenerationalZgc,
             flags,
-            reason: format!("Java {java_major}, {} çekirdek ve {memory_mb} MB heap → Generational ZGC", hw.logical_cores),
+            reason: crate::i18n::tf("Java {0}, {1} çekirdek ve {2} MB heap → Generational ZGC", &[&java_major, &hw.logical_cores, &memory_mb]),
         };
     }
 
@@ -105,7 +105,7 @@ pub fn optimize(java_major: u32, hw: &Hardware, memory_mb: u32) -> JvmProfile {
         memory_mb,
         gc: Gc::G1,
         flags,
-        reason: format!("Java {java_major}, {memory_mb} MB heap → ayarlı G1GC (Aikar)"),
+        reason: crate::i18n::tf("Java {0}, {1} MB heap → ayarlı G1GC (Aikar)", &[&java_major, &memory_mb]),
     }
 }
 

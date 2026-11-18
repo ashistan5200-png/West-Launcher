@@ -150,7 +150,7 @@ const TEXT_EXT: &[&str] = &[".json", ".mcmeta", ".properties", ".txt", ".lang", 
 /// jar'daki tüm geçersiz asset adları da birlikte düzeltilir.
 pub fn fix_bad_paths(mods_dir: &Path, file: &str, bad_location: Option<&str>) -> Result<FixReport> {
     if file.contains(['/', '\\']) || file.contains("..") || !file.ends_with(".jar") {
-        return Err(AppError::msg("Geçersiz mod dosyası"));
+        return Err(AppError::msg(crate::i18n::t("Geçersiz mod dosyası")));
     }
     let src = mods_dir.join(file);
     let mut zip = zip::ZipArchive::new(std::fs::File::open(&src)?)?;
@@ -170,7 +170,7 @@ pub fn fix_bad_paths(mods_dir: &Path, file: &str, bad_location: Option<&str>) ->
         }
     }
     if tokens.is_empty() {
-        return Err(AppError::msg("Bu modda düzeltilecek geçersiz dosya adı bulunamadı"));
+        return Err(AppError::msg(crate::i18n::t("Bu modda düzeltilecek geçersiz dosya adı bulunamadı")));
     }
     let pairs: Vec<(String, String)> = {
         // Uzun parçalar önce (iç içe eşleşmeler doğru değişsin)
@@ -245,7 +245,7 @@ pub fn fix_bad_paths(mods_dir: &Path, file: &str, bad_location: Option<&str>) ->
 
     if renamed + classes + texts == 0 {
         let _ = std::fs::remove_file(&tmp);
-        return Err(AppError::msg("Değiştirilecek bir şey bulunamadı"));
+        return Err(AppError::msg(crate::i18n::t("Değiştirilecek bir şey bulunamadı")));
     }
     // 3) Orijinali yedekle, düzeltilmişi yerine koy
     let backup = format!("{file}{BACKUP_SUFFIX}");
@@ -258,13 +258,13 @@ pub fn fix_bad_paths(mods_dir: &Path, file: &str, bad_location: Option<&str>) ->
 pub fn undo(mods_dir: &Path, fixed: &str, backup: &str) -> Result<()> {
     for f in [fixed, backup] {
         if f.contains(['/', '\\']) || f.contains("..") {
-            return Err(AppError::msg("Geçersiz dosya"));
+            return Err(AppError::msg(crate::i18n::t("Geçersiz dosya")));
         }
     }
-    let orig = backup.strip_suffix(BACKUP_SUFFIX).ok_or_else(|| AppError::msg("Yedek bulunamadı"))?;
+    let orig = backup.strip_suffix(BACKUP_SUFFIX).ok_or_else(|| AppError::msg(crate::i18n::t("Yedek bulunamadı")))?;
     let b = mods_dir.join(backup);
     if !b.is_file() {
-        return Err(AppError::msg("Yedek bulunamadı"));
+        return Err(AppError::msg(crate::i18n::t("Yedek bulunamadı")));
     }
     let _ = std::fs::remove_file(mods_dir.join(fixed));
     crate::util::retry(|| std::fs::rename(&b, mods_dir.join(orig))).map_err(|e| crate::error::AppError::at(std::path::Path::new(&b), e))?;

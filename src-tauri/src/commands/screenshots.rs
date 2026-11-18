@@ -46,8 +46,8 @@ pub fn read_screenshot(state: State<'_, AppState>, path: String) -> Result<Respo
 #[tauri::command]
 pub fn copy_screenshot(app: AppHandle, state: State<'_, AppState>, path: String) -> Result<()> {
     let p = guard(&state.paths, &path)?;
-    let img = tauri::image::Image::from_path(&p).map_err(|e| AppError::msg(format!("görüntü okunamadı: {e}")))?;
-    app.clipboard().write_image(&img).map_err(|e| AppError::msg(format!("panoya kopyalanamadı: {e}")))
+    let img = tauri::image::Image::from_path(&p).map_err(|e| AppError::msg(crate::i18n::tf("görüntü okunamadı: {0}", &[&e])))?;
+    app.clipboard().write_image(&img).map_err(|e| AppError::msg(crate::i18n::tf("panoya kopyalanamadı: {0}", &[&e])))
 }
 
 /// Düzenleyicinin ürettiği PNG'yi (base64) doğrudan panoya koyar.
@@ -55,7 +55,7 @@ pub fn copy_screenshot(app: AppHandle, state: State<'_, AppState>, path: String)
 pub fn copy_png_bytes(app: AppHandle, png_base64: String) -> Result<()> {
     let bytes = base64::engine::general_purpose::STANDARD.decode(png_base64).map_err(|e| AppError::msg(e.to_string()))?;
     let img = tauri::image::Image::from_bytes(&bytes).map_err(|e| AppError::msg(e.to_string()))?;
-    app.clipboard().write_image(&img).map_err(|e| AppError::msg(format!("panoya kopyalanamadı: {e}")))
+    app.clipboard().write_image(&img).map_err(|e| AppError::msg(crate::i18n::tf("panoya kopyalanamadı: {0}", &[&e])))
 }
 
 #[tauri::command]
@@ -81,7 +81,7 @@ pub fn save_screenshot_edit(state: State<'_, AppState>, source: String, png_base
     screenshots::list(&state.paths, None)?
         .into_iter()
         .find(|s| std::fs::canonicalize(&s.path).ok().as_deref() == Some(out.as_path()) || s.path == out_s)
-        .ok_or_else(|| AppError::msg("kaydedilen dosya bulunamadı"))
+        .ok_or_else(|| AppError::msg(crate::i18n::t("kaydedilen dosya bulunamadı")))
 }
 
 #[tauri::command]
@@ -96,7 +96,7 @@ pub fn screenshots_folder(state: State<'_, AppState>, instance_id: String) -> St
 pub fn export_png(dest: String, png_base64: String) -> Result<()> {
     let bytes = base64::engine::general_purpose::STANDARD.decode(png_base64).map_err(|e| AppError::msg(e.to_string()))?;
     if bytes.len() < 8 || &bytes[..8] != b"\x89PNG\r\n\x1a\n" {
-        return Err(AppError::msg("geçersiz PNG"));
+        return Err(AppError::msg(crate::i18n::t("geçersiz PNG")));
     }
     std::fs::write(dest, bytes)?;
     Ok(())

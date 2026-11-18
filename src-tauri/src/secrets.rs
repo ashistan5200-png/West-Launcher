@@ -53,7 +53,7 @@ use argon2::Argon2;
 
 pub fn hash_password(pw: &str) -> Result<String> {
     if pw.chars().count() < 4 {
-        return Err(crate::error::AppError::msg("Şifre en az 4 karakter olmalı"));
+        return Err(crate::error::AppError::msg(crate::i18n::t("Şifre en az 4 karakter olmalı")));
     }
     // 16 baytlık kriptografik rastgele tuz (UUID v4 işletim sisteminin CSPRNG'sinden üretilir)
     let salt = SaltString::encode_b64(uuid::Uuid::new_v4().as_bytes()).map_err(|e| crate::error::AppError::msg(e.to_string()))?;

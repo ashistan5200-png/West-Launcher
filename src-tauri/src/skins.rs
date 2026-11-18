@@ -39,15 +39,15 @@ pub struct Library {
 pub fn validate_png(bytes: &[u8]) -> Result<(u32, u32)> {
     const SIG: &[u8] = b"\x89PNG\r\n\x1a\n";
     if bytes.len() < 24 || &bytes[..8] != SIG || &bytes[12..16] != b"IHDR" {
-        return Err(AppError::msg("Dosya geçerli bir PNG değil"));
+        return Err(AppError::msg(crate::i18n::t("Dosya geçerli bir PNG değil")));
     }
     let w = u32::from_be_bytes(bytes[16..20].try_into().unwrap());
     let h = u32::from_be_bytes(bytes[20..24].try_into().unwrap());
     if !(w == 64 && (h == 64 || h == 32)) {
-        return Err(AppError::msg(format!("Skin 64×64 (veya eski 64×32) olmalı; bu dosya {w}×{h}")));
+        return Err(AppError::msg(crate::i18n::tf("Skin 64×64 (veya eski 64×32) olmalı; bu dosya {0}×{1}", &[&w, &h])));
     }
     if bytes.len() > 256 * 1024 {
-        return Err(AppError::msg("Skin dosyası çok büyük"));
+        return Err(AppError::msg(crate::i18n::t("Skin dosyası çok büyük")));
     }
     Ok((w, h))
 }
@@ -78,9 +78,9 @@ impl Library {
 
     pub fn read(&self, id: &str) -> Result<Vec<u8>> {
         if id.contains(['/', '\\', '.']) {
-            return Err(AppError::msg("geçersiz skin kimliği"));
+            return Err(AppError::msg(crate::i18n::t("geçersiz skin kimliği")));
         }
-        std::fs::read(self.png_path(id)).map_err(|_| AppError::NotFound("skin dosyası".into()))
+        std::fs::read(self.png_path(id)).map_err(|_| AppError::NotFound(crate::i18n::t("skin dosyası").into()))
     }
 
     pub fn data_url(&self, id: &str) -> Result<String> {
@@ -140,10 +140,10 @@ impl Library {
 pub async fn fetch_player_skin(http: &Http, name: &str) -> Result<(Vec<u8>, bool)> {
     let resp = http.client.get(format!("https://api.mojang.com/users/profiles/minecraft/{name}")).send().await?;
     if resp.status() == reqwest::StatusCode::TOO_MANY_REQUESTS {
-        return Err(AppError::msg("Mojang şu an çok fazla istek alıyor; birkaç saniye sonra tekrar dene."));
+        return Err(AppError::msg(crate::i18n::t("Mojang şu an çok fazla istek alıyor; birkaç saniye sonra tekrar dene.")));
     }
     if resp.status() == reqwest::StatusCode::NOT_FOUND || resp.status() == reqwest::StatusCode::NO_CONTENT {
-        return Err(AppError::NotFound(format!("\"{name}\" adında bir Minecraft oyuncusu")));
+        return Err(AppError::NotFound(crate::i18n::tf("\"{0}\" adında bir Minecraft oyuncusu", &[&name])));
     }
     let profile: serde_json::Value = resp.error_for_status()?.json().await?;
     let uuid = profile["id"].as_str().ok_or_else(|| AppError::NotFound(name.into()))?;
@@ -156,10 +156,10 @@ pub async fn fetch_uuid_skin(http: &Http, uuid: &str) -> Result<(Vec<u8>, bool)>
         .as_array()
         .and_then(|a| a.iter().find(|p| p["name"] == "textures"))
         .and_then(|p| p["value"].as_str())
-        .ok_or_else(|| AppError::msg("textures özelliği yok"))?;
+        .ok_or_else(|| AppError::msg(crate::i18n::t("textures özelliği yok")))?;
     let textures: serde_json::Value = serde_json::from_slice(&base64::engine::general_purpose::STANDARD.decode(b64).map_err(|e| AppError::msg(e.to_string()))?)?;
     let skin = &textures["textures"]["SKIN"];
-    let url = skin["url"].as_str().ok_or_else(|| AppError::msg("Bu oyuncunun özel bir skini yok (varsayılan Steve/Alex)"))?.replacen("http://", "https://", 1);
+    let url = skin["url"].as_str().ok_or_else(|| AppError::msg(crate::i18n::t("Bu oyuncunun özel bir skini yok (varsayılan Steve/Alex)")))?.replacen("http://", "https://", 1);
     let slim = skin["metadata"]["model"].as_str() == Some("slim");
     let png = http.client.get(&url).send().await?.error_for_status()?.bytes().await?.to_vec();
     Ok((png, slim))

@@ -37,7 +37,7 @@ pub fn configured() -> bool {
 }
 
 fn cfg() -> Result<&'static CloudConfig> {
-    if configured() { Ok(&CONFIG) } else { Err(AppError::msg("West hesap sunucusu henüz ayarlanmadı.")) }
+    if configured() { Ok(&CONFIG) } else { Err(AppError::msg(crate::i18n::t("West hesap sunucusu henüz ayarlanmadı."))) }
 }
 
 static USERNAME: Lazy<Regex> = Lazy::new(|| Regex::new(r"^[A-Za-z0-9_]{3,16}$").unwrap());
@@ -141,9 +141,9 @@ fn friendly(status: reqwest::StatusCode, body: &str) -> AppError {
     } else if lower.contains("invalid") && lower.contains("email") {
         "Geçerli bir e-posta adresi gir."
     } else {
-        return AppError::msg(format!("West hesabı: {msg}"));
+        return AppError::msg(crate::i18n::tf("West hesabı: {0}", &[&msg]));
     };
-    AppError::msg(text)
+    AppError::msg(crate::i18n::t(text))
 }
 
 async fn post(http: &Http, path: &str, body: serde_json::Value, bearer: Option<&str>) -> Result<String> {
@@ -161,7 +161,7 @@ async fn post(http: &Http, path: &str, body: serde_json::Value, bearer: Option<&
     } else if !c.supabase_anon_key.starts_with("sb_") {
         req = req.bearer_auth(&c.supabase_anon_key);
     }
-    let resp = req.send().await.map_err(|e| AppError::msg(format!("West hesap sunucusuna ulaşılamadı: {e}")))?;
+    let resp = req.send().await.map_err(|e| AppError::msg(crate::i18n::tf("West hesap sunucusuna ulaşılamadı: {0}", &[&e])))?;
     let status = resp.status();
     let text = resp.text().await.unwrap_or_default();
     if !status.is_success() {
@@ -185,16 +185,16 @@ fn session_from(t: TokenResp, fallback_username: Option<&str>) -> Option<Session
 
 pub fn validate(username: &str, email: &str, password: &str) -> Result<()> {
     if !USERNAME.is_match(username) {
-        return Err(AppError::msg("Kullanıcı adı 3–16 karakter olmalı; yalnızca harf, rakam ve alt çizgi."));
+        return Err(AppError::msg(crate::i18n::t("Kullanıcı adı 3–16 karakter olmalı; yalnızca harf, rakam ve alt çizgi.")));
     }
     if !EMAIL.is_match(email) {
-        return Err(AppError::msg("Geçerli bir e-posta adresi gir."));
+        return Err(AppError::msg(crate::i18n::t("Geçerli bir e-posta adresi gir.")));
     }
     if password.chars().count() < 8 {
-        return Err(AppError::msg("Şifre en az 8 karakter olmalı."));
+        return Err(AppError::msg(crate::i18n::t("Şifre en az 8 karakter olmalı.")));
     }
     if !(password.chars().any(|c| c.is_alphabetic()) && password.chars().any(|c| c.is_ascii_digit())) {
-        return Err(AppError::msg("Şifrede en az bir harf ve bir rakam olsun."));
+        return Err(AppError::msg(crate::i18n::t("Şifrede en az bir harf ve bir rakam olsun.")));
     }
     Ok(())
 }
@@ -227,7 +227,7 @@ pub async fn signup(http: &Http, root: &Path, username: &str, email: &str, passw
     let (username, email) = (username.trim(), email.trim().to_lowercase());
     validate(username, &email, password)?;
     if !username_available(http, username).await.unwrap_or(true) {
-        return Err(AppError::msg("Bu kullanıcı adı alınmış. Başka bir ad seç."));
+        return Err(AppError::msg(crate::i18n::t("Bu kullanıcı adı alınmış. Başka bir ad seç.")));
     }
     let body = post(http, "/auth/v1/signup", serde_json::json!({ "email": email, "password": password, "data": { "username": username } }), None).await?;
     let t: TokenResp = serde_json::from_str(&body).unwrap_or(TokenResp { access_token: None, refresh_token: None, expires_in: None, user: None });
@@ -244,11 +244,11 @@ pub async fn signup(http: &Http, root: &Path, username: &str, email: &str, passw
 pub async fn login(http: &Http, root: &Path, email: &str, password: &str) -> Result<WestAccount> {
     let email = email.trim().to_lowercase();
     if !EMAIL.is_match(&email) {
-        return Err(AppError::msg("Giriş için e-posta adresini gir."));
+        return Err(AppError::msg(crate::i18n::t("Giriş için e-posta adresini gir.")));
     }
     let body = post(http, "/auth/v1/token?grant_type=password", serde_json::json!({ "email": email, "password": password }), None).await?;
     let t: TokenResp = serde_json::from_str(&body)?;
-    let s = session_from(t, None).ok_or_else(|| AppError::msg("West hesabına giriş yapılamadı."))?;
+    let s = session_from(t, None).ok_or_else(|| AppError::msg(crate::i18n::t("West hesabına giriş yapılamadı.")))?;
     save(root, &s)?;
     Ok(view(&s))
 }
@@ -272,7 +272,8 @@ pub async fn status(http: &Http, root: &Path) -> Status {
     }
     match refresh(http, root, &s).await {
         Ok(f) => Status { configured: true, account: Some(view(&f)) },
-        Err(e) if e.to_string().contains("ulaşılamadı") => Status { configured: true, account: Some(view(&s)) },
+        // Sunucuya ulaşılamadı (mesaj seçili dile çevrilmiş olabilir)
+        Err(e) if e.to_string().contains(crate::i18n::tf("West hesap sunucusuna ulaşılamadı: {0}", &[&""]).trim_end()) => Status { configured: true, account: Some(view(&s)) },
         Err(_) => {
             // Oturum iptal edilmiş (şifre değişti vb.)
             let _ = std::fs::remove_file(file(root));
@@ -292,7 +293,7 @@ pub async fn logout(http: &Http, root: &Path) -> Result<()> {
 pub async fn reset_password(http: &Http, email: &str) -> Result<()> {
     let email = email.trim().to_lowercase();
     if !EMAIL.is_match(&email) {
-        return Err(AppError::msg("Geçerli bir e-posta adresi gir."));
+        return Err(AppError::msg(crate::i18n::t("Geçerli bir e-posta adresi gir.")));
     }
     post(http, "/auth/v1/recover", serde_json::json!({ "email": email }), None).await?;
     Ok(())
@@ -319,18 +320,18 @@ pub async fn current_user(http: &Http, root: &Path) -> Option<String> {
 pub async fn api(http: &Http, root: &Path, method: &str, path: &str, query: &[(String, String)], body: Option<serde_json::Value>, prefer: Option<&str>) -> Result<serde_json::Value> {
     let c = cfg()?;
     if !path.starts_with("/rest/v1/") || path.contains("..") || path.contains('?') || path.contains('#') {
-        return Err(AppError::msg("Geçersiz istek"));
+        return Err(AppError::msg(crate::i18n::t("Geçersiz istek")));
     }
     let m = match method {
         "GET" => reqwest::Method::GET,
         "POST" => reqwest::Method::POST,
         "PATCH" => reqwest::Method::PATCH,
         "DELETE" => reqwest::Method::DELETE,
-        _ => return Err(AppError::msg("Geçersiz istek")),
+        _ => return Err(AppError::msg(crate::i18n::t("Geçersiz istek"))),
     };
     let tok = token(http, root).await;
     if m != reqwest::Method::GET && tok.is_none() && !path.starts_with("/rest/v1/rpc/") {
-        return Err(AppError::msg("Bunun için West hesabına giriş yapmalısın."));
+        return Err(AppError::msg(crate::i18n::t("Bunun için West hesabına giriş yapmalısın.")));
     }
     let mut req = http
         .client
@@ -349,7 +350,7 @@ pub async fn api(http: &Http, root: &Path, method: &str, path: &str, query: &[(S
     if let Some(b) = body {
         req = req.json(&b);
     }
-    let resp = req.send().await.map_err(|e| AppError::msg(format!("West sunucusuna ulaşılamadı: {e}")))?;
+    let resp = req.send().await.map_err(|e| AppError::msg(crate::i18n::tf("West sunucusuna ulaşılamadı: {0}", &[&e])))?;
     let status = resp.status();
     let range = resp.headers().get("content-range").and_then(|v| v.to_str().ok()).map(String::from);
     let text = resp.text().await.unwrap_or_default();
@@ -357,7 +358,7 @@ pub async fn api(http: &Http, root: &Path, method: &str, path: &str, query: &[(S
         let v: serde_json::Value = serde_json::from_str(&text).unwrap_or_default();
         let msg = v["message"].as_str().or(v["msg"].as_str()).unwrap_or(&text).to_string();
         if msg.contains("does not exist") || msg.contains("schema cache") {
-            return Err(AppError::msg("Sosyal özellikler için Supabase'te supabase/social.sql dosyası henüz çalıştırılmamış."));
+            return Err(AppError::msg(crate::i18n::t("Sosyal özellikler için Supabase'te supabase/social.sql dosyası henüz çalıştırılmamış.")));
         }
         return Err(AppError::msg(msg));
     }
@@ -373,20 +374,20 @@ pub async fn api(http: &Http, root: &Path, method: &str, path: &str, query: &[(S
 pub async fn upload(http: &Http, root: &Path, local: &Path, folder: &str) -> Result<String> {
     let c = cfg()?;
     if !["avatars", "banners", "posts", "stories", "messages"].contains(&folder) {
-        return Err(AppError::msg("Geçersiz klasör"));
+        return Err(AppError::msg(crate::i18n::t("Geçersiz klasör")));
     }
-    let (tok, uid) = token(http, root).await.ok_or_else(|| AppError::msg("Bunun için West hesabına giriş yapmalısın."))?;
+    let (tok, uid) = token(http, root).await.ok_or_else(|| AppError::msg(crate::i18n::t("Bunun için West hesabına giriş yapmalısın.")))?;
     let ext = local.extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();
     let mime = match ext.as_str() {
         "png" => "image/png",
         "jpg" | "jpeg" => "image/jpeg",
         "webp" => "image/webp",
         "gif" => "image/gif",
-        _ => return Err(AppError::msg("Yalnızca PNG, JPG, WEBP veya GIF yüklenebilir")),
+        _ => return Err(AppError::msg(crate::i18n::t("Yalnızca PNG, JPG, WEBP veya GIF yüklenebilir"))),
     };
     let bytes = tokio::fs::read(local).await?;
     if bytes.len() > 8 * 1024 * 1024 {
-        return Err(AppError::msg("Görsel en fazla 8 MB olabilir"));
+        return Err(AppError::msg(crate::i18n::t("Görsel en fazla 8 MB olabilir")));
     }
     let name = format!("{uid}/{folder}/{}.{ext}", uuid::Uuid::new_v4());
     let resp = http
@@ -400,13 +401,13 @@ pub async fn upload(http: &Http, root: &Path, local: &Path, folder: &str) -> Res
         .body(bytes)
         .send()
         .await
-        .map_err(|e| AppError::msg(format!("Yükleme başarısız: {e}")))?;
+        .map_err(|e| AppError::msg(crate::i18n::tf("Yükleme başarısız: {0}", &[&e])))?;
     if !resp.status().is_success() {
         let t = resp.text().await.unwrap_or_default();
         if t.contains("Bucket not found") {
-            return Err(AppError::msg("Görsel deposu yok: Supabase'te supabase/social.sql dosyasını çalıştır."));
+            return Err(AppError::msg(crate::i18n::t("Görsel deposu yok: Supabase'te supabase/social.sql dosyasını çalıştır.")));
         }
-        return Err(AppError::msg(format!("Yükleme başarısız: {}", t.chars().take(200).collect::<String>())));
+        return Err(AppError::msg(crate::i18n::tf("Yükleme başarısız: {0}", &[&t.chars().take(200).collect::<String>()])));
     }
     Ok(format!("{}/storage/v1/object/public/media/{name}", c.supabase_url))
 }

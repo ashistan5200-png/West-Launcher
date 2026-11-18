@@ -132,7 +132,7 @@ pub fn plan_hunt(state: State<'_, AppState>, id: String) -> Result<HuntPlan> {
 #[tauri::command]
 pub async fn start_hunt(app: AppHandle, state: State<'_, AppState>, id: String, auth: Option<AuthSession>, offline_name: Option<String>) -> Result<HuntPlan> {
     if state.running.lock().contains_key(&id) {
-        return Err(AppError::msg("Önce oyunu kapatın; Ashi oyunu kendisi açıp kapatacak"));
+        return Err(AppError::msg(crate::i18n::t("Önce oyunu kapatın; Ashi oyunu kendisi açıp kapatacak")));
     }
     if state.hunts.lock().contains_key(&id) {
         return Err(AppError::msg("Ashi zaten bu instance'ta avda"));
@@ -207,7 +207,7 @@ async fn hunt(ctx: &Ctx, mods: &[ModInfo], auth: AuthSession, cancel: &AtomicBoo
                         if planner.force_enable(i) {
                             retries += 1;
                             tracing::info!("Ashi: gizli bağımlılık bulundu, hep açık kalacak: {}", mods[i].name);
-                            ctx.emit("tested", Some(&planner), test.enabled.len(), Some("other"), None, Some(format!("{} gizli bir bağımlılık; açık tutuluyor", mods[i].name)));
+                            ctx.emit("tested", Some(&planner), test.enabled.len(), Some("other"), None, Some(crate::i18n::tf("{0} gizli bir bağımlılık; açık tutuluyor", &[&mods[i].name])));
                             continue;
                         }
                     }
@@ -328,7 +328,7 @@ async fn run_test(ctx: &Ctx, auth: AuthSession, cancel: &AtomicBool) -> Result<O
     st.watchers.lock().remove(&ctx.id);
 
     if user_closed {
-        return Err(AppError::msg("Oyun penceresi ana menüden önce kapatıldı; Ashi avı durdurdu. Avı tekrar başlatabilirsin."));
+        return Err(AppError::msg(crate::i18n::t("Oyun penceresi ana menüden önce kapatıldı; Ashi avı durdurdu. Avı tekrar başlatabilirsin.")));
     }
     if verdict == Some(false) {
         return Ok(Outcome::Ok);
@@ -362,7 +362,7 @@ async fn wait_exit(rx: &mut mpsc::UnboundedReceiver<GameSignal>) {
 #[tauri::command]
 pub fn cancel_hunt(app: AppHandle, state: State<'_, AppState>, id: String) -> Result<()> {
     let hunts = state.hunts.lock();
-    let h = hunts.get(&id).ok_or_else(|| AppError::NotFound("süren av".into()))?;
+    let h = hunts.get(&id).ok_or_else(|| AppError::NotFound(crate::i18n::t("süren av").into()))?;
     h.cancel.store(true, Ordering::Relaxed);
     drop(hunts);
     kill_game(&app.state::<AppState>(), &id);
@@ -377,7 +377,7 @@ pub fn disable_mods(state: State<'_, AppState>, id: String, files: Vec<String>) 
     let mut done = Vec::new();
     for f in files {
         if f.contains(['/', '\\']) || f.contains("..") || !f.ends_with(".jar") {
-            return Err(AppError::msg(format!("Geçersiz dosya adı: {f}")));
+            return Err(AppError::msg(crate::i18n::tf("Geçersiz dosya adı: {0}", &[&f])));
         }
         let src = dir.join(&f);
         if src.exists() {
@@ -430,7 +430,7 @@ pub async fn analyze_crash(state: State<'_, AppState>, id: String, file: Option<
 #[tauri::command]
 pub async fn fix_mod(state: State<'_, AppState>, id: String, file: String, location: Option<String>) -> Result<crate::crash::fixer::FixReport> {
     if state.running.lock().contains_key(&id) {
-        return Err(AppError::msg("Oyun açıkken mod düzeltilemez; önce oyunu kapat"));
+        return Err(AppError::msg(crate::i18n::t("Oyun açıkken mod düzeltilemez; önce oyunu kapat")));
     }
     let mods = state.paths.instance_game_dir(&id).join("mods");
     tokio::task::spawn_blocking(move || crate::crash::fixer::fix_bad_paths(&mods, &file, location.as_deref()))
@@ -442,7 +442,7 @@ pub async fn fix_mod(state: State<'_, AppState>, id: String, file: String, locat
 #[tauri::command]
 pub fn undo_fix(state: State<'_, AppState>, id: String, fixed: String, backup: String) -> Result<()> {
     if state.running.lock().contains_key(&id) {
-        return Err(AppError::msg("Oyun açıkken geri alınamaz; önce oyunu kapat"));
+        return Err(AppError::msg(crate::i18n::t("Oyun açıkken geri alınamaz; önce oyunu kapat")));
     }
     crate::crash::fixer::undo(&state.paths.instance_game_dir(&id).join("mods"), &fixed, &backup)
 }

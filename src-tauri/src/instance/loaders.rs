@@ -101,7 +101,7 @@ pub async fn install_loader(http: &Http, paths: &Paths, inst: &Instance, java: O
                     .await?
                     .into_iter()
                     .find(|v| v.stable)
-                    .ok_or_else(|| AppError::NotFound("uygun loader sürümü".into()))?
+                    .ok_or_else(|| AppError::NotFound(crate::i18n::t("uygun loader sürümü").into()))?
                     .version,
             };
             let base = if inst.loader.kind == LoaderKind::Fabric { FABRIC_META } else { QUILT_META };
@@ -111,14 +111,14 @@ pub async fn install_loader(http: &Http, paths: &Paths, inst: &Instance, java: O
             id
         }
         LoaderKind::Forge | LoaderKind::NeoForge => {
-            let java = java.ok_or_else(|| AppError::msg("Forge kurulumu için Java gerekli"))?;
+            let java = java.ok_or_else(|| AppError::msg(crate::i18n::t("Forge kurulumu için Java gerekli")))?;
             let lv = match &inst.loader.version {
                 Some(v) => v.clone(),
                 None => list_versions(http, inst.loader.kind, mc)
                     .await?
                     .into_iter()
                     .next()
-                    .ok_or_else(|| AppError::NotFound("uygun loader sürümü".into()))?
+                    .ok_or_else(|| AppError::NotFound(crate::i18n::t("uygun loader sürümü").into()))?
                     .version,
             };
             let url = if inst.loader.kind == LoaderKind::Forge {
@@ -157,7 +157,7 @@ async fn run_forge_installer(http: &Http, paths: &Paths, url: &str, java: &Path)
     let out = cmd.output().await?;
     if !out.status.success() {
         let tail: String = String::from_utf8_lossy(&out.stdout).lines().rev().take(15).collect::<Vec<_>>().join("\n");
-        return Err(AppError::msg(format!("Forge/NeoForge kurulumu başarısız:\n{tail}")));
+        return Err(AppError::msg(crate::i18n::tf("Forge/NeoForge kurulumu başarısız:\n{0}", &[&tail])));
     }
     let after = list_dirs(&paths.versions());
     let new_id = after
@@ -169,7 +169,7 @@ async fn run_forge_installer(http: &Http, paths: &Paths, url: &str, java: &Path)
             let file = installer.file_name()?.to_string_lossy().replace("-installer.jar", "");
             after.into_iter().find(|d| file.contains(d.as_str()) || d.ends_with(file.rsplit('-').next().unwrap_or("")))
         })
-        .ok_or_else(|| AppError::msg("Kurulan Forge sürümü tespit edilemedi"))?;
+        .ok_or_else(|| AppError::msg(crate::i18n::t("Kurulan Forge sürümü tespit edilemedi")))?;
     let _ = std::fs::remove_file(&installer);
     Ok(new_id)
 }

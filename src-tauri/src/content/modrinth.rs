@@ -236,14 +236,14 @@ pub async fn best_version(http: &Http, project_id: &str, game_version: &str, loa
         .find(|v| v.version_type == "release")
         .or_else(|| versions.first())
         .cloned()
-        .ok_or_else(|| AppError::NotFound(format!("{game_version}{} için uyumlu sürüm", loader.map(|l| format!(" / {l}")).unwrap_or_default())))
+        .ok_or_else(|| AppError::NotFound(crate::i18n::tf("{0}{1} için uyumlu sürüm", &[&game_version, &loader.map(|l| format!(" / {l}")).unwrap_or_default()])))
 }
 
 
 /// Keşfet ayrıntı sayfası: proje (açıklama, galeri, bağlantılar) ve sahip bilgisi.
 pub async fn project_detail(http: &Http, id: &str) -> Result<serde_json::Value> {
     if id.is_empty() || id.contains(['/', '?', '#', '.']) {
-        return Err(AppError::msg("Geçersiz proje"));
+        return Err(AppError::msg(crate::i18n::t("Geçersiz proje")));
     }
     let mut p: serde_json::Value = http.json(&format!("{API}/project/{id}")).await?;
     if let Some(team) = p["team"].as_str().map(String::from) {
@@ -261,7 +261,7 @@ pub async fn project_detail(http: &Http, id: &str) -> Result<serde_json::Value> 
 /// Sürüm geçmişi (en yeniden eskiye), her sürümün değişiklik notlarıyla.
 pub async fn project_versions(http: &Http, id: &str) -> Result<serde_json::Value> {
     if id.is_empty() || id.contains(['/', '?', '#', '.']) {
-        return Err(AppError::msg("Geçersiz proje"));
+        return Err(AppError::msg(crate::i18n::t("Geçersiz proje")));
     }
     http.json(&format!("{API}/project/{id}/version")).await
 }

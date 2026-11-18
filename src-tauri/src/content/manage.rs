@@ -395,9 +395,9 @@ fn urlencode(s: &str) -> String {
 
 /// "mods/x.jar" kimliğini güvenli bir yola çevirir; gerçek dosya (.disabled olabilir) döner.
 pub fn resolve(game_dir: &Path, id: &str) -> Result<(PathBuf, bool)> {
-    let (folder, name) = id.split_once('/').ok_or_else(|| AppError::msg("Geçersiz içerik"))?;
+    let (folder, name) = id.split_once('/').ok_or_else(|| AppError::msg(crate::i18n::t("Geçersiz içerik")))?;
     if !FOLDERS.iter().any(|(f, _)| *f == folder) || name.contains('/') || name.contains('\\') || name.contains("..") || name.is_empty() {
-        return Err(AppError::msg("Geçersiz içerik yolu"));
+        return Err(AppError::msg(crate::i18n::t("Geçersiz içerik yolu")));
     }
     let on = game_dir.join(folder).join(name);
     if on.exists() {
@@ -407,7 +407,7 @@ pub fn resolve(game_dir: &Path, id: &str) -> Result<(PathBuf, bool)> {
     if off.exists() {
         return Ok((off, false));
     }
-    Err(AppError::msg(format!("{name} bulunamadı")))
+    Err(AppError::msg(crate::i18n::tf("{0} bulunamadı", &[&name])))
 }
 
 pub fn set_enabled(game_dir: &Path, ids: &[String], enabled: bool) -> Result<()> {
@@ -460,7 +460,7 @@ pub async fn update(http: &Http, instance_dir: &Path, game_dir: &Path, backups: 
         let folder = c.id.split_once('/').unwrap().0;
         let result: Result<()> = async {
             if u.file_name.contains('/') || u.file_name.contains('\\') || u.file_name.contains("..") {
-                return Err(AppError::msg("Geçersiz dosya adı"));
+                return Err(AppError::msg(crate::i18n::t("Geçersiz dosya adı")));
             }
             let (old, enabled) = resolve(game_dir, &c.id)?;
             std::fs::create_dir_all(backup_dir.join(folder))?;
@@ -497,23 +497,23 @@ pub async fn update(http: &Http, instance_dir: &Path, game_dir: &Path, backups: 
 /// Eski dosya yedeklenir; açık/kapalı durumu korunur. Yeni dosyanın adını döndürür.
 pub async fn set_version(http: &Http, instance_dir: &Path, game_dir: &Path, backups: &Path, id: &str, version_id: &str) -> Result<String> {
     if version_id.is_empty() || version_id.contains(['/', '?', '#', '.']) {
-        return Err(AppError::msg("Geçersiz sürüm"));
+        return Err(AppError::msg(crate::i18n::t("Geçersiz sürüm")));
     }
-    let item = list(instance_dir, game_dir).into_iter().find(|c| c.id == id).ok_or_else(|| AppError::msg("İçerik bulunamadı"))?;
+    let item = list(instance_dir, game_dir).into_iter().find(|c| c.id == id).ok_or_else(|| AppError::msg(crate::i18n::t("İçerik bulunamadı")))?;
     let v: serde_json::Value = http.json(&format!("{MODRINTH}/version/{version_id}")).await?;
     if let (Some(want), Some(got)) = (item.project_id.as_deref(), v["project_id"].as_str()) {
         if want != got {
-            return Err(AppError::msg("Bu sürüm başka bir projeye ait"));
+            return Err(AppError::msg(crate::i18n::t("Bu sürüm başka bir projeye ait")));
         }
     }
     let files = v["files"].as_array().cloned().unwrap_or_default();
-    let f = files.iter().find(|f| f["primary"].as_bool() == Some(true)).or(files.first()).ok_or_else(|| AppError::msg("Sürümde dosya yok"))?;
+    let f = files.iter().find(|f| f["primary"].as_bool() == Some(true)).or(files.first()).ok_or_else(|| AppError::msg(crate::i18n::t("Sürümde dosya yok")))?;
     let name = f["filename"].as_str().unwrap_or_default().to_string();
     let url = f["url"].as_str().unwrap_or_default().to_string();
     if name.is_empty() || name.contains(['/', '\\']) || name.contains("..") || !url.starts_with("https://") {
-        return Err(AppError::msg("Geçersiz dosya"));
+        return Err(AppError::msg(crate::i18n::t("Geçersiz dosya")));
     }
-    let folder = id.split_once('/').ok_or_else(|| AppError::msg("Geçersiz içerik"))?.0;
+    let folder = id.split_once('/').ok_or_else(|| AppError::msg(crate::i18n::t("Geçersiz içerik")))?.0;
     let (old, enabled) = resolve(game_dir, id)?;
     let stamp = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
     let backup = backups.join(format!("content-{stamp}")).join(folder);
@@ -539,7 +539,7 @@ pub fn add_files(game_dir: &Path, paths: &[String]) -> Result<Vec<String>> {
     let mut added = vec![];
     for p in paths {
         let src = PathBuf::from(p);
-        let name = src.file_name().ok_or_else(|| AppError::msg("Geçersiz dosya"))?.to_string_lossy().to_string();
+        let name = src.file_name().ok_or_else(|| AppError::msg(crate::i18n::t("Geçersiz dosya")))?.to_string_lossy().to_string();
         let lower = name.to_lowercase();
         let folder = if lower.ends_with(".jar") {
             "mods"
@@ -547,7 +547,7 @@ pub fn add_files(game_dir: &Path, paths: &[String]) -> Result<Vec<String>> {
             let is_shader = std::fs::File::open(&src).ok().and_then(|f| zip::ZipArchive::new(f).ok()).map(|z| z.file_names().any(|n| n.starts_with("shaders/"))).unwrap_or(false);
             if is_shader { "shaderpacks" } else { "resourcepacks" }
         } else {
-            return Err(AppError::msg(format!("{name}: yalnızca .jar (mod) veya .zip (paket) eklenebilir")));
+            return Err(AppError::msg(crate::i18n::tf("{0}: yalnızca .jar (mod) veya .zip (paket) eklenebilir", &[&name])));
         };
         let dir = game_dir.join(folder);
         std::fs::create_dir_all(&dir)?;
@@ -595,10 +595,10 @@ pub fn worlds(game_dir: &Path) -> Vec<World> {
 
 fn world_dir(game_dir: &Path, folder: &str) -> Result<PathBuf> {
     if folder.is_empty() || folder.contains('/') || folder.contains('\\') || folder.contains("..") {
-        return Err(AppError::msg("Geçersiz dünya"));
+        return Err(AppError::msg(crate::i18n::t("Geçersiz dünya")));
     }
     let p = game_dir.join("saves").join(folder);
-    p.join("level.dat").exists().then_some(p).ok_or_else(|| AppError::msg("Dünya bulunamadı"))
+    p.join("level.dat").exists().then_some(p).ok_or_else(|| AppError::msg(crate::i18n::t("Dünya bulunamadı")))
 }
 
 /// Dünyayı zip olarak yedekler; en yeni `keep` yedek tutulur.
@@ -635,7 +635,7 @@ pub fn backup_world(game_dir: &Path, backups: &Path, folder: &str, keep: usize) 
 
 pub fn delete_world(game_dir: &Path, folder: &str) -> Result<()> {
     let p = world_dir(game_dir, folder)?;
-    trash::delete(&p).map_err(|e| AppError::msg(format!("Çöp kutusuna taşınamadı: {e}")))
+    trash::delete(&p).map_err(|e| AppError::msg(crate::i18n::tf("Çöp kutusuna taşınamadı: {0}", &[&e])))
 }
 
 // ───────── Loglar ─────────
@@ -668,9 +668,9 @@ pub fn logs(game_dir: &Path) -> Vec<LogFile> {
 
 /// Log dosyasının son ~1.5 MB'ını okur (.gz açılır).
 pub fn read_log(game_dir: &Path, rel: &str) -> Result<String> {
-    let (dir, name) = rel.split_once('/').ok_or_else(|| AppError::msg("Geçersiz log"))?;
+    let (dir, name) = rel.split_once('/').ok_or_else(|| AppError::msg(crate::i18n::t("Geçersiz log")))?;
     if !matches!(dir, "logs" | "crash-reports") || name.contains('/') || name.contains('\\') || name.contains("..") {
-        return Err(AppError::msg("Geçersiz log"));
+        return Err(AppError::msg(crate::i18n::t("Geçersiz log")));
     }
     let p = game_dir.join(dir).join(name);
     let mut bytes = Vec::new();
@@ -698,7 +698,7 @@ pub struct FileEntry {
 }
 
 pub fn list_dir(game_dir: &Path, rel: &str) -> Result<Vec<FileEntry>> {
-    let dir = if rel.is_empty() { game_dir.to_path_buf() } else { game_dir.join(super::safe_rel(rel).ok_or_else(|| AppError::msg("Geçersiz yol"))?) };
+    let dir = if rel.is_empty() { game_dir.to_path_buf() } else { game_dir.join(super::safe_rel(rel).ok_or_else(|| AppError::msg(crate::i18n::t("Geçersiz yol")))?) };
     let mut out: Vec<FileEntry> = std::fs::read_dir(&dir)?
         .flatten()
         .filter_map(|e| {

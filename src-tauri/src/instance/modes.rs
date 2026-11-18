@@ -87,7 +87,7 @@ fn current_state(game_dir: &Path) -> (Vec<String>, Vec<String>) {
 pub fn capture(instance_dir: &Path, game_dir: &Path, id: Option<&str>, name: &str, icon: &str, include_options: bool) -> Result<GameMode> {
     let name = name.trim();
     if name.is_empty() || name.chars().count() > 32 {
-        return Err(AppError::msg("Mod adı 1–32 karakter olmalı"));
+        return Err(AppError::msg(crate::i18n::t("Mod adı 1–32 karakter olmalı")));
     }
     let mut m = load(instance_dir);
     let (enabled, disabled) = current_state(game_dir);
@@ -106,7 +106,7 @@ pub fn capture(instance_dir: &Path, game_dir: &Path, id: Option<&str>, name: &st
         Some(x) => *x = mode.clone(),
         None => {
             if m.modes.len() >= 12 {
-                return Err(AppError::msg("En fazla 12 mod oluşturulabilir"));
+                return Err(AppError::msg(crate::i18n::t("En fazla 12 mod oluşturulabilir")));
             }
             m.modes.push(mode.clone());
         }
@@ -120,7 +120,7 @@ pub fn capture(instance_dir: &Path, game_dir: &Path, id: Option<&str>, name: &st
 /// Moda geçer: içerikleri açar/kapatır ve options.txt'yi geri yükler.
 pub fn apply(instance_dir: &Path, game_dir: &Path, id: &str) -> Result<ApplyReport> {
     let mut m = load(instance_dir);
-    let mode = m.modes.iter().find(|x| x.id == id).cloned().ok_or_else(|| AppError::msg("Mod bulunamadı"))?;
+    let mode = m.modes.iter().find(|x| x.id == id).cloned().ok_or_else(|| AppError::msg(crate::i18n::t("Mod bulunamadı")))?;
     let opts = game_dir.join("options.txt");
 
     // Çıkılan modun tuş atamalarını koru
@@ -159,10 +159,10 @@ pub fn delete(instance_dir: &Path, id: &str) -> Result<()> {
 
 pub fn rename(instance_dir: &Path, id: &str, name: &str, icon: &str) -> Result<()> {
     let mut m = load(instance_dir);
-    let x = m.modes.iter_mut().find(|x| x.id == id).ok_or_else(|| AppError::msg("Mod bulunamadı"))?;
+    let x = m.modes.iter_mut().find(|x| x.id == id).ok_or_else(|| AppError::msg(crate::i18n::t("Mod bulunamadı")))?;
     let name = name.trim();
     if name.is_empty() || name.chars().count() > 32 {
-        return Err(AppError::msg("Mod adı 1–32 karakter olmalı"));
+        return Err(AppError::msg(crate::i18n::t("Mod adı 1–32 karakter olmalı")));
     }
     x.name = name.to_string();
     x.icon = icon.chars().take(4).collect();

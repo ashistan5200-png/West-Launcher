@@ -21,7 +21,7 @@ fn ext(p: &Path) -> String {
 #[tauri::command]
 pub fn open_path(state: State<'_, AppState>, path: String, reveal: bool) -> Result<()> {
     if path.contains("://") {
-        return Err(AppError::msg("Geçersiz yol"));
+        return Err(AppError::msg(crate::i18n::t("Geçersiz yol")));
     }
     let p = PathBuf::from(&path);
     // Launcher'ın kendi klasörlerinden henüz oluşmamış olanı (ör. ilk açılıştan önce saves) oluştur
@@ -29,11 +29,11 @@ pub fn open_path(state: State<'_, AppState>, path: String, reveal: bool) -> Resu
         let _ = std::fs::create_dir_all(&p);
     }
     if !p.exists() {
-        return Err(AppError::msg("Bu klasör ya da dosya henüz yok"));
+        return Err(AppError::msg(crate::i18n::t("Bu klasör ya da dosya henüz yok")));
     }
     let is_dir = p.is_dir();
     let open_directly = is_dir || (!reveal && SAFE_OPEN.contains(&ext(&p).as_str()));
-    os_open(&p, !open_directly).map_err(|e| AppError::msg(format!("Açılamadı: {e}")))
+    os_open(&p, !open_directly).map_err(|e| AppError::msg(crate::i18n::tf("Açılamadı: {0}", &[&e])))
 }
 
 #[cfg(windows)]
@@ -70,7 +70,7 @@ fn os_open(p: &Path, select: bool) -> std::io::Result<()> {
 const TEXT_MAX: u64 = 2 * 1024 * 1024;
 
 fn instance_file(state: &AppState, instance_id: &str, rel: &str) -> Result<PathBuf> {
-    let r = safe_rel(rel).ok_or_else(|| AppError::msg("Geçersiz yol"))?;
+    let r = safe_rel(rel).ok_or_else(|| AppError::msg(crate::i18n::t("Geçersiz yol")))?;
     Ok(state.paths.instance_game_dir(instance_id).join(r))
 }
 
@@ -78,25 +78,25 @@ fn instance_file(state: &AppState, instance_id: &str, rel: &str) -> Result<PathB
 #[tauri::command]
 pub fn read_instance_text(state: State<'_, AppState>, instance_id: String, path: String) -> Result<String> {
     let p = instance_file(&state, &instance_id, &path)?;
-    let md = std::fs::metadata(&p).map_err(|_| AppError::msg("Dosya bulunamadı"))?;
+    let md = std::fs::metadata(&p).map_err(|_| AppError::msg(crate::i18n::t("Dosya bulunamadı")))?;
     if md.len() > TEXT_MAX {
-        return Err(AppError::msg("Dosya düzenlemek için çok büyük (en fazla 2 MB)"));
+        return Err(AppError::msg(crate::i18n::t("Dosya düzenlemek için çok büyük (en fazla 2 MB)")));
     }
     let bytes = std::fs::read(&p)?;
     if bytes.contains(&0) {
-        return Err(AppError::msg("Bu dosya metin değil; uygulama içinde düzenlenemez"));
+        return Err(AppError::msg(crate::i18n::t("Bu dosya metin değil; uygulama içinde düzenlenemez")));
     }
-    String::from_utf8(bytes).map_err(|_| AppError::msg("Dosya UTF-8 metin değil; uygulama içinde düzenlenemez"))
+    String::from_utf8(bytes).map_err(|_| AppError::msg(crate::i18n::t("Dosya UTF-8 metin değil; uygulama içinde düzenlenemez")))
 }
 
 #[tauri::command]
 pub fn write_instance_text(state: State<'_, AppState>, instance_id: String, path: String, content: String) -> Result<()> {
     let p = instance_file(&state, &instance_id, &path)?;
     if !p.is_file() {
-        return Err(AppError::msg("Dosya bulunamadı"));
+        return Err(AppError::msg(crate::i18n::t("Dosya bulunamadı")));
     }
     if content.len() as u64 > TEXT_MAX {
-        return Err(AppError::msg("Dosya çok büyük"));
+        return Err(AppError::msg(crate::i18n::t("Dosya çok büyük")));
     }
     let tmp = p.with_extension("west-tmp");
     std::fs::write(&tmp, content.as_bytes())?;
@@ -115,11 +115,11 @@ pub fn read_image_data(path: String) -> Result<String> {
     let p = PathBuf::from(&path);
     let e = ext(&p);
     if !IMAGE_EXTS.contains(&e.as_str()) {
-        return Err(AppError::msg("Yalnızca PNG, JPG, WEBP veya GIF seçilebilir"));
+        return Err(AppError::msg(crate::i18n::t("Yalnızca PNG, JPG, WEBP veya GIF seçilebilir")));
     }
-    let md = std::fs::metadata(&p).map_err(|_| AppError::msg("Görsel bulunamadı"))?;
+    let md = std::fs::metadata(&p).map_err(|_| AppError::msg(crate::i18n::t("Görsel bulunamadı")))?;
     if md.len() > 25 * 1024 * 1024 {
-        return Err(AppError::msg("Görsel en fazla 25 MB olabilir"));
+        return Err(AppError::msg(crate::i18n::t("Görsel en fazla 25 MB olabilir")));
     }
     let mime = if e == "jpg" || e == "jpeg" { "image/jpeg".to_string() } else { format!("image/{e}") };
     Ok(format!("data:{mime};base64,{}", base64::engine::general_purpose::STANDARD.encode(std::fs::read(&p)?)))
@@ -130,12 +130,12 @@ pub fn read_image_data(path: String) -> Result<String> {
 pub fn save_temp_image(state: State<'_, AppState>, data: String, ext: String) -> Result<String> {
     let e = ext.to_lowercase();
     if !["png", "jpg", "jpeg", "webp"].contains(&e.as_str()) {
-        return Err(AppError::msg("Geçersiz görsel türü"));
+        return Err(AppError::msg(crate::i18n::t("Geçersiz görsel türü")));
     }
     let b64 = data.split_once(',').map(|x| x.1).unwrap_or(&data);
-    let bytes = base64::engine::general_purpose::STANDARD.decode(b64).map_err(|_| AppError::msg("Görsel verisi bozuk"))?;
+    let bytes = base64::engine::general_purpose::STANDARD.decode(b64).map_err(|_| AppError::msg(crate::i18n::t("Görsel verisi bozuk")))?;
     if bytes.len() > 8 * 1024 * 1024 {
-        return Err(AppError::msg("Görsel en fazla 8 MB olabilir"));
+        return Err(AppError::msg(crate::i18n::t("Görsel en fazla 8 MB olabilir")));
     }
     let dir = state.paths.root.join("cache").join("crops");
     std::fs::create_dir_all(&dir)?;

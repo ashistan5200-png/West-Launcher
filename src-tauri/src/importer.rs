@@ -226,7 +226,7 @@ fn scan_official(mc_dir: &Path, out: &mut Vec<Found>) {
         let game = p["gameDir"].as_str().map(PathBuf::from).unwrap_or_else(|| mc_dir.to_path_buf());
         let last = p["lastVersionId"].as_str().unwrap_or("");
         let name = p["name"].as_str().filter(|s| !s.is_empty()).map(String::from).unwrap_or_else(|| match p["type"].as_str() {
-            Some("latest-release") => "Son sürüm".into(),
+            Some("latest-release") => crate::i18n::t("Son sürüm"),
             Some("latest-snapshot") => "Son snapshot".into(),
             _ => last.to_string(),
         });
@@ -313,7 +313,7 @@ fn copy_into(src: &Path, dst: &Path, on_file: &mut dyn FnMut(u64)) -> Result<u64
 /// Bulunan bir instance'ı West'e kopyalar. `mc_version` kullanıcı tarafından
 /// düzeltilebilir (meta veri yoksa).
 pub fn import(paths: &Paths, f: &Found, mc_version: Option<String>, include_worlds: bool, mut progress: impl FnMut(u64)) -> Result<Instance> {
-    let mc = mc_version.or(f.mc_version.clone()).ok_or_else(|| AppError::msg(format!("\"{}\" için Minecraft sürümü belirlenemedi; listeden seç", f.name)))?;
+    let mc = mc_version.or(f.mc_version.clone()).ok_or_else(|| AppError::msg(crate::i18n::tf("\"{0}\" için Minecraft sürümü belirlenemedi; listeden seç", &[&f.name])))?;
     let src = PathBuf::from(&f.game_dir);
     if !src.is_dir() {
         return Err(AppError::NotFound(f.game_dir.clone()));

@@ -22,7 +22,7 @@ fn client_id(state: &AppState) -> Result<String> {
         .microsoft_client_id
         .clone()
         .filter(|s| !s.trim().is_empty())
-        .ok_or_else(|| AppError::msg("Microsoft girişi için Ayarlar → Hesaplar ve anahtarlar bölümüne bir Azure uygulama (client) kimliği girin."))
+        .ok_or_else(|| AppError::msg(crate::i18n::t("Microsoft girişi için Ayarlar → Hesaplar ve anahtarlar bölümüne bir Azure uygulama (client) kimliği girin.")))
 }
 
 #[tauri::command]
@@ -85,7 +85,7 @@ pub async fn ms_login_start(app: AppHandle, state: State<'_, AppState>) -> Resul
                     return Ok(None);
                 }
                 if std::time::Instant::now() > deadline {
-                    return Err(AppError::msg("Kodun süresi doldu"));
+                    return Err(AppError::msg(crate::i18n::t("Kodun süresi doldu")));
                 }
                 match microsoft::poll(&st.http, &cid, &dc.device_code).await? {
                     microsoft::Poll::Pending => {}
@@ -149,7 +149,7 @@ pub async fn ms_login_window(app: AppHandle) -> Result<()> {
     let nav_tx = tx.clone();
     let load_tx = tx.clone();
     let win = tauri::WebviewWindowBuilder::new(&app, LOGIN_WINDOW, tauri::WebviewUrl::External(url))
-        .title("Microsoft ile giriş · West Client")
+        .title(&crate::i18n::t("Microsoft ile giriş · West Client"))
         .inner_size(500.0, 680.0)
         .min_inner_size(420.0, 560.0)
         .center()
@@ -172,7 +172,7 @@ pub async fn ms_login_window(app: AppHandle) -> Result<()> {
             }
         })
         .build()
-        .map_err(|e| AppError::msg(format!("Giriş penceresi açılamadı: {e}")))?;
+        .map_err(|e| AppError::msg(crate::i18n::tf("Giriş penceresi açılamadı: {0}", &[&e])))?;
 
     let close_tx = tx.clone();
     win.on_window_event(move |e| {
@@ -213,7 +213,7 @@ pub async fn ms_login_window(app: AppHandle) -> Result<()> {
                 let stage_app = app.clone();
                 let stage = move |m: &'static str| {
                     tracing::info!("ms-login: {m}");
-                    let _ = stage_app.emit(EV_MS_LOGIN, LoginEvent { status: "progress", username: None, message: Some(m.into()) });
+                    let _ = stage_app.emit(EV_MS_LOGIN, LoginEvent { status: "progress", username: None, message: Some(crate::i18n::t(m)) });
                 };
                 stage("Microsoft oturumu doğrulanıyor…");
                 let work = async {
@@ -231,7 +231,7 @@ pub async fn ms_login_window(app: AppHandle) -> Result<()> {
                         tracing::warn!("ms-login başarısız: {e}");
                         e
                     }),
-                    Err(_) => Err(AppError::msg("Microsoft/Xbox sunucuları zamanında yanıt vermedi. İnternet bağlantını kontrol edip tekrar dene.")),
+                    Err(_) => Err(AppError::msg(crate::i18n::t("Microsoft/Xbox sunucuları zamanında yanıt vermedi. İnternet bağlantını kontrol edip tekrar dene."))),
                 };
                 match done {
                     Ok(name) => LoginEvent { status: "done", username: Some(name), message: None },
@@ -333,7 +333,7 @@ pub async fn set_account_cape(state: State<'_, AppState>, account: String, cape_
     let cid = state.settings.read().microsoft_client_id.clone().unwrap_or_default();
     let acc = s.get_mut(&account)?;
     if acc.ms.is_none() {
-        return Err(AppError::msg("Pelerin yalnızca Microsoft hesaplarında değiştirilebilir"));
+        return Err(AppError::msg(crate::i18n::t("Pelerin yalnızca Microsoft hesaplarında değiştirilebilir")));
     }
     microsoft::ensure_fresh(&state.http, &cid, acc).await?;
     let token = acc.ms.as_ref().unwrap().mc_access_token.clone();

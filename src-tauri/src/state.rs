@@ -54,6 +54,7 @@ pub struct AppState {
 impl AppState {
     pub fn new(paths: Paths) -> Self {
         let settings = Settings::load(&paths.settings_file());
+        crate::i18n::set_lang(&settings.language);
         let discord = crate::discord::Discord::start(settings.discord_client_id.clone(), settings.discord_rpc);
         Self {
             paths,

@@ -82,7 +82,7 @@ pub fn build_args(paths: &Paths, version: &VersionJson, libs: &ResolvedLibraries
     let main_class = version
         .main_class
         .clone()
-        .ok_or_else(|| AppError::msg("Sürümde mainClass tanımlı değil"))?;
+        .ok_or_else(|| AppError::msg(crate::i18n::t("Sürümde mainClass tanımlı değil")))?;
 
     let client_jar = ensure_client_jar(paths, version)?;
     let sep = classpath_separator();
@@ -201,7 +201,7 @@ pub async fn spawn(java: &Path, args: Vec<String>, cwd: &Path, on_log: LogFn, on
         const CREATE_NO_WINDOW: u32 = 0x0800_0000;
         cmd.creation_flags(CREATE_NO_WINDOW);
     }
-    let mut child = cmd.spawn().map_err(|e| AppError::msg(format!("Java başlatılamadı ({}): {e}", java.display())))?;
+    let mut child = cmd.spawn().map_err(|e| AppError::msg(crate::i18n::tf("Java başlatılamadı ({0}): {1}", &[&java.display(), &e])))?;
     let pid = child.id().unwrap_or(0);
 
     if let Some(out) = child.stdout.take() {

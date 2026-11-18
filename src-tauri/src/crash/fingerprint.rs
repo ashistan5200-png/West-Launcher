@@ -103,8 +103,8 @@ impl Fingerprint {
                 let short = class.rsplit('.').next().unwrap_or(class);
                 if message.is_empty() { short.to_string() } else { format!("{short}: {message}") }
             }
-            Fingerprint::Hang => "Oyun yüklenirken takıldı".into(),
-            Fingerprint::Unknown => "Bilinmeyen çökme".into(),
+            Fingerprint::Hang => crate::i18n::t("Oyun yüklenirken takıldı"),
+            Fingerprint::Unknown => crate::i18n::t("Bilinmeyen çökme"),
         }
     }
 }

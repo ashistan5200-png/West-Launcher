@@ -4,15 +4,15 @@ use serde::{Serialize, Serializer};
 pub enum AppError {
     #[error("{}", io_text(.0))]
     Io(#[from] std::io::Error),
-    #[error("Ağ hatası: {0}")]
+    #[error("{}", crate::i18n::tf("Ağ hatası: {0}", &[.0]))]
     Http(#[from] reqwest::Error),
-    #[error("JSON hatası: {0}")]
+    #[error("{}", crate::i18n::tf("JSON hatası: {0}", &[.0]))]
     Json(#[from] serde_json::Error),
-    #[error("Arşiv hatası: {0}")]
+    #[error("{}", crate::i18n::tf("Arşiv hatası: {0}", &[.0]))]
     Zip(#[from] zip::result::ZipError),
-    #[error("Dosya doğrulanamadı ({path}): beklenen {expected}, bulunan {actual}")]
+    #[error("{}", crate::i18n::tf("Dosya doğrulanamadı ({0}): beklenen {1}, bulunan {2}", &[path, expected, actual]))]
     Hash { path: String, expected: String, actual: String },
-    #[error("Bulunamadı: {0}")]
+    #[error("{}", crate::i18n::tf("Bulunamadı: {0}", &[.0]))]
     NotFound(String),
     #[error("{0}")]
     Msg(String),
@@ -22,11 +22,12 @@ pub enum AppError {
 /// program tarafından kullanıldığı anlamına gelir: henüz tam kapanmamış oyun ya da dosyayı tarayan antivirüs.
 fn io_text(e: &std::io::Error) -> String {
     match e.kind() {
-        std::io::ErrorKind::PermissionDenied => format!(
-            "Bir dosyaya erişilemedi; başka bir program kullanıyor olabilir (hâlâ kapanmakta olan oyun ya da antivirüs). Birkaç saniye bekleyip tekrar dene. ({e})"
+        std::io::ErrorKind::PermissionDenied => crate::i18n::tf(
+            "Bir dosyaya erişilemedi; başka bir program kullanıyor olabilir (hâlâ kapanmakta olan oyun ya da antivirüs). Birkaç saniye bekleyip tekrar dene. ({0})",
+            &[&e],
         ),
-        std::io::ErrorKind::StorageFull => format!("Diskte yer kalmadı. Biraz yer açıp tekrar dene. ({e})"),
-        _ => format!("Dosya hatası: {e}"),
+        std::io::ErrorKind::StorageFull => crate::i18n::tf("Diskte yer kalmadı. Biraz yer açıp tekrar dene. ({0})", &[&e]),
+        _ => crate::i18n::tf("Dosya hatası: {0}", &[&e]),
     }
 }
 

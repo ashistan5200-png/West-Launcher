@@ -55,7 +55,7 @@ async fn serve(mut sock: TcpStream, http: &Http, root: &PathBuf, key: &str) -> R
     let mut tmp = [0u8; 4096];
     let head_end;
     loop {
-        let n = tokio::time::timeout(std::time::Duration::from_secs(10), sock.read(&mut tmp)).await.map_err(|_| AppError::msg("zaman aşımı"))??;
+        let n = tokio::time::timeout(std::time::Duration::from_secs(10), sock.read(&mut tmp)).await.map_err(|_| AppError::msg(crate::i18n::t("zaman aşımı")))??;
         if n == 0 {
             return Ok(());
         }
@@ -172,7 +172,7 @@ const PROFILE_COLS: &str = "id,username,display_name,avatar_url,mc_username";
 const INVITE_TAG: &str = "[west-davet]";
 
 async fn me(http: &Http, root: &PathBuf) -> Result<String> {
-    cloud::current_user(http, root).await.ok_or_else(|| AppError::msg("West hesabına giriş yapılmamış"))
+    cloud::current_user(http, root).await.ok_or_else(|| AppError::msg(crate::i18n::t("West hesabına giriş yapılmamış")))
 }
 
 async fn profiles(http: &Http, root: &PathBuf, ids: &[String]) -> Result<Vec<Value>> {
@@ -262,13 +262,13 @@ async fn route(http: &Http, root: &PathBuf, method: &str, path: &str, query: &st
             let c = body["c"].as_str().filter(|c| uuid_ok(c)).ok_or_else(|| AppError::msg("sohbet yok"))?;
             let text = body["body"].as_str().unwrap_or("").trim().chars().take(2000).collect::<String>();
             if text.is_empty() {
-                return Err(AppError::msg("boş mesaj"));
+                return Err(AppError::msg(crate::i18n::t("boş mesaj")));
             }
             db(http, root, "POST", "messages", vec![], Some(json!({ "conversation_id": c, "body": text, "media": [] })), Some("return=minimal")).await?;
             Ok(json!({ "ok": true }))
         }
         ("POST", "/dm") => {
-            let u = body["user"].as_str().filter(|u| uuid_ok(u)).ok_or_else(|| AppError::msg("kişi yok"))?;
+            let u = body["user"].as_str().filter(|u| uuid_ok(u)).ok_or_else(|| AppError::msg(crate::i18n::t("kişi yok")))?;
             let v = cloud::api(http, root, "POST", "/rest/v1/rpc/start_dm", &[], Some(json!({ "other": u })), None).await?;
             Ok(json!({ "id": v }))
         }
@@ -299,7 +299,7 @@ async fn route(http: &Http, root: &PathBuf, method: &str, path: &str, query: &st
         }
         ("POST", "/accept") | ("POST", "/decline") => {
             let id = me(http, root).await?;
-            let u = body["user"].as_str().filter(|u| uuid_ok(u)).ok_or_else(|| AppError::msg("kişi yok"))?;
+            let u = body["user"].as_str().filter(|u| uuid_ok(u)).ok_or_else(|| AppError::msg(crate::i18n::t("kişi yok")))?;
             if path == "/accept" {
                 db(http, root, "PATCH", "follows", vec![("follower_id", format!("eq.{u}")), ("following_id", format!("eq.{id}"))], Some(json!({ "status": "accepted" })), None).await?;
                 // Arkadaşlık karşılıklı takip: geri takip et
@@ -313,10 +313,10 @@ async fn route(http: &Http, root: &PathBuf, method: &str, path: &str, query: &st
             let id = me(http, root).await?;
             let name = clean(body["username"].as_str().unwrap_or(""));
             if name.is_empty() {
-                return Err(AppError::msg("kullanıcı adı yaz"));
+                return Err(AppError::msg(crate::i18n::t("kullanıcı adı yaz")));
             }
             let v = db(http, root, "GET", "profiles", vec![("select", PROFILE_COLS.into()), ("username", format!("ilike.{name}")), ("limit", "1".into())], None, None).await?;
-            let p = v.as_array().and_then(|a| a.first().cloned()).ok_or_else(|| AppError::msg("Bu kullanıcı adıyla bir West hesabı yok"))?;
+            let p = v.as_array().and_then(|a| a.first().cloned()).ok_or_else(|| AppError::msg(crate::i18n::t("Bu kullanıcı adıyla bir West hesabı yok")))?;
             let other = p["id"].as_str().unwrap_or_default();
             if other == id {
                 return Err(AppError::msg("Kendini ekleyemezsin"));

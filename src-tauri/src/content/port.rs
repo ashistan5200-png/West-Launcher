@@ -85,7 +85,7 @@ async fn lookup(http: &Http, items: &[ContentFile], mc: &str, loader: Option<&st
             .json(&body)
             .send()
             .await
-            .map_err(|_| AppError::msg("Modrinth'e ulaşılamadı; internet bağlantını kontrol et"))?
+            .map_err(|_| AppError::msg(crate::i18n::t("Modrinth'e ulaşılamadı; internet bağlantını kontrol et")))?
             .error_for_status()?;
         out.extend(resp.json::<HashMap<String, MrVersion>>().await.unwrap_or_default());
     }
@@ -181,7 +181,7 @@ pub async fn apply(
                 }
                 let r: Result<()> = async {
                     if f.filename.contains(['/', '\\']) || f.filename.contains("..") || !f.url.starts_with("https://") {
-                        return Err(AppError::msg("Geçersiz dosya"));
+                        return Err(AppError::msg(crate::i18n::t("Geçersiz dosya")));
                     }
                     let (old, enabled) = resolve(game_dir, &c.id)?;
                     let target = game_dir.join(&folder).join(if enabled { f.filename.clone() } else { format!("{}{DISABLED}", f.filename) });
@@ -245,10 +245,10 @@ pub async fn apply(
             progress: progress.clone(),
         };
         for (n, pid) in missing_deps.iter().enumerate() {
-            p(&progress, &task, "deps", n as u64, missing_deps.len() as u64, "Bağımlılıklar");
+            p(&progress, &task, "deps", n as u64, missing_deps.len() as u64, &crate::i18n::t("Bağımlılıklar"));
             match install(&ctx, Source::Modrinth, pid, Kind::Mod).await {
                 Ok(r) => rep.dependencies.extend(r.installed.into_iter().map(|i| i.title)),
-                Err(e) => rep.failed.push(format!("Bağımlılık {pid}: {e}")),
+                Err(e) => rep.failed.push(crate::i18n::tf("Bağımlılık {0}: {1}", &[&pid, &e])),
             }
         }
     }
@@ -257,7 +257,7 @@ pub async fn apply(
 }
 
 fn p(progress: &ProgressFn, task: &str, stage: &str, cur: u64, total: u64, msg: &str) {
-    progress(crate::core::Progress { task: task.into(), stage: stage.into(), current: cur, total, message: Some(format!("Ashi Taşıyıcı: {msg}")) });
+    progress(crate::core::Progress { task: task.into(), stage: stage.into(), current: cur, total, message: Some(crate::i18n::tf("Ashi Taşıyıcı: {0}", &[&msg])) });
 }
 
 #[cfg(test)]

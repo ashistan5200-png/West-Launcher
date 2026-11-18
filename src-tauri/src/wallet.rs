@@ -228,17 +228,22 @@ fn remember(root: &Path, w: &Wallet) {
     let _ = crate::util::write_json_atomic(&cache_file(root), w);
 }
 
-/// Sunucu hata metnini kullanıcıya anlaşılır hale getir
+/// Sunucu hata metnini kullanıcıya anlaşılır ve seçili dilde hale getir
 fn friendly(e: AppError) -> AppError {
     let s = e.to_string();
-    if s.contains("login") || s.contains("giriş yapmalısın") || s.contains("JWT") {
-        return AppError::msg("West Coin için West hesabına giriş yap");
+    let login = crate::i18n::t("Bunun için West hesabına giriş yapmalısın.");
+    if s.contains("login") || s.contains("giriş yapmalısın") || s.contains(login.trim_end_matches('.')) || s.contains("JWT") {
+        return AppError::msg(crate::i18n::t("West Coin için West hesabına giriş yap"));
     }
-    // PostgREST hata gövdesinden "message" alanı
+    // PostgREST hata gövdesinden "message" alanı (sunucu mesajları Türkçedir; burada çevrilir)
     if let Some(i) = s.find("\"message\":\"") {
         let rest = &s[i + 11..];
         if let Some(j) = rest.find('"') {
-            return AppError::msg(rest[..j].to_string());
+            let m = &rest[..j];
+            if let Some(n) = m.strip_prefix("Yeterli West Coin yok (").and_then(|r| r.strip_suffix(" gerekiyor)")) {
+                return AppError::msg(crate::i18n::tf("Yeterli West Coin yok ({0} gerekiyor)", &[&n]));
+            }
+            return AppError::msg(crate::i18n::t(m));
         }
     }
     e

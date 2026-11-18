@@ -73,11 +73,11 @@ pub fn list(paths: &Paths, only: Option<&str>) -> Result<Vec<Screenshot>> {
 /// Yolun gerçekten bir instance'ın screenshots klasöründe olduğunu doğrular
 /// (UI'dan gelen yollarla rastgele dosya silinmesini/okunmasını engeller).
 pub fn guard(paths: &Paths, path: &str) -> Result<PathBuf> {
-    let p = std::fs::canonicalize(path).map_err(|_| AppError::NotFound("ekran görüntüsü".into()))?;
+    let p = std::fs::canonicalize(path).map_err(|_| AppError::NotFound(crate::i18n::t("ekran görüntüsü").into()))?;
     let root = std::fs::canonicalize(paths.instances()).unwrap_or_else(|_| paths.instances());
     let ok = p.starts_with(&root) && p.parent().and_then(|d| d.file_name()).map(|n| n == "screenshots").unwrap_or(false) && is_image(&p);
     if !ok {
-        return Err(AppError::msg("Bu dosya bir ekran görüntüsü klasöründe değil"));
+        return Err(AppError::msg(crate::i18n::t("Bu dosya bir ekran görüntüsü klasöründe değil")));
     }
     Ok(p)
 }
@@ -90,7 +90,7 @@ pub fn make_thumb(paths: &Paths, file: &Path) -> Result<PathBuf> {
     if out.exists() {
         return Ok(out);
     }
-    let img = image::open(file).map_err(|e| AppError::msg(format!("görüntü açılamadı: {e}")))?;
+    let img = image::open(file).map_err(|e| AppError::msg(crate::i18n::tf("görüntü açılamadı: {0}", &[&e])))?;
     let thumb = img.thumbnail(THUMB_W, THUMB_H).to_rgb8();
     if let Some(dir) = out.parent() {
         std::fs::create_dir_all(dir)?;
@@ -105,9 +105,9 @@ pub fn make_thumb(paths: &Paths, file: &Path) -> Result<PathBuf> {
 /// Düzenlenmiş görüntüyü orijinalin yanına `<ad>_west-edit[N].png` olarak yazar.
 pub fn save_edit(original: &Path, png: &[u8]) -> Result<PathBuf> {
     if png.len() < 8 || &png[..8] != b"\x89PNG\r\n\x1a\n" {
-        return Err(AppError::msg("Düzenleyiciden geçerli bir PNG gelmedi"));
+        return Err(AppError::msg(crate::i18n::t("Düzenleyiciden geçerli bir PNG gelmedi")));
     }
-    let dir = original.parent().ok_or_else(|| AppError::msg("klasör yok"))?;
+    let dir = original.parent().ok_or_else(|| AppError::msg(crate::i18n::t("klasör yok")))?;
     let stem = original.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_else(|| "screenshot".into());
     let stem = stem.split("_west-edit").next().unwrap_or(&stem).to_string();
     let mut n = 1;

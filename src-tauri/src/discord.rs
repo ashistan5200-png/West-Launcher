@@ -97,7 +97,7 @@ fn worker(rx: Receiver<Presence>, mut client_id: Option<String>, mut enabled: bo
                     .timestamps(activity::Timestamps::new().start(*started_unix))
                     .assets(assets),
             ),
-            _ => c.set_activity(activity::Activity::new().details("Launcher'da").state("Rotasını belirliyor").assets(assets)),
+            _ => c.set_activity(activity::Activity::new().details(&crate::i18n::t("Launcher'da")).state(&crate::i18n::t("Rotasını belirliyor")).assets(assets)),
         };
         if res.is_err() {
             client = None; // bağlantı koptu → sonraki turda yeniden bağlan

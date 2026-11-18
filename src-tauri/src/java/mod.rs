@@ -206,9 +206,9 @@ async fn install_inner(http: &Http, paths: &Paths, major: u32, task: &str, progr
         .flatten()
         .find(|e| e.file_name() == java_bin_name() && e.path().parent().map(|p| p.ends_with("bin")).unwrap_or(false))
         .map(|e| e.into_path())
-        .ok_or_else(|| AppError::msg("Kurulan arşivde java bulunamadı"))?;
+        .ok_or_else(|| AppError::msg(crate::i18n::t("Kurulan arşivde java bulunamadı")))?;
     report(progress, task, "java", 1, 1);
-    let mut j = probe(&bin).await.ok_or_else(|| AppError::msg("Kurulan Java çalıştırılamadı"))?;
+    let mut j = probe(&bin).await.ok_or_else(|| AppError::msg(crate::i18n::t("Kurulan Java çalıştırılamadı")))?;
     j.managed = true;
     Ok(j)
 }

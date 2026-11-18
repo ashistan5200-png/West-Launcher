@@ -50,7 +50,7 @@ pub async fn install(ctx: &InstallCtx<'_>, source: Source, project_id: &str, kin
         return Err(AppError::msg("Modpack'ler yeni bir instance olarak kurulur"));
     }
     if kind == Kind::Mod && ctx.loader.is_none() {
-        return Err(AppError::msg("Vanilla bir instance'a mod kurulamaz; Fabric, Quilt, Forge veya NeoForge instance'ı seçin"));
+        return Err(AppError::msg(crate::i18n::t("Vanilla bir instance'a mod kurulamaz; Fabric, Quilt, Forge veya NeoForge instance'ı seçin")));
     }
     let mut index = load_index(&ctx.instance_dir);
     // Elle eklenmiş jar'ların sağladığı mod kimlikleri (slug eşleşmesiyle atlamak için)
@@ -89,7 +89,7 @@ pub async fn install(ctx: &InstallCtx<'_>, source: Source, project_id: &str, kin
             Ok(None) => {}
             // Ana projenin hatası kurulumu durdurur; bağımlılık hatası uyarı olur
             Err(e) if job.dependency_of.is_none() => return Err(e),
-            Err(e) => rep.warnings.push(format!("{} için bağımlılık kurulamadı: {e}", job.dependency_of.as_deref().unwrap_or("?"))),
+            Err(e) => rep.warnings.push(crate::i18n::tf("{0} için bağımlılık kurulamadı: {1}", &[&job.dependency_of.as_deref().unwrap_or("?"), &e])),
         }
         done += 1;
     }
@@ -98,7 +98,7 @@ pub async fn install(ctx: &InstallCtx<'_>, source: Source, project_id: &str, kin
 }
 
 fn target(ctx: &InstallCtx<'_>, kind: Kind, file: &str) -> Result<PathBuf> {
-    let name = std::path::Path::new(file).file_name().and_then(|n| n.to_str()).ok_or_else(|| AppError::msg("geçersiz dosya adı"))?;
+    let name = std::path::Path::new(file).file_name().and_then(|n| n.to_str()).ok_or_else(|| AppError::msg(crate::i18n::t("geçersiz dosya adı")))?;
     Ok(ctx.game_dir.join(kind.folder()).join(name))
 }
 
@@ -109,7 +109,7 @@ async fn install_modrinth(ctx: &InstallCtx<'_>, job: &Job, provided: &HashSet<St
     }
     let loader = if job.kind == Kind::Mod { ctx.loader.as_deref() } else { None };
     let v = modrinth::best_version(ctx.http, &project.id, &ctx.mc_version, loader).await?;
-    let file = v.primary_file().cloned().ok_or_else(|| AppError::NotFound(format!("{} dosyası", project.title)))?;
+    let file = v.primary_file().cloned().ok_or_else(|| AppError::NotFound(crate::i18n::tf("{0} dosyası", &[&project.title])))?;
     let dest = target(ctx, job.kind, &file.filename)?;
     ctx.http
         .download(&DownloadTask { url: file.url.clone(), path: dest, sha1: file.hashes.get("sha1").cloned(), size: Some(file.size) })
@@ -135,8 +135,8 @@ async fn install_modrinth(ctx: &InstallCtx<'_>, job: &Job, provided: &HashSet<St
 }
 
 async fn install_curseforge(ctx: &InstallCtx<'_>, job: &Job, provided: &HashSet<String>, queue: &mut VecDeque<Job>) -> Result<Option<InstalledContent>> {
-    let key = ctx.cf_key.ok_or_else(|| AppError::msg("CurseForge için API anahtarı gerekli"))?;
-    let id: u64 = job.project_id.parse().map_err(|_| AppError::msg("geçersiz CurseForge kimliği"))?;
+    let key = ctx.cf_key.ok_or_else(|| AppError::msg(crate::i18n::t("CurseForge için API anahtarı gerekli")))?;
+    let id: u64 = job.project_id.parse().map_err(|_| AppError::msg(crate::i18n::t("geçersiz CurseForge kimliği")))?;
     let m = curseforge::get_mod(ctx.http, key, id).await?;
     if job.dependency_of.is_some() && provided.contains(&m.slug) {
         return Ok(None);
@@ -147,7 +147,7 @@ async fn install_curseforge(ctx: &InstallCtx<'_>, job: &Job, provided: &HashSet<
     ctx.http
         .download(&DownloadTask { url: f.url(), path: dest, sha1: f.sha1(), size: (f.file_length > 0).then_some(f.file_length) })
         .await
-        .map_err(|e| AppError::msg(format!("{} indirilemedi (yazar üçüncü taraf indirmeyi kapatmış olabilir): {e}", m.name)))?;
+        .map_err(|e| AppError::msg(crate::i18n::tf("{0} indirilemedi (yazar üçüncü taraf indirmeyi kapatmış olabilir): {1}", &[&m.name, &e])))?;
     for d in f.dependencies.iter().filter(|d| d.relation_type == 3) {
         queue.push_back(Job { source: Source::Curseforge, project_id: d.mod_id.to_string(), kind: Kind::Mod, dependency_of: Some(m.name.clone()) });
     }

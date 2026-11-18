@@ -61,7 +61,7 @@ pub async fn patch_notes(http: &Http, paths: &Paths, limit: usize) -> Result<Vec
 /// Notun tam HTML gövdesi (UI tarafında temizlenerek gösterilir).
 pub async fn patch_note_body(http: &Http, content_path: &str) -> Result<String> {
     if content_path.contains("..") || !content_path.starts_with("javaPatchNotes/") {
-        return Err(AppError::msg("geçersiz not yolu"));
+        return Err(AppError::msg(crate::i18n::t("geçersiz not yolu")));
     }
     let v: serde_json::Value = http.json(&format!("{MOJANG_CONTENT}/v2/{content_path}")).await?;
     Ok(v["body"].as_str().unwrap_or_default().to_string())
@@ -205,12 +205,12 @@ pub async fn default_base(http: &Http, paths: &Paths, version: &str) -> Result<S
         .iter()
         .find(|v| !is_release || v.kind == "release")
         .map(|v| v.id.clone())
-        .ok_or_else(|| AppError::msg("karşılaştırılacak önceki sürüm yok"))
+        .ok_or_else(|| AppError::msg(crate::i18n::t("karşılaştırılacak önceki sürüm yok")))
 }
 
 async fn ensure_client_jar(http: &Http, paths: &Paths, version: &str) -> Result<PathBuf> {
     let v = ensure_vanilla_json(http, paths, version).await?;
-    let client = v.downloads.and_then(|d| d.client).ok_or_else(|| AppError::msg("sürümde client jar yok"))?;
+    let client = v.downloads.and_then(|d| d.client).ok_or_else(|| AppError::msg(crate::i18n::t("sürümde client jar yok")))?;
     let path = paths.version_jar(version);
     let task = DownloadTask { url: client.url, path: path.clone(), sha1: client.sha1, size: client.size };
     if !Http::is_valid(&task, false) {
@@ -233,7 +233,7 @@ fn textures_in(jar: &std::path::Path) -> Result<HashSet<String>> {
 
 async fn asset_index(http: &Http, paths: &Paths, version: &str) -> Result<AssetIndex> {
     let v = ensure_vanilla_json(http, paths, version).await?;
-    let idx = v.asset_index.ok_or_else(|| AppError::msg("sürümde asset index yok"))?;
+    let idx = v.asset_index.ok_or_else(|| AppError::msg(crate::i18n::t("sürümde asset index yok")))?;
     http.json_cached(&idx.url, &paths.assets().join("indexes").join(format!("{}.json", idx.id)), Some(&idx.sha1)).await
 }
 
@@ -292,7 +292,7 @@ pub async fn diff_assets(http: &Http, paths: &Paths, version: &str, base: Option
 /// Doku PNG baytları (jar içinden).
 pub fn read_texture(paths: &Paths, version: &str, path: &str) -> Result<Vec<u8>> {
     if !path.starts_with("assets/minecraft/textures/") || path.contains("..") {
-        return Err(AppError::msg("geçersiz doku yolu"));
+        return Err(AppError::msg(crate::i18n::t("geçersiz doku yolu")));
     }
     let mut zip = zip::ZipArchive::new(std::fs::File::open(paths.version_jar(version))?)?;
     let mut f = zip.by_name(path).map_err(|_| AppError::NotFound(path.into()))?;
@@ -304,7 +304,7 @@ pub fn read_texture(paths: &Paths, version: &str, path: &str) -> Result<Vec<u8>>
 /// Ses (.ogg) baytları; launcher'ın ortak asset deposundan, yoksa Mojang'dan indirerek.
 pub async fn read_sound(http: &Http, paths: &Paths, hash: &str) -> Result<Vec<u8>> {
     if hash.len() != 40 || !hash.chars().all(|c| c.is_ascii_hexdigit()) {
-        return Err(AppError::msg("geçersiz ses kimliği"));
+        return Err(AppError::msg(crate::i18n::t("geçersiz ses kimliği")));
     }
     let path = paths.assets().join("objects").join(&hash[..2]).join(hash);
     let task = DownloadTask { url: format!("{RESOURCES_URL}/{}/{hash}", &hash[..2]), path: path.clone(), sha1: Some(hash.into()), size: None };

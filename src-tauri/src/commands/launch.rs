@@ -45,7 +45,7 @@ pub enum LaunchMode {
 
 async fn resolve_java(state: &AppState, app: &AppHandle, override_path: Option<&str>, major: u32) -> Result<JavaInstall> {
     if let Some(p) = override_path {
-        return probe(&PathBuf::from(p)).await.ok_or_else(|| AppError::msg(format!("Geçersiz Java yolu: {p}")));
+        return probe(&PathBuf::from(p)).await.ok_or_else(|| AppError::msg(crate::i18n::tf("Geçersiz Java yolu: {0}", &[&p])));
     }
     let auto = state.settings.read().auto_java;
     java::ensure(&state.http, &state.paths, major, auto, progress_emitter(app)).await
@@ -55,7 +55,7 @@ pub fn resolve_auth(auth: Option<AuthSession>, offline_name: Option<String>) -> 
     match (auth, offline_name) {
         (Some(a), _) => Ok(a),
         (None, Some(n)) if !n.trim().is_empty() => Ok(AuthSession::offline(n.trim())),
-        _ => Err(AppError::msg("Bir hesap seçin veya offline kullanıcı adı girin")),
+        _ => Err(AppError::msg(crate::i18n::t("Bir hesap seçin veya offline kullanıcı adı girin"))),
     }
 }
 
@@ -64,7 +64,7 @@ pub fn resolve_auth(auth: Option<AuthSession>, offline_name: Option<String>) -> 
 pub async fn start_game(app: &AppHandle, id: &str, auth: AuthSession, join_server: Option<String>, mode: LaunchMode) -> Result<u32> {
     let state = app.state::<AppState>();
     if state.running.lock().contains_key(id) {
-        return Err(AppError::msg("Bu instance zaten çalışıyor"));
+        return Err(AppError::msg(crate::i18n::t("Bu instance zaten çalışıyor")));
     }
     let mgr = InstanceManager::new(&state.paths);
     let mut inst = mgr.get(id)?;
@@ -322,7 +322,7 @@ pub async fn launch_instance(
     join_server: Option<String>,
 ) -> Result<u32> {
     if state.hunts.lock().contains_key(&id) {
-        return Err(AppError::msg("Ashi bu instance'ta suçlu avında; bitmesini bekleyin veya avı durdurun"));
+        return Err(AppError::msg(crate::i18n::t("Ashi bu instance'ta suçlu avında; bitmesini bekleyin veya avı durdurun")));
     }
     let auth = super::accounts::resolve_launch_auth(&state, auth, offline_name).await?;
     write_offline_skin(&state, &id);
@@ -341,7 +341,7 @@ pub fn kill_game(state: &AppState, id: &str) -> bool {
 #[tauri::command]
 pub fn kill_instance(state: State<'_, AppState>, id: String) -> Result<()> {
     if !state.running.lock().contains_key(&id) {
-        return Err(AppError::NotFound(format!("çalışan instance {id}")));
+        return Err(AppError::NotFound(crate::i18n::tf("çalışan instance {0}", &[&id])));
     }
     kill_game(&state, &id);
     Ok(())

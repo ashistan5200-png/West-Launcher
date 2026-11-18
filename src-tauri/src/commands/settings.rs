@@ -12,6 +12,7 @@ pub fn get_settings(state: State<'_, AppState>) -> Settings {
 #[tauri::command]
 pub fn save_settings(state: State<'_, AppState>, settings: Settings) -> Result<()> {
     settings.save(&state.paths.settings_file())?;
+    crate::i18n::set_lang(&settings.language);
     state.discord.send(crate::discord::Presence::Configure { client_id: settings.discord_client_id.clone(), enabled: settings.discord_rpc });
     *state.settings.write() = settings;
     Ok(())

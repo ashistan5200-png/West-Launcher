@@ -21,6 +21,7 @@ pub mod skins;
 pub mod state;
 pub mod updater;
 pub mod util;
+pub mod i18n;
 pub mod wallet;
 
 use paths::Paths;

@@ -41,7 +41,7 @@ pub async fn content_tags(state: State<'_, AppState>) -> Result<content::modrint
 #[tauri::command]
 pub async fn install_content(app: AppHandle, state: State<'_, AppState>, instance_id: String, source: Source, project_id: String, kind: Kind) -> Result<InstallReport> {
     if state.running.lock().contains_key(&instance_id) || state.hunts.lock().contains_key(&instance_id) {
-        return Err(AppError::msg("Instance çalışırken içerik kurulamaz"));
+        return Err(AppError::msg(crate::i18n::t("Instance çalışırken içerik kurulamaz")));
     }
     let inst = InstanceManager::new(&state.paths).get(&instance_id)?;
     let cf = Secrets::load(&state.paths.root).curseforge_api_key;
@@ -83,7 +83,7 @@ use crate::core::Progress;
 
 fn not_running(state: &AppState, id: &str) -> Result<()> {
     if state.running.lock().contains_key(id) || state.hunts.lock().contains_key(id) {
-        return Err(AppError::msg("Oyun açıkken bu işlem yapılamaz; önce oyunu kapat"));
+        return Err(AppError::msg(crate::i18n::t("Oyun açıkken bu işlem yapılamaz; önce oyunu kapat")));
     }
     Ok(())
 }
@@ -133,7 +133,7 @@ pub async fn update_content(app: AppHandle, state: State<'_, AppState>, instance
         &state.paths.instance_game_dir(&instance_id),
         &backups_root(&state, &instance_id),
         &ids,
-        |cur, total| progress(Progress { task: task.clone(), stage: if cur >= total { "done".into() } else { "update".into() }, current: cur as u64, total: total as u64, message: Some("İçerik güncelleniyor".into()) }),
+        |cur, total| progress(Progress { task: task.clone(), stage: if cur >= total { "done".into() } else { "update".into() }, current: cur as u64, total: total as u64, message: Some(crate::i18n::t("İçerik güncelleniyor")) }),
     )
     .await;
     r
@@ -199,7 +199,7 @@ pub fn file_path(state: State<'_, AppState>, instance_id: String, path: String) 
     if path.is_empty() {
         return Ok(g.display().to_string());
     }
-    let rel = content::safe_rel(&path).ok_or_else(|| AppError::msg("Geçersiz yol"))?;
+    let rel = content::safe_rel(&path).ok_or_else(|| AppError::msg(crate::i18n::t("Geçersiz yol")))?;
     Ok(g.join(rel).display().to_string())
 }
 
@@ -256,7 +256,7 @@ pub async fn port_instance(
     not_running(&state, &instance_id)?;
     let name = name.trim();
     if name.is_empty() {
-        return Err(AppError::msg("Yeni instance için bir ad gir"));
+        return Err(AppError::msg(crate::i18n::t("Yeni instance için bir ad gir")));
     }
     let loader_version = match (loader, loader_version.filter(|v| !v.trim().is_empty())) {
         (LoaderKind::Vanilla, _) => None,
@@ -264,7 +264,7 @@ pub async fn port_instance(
         (k, None) => {
             let list = crate::instance::loaders::list_versions(&state.http, k, &mc).await?;
             let pick = list.iter().find(|v| v.stable).or(list.first()).map(|v| v.version.clone());
-            Some(pick.ok_or_else(|| AppError::msg(format!("Minecraft {mc} için bu yükleyicinin sürümü yok")))?)
+            Some(pick.ok_or_else(|| AppError::msg(crate::i18n::tf("Minecraft {0} için bu yükleyicinin sürümü yok", &[&mc])))?)
         }
     };
     let mgr = InstanceManager::new(&state.paths);
@@ -273,7 +273,7 @@ pub async fn port_instance(
     inst.mc_version = mc.clone();
     inst.loader = crate::instance::Loader { kind: loader, version: loader_version };
     inst.version_id = None;
-    inst.imported_from = Some(format!("Ashi Taşıyıcı · {}", old.mc_version));
+    inst.imported_from = Some(crate::i18n::tf("Ashi Taşıyıcı · {0}", &[&old.mc_version]));
     mgr.save(&inst)?;
 
     let cf = Secrets::load(&state.paths.root).curseforge_api_key;

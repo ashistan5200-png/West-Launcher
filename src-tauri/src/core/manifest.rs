@@ -229,7 +229,7 @@ pub async fn ensure_vanilla_json(http: &Http, paths: &Paths, id: &str) -> Result
         .versions
         .iter()
         .find(|v| v.id == id)
-        .ok_or_else(|| AppError::NotFound(format!("Minecraft sürümü {id}")))?;
+        .ok_or_else(|| AppError::NotFound(crate::i18n::tf("Minecraft sürümü {0}", &[&id])))?;
     http.json_cached(&entry.url, &path, entry.sha1.as_deref()).await
 }
 

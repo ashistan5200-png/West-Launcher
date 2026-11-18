@@ -124,7 +124,7 @@ pub fn valid_username(name: &str) -> bool {
 
 pub fn offline_account(name: &str) -> Result<Account> {
     if !valid_username(name) {
-        return Err(AppError::msg("Kullanıcı adı 3–16 karakter olmalı; yalnızca harf, rakam ve _ içerebilir"));
+        return Err(AppError::msg(crate::i18n::t("Kullanıcı adı 3–16 karakter olmalı; yalnızca harf, rakam ve _ içerebilir")));
     }
     let s = AuthSession::offline(name);
     Ok(Account { uuid: s.uuid, username: name.into(), kind: AccountKind::Offline, skin_id: None, ms: None, added: Utc::now() })
