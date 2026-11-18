@@ -357,7 +357,8 @@ pub async fn api(http: &Http, root: &Path, method: &str, path: &str, query: &[(S
     if !status.is_success() {
         let v: serde_json::Value = serde_json::from_str(&text).unwrap_or_default();
         let msg = v["message"].as_str().or(v["msg"].as_str()).unwrap_or(&text).to_string();
-        if msg.contains("does not exist") || msg.contains("schema cache") {
+        // Yalnızca tablo/fonksiyonun kendisi yoksa "SQL çalıştırılmamış" de; başka hatalar olduğu gibi görünsün
+        if msg.contains("schema cache") || (msg.contains("does not exist") && msg.contains("\"public.")) {
             return Err(AppError::msg(crate::i18n::t("Sosyal özellikler için Supabase'te supabase/social.sql dosyası henüz çalıştırılmamış.")));
         }
         return Err(AppError::msg(msg));

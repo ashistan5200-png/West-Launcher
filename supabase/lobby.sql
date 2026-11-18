@@ -299,7 +299,8 @@ create or replace function public.lobby_verify_start() returns text
 language plpgsql security definer set search_path = public as $$
 declare
   me uuid := auth.uid();
-  n text := encode(gen_random_bytes(16), 'hex');
+  -- gen_random_uuid yerleşik (Supabase'te pgcrypto 'extensions' şemasında olduğundan ona bağlı kalınmaz)
+  n text := replace(gen_random_uuid()::text, '-', '');
 begin
   if me is null then raise exception 'West hesabına giriş yapılmamış'; end if;
   perform lobby_rate(me, 'verify', 6, 300);
