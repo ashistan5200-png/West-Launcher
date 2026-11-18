@@ -309,6 +309,21 @@ begin
   return n;
 end $$;
 
+-- Edge Function için: çağıranın (auth.uid) geçerli doğrulama kodunu bir kez verir ve siler
+create or replace function public.lobby_verify_claim() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  me uuid := auth.uid();
+  v lobby_verifications;
+begin
+  if me is null then raise exception 'West hesabına giriş yapılmamış'; end if;
+  delete from lobby_verifications where user_id = me returning * into v;
+  if v.user_id is null or v.created_at < now() - interval '2 minutes' then
+    raise exception 'Doğrulama kodunun süresi doldu, tekrar dene';
+  end if;
+  return jsonb_build_object('user_id', v.user_id, 'nonce', v.nonce);
+end $$;
+
 -- Lobinin ve arkadaşların tüm durumu (tek istekte)
 create or replace function public.lobby_state() returns jsonb
 language plpgsql security definer set search_path = public as $$
@@ -560,7 +575,7 @@ begin
                            'lobby_friends(uuid,uuid)', 'lobby_online(uuid)', 'lobby_name(uuid)'] loop
     execute format('revoke all on function public.%s from public, anon, authenticated', f);
   end loop;
-  foreach f in array array['lobby_verify_start()', 'lobby_state()', 'lobby_invite(uuid)', 'lobby_accept(uuid)', 'lobby_decline(uuid)', 'lobby_join(uuid)',
+  foreach f in array array['lobby_verify_start()', 'lobby_verify_claim()', 'lobby_state()', 'lobby_invite(uuid)', 'lobby_accept(uuid)', 'lobby_decline(uuid)', 'lobby_join(uuid)',
                            'lobby_leave()', 'lobby_kick(uuid)', 'lobby_set_privacy(text)', 'lobby_set_biome(text)',
                            'lobby_presence_set(boolean,boolean,text,text)', 'lobby_settings_set(boolean,boolean,boolean)', 'lobby_block(uuid)',
                            'lobby_delete_my_data()'] loop
