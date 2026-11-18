@@ -22,7 +22,9 @@ Deno.serve(async (req) => {
   const url = Deno.env.get("SUPABASE_URL")!;
   // Çağıranın kim olduğunu kendi oturum anahtarından öğren
   const asUser = createClient(url, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { authorization: auth } } });
-  const { data: who, error: whoErr } = await asUser.auth.getUser();
+  // Oturum anahtarı açıkça verilmeli (Edge Function'da kayıtlı oturum yoktur)
+  const token = auth.replace(/^Bearer\s+/i, "");
+  const { data: who, error: whoErr } = await asUser.auth.getUser(token);
   if (whoErr || !who?.user) return json(401, { error: "West hesabına giriş yapılmamış" });
   const userId = who.user.id;
 
