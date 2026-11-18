@@ -64,15 +64,26 @@ public final class LobbyScreen extends WestShell {
         client.refreshNow();
     }
 
-    @Override
-    public void render(Gfx g, int mx, int my, float delta) {
-        beginFrame(g, mx, my);
-        Config.Data d = WestHud.config.data;
-        Game game = WestHud.game;
-        int sw = g.width(), sh = g.height();
-        float time = ui.time;
-        if (servers == null || ++serverTries % 240 == 0) servers = game.servers(64);
+    // Arka plan saati (lobi başka bir West sayfasının arkasında da çizilir)
+    private long bgLast = System.nanoTime();
+    private float bgTime, bdt;
+    /** Gardırop: kamera karaktere yaklaşır, sağda aksesuarlar */
+    private boolean wardrobe;
+    private float zoom, wardrobeYaw, wardrobeSpin = 1;
+    private WardrobeScreen wardrobePanel;
+    private boolean draggingModel;
+    private double dragLastX;
+    private final java.util.Set<String> dismissedWorldInvites = new java.util.HashSet<>();
 
+    /** Gökyüzü, 3B sahne ve parçacıklar (başka sayfalar da arka plan olarak kullanır) */
+    void backdrop(Gfx g) {
+        long now = System.nanoTime();
+        bdt = Math.min(0.1f, (now - bgLast) / 1e9f);
+        bgLast = now;
+        bgTime += bdt;
+        Config.Data d = WestHud.config.data;
+        int sw = g.width(), sh = g.height();
+        dev.west.hud.social.SocialClient.INSTANCE.poll(null);
         events();
         // Lobideyken biyomu lider belirler
         if (client.ready() && client.biome != null) {
@@ -82,13 +93,16 @@ public final class LobbyScreen extends WestShell {
                 particles.clear();
             }
         }
-        syncAvatars(dt);
+        syncAvatars(bdt);
+        zoom += ((wardrobe ? 1 : 0) - zoom) * Math.min(1, bdt * 5f);
+        if (Math.abs(zoom - (wardrobe ? 1 : 0)) < 0.002f) zoom = wardrobe ? 1 : 0;
         frame.scene = SceneGen.cached(biome);
-        frame.time = time;
+        frame.time = bgTime;
         frame.light = d.lobbyLight;
-        frame.camera.update(time, d.lobbyCinematic, frame.avatars.size(), sw, sh);
-
-        sky(g, sw, sh, time);
+        LobbyFrame.Avatar self = selfAvatar();
+        frame.camera.update(bgTime, d.lobbyCinematic, frame.avatars.size(), sw, sh);
+        if (self != null && zoom > 0) frame.camera.focus(self.x, self.y, self.z, ease(zoom), sw, sh);
+        sky(g, sw, sh, bgTime);
         boolean ready = g.lobby(frame);
         if (!ready && !d.lobbyLight) {
             String s = Tr.t("Lobi hazırlanıyor…");
@@ -96,15 +110,36 @@ public final class LobbyScreen extends WestShell {
         }
         particles(g, sw, sh);
         bursts(g);
+    }
+
+    private LobbyFrame.Avatar selfAvatar() {
+        for (LobbyFrame.Avatar a : frame.avatars) if (a.self) return a;
+        return null;
+    }
+
+    @Override
+    public void render(Gfx g, int mx, int my, float delta) {
+        beginFrame(g, mx, my);
+        Game game = WestHud.game;
+        int sw = g.width(), sh = g.height();
+        if (servers == null || ++serverTries % 240 == 0) servers = game.servers(64);
+        backdrop(g);
+        if (zoom > 0.02f || wardrobe) {
+            wardrobeUi(g, mx, my, sw, sh);
+            ui.end();
+            return;
+        }
         ui.suspended = modal != Modal.NONE;
         hoveringList = false;
         tags(g);
         topBar(g, sw);
         infoPanel(g, sh);
         int cardX = playCard(g, sw, sh);
+        dock(g, sw, sh);
         biomePicker(g, sw, sh, cardX);
         leftPanel(g, sw, sh);
-        inviteBanner(g, sw);
+        int by = inviteBanner(g, sw);
+        worldInviteBanner(g, sw, by);
         toastLine(g, sw);
         ui.suspended = false;
         if (modal != Modal.NONE) {
@@ -118,6 +153,90 @@ public final class LobbyScreen extends WestShell {
             }
         }
         ui.end();
+    }
+
+    // ───────── Sağ: bölümler ─────────
+
+    private void dock(Gfx g, int sw, int sh) {
+        Theme t = ui.t;
+        int w = 104, h = 19, gap = 3;
+        int x = sw - w - 10, y = 34;
+        var soc = dev.west.hud.social.SocialClient.INSTANCE;
+        int pending = soc.requests.size() + soc.invites.size();
+        Object[][] items = {
+                { "worlds", Icon.WORLD, Tr.t("Dünyalar") }, { "servers", Icon.SERVER, Tr.t("Sunucular") }, { "share", Icon.SHARE, Tr.t("Dünyayı paylaş") },
+                { "stats", Icon.STATS, Tr.t("İstatistikler") }, { "social", Icon.CHAT, Tr.t("Sosyal") }, { "wardrobe", Icon.GEM, Tr.t("Gardırop") } };
+        for (Object[] it : items) {
+            String id = (String) it[0];
+            boolean hv = ui.hover(x, y, w, h);
+            float hh = hov("dock" + id, hv);
+            Ui.round(g, x, y, w, h, 7, Theme.mix(0xC40E1016, 0xE01A1D27, hh));
+            Ui.outline(g, x, y, w, h, 7, hv ? Theme.alpha(t.accent, 0xCC) : 0x22FFFFFF);
+            Icons.draw(g, (Icon) it[1], x + 7, y + 5, 9, hv ? t.accent | 0xFF000000 : 0xDDFFFFFF);
+            g.text(ui.fit((String) it[2], w - 30), x + 22, y + 6, 0xFFFFFFFF, false);
+            if (id.equals("social") && pending > 0) {
+                String n = String.valueOf(pending);
+                int bw = Math.max(10, small(g, n) + 6);
+                Ui.round(g, x + w - bw - 5, y + 4, bw, 11, 5, t.accent | 0xFF000000);
+                smallText(g, n, x + w - bw - 5 + (bw - small(g, n)) / 2, y + 6, t.onAccent);
+            }
+            if (ui.clicked(x, y, w, h)) {
+                WestHud.game.click();
+                switch (id) {
+                    case "worlds" -> go(new HomeScreen(this, HomeScreen.Page.WORLDS));
+                    case "servers" -> go(new HomeScreen(this, HomeScreen.Page.SERVERS));
+                    case "share" -> {
+                        say(Tr.t("Paylaşmak istediğin dünyayı aç; oyunda Esc → Dünyayı paylaş"));
+                        go(new HomeScreen(this, HomeScreen.Page.WORLDS));
+                    }
+                    case "stats" -> go(new HomeScreen(this, HomeScreen.Page.STATS));
+                    case "social" -> go(new HomeScreen(this, HomeScreen.Page.SOCIAL));
+                    default -> openWardrobe();
+                }
+            }
+            y += h + gap;
+        }
+    }
+
+    // ───────── Gardırop (yakınlaşma) ─────────
+
+    private void openWardrobe() {
+        wardrobe = true;
+        wardrobeYaw = 0;
+        wardrobeSpin = 1;
+        modal = Modal.NONE;
+        if (wardrobePanel == null) wardrobePanel = new WardrobeScreen(this, true);
+    }
+
+    private void closeWardrobe() {
+        wardrobe = false;
+        draggingModel = false;
+    }
+
+    private void wardrobeUi(Gfx g, int mx, int my, int sw, int sh) {
+        Theme t = ui.t;
+        float in = ease(zoom);
+        // Karakteri kendi etrafında döndür (sürükleyince elle)
+        if (wardrobe && !draggingModel) wardrobeYaw += wardrobeSpin * bdt * 22f;
+        // Sol üst: geri + başlık, sağ üst: coin
+        if (iconButton("wd-back", Icon.BACK, 10, 8, 20, Tr.t("Geri"), 0)) closeWardrobe();
+        bigText(g, Tr.t("Gardırop"), 36, 12, Theme.alpha(0xFFFFFFFF, (int) (255 * in)), 1.25f);
+        String coins = Tr.t("{0} West Coin", WestHud.config.data.coins);
+        int cw = small(g, coins) + 24;
+        Ui.round(g, sw - cw - 10, 10, cw, 16, 8, 0xC40E1016);
+        Ui.round(g, sw - cw - 5, 14, 8, 8, 4, 0xFFF2B654);
+        smallText(g, coins, sw - cw + 7, 14, 0xFFF6D38F);
+        // Sol: karakter alanı ipucu
+        String hint = Tr.t("Sürükleyerek döndür");
+        smallText(g, hint, (int) (sw * 0.28f) - small(g, hint) / 2, sh - 16, 0x99FFFFFF);
+        // Sağ: aksesuarlar (sağdan kayarak gelir)
+        int pw = Math.max(200, Math.min(sw / 2 - 10, 300));
+        int px = sw - pw - 10 + Math.round((1 - in) * (pw + 20));
+        int top = 34, bottom = sh - 10;
+        Ui.round(g, px - 6, top - 6, pw + 12, bottom - top + 12, 12, 0xD00E1016);
+        Ui.outline(g, px - 6, top - 6, pw + 12, bottom - top + 12, 12, 0x22FFFFFF);
+        if (wardrobePanel != null) wardrobePanel.panel(g, ui, px, top, pw, bottom);
+        if (!wardrobe && zoom < 0.03f) zoom = 0;
     }
 
     // ───────── Olaylar (ışınlanma, davet, bildirim) ─────────
@@ -209,6 +328,7 @@ public final class LobbyScreen extends WestShell {
             a.z = 0.6f - (1 - (float) Math.cos(ang)) * r;
             a.y = LobbyScene.GROUND + 1;
             a.yaw = -10f - (float) Math.toDegrees(ang) * 0.35f;
+            if (a.self && zoom > 0) a.yaw += wardrobeYaw * zoom;
             if (a.alpha < 1) {
                 if (a.alpha <= 0.001f) burst(a);
                 a.alpha = Math.min(1, a.alpha + dt * 1.4f);
@@ -229,14 +349,14 @@ public final class LobbyScreen extends WestShell {
     private void bursts(Gfx g) {
         for (int i = bursts.size() - 1; i >= 0; i--) {
             float[] p = bursts.get(i);
-            p[6] -= dt;
+            p[6] -= bdt;
             if (p[6] <= 0) {
                 bursts.remove(i);
                 continue;
             }
-            p[0] += p[3] * dt;
-            p[1] += p[4] * dt;
-            p[2] += p[5] * dt;
+            p[0] += p[3] * bdt;
+            p[1] += p[4] * bdt;
+            p[2] += p[5] * bdt;
             p[3] *= 0.96f;
             p[5] *= 0.96f;
             float[] s = frame.camera.project(p[0], p[1], p[2]);
@@ -275,7 +395,7 @@ public final class LobbyScreen extends WestShell {
             int yw = you == null ? 0 : small(g, you) + 4;
             int w = nw + yw + 10, h = 11;
             int x = cx - w / 2, y = bottom - h - (leader ? 10 : 0);
-            Ui.round(g, x, y, w, h, 4, 0xB30B0D14);
+            Ui.round(g, x, y, w, h, 4, 0xD40D0F16);
             smallText(g, name, x + 5, y + 2, 0xFFFFFFFF);
             if (you != null) smallText(g, you, x + 5 + nw + 4, y + 2, 0x99FFFFFF);
             if (leader) {
@@ -327,7 +447,7 @@ public final class LobbyScreen extends WestShell {
             x -= w;
             boolean hv = ui.hover(x, 8, w, 18);
             float hh = hov("top" + i, hv);
-            Ui.round(g, x, 8, w, 18, 9, Theme.mix(0x8C0B0D14, 0xB01A1C26, hh));
+            Ui.round(g, x, 8, w, 18, 9, Theme.mix(0xD40D0F16, 0xE81A1D27, hh));
             Ui.outline(g, x, 8, w, 18, 9, i == 1 ? Theme.alpha(t.accent, 0xCC) : 0x30FFFFFF);
             g.text(labels[i], x + 8, 13, 0xFFFFFFFF, false);
             if (ui.clicked(x, 8, w, 18)) {
@@ -345,6 +465,17 @@ public final class LobbyScreen extends WestShell {
             }
             x -= 5;
         }
+        // Simgeler: bildirimler (davet ve istekler), dil, tam ekran
+        var soc = dev.west.hud.social.SocialClient.INSTANCE;
+        int pending = soc.requests.size() + soc.invites.size();
+        Game game = WestHud.game;
+        x -= 18;
+        if (iconButton("fs", Icon.FULLSCREEN, x, 8, 18, game.fullscreen() ? Tr.t("Pencere") : Tr.t("Tam ekran"), 0)) game.toggleFullscreen();
+        x -= 21;
+        if (iconButton("lang", Icon.GLOBE, x, 8, 18, Tr.t("Dil"), 0)) game.open(Game.Target.LANGUAGE);
+        x -= 21;
+        if (iconButton("bell", Icon.BELL, x, 8, 18, Tr.t("Bildirimler"), 0)) go(new HomeScreen(this, HomeScreen.Page.SOCIAL));
+        if (pending > 0) Ui.round(g, x + 13, 9, 5, 5, 3, t.accent | 0xFF000000);
     }
 
     private int keyIndex() {
@@ -667,23 +798,58 @@ public final class LobbyScreen extends WestShell {
 
     // ───────── Davet bildirimi (üst orta) ─────────
 
-    private void inviteBanner(Gfx g, int sw) {
+    /** Sol panel ile sağdaki bölümler arasına sığan iki satırlık bildirim; 1 = onay, 2 = ret, 0 = yok */
+    private int banner(Gfx g, String id, int sw, int y, Icon icon, String title, String sub, String ok, String no, int[] outH) {
         Theme t = ui.t;
-        if (!client.ready() || client.invites.isEmpty()) return;
+        int left = 10 + clamp(sw / 4, 140, 190) + 8, right = sw - 104 - 10 - 8;
+        int maxW = right - left;
+        int okW = g.textBoldWidth(ok) + 16, noW = no == null ? 0 : g.textBoldWidth(no) + 16;
+        int w = Math.min(maxW, Math.max(Math.max(g.textBoldWidth(title), small(g, sub == null ? "" : sub)) + 40, okW + noW + 44));
+        int h = 44;
+        int x = left + (maxW - w) / 2;
+        Ui.round(g, x, y, w, h, 10, 0xEC0E1016);
+        Ui.outline(g, x, y, w, h, 10, Theme.alpha(t.accent, 0xCC));
+        Ui.round(g, x + 8, y + 8, 14, 14, 7, Theme.alpha(t.accent, 0x40));
+        Icons.draw(g, icon, x + 11, y + 11, 8, t.accent | 0xFF000000);
+        g.textBold(ui.fit(title, w - 36), x + 28, y + 7, 0xFFFFFFFF, false);
+        if (sub != null) smallText(g, ui.fit(sub, Math.round((w - 36) / 0.8f)), x + 28, y + 18, 0xAAFFFFFF);
+        int bx = x + w - okW - noW - (no == null ? 8 : 12);
+        int r = 0;
+        if (accentButton(id + "-ok", ok, null, bx, y + h - 19, okW, 14)) r = 1;
+        if (no != null && outlineButton(id + "-no", no, null, bx + okW + 4, y + h - 19, noW, 14, false)) r = 2;
+        outH[0] = h;
+        return r;
+    }
+
+    /** Lobi daveti; altındaki boş y'yi döner */
+    private int inviteBanner(Gfx g, int sw) {
+        int y = 34;
+        if (!client.ready() || client.invites.isEmpty()) return y;
         LobbyClient.Invite inv = client.invites.get(0);
-        String text = Tr.t("{0} seni lobisine davet etti", inv.fromName());
-        String a = Tr.t("Katıl"), r = Tr.t("Reddet");
-        int aw = g.textBoldWidth(a) + 16, rw = g.textBoldWidth(r) + 16;
-        int w = g.textWidth(text) + aw + rw + 32, h = 24;
-        int left = 10 + clamp(sw / 4, 140, 190) + 8;
-        int x = Math.max(left, (sw - w) / 2), y = 34;
-        if (x + w > sw - 8) x = Math.max(8, sw - 8 - w);
-        Ui.round(g, x, y, w, h, 12, 0xE00B0D14);
-        Ui.outline(g, x, y, w, h, 12, Theme.alpha(t.accent, 0xCC));
-        g.text(text, x + 12, y + 8, 0xFFFFFFFF, false);
-        int bx = x + w - rw - aw - 10;
-        if (accentButton("inv-ok", a, null, bx, y + 4, aw, 16)) client.accept(inv.id());
-        if (outlineButton("inv-no", r, null, bx + aw + 4, y + 4, rw, 16, false)) client.decline(inv.id());
+        int[] h = new int[1];
+        int r = banner(g, "inv", sw, y, Icon.USERS, Tr.t("{0} seni lobisine davet etti", inv.fromName()), Tr.t("Lobiye ışınlanırsın"), Tr.t("Katıl"), Tr.t("Reddet"), h);
+        if (r == 1) client.accept(inv.id());
+        else if (r == 2) client.decline(inv.id());
+        return y + h[0] + 6;
+    }
+
+    /** Arkadaşın dünyasını paylaştı (West sosyal daveti) */
+    private void worldInviteBanner(Gfx g, int sw, int y) {
+        var soc = dev.west.hud.social.SocialClient.INSTANCE;
+        for (var inv : soc.invites) {
+            String key = inv.from().id() + "|" + inv.at();
+            if (dismissedWorldInvites.contains(key)) continue;
+            boolean fits = inv.version() == null || inv.version().isEmpty() || inv.version().equals(WestHud.game.minecraftVersion());
+            String sub = inv.world() + (inv.version() == null || inv.version().isEmpty() ? "" : " · " + inv.version());
+            if (!fits) sub = Tr.t("Bu davet için launcher'dan {0} instance'ı aç", inv.version());
+            int[] h = new int[1];
+            int r = banner(g, "winv", sw, y, Icon.SHARE, Tr.t("{0} seni dünyasına davet etti", inv.from().display()), sub, fits ? Tr.t("Katıl") : Tr.t("Tamam"), fits ? Tr.t("Yoksay") : null, h);
+            if (r == 1 && fits) {
+                dismissedWorldInvites.add(key);
+                WestHud.game.connect(inv.world(), inv.address());
+            } else if (r != 0) dismissedWorldInvites.add(key);
+            return;
+        }
     }
 
     private void toastLine(Gfx g, int sw) {
@@ -987,11 +1153,11 @@ public final class LobbyScreen extends WestShell {
         while (particles.size() < want) particles.add(spawn(kind, cx, cz, true));
         for (int i = 0; i < particles.size(); i++) {
             float[] p = particles.get(i);
-            p[0] += p[3] * dt;
-            p[1] += p[4] * dt;
-            p[2] += p[5] * dt;
-            p[6] -= dt;
-            if (kind == LobbyBiome.Particle.PETALS || kind == LobbyBiome.Particle.SNOW) p[0] += (float) Math.sin(ui.time * 0.9f + p[7]) * 0.3f * dt;
+            p[0] += p[3] * bdt;
+            p[1] += p[4] * bdt;
+            p[2] += p[5] * bdt;
+            p[6] -= bdt;
+            if (kind == LobbyBiome.Particle.PETALS || kind == LobbyBiome.Particle.SNOW) p[0] += (float) Math.sin(bgTime * 0.9f + p[7]) * 0.3f * bdt;
             if (p[6] <= 0 || p[1] < LobbyScene.GROUND + 0.6f || p[1] > LobbyScene.GROUND + 22) {
                 particles.set(i, spawn(kind, cx, cz, false));
                 continue;
@@ -1032,14 +1198,51 @@ public final class LobbyScreen extends WestShell {
 
     /** Cam panel: yarı saydam koyu zemin, ince açık kenar */
     static void glass(Gfx g, int x, int y, int w, int h, int r) {
-        Ui.round(g, x, y, w, h, r, 0x8C0B0D14);
-        Ui.outline(g, x, y, w, h, r, 0x26FFFFFF);
+        // Karlı/açık sahnelerde de okunabilsin: koyu, hafif mavimsi cam; üstte ince parlama
+        Ui.round(g, x, y + 1, w, h, r, 0x40000000);
+        Ui.round(g, x, y, w, h, r, 0xD40D0F16);
+        Ui.outline(g, x, y, w, h, r, 0x2AFFFFFF);
+        g.fill(x + r, y + 1, x + w - r, y + 2, 0x18FFFFFF);
     }
 
     // ───────── Girdi ─────────
 
     @Override
+    public void mouseClicked(double x, double y, int button) {
+        if (wardrobe) {
+            int sw = ui.g == null ? 0 : ui.g.width();
+            if (button == 0 && x < sw / 2.0) {
+                draggingModel = true;
+                dragLastX = x;
+                wardrobeSpin = 0;
+            }
+            if (wardrobePanel != null) wardrobePanel.mouseClicked(x, y, button);
+        }
+        super.mouseClicked(x, y, button);
+    }
+
+    @Override
+    public void mouseDragged(double x, double y, int button) {
+        if (draggingModel) {
+            wardrobeYaw += (float) (x - dragLastX) * 1.6f;
+            dragLastX = x;
+        }
+    }
+
+    @Override
+    public void mouseReleased(double x, double y, int button) {
+        if (draggingModel) {
+            draggingModel = false;
+            wardrobeSpin = 0.5f;
+        }
+    }
+
+    @Override
     public void mouseScrolled(double x, double y, double amount) {
+        if (wardrobe) {
+            if (wardrobePanel != null) wardrobePanel.mouseScrolled(x, y, amount);
+            return;
+        }
         if (modal == Modal.PLAY) playScroll -= (float) amount * 24;
         else if (modal == Modal.MODULES) moduleScroll -= (float) amount * 24;
         else if (hoveringList) friendScroll -= (float) amount * 20;
@@ -1048,6 +1251,10 @@ public final class LobbyScreen extends WestShell {
     @Override
     public boolean keyPressed(int key) {
         int menuKey = KEY_CODES[keyIndex()];
+        if (wardrobe && key == 256) {
+            closeWardrobe();
+            return true;
+        }
         if (key == 256) {
             // Esc: açık pencereyi kapatır; menü tuşu Esc ise modül menüsünü açar
             if (modal == Modal.DELETE) modal = Modal.MODULES;

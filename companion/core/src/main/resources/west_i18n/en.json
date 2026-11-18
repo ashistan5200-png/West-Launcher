@@ -399,5 +399,11 @@
  "Profil": "Profile",
  "Esc": "Esc",
  "M": "M",
- "Tab": "Tab"
+ "Tab": "Tab",
+ "Lobiye ışınlanırsın": "You'll teleport to the lobby",
+ "Paylaşmak istediğin dünyayı aç; oyunda Esc → Dünyayı paylaş": "Open the world you want to share; in game press Esc → Share world",
+ "Tamam": "OK",
+ "Yoksay": "Ignore",
+ "{0} West Coin": "{0} West Coin",
+ "{0} seni dünyasına davet etti": "{0} invited you to their world"
 }

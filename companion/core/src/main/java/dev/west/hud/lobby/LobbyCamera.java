@@ -25,6 +25,8 @@ public final class LobbyCamera {
     public void update(float time, boolean cinematic, int people, int w, int h) {
         width = Math.max(1, w);
         height = Math.max(1, h);
+        // Bakış noktası her karede sıfırlanır (Gardırop yakınlaşması onu geçici olarak kaydırır)
+        target.set(0, LobbyScene.GROUND + 2.1f, 0.4f);
         float yaw = 16f, pitch = 22f, dist = 9.6f + Math.max(0, people - 3) * 0.6f;
         if (cinematic) {
             yaw += (float) Math.sin(time * 0.045) * 6f;
@@ -35,6 +37,29 @@ public final class LobbyCamera {
         eye.set(target.x + (float) (Math.sin(yr) * Math.cos(pr) * dist), target.y + (float) (Math.sin(pr) * dist), target.z + (float) (Math.cos(yr) * Math.cos(pr) * dist));
         view.identity().lookAt(eye, target, new Vector3f(0, 1, 0));
         proj.identity().perspective((float) Math.toRadians(fov), (float) width / height, 0.05f, 400f);
+        proj.mul(view, viewProj);
+    }
+
+    /**
+     * Gardırop: kamera bir karaktere yaklaşır (k: 0 → normal görünüm, 1 → yakın plan). Karakter ekranın
+     * sol yarısında durur; sağ yarı aksesuar paneline kalır.
+     */
+    public void focus(float x, float y, float z, float k, int w, int h) {
+        if (k <= 0) return;
+        float aspect = (float) Math.max(1, w) / Math.max(1, h);
+        Vector3f subject = new Vector3f(x, y + 0.95f, z);
+        double yr = Math.toRadians(12), pr = Math.toRadians(6);
+        float dist = 4.6f;
+        Vector3f closeEye = new Vector3f(subject.x + (float) (Math.sin(yr) * Math.cos(pr) * dist), subject.y + (float) (Math.sin(pr) * dist),
+                subject.z + (float) (Math.cos(yr) * Math.cos(pr) * dist));
+        // Bakış noktasını kameranın sağına kaydır: karakter ekranın ~%27'sinde görünür
+        Vector3f fwd = new Vector3f(subject).sub(closeEye).normalize();
+        Vector3f right = new Vector3f(fwd).cross(0, 1, 0).normalize();
+        float halfW = (float) Math.tan(Math.toRadians(fov) / 2) * dist * aspect;
+        Vector3f closeTarget = new Vector3f(subject).add(right.mul(halfW * 0.46f));
+        eye.lerp(closeEye, k);
+        target.lerp(closeTarget, k);
+        view.identity().lookAt(eye, target, new Vector3f(0, 1, 0));
         proj.mul(view, viewProj);
     }
 

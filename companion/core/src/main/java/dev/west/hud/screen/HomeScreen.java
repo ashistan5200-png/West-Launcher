@@ -28,6 +28,17 @@ public final class HomeScreen extends WestShell {
     final SocialPage social = new SocialPage();
 
     private Page page = Page.HOME;
+    /** Lobiden açıldıysa: arka plan lobinin 3B sahnesi, ana sayfa yerine lobiye dönülür */
+    private final LobbyScreen lobby;
+
+    public HomeScreen() {
+        this(null, Page.HOME);
+    }
+
+    HomeScreen(LobbyScreen lobby, Page start) {
+        this.lobby = lobby;
+        if (start != Page.HOME) open(start);
+    }
     List<Game.ServerInfo> servers;
     List<Game.WorldInfo> worlds = List.of();
     private int worldsTries;
@@ -50,9 +61,19 @@ public final class HomeScreen extends WestShell {
         int sw = g.width(), sh = g.height();
         float in = appear();
 
-        // Arka plan: dönen köy panoraması + hafif karartma ve süzülen ışık zerreleri
-        g.panorama(delta);
-        motes(g, sw, sh);
+        // Arka plan: lobiden açıldıysa lobinin sahnesi, değilse dönen köy panoraması + ışık zerreleri
+        if (lobby != null) {
+            if (page == Page.HOME) {
+                lobby.backdrop(g);
+                go(lobby);
+                ui.end();
+                return;
+            }
+            lobby.backdrop(g);
+        } else {
+            g.panorama(delta);
+            motes(g, sw, sh);
+        }
         if (page == Page.HOME) {
             home(sw, sh, in);
         } else {
@@ -747,6 +768,7 @@ public final class HomeScreen extends WestShell {
     /** Esc: alt sayfadan ana sayfaya; ana sayfada hiçbir şey yapmaz */
     @Override
     public WestScreen escape() {
+        if (lobby != null) return lobby;
         if (page != Page.HOME) goHome();
         return this;
     }

@@ -475,6 +475,12 @@ public final class LobbyRender121 {
                 pose.translate(0, -1.501f, 0);
                 RenderType type = RenderTypes.entityTranslucent(skin.body().texturePath());
                 model.renderToBuffer(pose, bufferSource.getBuffer(type), 0xF000F0, OverlayTexture.NO_OVERLAY, tint);
+                // Kendi karakterinde West Coin ile alınan aksesuarlar (pelerin, şapka, sırt)
+                if (a.self && a.alpha > 0.9f) {
+                    final PoseStack ps = pose;
+                    WestHud.safe("lobby-cosmetics", () -> WestCosmetics.renderGui(model.root(), ps,
+                            (part, rt) -> part.render(ps, bufferSource.getBuffer(rt), 0xF000F0, OverlayTexture.NO_OVERLAY)));
+                }
                 pose.popPose();
             }
             bufferSource.endBatch();

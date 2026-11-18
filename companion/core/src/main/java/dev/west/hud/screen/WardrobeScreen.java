@@ -25,8 +25,23 @@ public final class WardrobeScreen extends WestShell {
     private double lastX;
     private float scroll;
 
+    /** Lobinin içinde yalnızca sağdaki aksesuar paneli olarak mı çiziliyor */
+    private final boolean embedded;
+
     public WardrobeScreen(WestScreen back) {
+        this(back, false);
+    }
+
+    WardrobeScreen(WestScreen back, boolean embedded) {
         this.back = back;
+        this.embedded = embedded;
+    }
+
+    /** Lobideki Gardırop: yalnızca sağdaki yuva sekmeleri ve öğe kartları (karakter lobide yakınlaşır) */
+    void panel(Gfx g, Ui host, int rx, int top, int rw, int bottom) {
+        beginFrame(g, host.mx, host.my);
+        items(g, host.mx, host.my, rx, top, rw, bottom);
+        ui.end();
     }
 
     @Override
@@ -72,6 +87,13 @@ public final class WardrobeScreen extends WestShell {
 
         // Sağ: yuvalar ve öğeler
         int rx = 12 + lw + 12, rw = sw - rx - 12;
+        items(g, mx, my, rx, top, rw, bottom);
+        ui.end();
+    }
+
+    private void items(Gfx g, int mx, int my, int rx, int top, int rw, int bottom) {
+        Theme t = ui.t;
+        Config.Data d = WestHud.config.data;
         int tabY = top;
         int tx = rx;
         for (int i = 0; i < Cosmetics.SLOTS.length; i++) {
@@ -101,9 +123,11 @@ public final class WardrobeScreen extends WestShell {
 
         int gy = tabY + 30, gh = bottom - gy;
         if (items.isEmpty()) {
-            emptyMessage(rx + rw / 2, gy + gh / 2 - 10, Tr.t("Bu yuvada aksesuarın yok"),
-                    Tr.t("West Client → Mağaza'dan West Coin ile alabilirsin. Oynadığın her saat 100 West Coin kazanırsın."), null);
-            ui.end();
+            String title = Tr.t("Bu yuvada aksesuarın yok");
+            List<String> lines = wrap(g, Tr.t("West Client → Mağaza'dan West Coin ile alabilirsin. Oynadığın her saat 100 West Coin kazanırsın."), rw - 24);
+            int ey = gy + gh / 2 - (14 + lines.size() * 11) / 2;
+            g.textBold(title, rx + (rw - g.textBoldWidth(title)) / 2, ey, 0xFFFFFFFF, false);
+            for (int i = 0; i < lines.size(); i++) g.text(lines.get(i), rx + (rw - g.textWidth(lines.get(i))) / 2, ey + 14 + i * 11, 0xAAFFFFFF, false);
             return;
         }
         // Kartlar: ilk kart "Yok" (çıkar)
@@ -151,7 +175,6 @@ public final class WardrobeScreen extends WestShell {
         int rows = (cards.size() + cols - 1) / cols;
         float max = Math.max(0, rows * (cardH + 8) - 8 - gh);
         scroll = Math.max(0, Math.min(max, scroll));
-        ui.end();
     }
 
     // Model alanında basılı tutup sürükleyince döner; bırakınca yavaşça kendi döner
