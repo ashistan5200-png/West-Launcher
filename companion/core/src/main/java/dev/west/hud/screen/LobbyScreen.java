@@ -139,6 +139,7 @@ public final class LobbyScreen extends WestShell {
         biomePicker(g, sw, sh, cardX);
         leftPanel(g, sw, sh);
         int by = inviteBanner(g, sw);
+        by = requestBanner(g, sw, by);
         worldInviteBanner(g, sw, by);
         toastLine(g, sw);
         ui.suspended = false;
@@ -246,6 +247,9 @@ public final class LobbyScreen extends WestShell {
         while ((e = client.events.poll()) != null) {
             switch (e.kind()) {
                 case "toast" -> say(e.text());
+                case "request" -> {
+                    if (WestHud.config.data.lobbySound) WestHud.game.playSound("minecraft:block.note_block.pling", 0.6f, 1.4f);
+                }
                 case "moved" -> {
                     // Başka bir lobiye geçtin: herkes ışınlanarak belirir
                     for (LobbyFrame.Avatar a : frame.avatars) a.alpha = 0;
@@ -615,26 +619,45 @@ public final class LobbyScreen extends WestShell {
                 : p.server() != null ? (p.serverName() != null ? p.serverName() : p.server()) : inLobby ? Tr.t("Lobide") : Tr.t("Menüde");
         if (p.leader()) sub = Tr.t("Lider") + " · " + sub;
         if (!p.verified()) sub = Tr.t("Minecraft hesabı doğrulanmamış");
-        String action = null;
-        if (inLobby && leader && !me) action = Tr.t("Çıkar");
-        else if (!inLobby && p.lobbyJoinable() && p.online()) action = Tr.t("Katıl");
-        else if (!inLobby && p.online() && p.verified() && memberCount < 7) action = Tr.t("Davet et");
-        int textW = w - 16;
-        if (action != null) {
-            int aw = small(g, action) + 10;
-            int bx = x + w - aw - 2;
-            boolean ah = visible && ui.hover(bx, y + 5, aw, 12);
-            boolean kick = action.equals(Tr.t("Çıkar"));
-            Ui.round(g, bx, y + 5, aw, 12, 6, kick ? (ah ? 0xCCE5566E : 0x40E5566E) : ah ? t.accent | 0xFF000000 : Theme.alpha(t.accent, 0x50));
-            smallText(g, action, bx + 5, y + 8, ah && !kick ? t.onAccent : 0xFFFFFFFF);
-            if (visible && !client.busy() && ui.clicked(bx, y + 5, aw, 12)) {
-                WestHud.game.click();
-                if (kick) client.kick(p.id());
-                else if (action.equals(Tr.t("Katıl"))) client.join(p.lobbyId());
-                else client.invite(p.id());
-            }
-            textW = bx - x - 18;
+        // Satırdaki düğmeler (sağdan sola): çıkar / katıl / istek at + davet et
+        List<String> actions = new ArrayList<>();
+        boolean otherLobby = !inLobby && p.online() && p.verified() && p.lobbyId() != null;
+        if (inLobby && leader && !me) actions.add("kick");
+        else if (otherLobby && p.lobbyJoinable()) actions.add("join");
+        else {
+            if (otherLobby) actions.add(p.lobbyRequested() ? "requested" : "request");
+            if (!inLobby && p.online() && p.verified() && memberCount < 7) actions.add("invite");
         }
+        int textW = w - 16;
+        int bx = x + w - 2;
+        for (String act : actions) {
+            String label = switch (act) {
+                case "kick" -> Tr.t("Çıkar");
+                case "join" -> Tr.t("Katıl");
+                case "request" -> Tr.t("İstek at");
+                case "requested" -> Tr.t("İstendi");
+                default -> Tr.t("Davet et");
+            };
+            int aw = small(g, label) + 10;
+            bx -= aw;
+            boolean off = act.equals("requested");
+            boolean ah = visible && !off && ui.hover(bx, y + 5, aw, 12);
+            boolean kick = act.equals("kick");
+            int bg = off ? 0x22FFFFFF : kick ? (ah ? 0xCCE5566E : 0x40E5566E) : ah ? t.accent | 0xFF000000 : Theme.alpha(t.accent, 0x50);
+            Ui.round(g, bx, y + 5, aw, 12, 6, bg);
+            smallText(g, label, bx + 5, y + 8, off ? 0x99FFFFFF : ah && !kick ? t.onAccent : 0xFFFFFFFF);
+            if (visible && !off && !client.busy() && ui.clicked(bx, y + 5, aw, 12)) {
+                WestHud.game.click();
+                switch (act) {
+                    case "kick" -> client.kick(p.id());
+                    case "join" -> client.join(p.lobbyId());
+                    case "request" -> client.requestJoin(p.lobbyId());
+                    default -> client.invite(p.id());
+                }
+            }
+            bx -= 3;
+        }
+        if (!actions.isEmpty()) textW = bx - x - 15;
         smallText(g, ui.fit(name, Math.round(textW / 0.8f)), x + 14, y + 3, 0xFFFFFFFF);
         smallText(g, ui.fit(sub, Math.round(textW / 0.8f)), x + 14, y + 12, 0x88FFFFFF);
         // Satıra tıklayınca ek seçenek (engelle)
@@ -833,6 +856,17 @@ public final class LobbyScreen extends WestShell {
         return y + h[0] + 6;
     }
 
+    /** Lider: lobine katılmak isteyen biri */
+    private int requestBanner(Gfx g, int sw, int y) {
+        if (!client.ready() || !client.amLeader() || client.requests.isEmpty()) return y;
+        LobbyClient.JoinRequest q = client.requests.get(0);
+        int[] h = new int[1];
+        String more = client.requests.size() > 1 ? Tr.t("+{0} istek daha", client.requests.size() - 1) : Tr.t("Kabul edersen lobine ışınlanır");
+        int r = banner(g, "req", sw, y, Icon.USER_PLUS, Tr.t("{0} lobine katılmak istiyor", q.display()), more, Tr.t("Kabul et"), Tr.t("Reddet"), h);
+        if (r != 0) client.answerRequest(q.id(), r == 1);
+        return y + h[0] + 6;
+    }
+
     /** Arkadaşın dünyasını paylaştı (West sosyal daveti) */
     private void worldInviteBanner(Gfx g, int sw, int y) {
         var soc = dev.west.hud.social.SocialClient.INSTANCE;
@@ -856,7 +890,7 @@ public final class LobbyScreen extends WestShell {
         if (toast == null || System.currentTimeMillis() - toastAt > 4500) return;
         float a = Math.min(1, (4500 - (System.currentTimeMillis() - toastAt)) / 400f);
         int w = g.textWidth(toast) + 20;
-        int x = (sw - w) / 2, y = 64;
+        int x = (sw - w) / 2, y = ui.g.height() - 58;
         Ui.round(g, x, y, w, 16, 8, Theme.alpha(0xE00B0D14, (int) (0xE0 * a)));
         g.text(toast, x + 10, y + 4, Theme.alpha(0xFFFFFFFF, (int) (255 * a)), false);
     }

@@ -405,5 +405,13 @@
  "Tamam": "OK",
  "Yoksay": "Ignore",
  "{0} West Coin": "{0} West Coin",
- "{0} seni dünyasına davet etti": "{0} invited you to their world"
+ "{0} seni dünyasına davet etti": "{0} invited you to their world",
+ "3B lobiye geç": "Switch to 3D lobby",
+ "Katılma isteği gönderildi": "Join request sent",
+ "İstek at": "Request",
+ "İstendi": "Requested",
+ "+{0} istek daha": "+{0} more requests",
+ "Kabul edersen lobine ışınlanır": "If you accept, they teleport to your lobby",
+ "{0} lobine katılmak istiyor": "{0} wants to join your lobby",
+ "Kabul et": "Accept"
 }

@@ -404,5 +404,13 @@
  "Tamam": "OK",
  "Yoksay": "Ignorieren",
  "{0} West Coin": "{0} West Coin",
- "{0} seni dünyasına davet etti": "{0} hat dich in die Welt eingeladen"
+ "{0} seni dünyasına davet etti": "{0} hat dich in die Welt eingeladen",
+ "3B lobiye geç": "Zur 3D-Lobby wechseln",
+ "Katılma isteği gönderildi": "Beitrittsanfrage gesendet",
+ "İstek at": "Anfragen",
+ "İstendi": "Angefragt",
+ "+{0} istek daha": "+{0} weitere Anfragen",
+ "Kabul edersen lobine ışınlanır": "Wenn du annimmst, teleportiert die Person in deine Lobby",
+ "{0} lobine katılmak istiyor": "{0} möchte deiner Lobby beitreten",
+ "Kabul et": "Annehmen"
 }

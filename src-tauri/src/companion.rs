@@ -66,7 +66,11 @@ pub async fn prepare(http: &Http, paths: &Paths, resource_dir: &Path, inst: &Ins
         return rep;
     };
     let target = mods.join(format!("{JAR_PREFIX}.jar"));
-    let same = std::fs::metadata(&target).ok().map(|m| m.len()) == std::fs::metadata(&src).ok().map(|m| m.len());
+    // İçerik aynı mı (yalnızca boyuta bakmak yetmez: yeni sürüm tesadüfen aynı boyutta olabilir)
+    let same = match (std::fs::read(&target), std::fs::read(&src)) {
+        (Ok(a), Ok(b)) => a == b,
+        _ => false,
+    };
     if !same {
         remove(&game);
         if let Err(e) = std::fs::create_dir_all(&mods).and_then(|_| std::fs::copy(&src, &target)) {

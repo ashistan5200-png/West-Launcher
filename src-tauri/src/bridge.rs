@@ -364,9 +364,10 @@ async fn route(http: &Http, root: &PathBuf, method: &str, path: &str, query: &st
         }
         // ───── Ana menü lobisi ─────
         ("POST", "/lobby/rpc") => {
-            const ALLOWED: [&str; 14] = [
+            const ALLOWED: [&str; 16] = [
                 "lobby_verify_start", "lobby_state", "lobby_invite", "lobby_accept", "lobby_decline", "lobby_join", "lobby_leave", "lobby_kick",
                 "lobby_set_privacy", "lobby_set_biome", "lobby_presence_set", "lobby_settings_set", "lobby_block", "lobby_delete_my_data",
+                "lobby_request_join", "lobby_request_answer",
             ];
             let f = body["fn"].as_str().unwrap_or_default();
             if !ALLOWED.contains(&f) {

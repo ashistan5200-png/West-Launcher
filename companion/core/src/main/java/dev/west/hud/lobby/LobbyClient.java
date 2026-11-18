@@ -50,7 +50,7 @@ public final class LobbyClient {
     }
 
     public record Person(String id, String name, UUID mcUuid, String mcName, boolean online, boolean singleplayer, String server, String serverName,
-                         boolean joinable, boolean leader, boolean inMyLobby, boolean verified, String lobbyId, boolean lobbyJoinable) {
+                         boolean joinable, boolean leader, boolean inMyLobby, boolean verified, String lobbyId, boolean lobbyJoinable, boolean lobbyRequested) {
         /** Kafa üstünde görünen ad: Minecraft adı (yoksa West adı) */
         public String display() {
             return mcName != null && !mcName.isBlank() ? mcName : name;
@@ -58,6 +58,13 @@ public final class LobbyClient {
     }
 
     public record Invite(String id, String fromId, String fromName, String lobbyId, String leaderName) {}
+
+    /** Lidere gelen katılma isteği */
+    public record JoinRequest(String id, String fromId, String fromName, String mcName) {
+        public String display() {
+            return mcName != null && !mcName.isBlank() ? mcName : fromName;
+        }
+    }
 
     /** Ekranın dinlediği olaylar (ışınlanma efekti, bildirimler) */
     public record Event(String kind, String personId, String text) {}
@@ -79,6 +86,7 @@ public final class LobbyClient {
     public volatile String lobbyId, leaderId, leaderName, privacy = "friends", biome;
     public volatile List<Person> members = List.of(), friends = List.of();
     public volatile List<Invite> invites = List.of();
+    public volatile List<JoinRequest> requests = List.of();
     public volatile boolean showOnline = true, showServer = true, allowJoin = true;
     /** Lobi sunucusuna gecikme (Realtime nabız yanıtı, ms); ölçülemiyorsa -1 */
     public volatile long pingMs = -1;
@@ -205,6 +213,15 @@ public final class LobbyClient {
             JsonObject i = e.getAsJsonObject();
             inv.add(new Invite(str(i, "id"), str(i, "from_id"), str(i, "from_name"), str(i, "lobby_id"), str(i, "leader_name")));
         }
+        List<JoinRequest> req = new ArrayList<>();
+        if (o.has("requests"))
+            for (JsonElement e : o.getAsJsonArray("requests")) {
+                JsonObject q = e.getAsJsonObject();
+                req.add(new JoinRequest(str(q, "id"), str(q, "from_id"), str(q, "from_name"), str(q, "mc_name")));
+            }
+        List<JoinRequest> beforeReq = requests;
+        requests = req;
+        for (JoinRequest q : req) if (beforeReq.stream().noneMatch(b -> b.id().equals(q.id()))) events.add(new Event("request", q.fromId(), q.display()));
         List<Invite> before = invites;
         invites = inv;
         for (Invite i : inv) if (before.stream().noneMatch(b -> b.id().equals(i.id()))) events.add(new Event("invite", i.fromId(), i.fromName()));
@@ -227,7 +244,7 @@ public final class LobbyClient {
             JsonObject p = e.getAsJsonObject();
             out.add(new Person(str(p, "id"), str(p, "name"), uuid(str(p, "mc_uuid")), str(p, "mc_name"), bool(p, "online"), bool(p, "singleplayer"),
                     str(p, "server"), str(p, "server_name"), bool(p, "joinable"), bool(p, "leader"), bool(p, "in_my_lobby"), !p.has("verified") || bool(p, "verified"),
-                    str(p, "lobby_id"), bool(p, "lobby_joinable")));
+                    str(p, "lobby_id"), bool(p, "lobby_joinable"), bool(p, "lobby_requested")));
         }
         return out;
     }
@@ -282,6 +299,28 @@ public final class LobbyClient {
 
     public void join(String lobby) {
         act("lobby_join", "lid", lobby, null);
+    }
+
+    /** Davetsiz katılamadığın bir lobinin liderine katılma isteği gönder */
+    public void requestJoin(String lobby) {
+        act("lobby_request_join", "lid", lobby, Tr.t("Katılma isteği gönderildi"));
+    }
+
+    /** Lider: katılma isteğini kabul et / reddet */
+    public void answerRequest(String id, boolean accept) {
+        requests = requests.stream().filter(q -> !q.id().equals(id)).toList();
+        JsonObject a = new JsonObject();
+        a.addProperty("req", id);
+        a.addProperty("accept", accept);
+        busy = true;
+        rpc("lobby_request_answer", a, v -> {
+            busy = false;
+            refreshNow();
+        }, e -> {
+            busy = false;
+            fail(e);
+            refreshNow();
+        });
     }
 
     public void leave() {

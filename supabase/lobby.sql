@@ -77,6 +77,16 @@ create table if not exists public.lobby_invites (
 );
 create index if not exists lobby_invites_to on public.lobby_invites (to_id, created_at);
 
+-- Katılma istekleri: davetsiz katılamayan biri lobinin liderine istek gönderir
+create table if not exists public.lobby_requests (
+  id         uuid primary key default gen_random_uuid(),
+  lobby_id   uuid not null references public.lobbies(id) on delete cascade,
+  from_id    uuid not null references public.profiles(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  unique (lobby_id, from_id)
+);
+create index if not exists lobby_requests_lobby on public.lobby_requests (lobby_id, created_at);
+
 -- Hız sınırı kayıtları (davet, doğrulama…)
 create table if not exists public.lobby_actions (
   user_id uuid not null references public.profiles(id) on delete cascade,
@@ -101,6 +111,7 @@ alter table public.lobby_presence enable row level security;
 alter table public.lobbies enable row level security;
 alter table public.lobby_members enable row level security;
 alter table public.lobby_invites enable row level security;
+alter table public.lobby_requests enable row level security;
 alter table public.lobby_actions enable row level security;
 alter table public.lobby_events enable row level security;
 
@@ -335,6 +346,7 @@ declare
   members jsonb;
   friends jsonb;
   invites jsonb;
+  requests jsonb;
   st lobby_settings;
 begin
   if me is null then raise exception 'West hesabına giriş yapılmamış'; end if;
@@ -353,6 +365,8 @@ begin
                 'in_my_lobby', exists (select 1 from lobby_members x where x.user_id = a.following_id and x.lobby_id = lid),
                 'verified', exists (select 1 from mc_links x where x.user_id = a.following_id),
                 'lobby_id', (select x.lobby_id from lobby_members x where x.user_id = a.following_id),
+                'lobby_requested', exists (select 1 from lobby_requests q join lobby_members x on x.lobby_id = q.lobby_id
+                    where x.user_id = a.following_id and q.from_id = me and q.created_at > now() - interval '10 minutes'),
                 'lobby_joinable', lobby_online(a.following_id)
                     and coalesce((select show_online from lobby_settings where user_id = a.following_id), true)
                     and exists (select 1 from lobby_members x where x.user_id = a.following_id and x.lobby_id <> lid and lobby_can_join(me, x.lobby_id))
@@ -364,12 +378,18 @@ begin
            'leader_name', lobby_name((select leader_id from lobbies where id = i.lobby_id)), 'created_at', i.created_at) order by i.created_at desc), '[]'::jsonb)
     into invites from lobby_invites i
    where i.to_id = me and i.created_at > now() - interval '10 minutes' and not is_blocked(me, i.from_id);
+  -- Liderse: lobisine gelen katılma istekleri
+  select coalesce(jsonb_agg(jsonb_build_object('id', q.id, 'from_id', q.from_id, 'from_name', lobby_name(q.from_id),
+           'mc_name', (select mc_name from mc_links where user_id = q.from_id), 'created_at', q.created_at) order by q.created_at), '[]'::jsonb)
+    into requests from lobby_requests q
+   where q.lobby_id = lid and lob.leader_id = me and q.created_at > now() - interval '10 minutes' and not is_blocked(me, q.from_id);
   return jsonb_build_object(
     'verified', true,
     'me', lobby_person(me, me),
     'lobby', jsonb_build_object('id', lob.id, 'leader_id', lob.leader_id, 'leader_name', lobby_name(lob.leader_id), 'privacy', lob.privacy, 'biome', lob.biome, 'members', members),
     'friends', friends,
     'invites', invites,
+    'requests', requests,
     'settings', jsonb_build_object('show_online', coalesce(st.show_online, true), 'show_server', coalesce(st.show_server, true), 'allow_join', coalesce(st.allow_join, true))
   );
 end $$;
@@ -527,6 +547,7 @@ begin
   if me is null or target is null or target = me then raise exception 'Geçersiz kişi'; end if;
   insert into blocks (blocker_id, blocked_id) values (me, target) on conflict do nothing;
   delete from lobby_invites where (from_id = me and to_id = target) or (from_id = target and to_id = me);
+  delete from lobby_requests where from_id = target and lobby_id in (select id from lobbies where leader_id = me);
   select lobby_id into lid from lobby_members where user_id = me;
   if lid is not null and exists (select 1 from lobby_members where user_id = target and lobby_id = lid) then
     if (select leader_id from lobbies where id = lid) = me then perform lobby_move_home(target);
@@ -552,6 +573,7 @@ begin
   delete from lobby_members where user_id = me;
   delete from lobbies where leader_id = me;
   delete from lobby_invites where from_id = me or to_id = me;
+  delete from lobby_requests where from_id = me;
   delete from lobby_presence where user_id = me;
   delete from lobby_settings where user_id = me;
   delete from lobby_verifications where user_id = me;
@@ -560,9 +582,53 @@ begin
   delete from mc_links where user_id = me;
 end $$;
 
+-- Katılma isteği: lobideki bir arkadaşın lobisine (davetsiz katılamıyorsan) istek gönder
+create or replace function public.lobby_request_join(lid uuid) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  me uuid := lobby_require();
+  leader uuid;
+begin
+  select leader_id into leader from lobbies where id = lid;
+  if leader is null then raise exception 'Lobi artık yok'; end if;
+  if exists (select 1 from lobby_members where user_id = me and lobby_id = lid) then raise exception 'Zaten bu lobidesin'; end if;
+  if not exists (select 1 from lobby_members m where m.lobby_id = lid and lobby_friends(me, m.user_id)) then
+    raise exception 'Yalnızca arkadaşlarının lobisine istek gönderebilirsin';
+  end if;
+  if exists (select 1 from lobby_members m where m.lobby_id = lid and is_blocked(me, m.user_id)) then raise exception 'Bu lobiye katılamazsın'; end if;
+  if (select count(*) from lobby_members where lobby_id = lid) >= 7 then raise exception 'Lobi dolu (7/7)'; end if;
+  if exists (select 1 from lobby_requests where lobby_id = lid and from_id = me and created_at > now() - interval '30 seconds') then
+    raise exception 'İsteği az önce gönderdin';
+  end if;
+  perform lobby_rate(me, 'request', 6, 60);
+  insert into lobby_requests (lobby_id, from_id) values (lid, me)
+    on conflict (lobby_id, from_id) do update set created_at = now();
+  perform lobby_touch(leader, 'request');
+  perform lobby_touch(me, 'request');
+end $$;
+
+-- Lider isteği yanıtlar: kabul ederse istek sahibi lobiye ışınlanır
+create or replace function public.lobby_request_answer(req uuid, accept boolean) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  me uuid := lobby_require();
+  r lobby_requests;
+begin
+  select * into r from lobby_requests where id = req;
+  if r.id is null then raise exception 'İstek artık yok'; end if;
+  if (select leader_id from lobbies where id = r.lobby_id) <> me then raise exception 'Yalnızca lobi lideri yanıtlayabilir'; end if;
+  delete from lobby_requests where id = req;
+  if accept then
+    if r.created_at < now() - interval '10 minutes' then raise exception 'İsteğin süresi dolmuş'; end if;
+    perform lobby_enter(r.from_id, r.lobby_id);
+  end if;
+  perform lobby_touch(r.from_id, case when accept then 'request-accepted' else 'request-declined' end);
+  perform lobby_touch(me, 'request');
+end $$;
+
 -- ───────── Yetkiler ─────────
 revoke all on public.mc_links, public.lobby_verifications, public.lobby_settings, public.lobby_presence, public.lobbies,
-  public.lobby_members, public.lobby_invites, public.lobby_actions from anon, authenticated;
+  public.lobby_members, public.lobby_invites, public.lobby_requests, public.lobby_actions from anon, authenticated;
 revoke all on public.lobby_events from anon, authenticated;
 grant select on public.lobby_events, public.mc_links, public.lobby_settings to authenticated;
 
@@ -575,7 +641,7 @@ begin
                            'lobby_friends(uuid,uuid)', 'lobby_online(uuid)', 'lobby_name(uuid)'] loop
     execute format('revoke all on function public.%s from public, anon, authenticated', f);
   end loop;
-  foreach f in array array['lobby_verify_start()', 'lobby_verify_claim()', 'lobby_state()', 'lobby_invite(uuid)', 'lobby_accept(uuid)', 'lobby_decline(uuid)', 'lobby_join(uuid)',
+  foreach f in array array['lobby_verify_start()', 'lobby_verify_claim()', 'lobby_state()', 'lobby_invite(uuid)', 'lobby_accept(uuid)', 'lobby_decline(uuid)', 'lobby_join(uuid)', 'lobby_request_join(uuid)', 'lobby_request_answer(uuid,boolean)',
                            'lobby_leave()', 'lobby_kick(uuid)', 'lobby_set_privacy(text)', 'lobby_set_biome(text)',
                            'lobby_presence_set(boolean,boolean,text,text)', 'lobby_settings_set(boolean,boolean,boolean)', 'lobby_block(uuid)',
                            'lobby_delete_my_data()'] loop

@@ -245,6 +245,13 @@ public final class HomeScreen extends WestShell {
         if (topIcon("lang", Icon.GLOBE, x, y, s, Tr.t("Dil"), 0)) game.open(Game.Target.LANGUAGE);
         x -= s + 6;
         if (topIcon("west", Icon.LOGO, x, y, s, Tr.t("West menüsü"), 0)) game.openWestScreen(false);
+        x -= s + 6;
+        // 3B lobiye geri dön (modül menüsünden klasik menüye geçildiyse)
+        if (topIcon("lobby", Icon.USERS, x, y, s, Tr.t("3B lobiye geç"), 0)) {
+            WestHud.config.data.lobby = true;
+            WestHud.save();
+            go(new LobbyScreen());
+        }
 
         // Alt orta: yüklü modlar
         int cs = s;
