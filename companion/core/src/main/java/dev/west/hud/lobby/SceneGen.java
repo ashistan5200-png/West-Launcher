@@ -284,6 +284,8 @@ public final class SceneGen {
         lampPost(s, 8, -2);
         lampPost(s, -12, -9);
         lampPost(s, 14, -12);
+        lampPost(s, -3, -15);
+        lampPost(s, 19, 1);
         for (int x = -9; x <= 9; x++)
             for (int z = -5; z <= 7; z++)
                 if (s.get(x, g, z).startsWith("minecraft:snow")) s.set(x, g, z, "snow[layers=1]");
@@ -455,6 +457,28 @@ public final class SceneGen {
                 if (r.nextInt(3) == 0) s.set(x, y + 1, z, "dead_bush");
                 else if (!keepLow(x, z, 0)) cactus(s, r, x, y, z);
             } else cactus(s, r, x, y, z);
+        }
+        // Gece: sütunların tepesinde meşaleler, karakterlerin yanında kamp ateşi ve fenerler
+        for (int[] c : cols) s.set(c[0], s.top(c[0], c[1]) + 1, c[1], "torch");
+        int g = GROUND + 1;
+        for (int x = 3; x <= 8; x++)
+            for (int z = -8; z <= -3; z++) {
+                for (int y = GROUND + 1; y <= GROUND + 8; y++) s.set(x, y, z, "air");
+                s.set(x, GROUND, z, "sand");
+            }
+        s.set(5, g, -6, "campfire[lit=true,facing=south]");
+        s.set(7, g, -5, "smooth_sandstone_slab[type=bottom]");
+        s.set(3, g, -7, "smooth_sandstone_slab[type=bottom]");
+        int[][] posts = { { -9, -5 }, { 10, -1 }, { -14, -12 }, { 15, -13 }, { -3, -15 } };
+        for (int[] p : posts) {
+            int y = s.top(p[0], p[1]);
+            if (!s.get(p[0], y, p[1]).contains("sand")) {
+                s.set(p[0], y, p[1], "air");
+                y = s.top(p[0], p[1]);
+            }
+            s.set(p[0], y + 1, p[1], "cut_sandstone");
+            s.set(p[0], y + 2, p[1], "sandstone_wall");
+            s.set(p[0], y + 3, p[1], "lantern");
         }
     }
 

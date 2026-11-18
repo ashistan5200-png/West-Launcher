@@ -8,6 +8,7 @@ import dev.west.hud.api.Gfx;
 import dev.west.hud.lobby.LobbyBiome;
 import dev.west.hud.lobby.LobbyClient;
 import dev.west.hud.lobby.LobbyFrame;
+import dev.west.hud.lobby.LobbyFx;
 import dev.west.hud.lobby.LobbyScene;
 import dev.west.hud.lobby.SceneGen;
 import dev.west.hud.ui.Icons;
@@ -77,6 +78,14 @@ public final class LobbyScreen extends WestShell {
 
     /** Gökyüzü, 3B sahne ve parçacıklar (başka sayfalar da arka plan olarak kullanır) */
     void backdrop(Gfx g) {
+        backdrop(g, false);
+    }
+
+    /** Fare (GUI pikseli): ortadaki karakterin başı onu izler */
+    private float mouseX = -1, mouseY = -1, lookYaw, lookPitch;
+
+    /** @param main lobinin kendi ekranı (kenar bulanıklığı ve vinyet yalnızca burada; sayfalar kendi bulanıklığını kullanır) */
+    void backdrop(Gfx g, boolean main) {
         long now = System.nanoTime();
         bdt = Math.min(0.1f, (now - bgLast) / 1e9f);
         bgLast = now;
@@ -94,6 +103,7 @@ public final class LobbyScreen extends WestShell {
             }
         }
         syncAvatars(bdt);
+        look(sw, sh);
         zoom += ((wardrobe ? 1 : 0) - zoom) * Math.min(1, bdt * 5f);
         if (Math.abs(zoom - (wardrobe ? 1 : 0)) < 0.002f) zoom = wardrobe ? 1 : 0;
         frame.scene = SceneGen.cached(biome);
@@ -102,14 +112,39 @@ public final class LobbyScreen extends WestShell {
         LobbyFrame.Avatar self = selfAvatar();
         frame.camera.update(bgTime, d.lobbyCinematic, frame.avatars.size(), sw, sh);
         if (self != null && zoom > 0) frame.camera.focus(self.x, self.y, self.z, ease(zoom), sw, sh);
+        boolean fx = !d.lobbyLight && !d.performanceMode;
         sky(g, sw, sh, bgTime);
+        if (fx) LobbyFx.sky(g, frame, sw, sh, Math.max(sh * 0.15f, Math.min(sh * 0.75f, frame.camera.horizonY())), bgTime);
         boolean ready = g.lobby(frame);
         if (!ready && !d.lobbyLight) {
             String s = Tr.t("Lobi hazırlanıyor…");
             g.text(s, (sw - g.textWidth(s)) / 2, sh / 3, 0xAAFFFFFF, false);
         }
+        // Kenarlar ve köşeler bulanık, orta keskin (pencere açıkken pencere kendi bulanıklığını kullanır)
+        if (fx && ready && main && modal == Modal.NONE) g.lobbyEdgeBlur(zoom > 0.3f ? 0.62f : 0.5f, zoom > 0.3f ? 0.7f : 0.52f);
+        if (fx && ready) LobbyFx.lights(g, frame, sw, sh, bgTime);
         particles(g, sw, sh);
         bursts(g);
+        if (fx && ready) LobbyFx.atmosphere(g, frame, sw, sh, bgTime, true);
+    }
+
+    /** Ortadaki karakterin başı fareyi izler; diğerleri kendi kendine etrafa bakar */
+    private void look(int sw, int sh) {
+        LobbyFrame.Avatar c = null;
+        for (LobbyFrame.Avatar a : frame.avatars) {
+            a.lookYaw = Float.NaN;
+            if (c == null || Math.abs(a.x) + Math.abs(a.z - 0.6f) < Math.abs(c.x) + Math.abs(c.z - 0.6f)) c = a;
+        }
+        if (c == null || mouseX < 0) return;
+        float[] hp = frame.camera.project(c.x, c.y + 1.62f, c.z);
+        if (hp == null) return;
+        float dx = (mouseX - hp[0]) / Math.max(1, sw * 0.45f), dy = (mouseY - hp[1]) / Math.max(1, sh * 0.5f);
+        float ty = Math.max(-1.05f, Math.min(1.05f, -dx * 1.15f)), tp = Math.max(-0.6f, Math.min(0.55f, dy * 0.95f));
+        float k = Math.min(1, bdt * 9f);
+        lookYaw += (ty - lookYaw) * k;
+        lookPitch += (tp - lookPitch) * k;
+        c.lookYaw = lookYaw;
+        c.lookPitch = lookPitch;
     }
 
     private LobbyFrame.Avatar selfAvatar() {
@@ -132,9 +167,11 @@ public final class LobbyScreen extends WestShell {
     public void render(Gfx g, int mx, int my, float delta) {
         uk = uiScale(g);
         beginFrame(g, Math.round(mx / uk), Math.round(my / uk));
+        mouseX = mx;
+        mouseY = my;
         Game game = WestHud.game;
         if (servers == null || ++serverTries % 240 == 0) servers = game.servers(64);
-        backdrop(g);
+        backdrop(g, true);
         int sw = Math.round(g.width() / uk), sh = Math.round(g.height() / uk);
         vsh = sh;
         g.push();
@@ -1169,7 +1206,7 @@ public final class LobbyScreen extends WestShell {
         g.gradient(0, 0, sw, Math.round(hy), top, hor);
         if (WestHud.config.data.lobbyLight) g.gradient(0, Math.round(hy), sw, sh, Theme.mix(hor, 0xFF000000, 0.35f), Theme.mix(hor, 0xFF000000, 0.65f));
         else g.fill(0, Math.round(hy), sw, sh, hor);
-        if (biome == LobbyBiome.END || biome == LobbyBiome.SNOWY) stars(g, sw, Math.round(hy), time, biome == LobbyBiome.END ? 1f : 0.35f);
+        if (biome.night()) stars(g, sw, Math.round(hy), time, biome == LobbyBiome.END ? 1f : 0.75f);
     }
 
     private static final float[][] STARS = new float[140][];

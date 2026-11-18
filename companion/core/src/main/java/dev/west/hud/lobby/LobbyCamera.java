@@ -11,7 +11,7 @@ import org.joml.Vector4f;
  */
 public final class LobbyCamera {
     /** Bakılan nokta: karakterlerin göğüs hizası */
-    public final Vector3f target = new Vector3f(0, LobbyScene.GROUND + 2.1f, 0.4f);
+    public final Vector3f target = new Vector3f(0, LobbyScene.GROUND + 1.75f, 0.2f);
     public final Vector3f eye = new Vector3f();
     public final Matrix4f view = new Matrix4f(), proj = new Matrix4f(), viewProj = new Matrix4f();
     public float fov = 46f;
@@ -26,8 +26,8 @@ public final class LobbyCamera {
         width = Math.max(1, w);
         height = Math.max(1, h);
         // Bakış noktası her karede sıfırlanır (Gardırop yakınlaşması onu geçici olarak kaydırır)
-        target.set(0, LobbyScene.GROUND + 2.1f, 0.4f);
-        float yaw = 16f, pitch = 22f, dist = 9.6f + Math.max(0, people - 3) * 0.6f;
+        target.set(0, LobbyScene.GROUND + 1.75f, 0.2f);
+        float yaw = 16f, pitch = 27f, dist = 10.2f + Math.max(0, people - 3) * 0.6f;
         if (cinematic) {
             yaw += (float) Math.sin(time * 0.045) * 6f;
             pitch += (float) Math.sin(time * 0.031 + 1.3) * 1.5f;

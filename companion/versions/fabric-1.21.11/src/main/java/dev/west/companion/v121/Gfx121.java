@@ -229,6 +229,17 @@ public final class Gfx121 implements Gfx {
     }
 
     @Override
+    public boolean soft(int kind, float cx, float cy, float w, float h, float angle, int argb, boolean additive) {
+        Post121.soft(g, kind, cx, cy, w, h, angle, argb, additive);
+        return true;
+    }
+
+    @Override
+    public boolean lobbyEdgeBlur(float rx, float ry) {
+        return Post121.edgeBlur(g, rx, ry);
+    }
+
+    @Override
     public void nextLayer() {
         g.nextStratum();
     }

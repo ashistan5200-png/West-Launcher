@@ -464,12 +464,18 @@ public final class LobbyRender121 {
                     bufferSource.endBatch(type);
                 }
             }
+            // Karakterlerin altında yumuşak gölge
+            if (mesh != null || f.light) {
+                RenderType shadowType = RenderTypes.entityShadow(SHADOW);
+                shadows(bufferSource.getBuffer(shadowType), f, ex, ey, ez);
+                bufferSource.endBatch(shadowType);
+            }
             mc.gameRenderer.getLighting().setupFor(Lighting.Entry.LEVEL);
             for (LobbyFrame.Avatar a : f.avatars) {
                 if (a.alpha <= 0.02f) continue;
                 PlayerSkin skin = Skins121.skin(a);
                 PlayerModel model = model(skin.model() == PlayerModelType.SLIM);
-                animate(model, f.time + a.phase);
+                animate(model, f.time + a.phase, a);
                 int tint = 0xFFFFFFFF;
                 if (mesh != null) {
                     int bx = (int) Math.floor(a.x), by = (int) Math.floor(a.y + 1), bz = (int) Math.floor(a.z);
@@ -499,6 +505,21 @@ public final class LobbyRender121 {
             mv.popMatrix();
         }
 
+        private static final net.minecraft.resources.Identifier SHADOW = net.minecraft.resources.Identifier.withDefaultNamespace("textures/misc/shadow.png");
+
+        private static void shadows(VertexConsumer buf, LobbyFrame f, float ex, float ey, float ez) {
+            for (LobbyFrame.Avatar a : f.avatars) {
+                if (a.alpha <= 0.05f) continue;
+                float r = 0.72f, y = a.y + 0.012f - ey;
+                float x0 = a.x - r - ex, x1 = a.x + r - ex, z0 = a.z - r - ez, z1 = a.z + r - ez;
+                int col = (Math.round(Math.min(1, a.alpha) * 125) << 24) | 0xFFFFFF;
+                buf.addVertex(x0, y, z0, col, 0, 0, OverlayTexture.NO_OVERLAY, 0xF000F0, 0, 1, 0);
+                buf.addVertex(x0, y, z1, col, 0, 1, OverlayTexture.NO_OVERLAY, 0xF000F0, 0, 1, 0);
+                buf.addVertex(x1, y, z1, col, 1, 1, OverlayTexture.NO_OVERLAY, 0xF000F0, 0, 1, 0);
+                buf.addVertex(x1, y, z0, col, 1, 0, OverlayTexture.NO_OVERLAY, 0xF000F0, 0, 1, 0);
+            }
+        }
+
         private GpuBufferSlice fog(LobbyBiome b) {
             int size = FogRenderer.FOG_UBO_SIZE;
             if (fogBuffer == null) fogBuffer = RenderSystem.getDevice().createBuffer(() -> "West lobby fog", 136, size);
@@ -523,13 +544,18 @@ public final class LobbyRender121 {
             return slimArms ? slim : wide;
         }
 
-        private static void animate(PlayerModel m, float t) {
+        private static void animate(PlayerModel m, float t, LobbyFrame.Avatar a) {
             m.resetPose();
             ModelPart root = m.root();
             ModelPart head = root.getChild("head"), right = root.getChild("right_arm"), left = root.getChild("left_arm"), body = root.getChild("body");
             float breathe = (float) Math.sin(t * 1.3f);
             head.yRot = (float) Math.sin(t * 0.37f) * 0.22f;
             head.xRot = (float) Math.sin(t * 0.29f + 1) * 0.06f - 0.04f;
+            // Ortadaki karakter fareye bakar
+            if (!Float.isNaN(a.lookYaw)) {
+                head.yRot = a.lookYaw;
+                head.xRot = a.lookPitch;
+            }
             right.zRot = 0.06f + breathe * 0.04f;
             left.zRot = -0.06f - breathe * 0.04f;
             right.xRot = (float) Math.sin(t * 0.6f) * 0.05f;

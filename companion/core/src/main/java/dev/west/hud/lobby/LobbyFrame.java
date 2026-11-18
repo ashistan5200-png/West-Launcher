@@ -26,6 +26,8 @@ public final class LobbyFrame {
         public float alpha = 1;
         /** Kişiye özel animasyon kayması */
         public float phase;
+        /** Başın baktığı yön (radyan, gövdeye göre); NaN ise kendiliğinden etrafa bakar */
+        public float lookYaw = Float.NaN, lookPitch;
 
         public Avatar(String key) {
             this.key = key;

@@ -7,9 +7,9 @@ package dev.west.hud.lobby;
 public enum LobbyBiome {
     //        id          ad (Türkçe anahtar)  gök üst    gök ufuk   sis        sisBaş sisSon  gökIşığı parçacık
     FOREST("forest", "Gece Ormanı", 0xFF0A1226, 0xFF223355, 0xFF1C2A48, 18f, 56f, 0.6f, Particle.FIREFLIES),
-    SNOWY("snowy", "Karlı", 0xFF6F8FB5, 0xFFC7D5E4, 0xFFC3D1E0, 18f, 54f, 0.86f, Particle.SNOW),
+    SNOWY("snowy", "Karlı", 0xFF081428, 0xFF1E3458, 0xFF1A2C4A, 18f, 54f, 0.58f, Particle.SNOW),
     BADLANDS("badlands", "Badlands", 0xFF6FA0D8, 0xFFF0C69A, 0xFFEBC196, 22f, 60f, 1.0f, Particle.DUST),
-    DESERT("desert", "Çöl", 0xFF7BB1E6, 0xFFF1E3BC, 0xFFEDDFB8, 22f, 60f, 1.0f, Particle.NONE),
+    DESERT("desert", "Çöl", 0xFF0A0C24, 0xFF33305A, 0xFF2A2846, 22f, 62f, 0.56f, Particle.DUST),
     CHERRY("cherry", "Kiraz Bahçesi", 0xFF86B9EC, 0xFFF6DCE6, 0xFFF3D6E2, 20f, 58f, 0.97f, Particle.PETALS),
     END("end", "End", 0xFF07050D, 0xFF1E1530, 0xFF1B1329, 18f, 56f, 0.55f, Particle.ENDER),
     NETHER("nether", "Nether", 0xFF1C0505, 0xFF4A1210, 0xFF4A1512, 14f, 48f, 0.0f, Particle.EMBERS);
@@ -36,6 +36,11 @@ public enum LobbyBiome {
     public static LobbyBiome of(String id) {
         for (LobbyBiome b : values()) if (b.id.equals(id)) return b;
         return FOREST;
+    }
+
+    /** Gece biyomu: yıldızlar, ay, ışık kaynaklarının parıltısı belirgin */
+    public boolean night() {
+        return this == FOREST || this == SNOWY || this == DESERT || this == END;
     }
 
     /** Nether'de yüzler daha eşit aydınlanır (oyundaki gibi) */
