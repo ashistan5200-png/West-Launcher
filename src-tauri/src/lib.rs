@@ -126,6 +126,7 @@ pub fn run() {
             commands::depot::depot_upload,
             commands::depot::depot_delete_file,
             commands::depot::depot_install,
+            commands::depot::depot_installed,
             commands::content::list_content,
             commands::content::refresh_content,
             commands::content::set_content_enabled,

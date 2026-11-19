@@ -229,5 +229,6 @@
  "Depo için Supabase'te supabase/depot.sql dosyası henüz çalıştırılmamış.": "Für das Depot wurde supabase/depot.sql in Supabase noch nicht ausgeführt.",
  "Depo henüz kurulmamış: Supabase'te supabase/depot.sql dosyasını çalıştır.": "Das Depot ist noch nicht eingerichtet: führe supabase/depot.sql in Supabase aus.",
  "Depo'ya yalnızca Onaylı kullanıcılar dosya yükleyebilir.": "Nur bestätigte Nutzer können Dateien ins Depot hochladen.",
- "Dosya Supabase'in boyut sınırını aşıyor (en fazla 50 MB).": "Die Datei überschreitet das Größenlimit von Supabase (max. 50 MB)."
+ "Dosya Supabase'in boyut sınırını aşıyor (en fazla 50 MB).": "Die Datei überschreitet das Größenlimit von Supabase (max. 50 MB).",
+ "Sürüm bulunamadı": "Version nicht gefunden"
 }

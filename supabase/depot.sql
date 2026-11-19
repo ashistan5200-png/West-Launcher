@@ -144,6 +144,10 @@ create table if not exists public.depot_items (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+-- Tanıtım fotoğrafları: [{ "url": "...", "caption": "..." }] (en fazla 8)
+alter table public.depot_items add column if not exists gallery jsonb not null default '[]'::jsonb;
+alter table public.depot_items drop constraint if exists depot_items_gallery_check;
+alter table public.depot_items add constraint depot_items_gallery_check check (jsonb_typeof(gallery) = 'array' and jsonb_array_length(gallery) <= 8);
 create index if not exists depot_items_kind on public.depot_items (kind, created_at desc) where not removed;
 create index if not exists depot_items_author on public.depot_items (author_id, created_at desc);
 create index if not exists depot_items_popular on public.depot_items (downloads desc) where not removed;
@@ -199,7 +203,8 @@ begin
 end $$;
 
 -- Liste görünümü: yazar adı, fotoğrafı ve rolüyle
-create or replace view public.depot_view with (security_invoker = true) as
+drop view if exists public.depot_view;
+create view public.depot_view with (security_invoker = true) as
   select d.*, p.username, p.display_name, p.avatar_url, p.verified, p.role as author_role
   from public.depot_items d join public.profiles p on p.id = d.author_id;
 
@@ -266,3 +271,104 @@ create policy "depot: onaylılar kendi klasörüne yükler" on storage.objects f
 drop policy if exists "depot: sahibi ya da moderatör siler" on storage.objects;
 create policy "depot: sahibi ya da moderatör siler" on storage.objects for delete to authenticated
   using (bucket_id = 'depot' and ((storage.foldername(name))[1] = auth.uid()::text or public.role_rank(public.my_role()) >= 2));
+
+-- ───────── Görseller: yalnızca West'in kendi deposundan, yükleyenin klasöründen ─────────
+-- (dışarıdan bağlanan görsel, açan herkesin IP'sini o siteye sızdırabilir)
+create or replace function public.depot_media_ok(u text, author uuid) returns boolean language sql immutable as $$
+  select u is null or (char_length(u) <= 400 and u ~ ('^https://[A-Za-z0-9.-]+/storage/v1/object/public/media/' || author::text || '/depot/[A-Za-z0-9._-]+$'))
+$$;
+
+create or replace function public.check_depot_media() returns trigger language plpgsql as $$
+declare g jsonb;
+begin
+  if not depot_media_ok(new.icon_url, new.author_id) then raise exception 'Simge yalnızca West''e yüklenmiş bir görsel olabilir'; end if;
+  for g in select * from jsonb_array_elements(new.gallery) loop
+    if jsonb_typeof(g) <> 'object' or not depot_media_ok(g->>'url', new.author_id) or g->>'url' is null
+       or char_length(coalesce(g->>'caption', '')) > 120 then
+      raise exception 'Galeride geçersiz görsel';
+    end if;
+  end loop;
+  return new;
+end $$;
+drop trigger if exists depot_items_media on public.depot_items;
+create trigger depot_items_media before insert or update of icon_url, gallery on public.depot_items for each row execute procedure public.check_depot_media();
+
+-- ───────── Sürümler ─────────
+create table if not exists public.depot_versions (
+  id uuid primary key default gen_random_uuid(),
+  item_id uuid not null references public.depot_items(id) on delete cascade,
+  version text not null check (char_length(version) between 1 and 32),
+  changelog text not null default '' check (char_length(changelog) <= 2000),
+  mc_versions text[] not null default '{}' check (cardinality(mc_versions) <= 30),
+  loaders text[] not null default '{}' check (loaders <@ array['fabric', 'forge', 'neoforge', 'quilt', 'vanilla']::text[]),
+  file_path text not null check (char_length(file_path) <= 300),
+  file_name text not null check (char_length(file_name) between 1 and 120),
+  file_size bigint not null check (file_size > 0 and file_size <= 52428800),
+  sha256 text not null check (sha256 ~ '^[0-9a-f]{64}$'),
+  created_at timestamptz not null default now(),
+  unique (item_id, version)
+);
+create index if not exists depot_versions_item on public.depot_versions (item_id, created_at desc);
+
+-- İlk sürüm, dosya paylaşılınca kendiliğinden kaydedilir
+create or replace function public.depot_first_version() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  insert into depot_versions (item_id, version, mc_versions, loaders, file_path, file_name, file_size, sha256, created_at)
+  values (new.id, coalesce(nullif(new.version, ''), '1.0'), new.mc_versions, new.loaders, new.file_path, new.file_name, new.file_size, new.sha256, new.created_at)
+  on conflict do nothing;
+  return new;
+end $$;
+drop trigger if exists depot_items_first_version on public.depot_items;
+create trigger depot_items_first_version after insert on public.depot_items for each row execute procedure public.depot_first_version();
+
+-- Önceden paylaşılmış dosyaların ilk sürümü
+insert into public.depot_versions (item_id, version, mc_versions, loaders, file_path, file_name, file_size, sha256, created_at)
+select i.id, coalesce(nullif(i.version, ''), '1.0'), i.mc_versions, i.loaders, i.file_path, i.file_name, i.file_size, i.sha256, i.created_at
+from public.depot_items i where not exists (select 1 from public.depot_versions v where v.item_id = i.id)
+on conflict do nothing;
+
+/** Yeni sürüm yayınla: dosya önce yükleyenin klasörüne yüklenir, sonra bu çağrıyla öğe güncellenir. */
+create or replace function public.depot_publish_version(p_item uuid, p_version text, p_changelog text, p_file_path text, p_file_name text,
+  p_file_size bigint, p_sha256 text, p_mc_versions text[], p_loaders text[]) returns uuid
+language plpgsql security definer set search_path = public as $$
+declare it depot_items; vid uuid; v text := trim(p_version);
+begin
+  select * into it from depot_items where id = p_item;
+  if it.id is null then raise exception 'Dosya bulunamadı'; end if;
+  if it.author_id <> auth.uid() then raise exception 'Yalnızca paylaşan yeni sürüm yükleyebilir'; end if;
+  if role_rank(my_role()) < 1 then raise exception 'Bunun için Onaylı olmalısın'; end if;
+  if it.removed then raise exception 'Kaldırılmış bir dosyaya sürüm eklenemez'; end if;
+  if p_file_path not like auth.uid()::text || '/%' then raise exception 'Geçersiz dosya yolu'; end if;
+  if v = '' then raise exception 'Sürüm numarası gerekli'; end if;
+  if exists (select 1 from depot_versions where item_id = p_item and version = v) then raise exception 'Bu sürüm numarası zaten var'; end if;
+  insert into depot_versions (item_id, version, changelog, mc_versions, loaders, file_path, file_name, file_size, sha256)
+  values (p_item, v, coalesce(p_changelog, ''), coalesce(p_mc_versions, '{}'), coalesce(p_loaders, '{}'), p_file_path, p_file_name, p_file_size, lower(p_sha256))
+  returning id into vid;
+  update depot_items set version = v, mc_versions = coalesce(p_mc_versions, '{}'), loaders = coalesce(p_loaders, '{}'),
+    file_path = p_file_path, file_name = p_file_name, file_size = p_file_size, sha256 = lower(p_sha256), updated_at = now()
+    where id = p_item;
+  return vid;
+end $$;
+
+/** Eski bir sürümü sil (güncel sürüm silinemez); depodaki dosyasının yolunu döner */
+create or replace function public.depot_delete_version(p_version uuid) returns text
+language plpgsql security definer set search_path = public as $$
+declare v depot_versions; it depot_items;
+begin
+  select * into v from depot_versions where id = p_version;
+  if v.id is null then raise exception 'Sürüm bulunamadı'; end if;
+  select * into it from depot_items where id = v.item_id;
+  if it.author_id <> auth.uid() and role_rank(my_role()) < 2 then raise exception 'Bunun için yetkin yok'; end if;
+  if it.file_path = v.file_path then raise exception 'Güncel sürüm silinemez; önce yeni bir sürüm yükle'; end if;
+  delete from depot_versions where id = p_version;
+  return v.file_path;
+end $$;
+
+alter table public.depot_versions enable row level security;
+drop policy if exists "depot_versions: öğe görünürse" on public.depot_versions;
+create policy "depot_versions: öğe görünürse" on public.depot_versions for select
+  using (exists (select 1 from public.depot_items i where i.id = item_id));
+grant select on public.depot_versions to anon, authenticated;
+revoke all on function public.depot_publish_version(uuid, text, text, text, text, bigint, text, text[], text[]), public.depot_delete_version(uuid) from public, anon;
+grant execute on function public.depot_publish_version(uuid, text, text, text, text, bigint, text, text[], text[]), public.depot_delete_version(uuid) to authenticated;

@@ -111,8 +111,11 @@ export const api = {
   depotInspect: (path: string) => invoke<DepotInspect>("depot_inspect", { path }),
   depotUpload: (path: string) => invoke<DepotUploaded>("depot_upload", { path }),
   depotDeleteFile: (filePath: string) => invoke<void>("depot_delete_file", { filePath }),
-  depotInstall: (itemId: string, instanceId: string | null, world: string | null) =>
-    invoke<{ installed: { path: string; place: string }; warnings: string[] }>("depot_install", { itemId, instanceId, world }),
+  depotInstall: (itemId: string, instanceId: string | null, world: string | null, versionId: string | null = null) =>
+    invoke<{ installed: { path: string; place: string }; warnings: string[]; instanceId: string | null; replaced: string | null }>("depot_install", { itemId, instanceId, world, versionId }),
+  /** Bu instance'a Depo'dan kurulanlar: öğe kimliği → kurulu sürüm */
+  depotInstalled: (instanceId: string) =>
+    invoke<Record<string, { version: string; versionId: string | null; sha256: string; kind: string; place: string; at: string }>>("depot_installed", { instanceId }),
   installContent: (instanceId: string, source: ContentSource, projectId: string, kind: ContentKind) =>
     invoke<InstallReport>("install_content", { instanceId, source, projectId, kind }),
   installModpack: (hit: ContentHit) => invoke<Instance>("install_modpack", { source: hit.source, projectId: hit.id }),

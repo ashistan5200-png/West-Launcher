@@ -36,17 +36,24 @@ export const KIND_PLACE: Record<DepotKind, string> = {
   world: "saves/",
   schematic: "schematics/",
   datapack: "saves/<dünya>/datapacks/",
-  modpack: tx("İndirilenler klasörü"),
+  modpack: tx("yeni bir instance"),
   other: tx("İndirilenler klasörü"),
 };
-/** Instance'a kurulabilen türler (diğerleri İndirilenler'e kaydedilir) */
+/** Var olan bir instance'a kurulan türler (modpack kendi instance'ını oluşturur, diğerleri İndirilenler'e kaydedilir) */
 export const needsInstance = (k: DepotKind) => k !== "modpack" && k !== "other";
+export const MAX_GALLERY = 8;
 
 export interface DepotItem {
   id: string; author_id: string; kind: DepotKind; title: string; summary: string; description: string; version: string;
   mc_versions: string[]; loaders: string[]; icon_url: string | null; file_path: string; file_name: string; file_size: number; sha256: string;
   downloads: number; removed: boolean; removed_reason: string | null; created_at: string; updated_at: string;
   username: string; display_name: string | null; avatar_url: string | null; verified: boolean; author_role: Role;
+  gallery: GalleryImage[];
+}
+export interface GalleryImage { url: string; caption?: string }
+export interface DepotVersion {
+  id: string; item_id: string; version: string; changelog: string; mc_versions: string[]; loaders: string[];
+  file_path: string; file_name: string; file_size: number; sha256: string; created_at: string;
 }
 export interface DepotInspect {
   kind: DepotKind; fileName: string; size: number; sha256: string; title: string | null; version: string | null;
@@ -77,13 +84,36 @@ export async function listItems(o: { kind: DepotKind | "all"; q: string; sort: "
 }
 export const getItem = async (id: string) => (await api.westApi<DepotItem[]>("GET", R("depot_view"), { query: [["id", `eq.${id}`]] }))[0] ?? null;
 
-export interface NewItem { kind: DepotKind; title: string; summary: string; description: string; version: string; mc_versions: string[]; loaders: string[]; icon_url: string | null; file_path: string; file_name: string; file_size: number; sha256: string }
+export interface NewItem { kind: DepotKind; title: string; summary: string; description: string; version: string; mc_versions: string[]; loaders: string[]; icon_url: string | null; file_path: string; file_name: string; file_size: number; sha256: string; gallery: GalleryImage[] }
 export const createItem = async (it: NewItem) => (await api.westApi<DepotItem[]>("POST", R("depot_items"), { body: it, prefer: "return=representation" }))[0];
-export const updateItem = (id: string, patch: Partial<Pick<DepotItem, "title" | "summary" | "description" | "version" | "mc_versions" | "loaders" | "icon_url">>) =>
+export const updateItem = (id: string, patch: Partial<Pick<DepotItem, "title" | "summary" | "description" | "icon_url" | "gallery">>) =>
   api.westApi("PATCH", R("depot_items"), { query: [["id", `eq.${id}`]], body: patch });
 export async function deleteItem(it: Pick<DepotItem, "id" | "file_path">) {
+  // Tüm sürümlerin dosyaları da silinsin
+  const vs = await versions(it.id).catch(() => [] as DepotVersion[]);
   await api.westApi("DELETE", R("depot_items"), { query: [["id", `eq.${it.id}`]] });
-  await api.depotDeleteFile(it.file_path).catch(() => {});
+  for (const p of new Set([it.file_path, ...vs.map((v) => v.file_path)])) await api.depotDeleteFile(p).catch(() => {});
+}
+
+// ───────── Sürümler ─────────
+export const versions = (itemId: string) =>
+  api.westApi<DepotVersion[]>("GET", R("depot_versions"), { query: [["item_id", `eq.${itemId}`], ["order", "created_at.desc"], ["limit", "100"]] });
+export const publishVersion = (itemId: string, v: { version: string; changelog: string; mc_versions: string[]; loaders: string[] }, up: DepotUploaded) =>
+  api.westApi<string>("POST", R("rpc/depot_publish_version"), {
+    body: { p_item: itemId, p_version: v.version, p_changelog: v.changelog, p_file_path: up.filePath, p_file_name: up.fileName, p_file_size: up.fileSize, p_sha256: up.sha256, p_mc_versions: v.mc_versions, p_loaders: v.loaders },
+  });
+export async function deleteVersion(id: string) {
+  const path = await api.westApi<string>("POST", R("rpc/depot_delete_version"), { body: { p_version: id } });
+  if (path) await api.depotDeleteFile(path).catch(() => {});
+}
+/** Seçilen yerel görselleri West'e yükler; zaten yüklü olanlar olduğu gibi kalır */
+export async function uploadGallery(items: { url?: string; local?: string; caption: string }[]): Promise<GalleryImage[]> {
+  const out: GalleryImage[] = [];
+  for (const g of items.slice(0, MAX_GALLERY)) {
+    const url = g.url ?? (g.local ? await api.westUpload(g.local, "depot") : null);
+    if (url) out.push(g.caption.trim() ? { url, caption: g.caption.trim().slice(0, 120) } : { url });
+  }
+  return out;
 }
 export const moderate = (id: string, remove: boolean, reason: string | null) => api.westApi("POST", R("rpc/depot_moderate"), { body: { p_item: id, p_remove: remove, p_reason: reason } });
 export const report = (id: string, reason: string) => api.westApi("POST", R("reports"), { body: { target_type: "depot", target_id: id, reason } });

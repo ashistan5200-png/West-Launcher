@@ -153,16 +153,35 @@ pub async fn install(ctx: &PackCtx<'_>, source: Source, project_id: &str) -> Res
         }
     };
 
-    let mut zip = zip::ZipArchive::new(std::fs::File::open(&archive)?)?;
+    install_archive(ctx, &archive, &title, &task, false).await
+}
+
+/// Modrinth'in .mrpack biçiminde izin verdiği indirme adresleri (topluluk paketleri yalnızca bunlardan dosya çekebilir)
+const MR_ALLOWED_HOSTS: &[&str] = &["cdn.modrinth.com", "github.com", "raw.githubusercontent.com", "gitlab.com"];
+
+fn allowed_url(url: &str) -> bool {
+    let Some(rest) = url.strip_prefix("https://") else { return false };
+    let host = rest.split(['/', '?', '#']).next().unwrap_or("").to_ascii_lowercase();
+    MR_ALLOWED_HOSTS.iter().any(|h| host == *h)
+}
+
+/// Bilgisayardaki bir paket dosyasından (.mrpack ya da CurseForge zip) yeni instance kurar.
+/// strict: dosyalar yalnızca Modrinth'in izin verdiği adreslerden indirilir (West Depo paketleri için).
+pub async fn install_archive(ctx: &PackCtx<'_>, archive: &Path, title: &str, task: &str, strict: bool) -> Result<Instance> {
+    let mut zip = zip::ZipArchive::new(std::fs::File::open(archive)?)?;
     let mgr = InstanceManager::new(ctx.paths);
     let result = if let Some(bytes) = read_zip_entry(&mut zip, "modrinth.index.json") {
         // 2a) Modrinth
         let idx: MrIndex = serde_json::from_slice(&bytes)?;
         let mc = idx.dependencies.get("minecraft").cloned().ok_or_else(|| AppError::msg(crate::i18n::t("paket MC sürümü belirtmiyor")))?;
-        let mut inst = mgr.create(NewInstance { name: if idx.name.is_empty() { title.clone() } else { idx.name }, mc_version: mc, loader: mr_loader(&idx.dependencies), icon: None, group: Some("Modpack".into()) })?;
+        let mut inst = mgr.create(NewInstance { name: if idx.name.is_empty() { title.to_string() } else { idx.name }, mc_version: mc, loader: mr_loader(&idx.dependencies), icon: None, group: Some("Modpack".into()) })?;
         let game = ctx.paths.instance_game_dir(&inst.id);
         let mut tasks = Vec::new();
         for f in idx.files {
+            if strict && !f.downloads.first().is_some_and(|u| allowed_url(u)) {
+                tracing::warn!("Modpack: izin verilmeyen adresten dosya atlandı: {}", f.path);
+                continue;
+            }
             if f.env.as_ref().and_then(|e| e.get("client")).map(|c| c == "unsupported").unwrap_or(false) {
                 continue;
             }
@@ -218,12 +237,15 @@ pub async fn install(ctx: &PackCtx<'_>, source: Source, project_id: &str) -> Res
         return Err(AppError::msg(crate::i18n::t("Tanınmayan modpack biçimi")));
     };
 
-    let _ = std::fs::remove_file(&archive);
+    if !strict {
+        let _ = std::fs::remove_file(archive);
+    }
     let inst = result;
     mgr.save(&inst)?;
-    report(&ctx.progress, &task, "done", 1, 1);
+    report(&ctx.progress, task, "done", 1, 1);
     Ok(inst)
 }
+
 
 async fn cf_latest_files(http: &Http, key: &str, mod_id: u64) -> Result<(Vec<curseforge::File>, ())> {
     #[derive(Deserialize)]
@@ -243,4 +265,53 @@ async fn cf_latest_files(http: &Http, key: &str, mod_id: u64) -> Result<(Vec<cur
     let mut files = env.data;
     files.sort_by_key(|f| std::cmp::Reverse((f.release_type == 1, f.id)));
     Ok((files, ()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+
+    #[test]
+    fn allowed_hosts() {
+        assert!(allowed_url("https://cdn.modrinth.com/data/AANobbMI/versions/x/sodium.jar"));
+        assert!(allowed_url("https://github.com/a/b/releases/download/v1/m.jar"));
+        assert!(!allowed_url("http://cdn.modrinth.com/x.jar"));
+        assert!(!allowed_url("https://cdn.modrinth.com.evil.site/x.jar"));
+        assert!(!allowed_url("https://evil.site/cdn.modrinth.com/x.jar"));
+    }
+
+    /// Depo'dan gelen yerel .mrpack yeni bir instance olarak kurulur; izin verilmeyen adresler atlanır
+    #[tokio::test]
+    async fn installs_local_mrpack_as_instance() {
+        let root = std::env::temp_dir().join(format!("west-pack-test-{}", uuid::Uuid::new_v4()));
+        let paths = Paths::new(root.clone());
+        paths.ensure().unwrap();
+        let pack = root.join("macera.mrpack");
+        {
+            let mut w = zip::ZipWriter::new(std::fs::File::create(&pack).unwrap());
+            let opt = zip::write::SimpleFileOptions::default();
+            w.start_file("modrinth.index.json", opt).unwrap();
+            w.write_all(br#"{"formatVersion":1,"game":"minecraft","versionId":"2.1","name":"Macera","files":[
+                {"path":"mods/kotu.jar","hashes":{"sha1":"0000000000000000000000000000000000000000"},"downloads":["https://evil.site/kotu.jar"],"fileSize":10}],
+                "dependencies":{"minecraft":"1.21.11","fabric-loader":"0.17.0"}}"#).unwrap();
+            w.start_file("overrides/config/ayar.txt", opt).unwrap();
+            w.write_all(b"merhaba").unwrap();
+            w.start_file("overrides/../../kacak.txt", opt).unwrap();
+            w.write_all(b"!").unwrap();
+            w.finish().unwrap();
+        }
+        let http = Http::new();
+        let ctx = PackCtx { http: &http, paths: &paths, cf_key: None, concurrency: 2, progress: crate::core::noop_progress() };
+        let inst = install_archive(&ctx, &pack, "Yedek ad", "t", true).await.unwrap();
+        assert_eq!(inst.name, "Macera");
+        assert_eq!(inst.mc_version, "1.21.11");
+        assert_eq!(inst.loader.kind, LoaderKind::Fabric);
+        let game = paths.instance_game_dir(&inst.id);
+        assert_eq!(std::fs::read_to_string(game.join("config/ayar.txt")).unwrap(), "merhaba");
+        assert!(!game.join("mods/kotu.jar").exists(), "izin verilmeyen adresten dosya indirilmemeli");
+        assert!(!root.join("kacak.txt").exists() && !paths.instances().join("kacak.txt").exists());
+        assert!(pack.exists(), "Depo paketi kurulumdan sonra çağıran tarafından silinir");
+        let _ = std::fs::remove_dir_all(&root);
+    }
 }

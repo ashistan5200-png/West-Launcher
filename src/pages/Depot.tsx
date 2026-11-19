@@ -3,8 +3,8 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import clsx from "clsx";
 import {
-  AlertTriangle, Box, Check, Download, FileArchive, Flag, FolderOpen, Gavel, Globe2, ImagePlus, Layers, Loader2, Package, Palette, Plus,
-  RotateCcw, Search, Shapes, ShieldCheck, Sparkles, Trash2, Upload, UserCog, X,
+  AlertTriangle, Box, Check, ChevronLeft, ChevronRight, Download, FileArchive, Flag, FolderOpen, Gavel, Globe2, History, ImagePlus, Layers, Loader2, Package, Palette, Pencil, Play, Plus,
+  RefreshCw, RotateCcw, Search, Shapes, ShieldCheck, Sparkles, Trash2, Upload, UserCog, X,
 } from "lucide-react";
 import { Modal } from "@/components/Modal";
 import { askConfirm } from "@/components/ConfirmDialog";
@@ -199,7 +199,8 @@ function ItemIcon({ it, size = 52 }: { it: Pick<DepotItem, "icon_url" | "kind">;
 
 function ItemCard({ it, onOpen }: { it: DepotItem; onOpen: () => void }) {
   return (
-    <button className={clsx("depot-card", it.removed && "removed")} onClick={onOpen}>
+    <button className={clsx("depot-card", it.removed && "removed", it.gallery?.length && "has-cover")} onClick={onOpen}>
+      {it.gallery?.length ? <img className="depot-cover" src={it.gallery[0].url} alt="" loading="lazy" /> : null}
       <ItemIcon it={it} />
       <div className="depot-card-body">
         <strong className="truncate">{it.title}</strong>
@@ -221,6 +222,83 @@ function ItemCard({ it, onOpen }: { it: DepotItem; onOpen: () => void }) {
   );
 }
 
+// ───────── Galeri ─────────
+
+function Gallery({ images }: { images: D.GalleryImage[] }) {
+  const [i, setI] = useState(0);
+  const [big, setBig] = useState(false);
+  if (!images.length) return null;
+  const cur = images[Math.min(i, images.length - 1)];
+  const go = (d: number) => setI((x) => (x + d + images.length) % images.length);
+  return (
+    <div className="depot-gallery">
+      <button className="depot-gallery-main" onClick={() => setBig(true)} title={tx("Büyüt")}>
+        <img src={cur.url} alt={cur.caption ?? ""} />
+        {images.length > 1 && <>
+          <span className="depot-gal-nav l" onClick={(e) => { e.stopPropagation(); go(-1); }}><ChevronLeft size={18} /></span>
+          <span className="depot-gal-nav r" onClick={(e) => { e.stopPropagation(); go(1); }}><ChevronRight size={18} /></span>
+        </>}
+        {cur.caption && <span className="depot-gal-cap">{cur.caption}</span>}
+      </button>
+      {images.length > 1 && (
+        <div className="depot-gal-thumbs">
+          {images.map((g, k) => <button key={g.url} className={clsx(k === i && "on")} onClick={() => setI(k)}><img src={g.url} alt="" /></button>)}
+        </div>
+      )}
+      {big && (
+        <div className="depot-lightbox" onMouseDown={() => setBig(false)}>
+          <img src={cur.url} alt={cur.caption ?? ""} onMouseDown={(e) => e.stopPropagation()} />
+          {cur.caption && <span>{cur.caption}</span>}
+          {images.length > 1 && <>
+            <button className="depot-gal-nav l" onMouseDown={(e) => { e.stopPropagation(); go(-1); }}><ChevronLeft size={22} /></button>
+            <button className="depot-gal-nav r" onMouseDown={(e) => { e.stopPropagation(); go(1); }}><ChevronRight size={22} /></button>
+          </>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Galeri düzenleyici: yerel görsel ekle, açıklama yaz, sırala, çıkar (kayıtta yüklenir) */
+type GalItem = { url?: string; local?: string; preview: string; caption: string };
+function GalleryEditor({ items, onChange, onError }: { items: GalItem[]; onChange: (g: GalItem[]) => void; onError: (e: string) => void }) {
+  const add = async () => {
+    const p = await openDialog({ multiple: true, filters: [{ name: tx("Görsel"), extensions: ["png", "jpg", "jpeg", "webp", "gif"] }] });
+    const list = Array.isArray(p) ? p : typeof p === "string" ? [p] : [];
+    const next = [...items];
+    for (const path of list) {
+      if (next.length >= D.MAX_GALLERY) break;
+      try { next.push({ local: path, preview: await api.readImageData(path), caption: "" }); } catch (e) { onError(err(e)); }
+    }
+    onChange(next);
+  };
+  const move = (k: number, d: number) => {
+    const n = [...items];
+    const [x] = n.splice(k, 1);
+    n.splice(Math.max(0, Math.min(n.length, k + d)), 0, x);
+    onChange(n);
+  };
+  return (
+    <div className="field">
+      <span>{tx("Fotoğraflar ({0}/{1}) · oyundan ekran görüntüleri, örnekler", items.length, D.MAX_GALLERY)}</span>
+      <div className="depot-gal-edit">
+        {items.map((g, k) => (
+          <div key={(g.url ?? g.local ?? "") + k} className="depot-gal-item">
+            <img src={g.preview} alt="" />
+            <input className="input" maxLength={120} placeholder={tx("Açıklama (isteğe bağlı)")} value={g.caption} onChange={(e) => onChange(items.map((x, j) => (j === k ? { ...x, caption: e.target.value } : x)))} />
+            <div className="depot-gal-tools">
+              <button className="icon-btn" disabled={k === 0} onClick={() => move(k, -1)} title={tx("Sola al")}><ChevronLeft size={14} /></button>
+              <button className="icon-btn" disabled={k === items.length - 1} onClick={() => move(k, 1)} title={tx("Sağa al")}><ChevronRight size={14} /></button>
+              <button className="icon-btn" onClick={() => onChange(items.filter((_, j) => j !== k))} title={tx("Çıkar")}><X size={14} /></button>
+            </div>
+          </div>
+        ))}
+        {items.length < D.MAX_GALLERY && <button className="depot-gal-add" onClick={() => void add()}><ImagePlus size={20} /><span className="small">{tx("Fotoğraf ekle")}</span></button>}
+      </div>
+    </div>
+  );
+}
+
 // ───────── Ayrıntı ve kurulum ─────────
 
 function ItemModal({ it, role, myId, onClose, onChanged }: { it: DepotItem; role: Role | null; myId: string | null; onClose: () => void; onChanged: () => void }) {
@@ -229,16 +307,24 @@ function ItemModal({ it, role, myId, onClose, onChanged }: { it: DepotItem; role
   const [target, setTarget] = useState<string>("");
   const [worlds, setWorlds] = useState<string[]>([]);
   const [world, setWorld] = useState("");
-  const [warn, setWarn] = useState(false);
+  const [warn, setWarn] = useState<{ versionId: string | null; label: string } | null>(null);
   const [agree, setAgree] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState<{ path: string; place: string; warnings: string[] } | null>(null);
+  const [done, setDone] = useState<{ path: string; place: string; warnings: string[]; instanceId: string | null; replaced: string | null } | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [versions, setVersions] = useState<D.DepotVersion[]>([]);
+  const [openLog, setOpenLog] = useState<string | null>(null);
+  const [installed, setInstalled] = useState<{ version: string; sha256: string } | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [newVersion, setNewVersion] = useState(false);
   const html = useMemo(() => markdownToHtml(it.description || ""), [it.description]);
   const mine = it.author_id === myId;
   const staff = D.roleRank(role) >= 2;
   const toInstance = D.needsInstance(it.kind);
   const { askText, node: askNode } = useAskText();
+
+  const loadVersions = useCallback(() => { D.versions(it.id).then(setVersions).catch(() => setVersions([])); }, [it.id]);
+  useEffect(loadVersions, [loadVersions]);
 
   // Uygun instance'ı önceden seç
   const why = (inst: Instance): string | null => {
@@ -259,20 +345,28 @@ function ItemModal({ it, role, myId, onClose, onChanged }: { it: DepotItem; role
     if (it.kind !== "datapack" || !target) return setWorlds([]);
     api.listWorlds(target).then((w) => { setWorlds(w.map((x) => x.folder)); setWorld(w[0]?.folder ?? ""); }).catch(() => setWorlds([]));
   }, [it.kind, target]);
+  // Bu instance'ta kurulu mu, hangi sürüm
+  useEffect(() => {
+    if (!toInstance || !target) return setInstalled(null);
+    api.depotInstalled(target).then((r) => setInstalled(r[it.id] ?? null)).catch(() => setInstalled(null));
+  }, [toInstance, target, it.id, done]);
 
   const install = async () => {
-    setWarn(false);
+    const v = warn?.versionId ?? null;
+    setWarn(null);
     setBusy(true);
     setMsg(null);
     try {
-      const r = await api.depotInstall(it.id, toInstance ? target || null : null, it.kind === "datapack" ? world || null : null);
-      setDone({ ...r.installed, warnings: r.warnings });
+      const r = await api.depotInstall(it.id, toInstance ? target || null : null, it.kind === "datapack" ? world || null : null, v);
+      setDone({ ...r.installed, warnings: r.warnings, instanceId: r.instanceId, replaced: r.replaced });
+      if (r.instanceId) void useInstances.getState().refresh();
     } catch (e) {
       setMsg(err(e));
     } finally {
       setBusy(false);
     }
   };
+  const ask = (versionId: string | null, label: string) => { setAgree(false); setWarn({ versionId, label }); };
 
   const remove = async () => {
     if (mine) {
@@ -292,12 +386,18 @@ function ItemModal({ it, role, myId, onClose, onChanged }: { it: DepotItem; role
     if (!reason?.trim()) return;
     try { await D.report(it.id, reason.trim().slice(0, 500)); setMsg(tx("Şikâyetin moderatörlere iletildi. Teşekkürler.")); } catch (e) { setMsg(err(e)); }
   };
+  const dropVersion = async (v: D.DepotVersion) => {
+    if (!(await askConfirm(tx("{0} sürümü silinsin mi?", v.version)))) return;
+    try { await D.deleteVersion(v.id); loadVersions(); } catch (e) { setMsg(err(e)); }
+  };
 
   const tgt = instances.find((i) => i.id === target);
   const blocked = toInstance && (!tgt || !!why(tgt) || (it.kind === "datapack" && !world));
+  const upToDate = !!installed && installed.sha256 === it.sha256;
+  const mainLabel = it.kind === "modpack" ? tx("Instance olarak kur") : !toInstance ? tx("İndir") : installed ? (upToDate ? tx("Yeniden kur") : tx("{0} sürümüne güncelle", it.version || tx("son"))) : tx("Kur");
 
   return (
-    <Modal open title={it.title} onClose={onClose} width={720}>
+    <Modal open title={it.title} onClose={onClose} width={760}>
       <div className="depot-detail">
         <div className="depot-detail-head">
           <ItemIcon it={it} size={72} />
@@ -319,33 +419,29 @@ function ItemModal({ it, role, myId, onClose, onChanged }: { it: DepotItem; role
 
         {it.removed && <p className="depot-note err"><AlertTriangle size={15} /> {tx("Bu dosya bir moderatör tarafından kaldırıldı.")} {it.removed_reason ? `“${it.removed_reason}”` : ""}</p>}
 
-        <div className="depot-facts">
-          <div><span className="muted tiny">{tx("Dosya")}</span><strong className="truncate" title={it.file_name}>{it.file_name}</strong></div>
-          <div><span className="muted tiny">{tx("Boyut")}</span><strong>{D.formatSize(it.file_size)}</strong></div>
-          <div><span className="muted tiny">{tx("İndirme")}</span><strong>{formatCount(it.downloads)}</strong></div>
-          <div><span className="muted tiny">{tx("Paylaşıldı")}</span><strong>{date(it.created_at)}</strong></div>
-          <div className="wide"><span className="muted tiny">SHA-256</span><code className="depot-hash" title={it.sha256}>{it.sha256}</code></div>
-        </div>
-
-        {it.description && <div className="md depot-desc" dangerouslySetInnerHTML={{ __html: html }} />}
+        <Gallery images={it.gallery ?? []} />
 
         <section className="depot-install">
           {done ? (
             <div className="depot-done">
               <Check size={18} />
               <div className="grow">
-                <strong>{tx("Kuruldu")}</strong>
-                <span className="muted small">{done.place}</span>
+                <strong>{done.instanceId ? tx("Instance oluşturuldu: {0}", done.place) : done.replaced ? tx("{0} sürümünden güncellendi", done.replaced) : tx("Kuruldu")}</strong>
+                {!done.instanceId && <span className="muted small">{done.place}</span>}
                 {done.warnings.map((w) => <span key={w} className="depot-warn small"><AlertTriangle size={12} /> {w}</span>)}
               </div>
-              <button className="btn btn-ghost btn-sm" onClick={() => void api.openPath(done.path, true)}><FolderOpen size={14} /> {tx("Klasörde göster")}</button>
+              {done.instanceId
+                ? <button className="btn btn-primary btn-sm" onClick={() => { onClose(); navigate(`/instance/${done.instanceId}`); }}><Play size={14} /> {tx("Instance'a git")}</button>
+                : <button className="btn btn-ghost btn-sm" onClick={() => void api.openPath(done.path, true)}><FolderOpen size={14} /> {tx("Klasörde göster")}</button>}
             </div>
           ) : (
             <>
               <div className="depot-target">
                 {toInstance ? (
                   <>
-                    <span className="muted small">{tx("Kurulacağı yer:")} <code>{D.KIND_PLACE[it.kind]}</code></span>
+                    <span className="muted small">{tx("Kurulacağı yer:")} <code>{D.KIND_PLACE[it.kind]}</code>
+                      {installed && <span className={clsx("depot-installed", !upToDate && "old")}>{upToDate ? tx("Kurulu · v{0}", installed.version) : tx("Kurulu: v{0} · güncelleme var", installed.version)}</span>}
+                    </span>
                     <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                       {tgt && <InstanceIcon instance={tgt} size={26} />}
                       <select className="bf-select grow" value={target} onChange={(e) => setTarget(e.target.value)}>
@@ -363,12 +459,14 @@ function ItemModal({ it, role, myId, onClose, onChanged }: { it: DepotItem; role
                       )}
                     </div>
                   </>
+                ) : it.kind === "modpack" ? (
+                  <span className="muted small">{tx("Bu modpack yeni bir instance olarak kurulur; modlar, ayarlar ve Minecraft/yükleyici sürümü paketteki gibi hazırlanır.")}</span>
                 ) : (
                   <span className="muted small">{tx("Bu dosya İndirilenler klasörüne kaydedilir.")}</span>
                 )}
               </div>
-              <button className="btn btn-primary" disabled={busy || blocked || (it.removed && !staff && !mine)} onClick={() => { setAgree(false); setWarn(true); }}>
-                {busy ? <Loader2 size={15} className="spin" /> : <Download size={15} />} {toInstance ? tx("Kur") : tx("İndir")}
+              <button className="btn btn-primary" disabled={busy || blocked || (it.removed && !staff && !mine)} onClick={() => ask(null, it.version)}>
+                {busy ? <Loader2 size={15} className="spin" /> : installed && !upToDate ? <RefreshCw size={15} /> : <Download size={15} />} {mainLabel}
               </button>
             </>
           )}
@@ -376,8 +474,46 @@ function ItemModal({ it, role, myId, onClose, onChanged }: { it: DepotItem; role
 
         {msg && <p className="depot-note">{msg}</p>}
 
+        <div className="depot-facts">
+          <div><span className="muted tiny">{tx("Dosya")}</span><strong className="truncate" title={it.file_name}>{it.file_name}</strong></div>
+          <div><span className="muted tiny">{tx("Boyut")}</span><strong>{D.formatSize(it.file_size)}</strong></div>
+          <div><span className="muted tiny">{tx("İndirme")}</span><strong>{formatCount(it.downloads)}</strong></div>
+          <div><span className="muted tiny">{it.updated_at !== it.created_at ? tx("Güncellendi") : tx("Paylaşıldı")}</span><strong>{date(it.updated_at || it.created_at)}</strong></div>
+          <div className="wide"><span className="muted tiny">SHA-256</span><code className="depot-hash" title={it.sha256}>{it.sha256}</code></div>
+        </div>
+
+        {it.description && <div className="md depot-desc" dangerouslySetInnerHTML={{ __html: html }} />}
+
+        {versions.length > 0 && (
+          <section className="depot-versions">
+            <h4><History size={15} /> {tx("Sürümler")} <span className="muted tiny">({versions.length})</span></h4>
+            {versions.map((v, k) => {
+              const current = v.file_path === it.file_path;
+              return (
+                <div key={v.id} className="depot-version">
+                  <div className="row" style={{ gap: 8 }}>
+                    <strong>v{v.version}</strong>
+                    {current && <span className="chip chip-accent">{tx("Güncel")}</span>}
+                    {installed && installed.sha256 === v.sha256 && <span className="chip">{tx("Kurulu")}</span>}
+                    <span className="muted tiny">{date(v.created_at)} · {D.formatSize(v.file_size)}{v.mc_versions.length ? ` · ${v.mc_versions.join(", ")}` : ""}</span>
+                    <span className="grow" />
+                    {v.changelog && <button className="btn-link" style={{ marginLeft: 0 }} onClick={() => setOpenLog(openLog === v.id ? null : v.id)}>{openLog === v.id ? tx("Notları gizle") : tx("Değişiklikler")}</button>}
+                    {!current && it.kind !== "other" && <button className="btn btn-ghost btn-sm" disabled={busy || blocked} onClick={() => ask(v.id, v.version)}><Download size={13} /> {tx("Bu sürümü kur")}</button>}
+                    {(mine || staff) && !current && <button className="icon-btn" title={tx("Sürümü sil")} onClick={() => void dropVersion(v)}><Trash2 size={14} /></button>}
+                  </div>
+                  {(openLog === v.id || (k === 0 && v.changelog && openLog === null)) && v.changelog && <p className="depot-changelog small">{v.changelog}</p>}
+                </div>
+              );
+            })}
+          </section>
+        )}
+
         <footer className="depot-detail-foot">
           {!mine && <button className="btn btn-ghost btn-sm" onClick={() => void doReport()}><Flag size={14} /> {tx("Şikâyet et")}</button>}
+          {mine && !it.removed && <>
+            <button className="btn btn-primary btn-sm" onClick={() => setNewVersion(true)}><Upload size={14} /> {tx("Yeni sürüm yükle")}</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => setEditing(true)}><Pencil size={14} /> {tx("Düzenle")}</button>
+          </>}
           <span className="grow" />
           {(mine || staff) && (
             <button className={clsx("btn btn-sm", mine || !it.removed ? "btn-danger" : "btn-ghost")} onClick={() => void remove()}>
@@ -387,19 +523,172 @@ function ItemModal({ it, role, myId, onClose, onChanged }: { it: DepotItem; role
         </footer>
       </div>
 
-      <Modal open={warn} title={tx("İndirmeden önce")} onClose={() => setWarn(false)} width={480}
+      <Modal open={!!warn} title={tx("İndirmeden önce")} onClose={() => setWarn(null)} width={480}
         footer={<>
-          <button className="btn btn-ghost" onClick={() => setWarn(false)}>{tx("Vazgeç")}</button>
+          <button className="btn btn-ghost" onClick={() => setWarn(null)}>{tx("Vazgeç")}</button>
           <button className="btn btn-primary" disabled={!agree} onClick={() => void install()}><Download size={15} /> {tx("Anladım, kur")}</button>
         </>}>
         <div className="depot-disclaimer">
           <AlertTriangle size={28} />
+          {warn?.label && <p className="muted small">{it.title} · v{warn.label}</p>}
           <p>{tx("Depo'daki dosyaları West Client değil, topluluk üyeleri paylaşır. Yalnızca Onaylı kişiler dosya yükleyebilir ve dosyanın türü yüklenirken denetlenir; ancak içerikler virüs ya da zararlı yazılıma karşı taranmaz.")}</p>
           <p><strong>{tx("West Client, Depo'dan indirilen dosyaların yol açabileceği virüs, veri kaybı ya da başka zararlardan sorumlu değildir.")}</strong> {tx("Yalnızca güvendiğin kişilerin dosyalarını kur; şüpheli bir şey görürsen şikâyet et.")}</p>
           <label className="check"><input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} /> {tx("Okudum; bu dosyayı kendi sorumluluğumda kuruyorum.")}</label>
         </div>
       </Modal>
       {askNode}
+      {newVersion && <VersionModal it={it} existing={versions.map((v) => v.version)} onClose={() => setNewVersion(false)} onDone={() => { setNewVersion(false); onChanged(); }} />}
+      {editing && <EditModal it={it} onClose={() => setEditing(false)} onDone={() => { setEditing(false); onChanged(); }} />}
+    </Modal>
+  );
+}
+
+// ───────── Yeni sürüm (paylaşan) ─────────
+
+function VersionModal({ it, existing, onClose, onDone }: { it: DepotItem; existing: string[]; onClose: () => void; onDone: () => void }) {
+  const [file, setFile] = useState<string | null>(null);
+  const [info, setInfo] = useState<D.DepotInspect | null>(null);
+  const [v, setV] = useState({ version: "", changelog: "", mc: it.mc_versions.join(", "), loaders: it.loaders.filter((l) => l !== "vanilla") });
+  const [terms, setTerms] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const pick = async () => {
+    const p = await openDialog({ multiple: false, filters: [{ name: tx("Minecraft dosyaları"), extensions: FILE_TYPES }, { name: tx("Tüm dosyalar"), extensions: ["*"] }] });
+    if (typeof p !== "string") return;
+    setError(null);
+    setBusy(tx("Dosya inceleniyor…"));
+    try {
+      const i = await api.depotInspect(p);
+      if (i.kind !== it.kind) throw new Error(tx("Bu dosya bir {0}; \"{1}\" ise {2}. Yeni sürüm aynı türde olmalı.", D.KIND_LABEL[i.kind], it.title, D.KIND_LABEL[it.kind]));
+      if (i.sha256 === it.sha256) throw new Error(tx("Bu dosya güncel sürümle aynı."));
+      setFile(p);
+      setInfo(i);
+      setV((x) => ({ ...x, version: x.version || (i.version ?? "").slice(0, 32), mc: i.mcVersions.length ? i.mcVersions.join(", ") : x.mc, loaders: i.loaders.filter((l) => l !== "vanilla").length ? i.loaders.filter((l) => l !== "vanilla") : x.loaders }));
+    } catch (e) {
+      setError(err(e));
+    } finally {
+      setBusy(null);
+    }
+  };
+  const dup = existing.includes(v.version.trim());
+  const submit = async () => {
+    if (!file) return;
+    setError(null);
+    let up: D.DepotUploaded | null = null;
+    try {
+      setBusy(tx("Dosya yükleniyor…"));
+      up = await api.depotUpload(file);
+      setBusy(tx("Yayınlanıyor…"));
+      await D.publishVersion(it.id, { version: v.version.trim(), changelog: v.changelog.trim(), mc_versions: v.mc.split(/[,\s]+/).filter(Boolean).slice(0, 30), loaders: it.kind === "world" ? ["vanilla"] : v.loaders }, up);
+      onDone();
+    } catch (e) {
+      if (up) await api.depotDeleteFile(up.filePath).catch(() => {});
+      setError(err(e));
+    } finally {
+      setBusy(null);
+    }
+  };
+  const LOADERS = ["fabric", "quilt", "forge", "neoforge"];
+  return (
+    <Modal open title={tx("Yeni sürüm: {0}", it.title)} onClose={onClose} width={560}
+      footer={<>
+        <button className="btn btn-ghost" onClick={onClose} disabled={!!busy}>{tx("Vazgeç")}</button>
+        <button className="btn btn-primary" disabled={!info || !v.version.trim() || dup || !terms || !!busy} onClick={() => void submit()}>{busy ? <Loader2 size={15} className="spin" /> : <Upload size={15} />} {busy ?? tx("Yayınla")}</button>
+      </>}>
+      <div className="depot-upload">
+        <p className="muted small">{tx("Yeni sürüm yayınlanınca Depo'da güncel sürüm olur; kuranlar tek tıkla güncelleyebilir. Eski sürümler listede kalır.")}</p>
+        <button className={clsx("depot-drop", info && "has")} onClick={() => void pick()} disabled={!!busy}>
+          {info ? (<>
+            <ItemIcon it={{ kind: info.kind, icon_url: null }} size={44} />
+            <div className="grow" style={{ textAlign: "left" }}><strong className="truncate">{info.fileName}</strong><span className="muted small">{D.formatSize(info.size)}</span></div>
+            <span className="btn btn-ghost btn-sm">{tx("Değiştir")}</span>
+          </>) : (<><Upload size={22} /><strong>{tx("Yeni dosyayı seç")}</strong><span className="muted small">{tx("Güncel sürüm: v{0}", it.version || "?")}</span></>)}
+        </button>
+        {info?.warnings.map((w) => <p key={w} className="depot-warn small"><AlertTriangle size={13} /> {w}</p>)}
+        <div className="row" style={{ gap: 12, alignItems: "flex-end" }}>
+          <label className="field" style={{ maxWidth: 160 }}>
+            <span>{tx("Sürüm numarası")}</span>
+            <input className="input" maxLength={32} value={v.version} onChange={(e) => setV({ ...v, version: e.target.value })} placeholder="1.1" />
+          </label>
+          <label className="field">
+            <span>{tx("Minecraft sürümleri")}</span>
+            <input className="input" value={v.mc} onChange={(e) => setV({ ...v, mc: e.target.value })} />
+          </label>
+        </div>
+        {dup && <p className="depot-warn small"><AlertTriangle size={13} /> {tx("Bu sürüm numarası zaten var")}</p>}
+        {(it.kind === "mod" || it.kind === "modpack") && (
+          <div className="bf-chips">
+            {LOADERS.map((l) => <button key={l} className={clsx("fchip", v.loaders.includes(l) && "on")} onClick={() => setV({ ...v, loaders: v.loaders.includes(l) ? v.loaders.filter((x) => x !== l) : [...v.loaders, l] })}>{LOADER_LABEL[l]}</button>)}
+          </div>
+        )}
+        <label className="field">
+          <span>{tx("Neler değişti?")}</span>
+          <textarea className="input" rows={4} maxLength={2000} value={v.changelog} onChange={(e) => setV({ ...v, changelog: e.target.value })} placeholder={tx("Yeni özellikler, düzeltilen hatalar…")} />
+        </label>
+        <label className="check depot-terms">
+          <input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} />
+          <span>{tx("Bu dosyayı paylaşma hakkım var; virüs ya da zararlı kod içermediğini ve kurallara uyduğunu onaylıyorum. Kurallara aykırı paylaşımlar kaldırılır ve Onaylı yetkim alınabilir.")}</span>
+        </label>
+        {error && <p className="depot-note err"><AlertTriangle size={14} /> {error}</p>}
+      </div>
+    </Modal>
+  );
+}
+
+// ───────── Düzenle (paylaşan) ─────────
+
+function EditModal({ it, onClose, onDone }: { it: DepotItem; onClose: () => void; onDone: () => void }) {
+  const [f, setF] = useState({ title: it.title, summary: it.summary, description: it.description });
+  const [gallery, setGallery] = useState<GalItem[]>((it.gallery ?? []).map((g) => ({ url: g.url, preview: g.url, caption: g.caption ?? "" })));
+  const [icon, setIcon] = useState<{ url?: string; local?: string; preview: string } | null>(it.icon_url ? { url: it.icon_url, preview: it.icon_url } : null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const pickIcon = async () => {
+    const p = await openDialog({ multiple: false, filters: [{ name: tx("Görsel"), extensions: ["png", "jpg", "jpeg", "webp"] }] });
+    if (typeof p !== "string") return;
+    try { setIcon({ local: p, preview: await api.readImageData(p) }); } catch (e) { setError(err(e)); }
+  };
+  const save = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const icon_url = icon ? icon.url ?? (icon.local ? await api.westUpload(icon.local, "depot") : null) : null;
+      await D.updateItem(it.id, { title: f.title.trim(), summary: f.summary.trim(), description: f.description.trim(), icon_url, gallery: await D.uploadGallery(gallery) });
+      onDone();
+    } catch (e) {
+      setError(err(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Modal open title={tx("Düzenle: {0}", it.title)} onClose={onClose} width={640}
+      footer={<>
+        <button className="btn btn-ghost" onClick={onClose} disabled={busy}>{tx("Vazgeç")}</button>
+        <button className="btn btn-primary" disabled={busy || f.title.trim().length < 3} onClick={() => void save()}>{busy ? <Loader2 size={15} className="spin" /> : <Check size={15} />} {tx("Kaydet")}</button>
+      </>}>
+      <div className="depot-upload">
+        <div className="row" style={{ gap: 12, alignItems: "flex-start" }}>
+          <button className="depot-icon-pick" onClick={() => void pickIcon()} title={tx("Simge (isteğe bağlı)")}>
+            {icon ? <img src={icon.preview} alt="" /> : <ImagePlus size={20} />}
+          </button>
+          <label className="field">
+            <span>{tx("Başlık")}</span>
+            <input className="input" maxLength={60} value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} />
+          </label>
+        </div>
+        {icon && <button className="btn-link" style={{ marginLeft: 0, alignSelf: "flex-start" }} onClick={() => setIcon(null)}><X size={11} /> {tx("Simgeyi kaldır")}</button>}
+        <label className="field">
+          <span>{tx("Kısa açıklama")}</span>
+          <input className="input" maxLength={200} value={f.summary} onChange={(e) => setF({ ...f, summary: e.target.value })} />
+        </label>
+        <label className="field">
+          <span>{tx("Ayrıntılı açıklama (Markdown)")}</span>
+          <textarea className="input" rows={6} maxLength={5000} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} />
+        </label>
+        <GalleryEditor items={gallery} onChange={setGallery} onError={setError} />
+        {error && <p className="depot-note err"><AlertTriangle size={14} /> {error}</p>}
+      </div>
     </Modal>
   );
 }
@@ -463,6 +752,7 @@ function UploadModal({ onClose, onDone }: { onClose: () => void; onDone: (it: De
   const [f, setF] = useState({ title: "", summary: "", description: "", version: "", mc: "", loaders: [] as string[] });
   const [icon, setIcon] = useState<string | null>(null);
   const [iconPreview, setIconPreview] = useState<string | null>(null);
+  const [gallery, setGallery] = useState<GalItem[]>([]);
   const [terms, setTerms] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -504,12 +794,14 @@ function UploadModal({ onClose, onDone }: { onClose: () => void; onDone: (it: De
       setBusy(tx("Dosya yükleniyor…"));
       uploaded = await api.depotUpload(file);
       const iconUrl = icon ? (setBusy(tx("Görsel yükleniyor…")), await api.westUpload(icon, "depot")) : null;
+      if (gallery.length) setBusy(tx("Fotoğraflar yükleniyor…"));
+      const gal = await D.uploadGallery(gallery);
       setBusy(tx("Kaydediliyor…"));
       const mcs = f.mc.split(/[,\s]+/).map((s) => s.trim()).filter(Boolean).slice(0, 30);
       const it = await D.createItem({
         kind: uploaded.kind, title: f.title.trim(), summary: f.summary.trim(), description: f.description.trim(), version: f.version.trim(),
         mc_versions: mcs, loaders: uploaded.kind === "world" ? ["vanilla"] : f.loaders, icon_url: iconUrl,
-        file_path: uploaded.filePath, file_name: uploaded.fileName, file_size: uploaded.fileSize, sha256: uploaded.sha256,
+        file_path: uploaded.filePath, file_name: uploaded.fileName, file_size: uploaded.fileSize, sha256: uploaded.sha256, gallery: gal,
       });
       onDone({ ...it });
     } catch (e) {
@@ -589,6 +881,7 @@ function UploadModal({ onClose, onDone }: { onClose: () => void; onDone: (it: De
                 </div>
               )}
             </div>
+            <GalleryEditor items={gallery} onChange={setGallery} onError={setError} />
             <label className="check depot-terms">
               <input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} />
               <span>{tx("Bu dosyayı paylaşma hakkım var; virüs ya da zararlı kod içermediğini ve kurallara uyduğunu onaylıyorum. Kurallara aykırı paylaşımlar kaldırılır ve Onaylı yetkim alınabilir.")}</span>
