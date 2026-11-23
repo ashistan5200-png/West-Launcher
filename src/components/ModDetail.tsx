@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { open as openUrl } from "@tauri-apps/plugin-shell";
@@ -20,9 +21,16 @@ const dateTR = (iso: string) => new Date(iso).toLocaleDateString(locale(), { day
 const SIDE: Record<string, string> = { required: tx("Gerekli"), optional: tx("İsteğe bağlı"), unsupported: tx("Gerekmez"), unknown: tx("Bilinmiyor") };
 const VTYPE: Record<string, string> = { release: tx("Kararlı"), beta: tx("Beta"), alpha: tx("Alfa") };
 
-/** Dış bağlantıları sistem tarayıcısında açan Markdown görünümü */
+/** Modrinth proje bağlantısı mı (modrinth.com/mod/sodium …); öyleyse kısa adı */
+export function modrinthProject(href: string): string | null {
+  const m = /^https?:\/\/(?:www\.)?modrinth\.com\/(?:mod|plugin|resourcepack|shader|datapack|modpack|project)\/([A-Za-z0-9_.-]+)(?:\/[^?#]*)?(?:[?#].*)?$/.exec(href.trim());
+  return m ? m[1] : null;
+}
+
+/** Markdown görünümü: Modrinth'teki başka bir projeye bağlantı uygulamadaki Keşfet sayfasını açar, diğerleri tarayıcıda */
 function Markdown({ md }: { md: string }) {
   const html = useMemo(() => markdownToHtml(md), [md]);
+  const navigate = useNavigate();
   return (
     <div
       className="md"
@@ -32,7 +40,9 @@ function Markdown({ md }: { md: string }) {
         if (a) {
           e.preventDefault();
           const href = a.getAttribute("data-external") ?? "";
-          if (/^https?:\/\//.test(href)) void openUrl(href);
+          const slug = modrinthProject(href);
+          if (slug) navigate(`/browse?project=${encodeURIComponent(slug)}`);
+          else if (/^https?:\/\//.test(href)) void openUrl(href);
         }
       }}
     />

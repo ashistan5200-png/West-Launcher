@@ -15,17 +15,19 @@ interface Props {
   /** Ashi'nin gerekçesi (sohbet kartlarında) */
   reason?: string;
   compact?: boolean;
+  /** Karta tıklanınca (ör. Keşfet'teki sayfasını aç) */
+  onOpen?: () => void;
 }
 
 /** Arama sonucu / Ashi önerisi — tek tıkla kurulum düğmesiyle. */
-export function ContentRow({ hit, instanceId, reason, compact = false }: Props) {
+export function ContentRow({ hit, instanceId, reason, compact = false, onOpen }: Props) {
   const installing = useContent((s) => !!s.installing[contentKey(hit)]);
   const installed = useContent((s) => s.isInstalled(instanceId, hit));
   const install = useContent((s) => s.install);
   const needsInstance = hit.kind !== "modpack" && !instanceId;
 
   return (
-    <div className={clsx("content-row", compact && "compact")}>
+    <div className={clsx("content-row", compact && "compact", onOpen && "openable")} onClick={onOpen} role={onOpen ? "button" : undefined} title={onOpen ? tx("Keşfet'te aç") : undefined}>
       <ContentIcon key={hit.icon ?? hit.id} src={hit.icon} title={hit.title} kind={hit.kind} size={compact ? 36 : 52} />
       <div className="content-meta">
         <div className="content-title">
@@ -45,13 +47,13 @@ export function ContentRow({ hit, instanceId, reason, compact = false }: Props) 
           className={clsx("btn btn-sm", installed ? "btn-ghost" : "btn-primary")}
           disabled={installing || installed || needsInstance}
           title={needsInstance ? tx("Önce bir instance seç") : undefined}
-          onClick={() => install(hit, instanceId)}
+          onClick={(e) => { e.stopPropagation(); install(hit, instanceId); }}
         >
           {installing ? <Loader2 size={14} className="spin" /> : installed ? <Check size={14} /> : <Download size={14} />}
           {installed ? tx("Kurulu") : hit.kind === "modpack" ? tx("Kur") : tx("Ekle")}
         </button>
         {!compact && (
-          <button className="icon-btn" title={tx("Sayfasını aç")} onClick={() => openUrl(hit.url)}>
+          <button className="icon-btn" title={tx("Sayfasını aç")} onClick={(e) => { e.stopPropagation(); void openUrl(hit.url); }}>
             <ExternalLink size={15} />
           </button>
         )}

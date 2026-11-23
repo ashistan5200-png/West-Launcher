@@ -292,7 +292,7 @@ export function BrowsePage() {
         <Pagination page={page} pages={pages} onChange={changePage} disabled={loading} />
       </div>
       <AnimatePresence>
-        {detail && <ModDetail hit={detail} instances={instances} preferred={fromInstance} onClose={closeDetail} />}
+        {detail && <ModDetail key={detail.id} hit={detail} instances={instances} preferred={fromInstance} onClose={closeDetail} />}
       </AnimatePresence>
     </div>
   );

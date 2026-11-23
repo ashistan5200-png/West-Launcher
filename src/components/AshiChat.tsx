@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { ArrowUp, Brain, RotateCcw, Sparkles, X } from "lucide-react";
 import { useChat } from "@/stores/chat";
 import { useInstances } from "@/stores/instances";
@@ -22,6 +23,7 @@ const SUGGESTIONS = [
 export function AshiChat() {
   const { open, setOpen, busy, messages, send, reset, mode, activeInstance, setActiveInstance } = useChat();
   const ai = useAi();
+  const navigate = useNavigate();
   const allInstances = useInstances((s) => s.instances);
   const instances = useMemo(() => allInstances.filter((i) => !i.isTemplate), [allInstances]);
   const loadInstalled = useContent((s) => s.loadInstalled);
@@ -134,7 +136,8 @@ export function AshiChat() {
                   {m.picks && m.picks.length > 0 && (
                     <div className="chat-picks">
                       {m.picks.map((p) => (
-                        <ContentRow key={`${p.hit.source}:${p.hit.id}`} hit={p.hit} reason={p.reason} instanceId={activeInstance} compact />
+                        <ContentRow key={`${p.hit.source}:${p.hit.id}`} hit={p.hit} reason={p.reason} instanceId={activeInstance} compact
+                          onOpen={p.hit.source === "modrinth" ? () => navigate(`/browse?project=${encodeURIComponent(p.hit.slug || p.hit.id)}`) : undefined} />
                       ))}
                     </div>
                   )}

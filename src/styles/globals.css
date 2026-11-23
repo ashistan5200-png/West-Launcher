@@ -2026,3 +2026,5 @@ img.tb-avatar { object-fit: cover; }
 .lib-th { cursor: default; border-top: 0; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: rgb(var(--text-muted)); }
 .lib-th:hover { background: none; }
 .lib-empty { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 50px 10px; }
+.content-row.openable { cursor: pointer; transition: background .12s; }
+.content-row.openable:hover { background: rgb(var(--border) / 0.05); }
