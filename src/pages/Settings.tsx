@@ -17,6 +17,7 @@ import { aiReady, MODELS, useAi } from "@/stores/ai";
 import { PasswordField } from "@/components/SetupWizard";
 import { AiSetupBadge } from "@/components/AiSetup";
 import { askConfirm } from "@/components/ConfirmDialog";
+import { setWestPhotoOn, westPhotoOn } from "@/lib/westphoto";
 import { getLang, LANGS, setLang, tx, type Lang } from "@/lib/i18n";
 
 const TABS = [
@@ -38,7 +39,7 @@ type Tab = (typeof TABS)[number]["id"];
 /** Ayar araması: başlık → bölüm (satır başlıklarıyla aynı metin) */
 const INDEX: [Tab, string, string?][] = [
   ["genel", tx("Dil"), "language"], ["genel", tx("Açılış sayfası")], ["genel", tx("Oyun açılınca launcher")], ["genel", tx("Offline kullanıcı adı")],
-  ["genel", tx("Discord'da göster"), "discord rich presence"], ["genel", tx("Tanıtım turu")],
+  ["genel", tx("Discord'da göster"), "discord rich presence"], ["genel", tx("Tanıtım turu")], ["genel", tx("Photoshop modu (WestPhoto)"), "galeri düzenleyici katman"],
   ["gorunum", tx("Vurgu rengi"), "tema renk"], ["gorunum", tx("Yoğunluk")], ["gorunum", tx("Animasyonları azalt")], ["gorunum", tx("İmleç parçacıkları")],
   ["gorunum", tx("Pencere efekti"), "mica acrylic"], ["gorunum", tx("Bulanıklık")], ["gorunum", tx("Yüzey opaklığı")],
   ["ses", tx("Arka plan müziği")], ["ses", tx("Oyun içinde de çal")],
@@ -208,6 +209,12 @@ function GeneralTab() {
         </Row>
       </Group>
 
+      <Group title={tx("Galeri")}>
+        <Row title={tx("Photoshop modu (WestPhoto)")} desc={tx("Ekran görüntüsü düzenleyicisi katmanlar, maskeler, seçimler, fırçalar, eğriler, filtreler ve serbest dönüştürmeyle tam bir görüntü düzenleyici olarak açılır.")}>
+          <WestPhotoToggle />
+        </Row>
+      </Group>
+
       <Group title={tx("Yardım")}>
         <Row title={tx("Tanıtım turu")} desc={tx("Ashi uygulamayı baştan gezdirsin.")}>
           <button className="btn btn-ghost btn-sm" onClick={() => useOnboarding.getState().startTour()}>{tx("Başlat")}</button>
@@ -215,6 +222,11 @@ function GeneralTab() {
       </Group>
     </>
   );
+}
+
+function WestPhotoToggle() {
+  const [on, setOn] = useState(westPhotoOn);
+  return <Toggle label={tx("Photoshop modu (WestPhoto)")} on={on} onChange={(v) => { setWestPhotoOn(v); setOn(v); }} />;
 }
 
 function SoundTab() {

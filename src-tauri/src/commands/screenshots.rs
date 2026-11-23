@@ -95,7 +95,9 @@ pub fn screenshots_folder(state: State<'_, AppState>, instance_id: String) -> St
 #[tauri::command]
 pub fn export_png(dest: String, png_base64: String) -> Result<()> {
     let bytes = base64::engine::general_purpose::STANDARD.decode(png_base64).map_err(|e| AppError::msg(e.to_string()))?;
-    if bytes.len() < 8 || &bytes[..8] != b"\x89PNG\r\n\x1a\n" {
+    let png = bytes.len() >= 8 && &bytes[..8] == b"\x89PNG\r\n\x1a\n";
+    let jpg = bytes.len() >= 3 && bytes[..3] == [0xFF, 0xD8, 0xFF];
+    if !png && !jpg {
         return Err(AppError::msg(crate::i18n::t("geçersiz PNG")));
     }
     std::fs::write(dest, bytes)?;

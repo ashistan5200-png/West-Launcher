@@ -1,13 +1,29 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { save as saveDialog } from "@tauri-apps/plugin-dialog";
-import { Copy, Crop, Download, Loader2, Pencil, RotateCcw, Save, SlidersHorizontal, Type, Undo2, X } from "lucide-react";
+import { Copy, Crop, Download, Layers, Loader2, Pencil, RotateCcw, Save, SlidersHorizontal, Type, Undo2, X } from "lucide-react";
 import clsx from "clsx";
 import { api } from "@/lib/ipc";
 import type { Screenshot } from "@/lib/types";
 import { canvasToBase64, NEUTRAL, PRESETS, render, type Adjust, type Annotation, type EditState, type Rect } from "@/lib/imageEdit";
 import { useGallery } from "@/stores/gallery";
+import { setWestPhotoOn, westPhotoOn } from "@/lib/westphoto";
 import { tx } from "@/lib/i18n";
+
+const WestPhoto = lazy(() => import("@/components/westphoto/WestPhoto"));
+
+/** JPG için saydam alanları beyaza yasla, base64 (önek yok) döndür */
+const toBase64 = async (c: HTMLCanvasElement, fmt: "png" | "jpg") => {
+  if (fmt === "png") return canvasToBase64(c);
+  const o = document.createElement("canvas");
+  o.width = c.width;
+  o.height = c.height;
+  const g = o.getContext("2d")!;
+  g.fillStyle = "#fff";
+  g.fillRect(0, 0, o.width, o.height);
+  g.drawImage(c, 0, 0);
+  return o.toDataURL("image/jpeg", 0.92).split(",")[1];
+};
 
 type Tool = "adjust" | "crop" | "draw" | "text";
 const ASPECTS: { label: string; r: number | null }[] = [
@@ -37,6 +53,8 @@ export function ScreenshotEditor({ shot }: { shot: Screenshot }) {
   const [draftCrop, setDraftCrop] = useState<Rect | null>(null);
   const view = useRef<HTMLCanvasElement>(null);
   const drag = useRef<{ x: number; y: number } | null>(null);
+  const [pro, setPro] = useState(westPhotoOn);
+  const togglePro = (on: boolean) => { setPro(on); setWestPhotoOn(on); };
 
   // Orijinali ikili olarak al → blob URL (tuval kirlenmez, getImageData çalışır)
   useEffect(() => {
@@ -164,6 +182,38 @@ export function ScreenshotEditor({ shot }: { shot: Screenshot }) {
     }
   };
 
+  if (pro && img) {
+    return (
+      <motion.div className="editor-backdrop wp-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+        <Suspense fallback={<Loader2 className="spin" size={22} />}>
+          <WestPhoto
+            image={img}
+            title={shot.file}
+            onClose={() => edit(null)}
+            onSaveCopy={async (c) => {
+              try {
+                const saved = await api.saveScreenshotEdit(shot.path, await canvasToBase64(c));
+                added(saved);
+                flash(tx("Kopya olarak kaydedildi: {0}", saved.file));
+                void api.generateThumbs([saved.path]);
+              } catch (e) { flash(String(e), "error"); }
+            }}
+            onCopy={async (c) => { await api.copyPngBytes(await canvasToBase64(c)); }}
+            onExport={async (c, fmt) => {
+              try {
+                const dest = await saveDialog({ defaultPath: shot.file.replace(/\.(png|jpe?g)$/i, `_westphoto.${fmt}`), filters: [{ name: fmt.toUpperCase(), extensions: [fmt] }] });
+                if (!dest) return;
+                await api.exportPng(dest, await toBase64(c, fmt));
+                flash(tx("Dışa aktarıldı"));
+              } catch (e) { flash(String(e), "error"); }
+            }}
+          />
+        </Suspense>
+        <button className="wp-exitpro" onClick={() => togglePro(false)} title={tx("Basit düzenleyiciye dön")}><Layers size={13} /> {tx("Basit mod")}</button>
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div className="editor-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
       <motion.div className="editor" initial={{ scale: 0.98, y: 8 }} animate={{ scale: 1, y: 0 }} transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}>
@@ -171,6 +221,11 @@ export function ScreenshotEditor({ shot }: { shot: Screenshot }) {
           <strong className="truncate">{shot.file}</strong>
           <span className="muted tiny">{shot.instanceName}</span>
           <div className="row" style={{ marginLeft: "auto" }}>
+            <label className="wp-toggle" title={tx("Katmanlar, maskeler, seçimler, fırçalar, ayarlamalar ve filtrelerle tam düzenleyici")}>
+              <input type="checkbox" checked={pro} onChange={(e) => togglePro(e.target.checked)} />
+              <span className="wp-toggle-track"><span /></span>
+              <Layers size={14} /> {tx("WestPhoto modu")}
+            </label>
             <button className="icon-btn" title={tx("Son çizimi geri al")} disabled={!st.annotations.length} onClick={() => setSt((s) => ({ ...s, annotations: s.annotations.slice(0, -1) }))}><Undo2 size={16} /></button>
             <button className="icon-btn" title={tx("Her şeyi sıfırla")} onClick={() => setSt({ adjust: NEUTRAL, annotations: [], crop: null, outWidth: null })}><RotateCcw size={16} /></button>
             <button className="icon-btn" title={tx("Kapat")} onClick={() => edit(null)}><X size={17} /></button>
