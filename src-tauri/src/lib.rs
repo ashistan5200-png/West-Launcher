@@ -165,6 +165,7 @@ pub fn run() {
             commands::skins::import_skin_player,
             commands::skins::update_skin,
             commands::skins::delete_skin,
+            commands::skins::save_skin_png,
             // Ekran görüntüsü galerisi
             commands::screenshots::list_screenshots,
             commands::screenshots::generate_thumbs,

@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Check, Loader2, LogIn, RefreshCw, Rotate3d, Star, Trash2, Upload, UserPlus, UserRound, X,
+  Check, Loader2, LogIn, Paintbrush, Pencil, RefreshCw, Rotate3d, Star, Trash2, Upload, UserPlus, UserRound, X,
 } from "lucide-react";
 import clsx from "clsx";
 import { useAccounts } from "@/stores/accounts";
@@ -13,6 +13,7 @@ import { askConfirm } from "@/components/ConfirmDialog";
 import { tx } from "@/lib/i18n";
 
 const SkinPreview3D = lazy(() => import("@/components/SkinPreview3D"));
+const SkinEditor = lazy(() => import("@/components/skin-editor/SkinEditor"));
 
 const ANIMS: { id: PreviewAnim; label: string }[] = [
   { id: "idle", label: tx("Durağan") },
@@ -32,6 +33,7 @@ export function SkinsPage() {
   const [rotate, setRotate] = useState(true);
   const [onlyFav, setOnlyFav] = useState(false);
   const [player, setPlayer] = useState("");
+  const [editor, setEditor] = useState<null | "new" | "edit">(null);
 
   useEffect(() => {
     void st.load().then(() => st.syncAccountSkin());
@@ -99,6 +101,10 @@ export function SkinsPage() {
             <p className="muted tiny">{tx("Offline hesaplarda skin launcher'da saklanır; oyunda görünmesi West Companion oyun içi modu ile gelecek. Vanilla offline modda oyun varsayılan skini gösterir.")}</p>
           )}
 
+          <div className="sk-make">
+            <button className="btn btn-primary" onClick={() => setEditor("new")}><Paintbrush size={15} /> {tx("Skin oluştur")}</button>
+            <button className="btn btn-ghost" disabled={!preview} onClick={() => setEditor("edit")}><Pencil size={15} /> {tx("Bu skini düzenle")}</button>
+          </div>
           <div className="divider" />
           <button className="btn btn-ghost" disabled={busy === "import"} onClick={() => st.importFile()}>
             {busy === "import" ? <Loader2 size={15} className="spin" /> : <Upload size={15} />} {tx("Bilgisayardan yükle (.png)")}
@@ -121,6 +127,21 @@ export function SkinsPage() {
 
         {active?.kind === "microsoft" && <CapeCard account={active} />}
       </div>
+
+      {editor && (
+        <Suspense fallback={null}>
+          <SkinEditor
+            initial={editor === "edit" ? preview : null}
+            onClose={() => setEditor(null)}
+            onSaved={async (skin, andApply) => {
+              setEditor(null);
+              await st.load();
+              st.setPreview(skin.id);
+              if (andApply && active) await st.apply(skin);
+            }}
+          />
+        </Suspense>
+      )}
 
       {/* ── Alt: arşiv ── */}
       <section className="card stack skins-archive">

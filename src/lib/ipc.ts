@@ -163,6 +163,7 @@ export const api = {
   updateSkin: (id: string, patch: { name?: string; slim?: boolean; favorite?: boolean }) =>
     invoke<Skin>("update_skin", { id, name: patch.name ?? null, slim: patch.slim ?? null, favorite: patch.favorite ?? null }),
   deleteSkin: (id: string) => invoke<void>("delete_skin", { id }),
+  saveSkinPng: (pngBase64: string, name: string, slim: boolean) => invoke<Skin>("save_skin_png", { pngBase64, name, slim }),
 
   // Ekran görüntüleri
   listScreenshots: (instanceId: string | null = null) => invoke<Screenshot[]>("list_screenshots", { instanceId }),

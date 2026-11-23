@@ -44,3 +44,16 @@ pub fn update_skin(state: State<'_, AppState>, id: String, name: Option<String>,
 pub fn delete_skin(state: State<'_, AppState>, id: String) -> Result<()> {
     lib(&state).remove(&id)
 }
+
+/// Skin editöründe çizilen skin (base64 PNG). `name` boşsa "Benim skinim".
+#[tauri::command]
+pub fn save_skin_png(state: State<'_, AppState>, png_base64: String, name: String, slim: bool) -> Result<SkinWithData> {
+    use base64::Engine;
+    let raw = png_base64.split_once(',').map(|(_, b)| b).unwrap_or(&png_base64);
+    let bytes = base64::engine::general_purpose::STANDARD.decode(raw.trim()).map_err(|e| crate::error::AppError::Msg(e.to_string()))?;
+    let l = lib(&state);
+    let n = if name.trim().is_empty() { "Benim skinim".to_string() } else { name.trim().to_string() };
+    let e = l.add(&bytes, &n, slim, "editor")?;
+    let e = l.update(&e.id, Some(n), Some(slim), None, false)?;
+    Ok(l.with_data(e).expect("az önce yazıldı"))
+}
