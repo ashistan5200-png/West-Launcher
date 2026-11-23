@@ -371,49 +371,6 @@ pub async fn api(http: &Http, root: &Path, method: &str, path: &str, query: &[(S
     Ok(data)
 }
 
-/// Bir Supabase Edge Function'ı West hesabının oturumuyla çağırır (ör. lobby-verify).
-pub async fn function(http: &Http, root: &Path, name: &str, body: serde_json::Value) -> Result<serde_json::Value> {
-    let c = cfg()?;
-    if !name.chars().all(|ch| ch.is_ascii_alphanumeric() || ch == '-') {
-        return Err(AppError::msg(crate::i18n::t("Geçersiz istek")));
-    }
-    let (tok, _) = token(http, root).await.ok_or_else(|| AppError::msg(crate::i18n::t("Bunun için West hesabına giriş yapmalısın.")))?;
-    let resp = http
-        .client
-        .post(format!("{}/functions/v1/{name}", c.supabase_url))
-        .timeout(std::time::Duration::from_secs(25))
-        .header("apikey", &c.supabase_anon_key)
-        .bearer_auth(&tok)
-        .json(&body)
-        .send()
-        .await
-        .map_err(|e| AppError::msg(crate::i18n::tf("West sunucusuna ulaşılamadı: {0}", &[&e])))?;
-    let status = resp.status();
-    let text = resp.text().await.unwrap_or_default();
-    let v: serde_json::Value = serde_json::from_str(&text).unwrap_or(serde_json::Value::Null);
-    if status == reqwest::StatusCode::NOT_FOUND && v["error"].is_null() {
-        return Err(AppError::msg(crate::i18n::tf("Supabase'te \"{0}\" fonksiyonu henüz yayınlanmamış.", &[&name])));
-    }
-    if !status.is_success() {
-        let msg = v["error"].as_str().or(v["message"].as_str()).map(String::from).unwrap_or_else(|| text.chars().take(200).collect());
-        return Err(AppError::msg(msg));
-    }
-    Ok(v)
-}
-
-/// Oyunun Supabase Realtime'a (WebSocket) bağlanması için gereken bilgiler: adres, herkese açık
-/// anahtar ve kullanıcının kısa ömürlü oturum anahtarı (yalnızca kendi verisine erişir).
-pub async fn realtime(http: &Http, root: &Path) -> Result<serde_json::Value> {
-    let c = cfg()?;
-    let (tok, uid) = token(http, root).await.ok_or_else(|| AppError::msg(crate::i18n::t("Bunun için West hesabına giriş yapmalısın.")))?;
-    let host = c.supabase_url.trim_end_matches('/').replacen("https://", "wss://", 1).replacen("http://", "ws://", 1);
-    Ok(serde_json::json!({
-        "url": format!("{host}/realtime/v1/websocket?apikey={}&vsn=1.0.0", c.supabase_anon_key),
-        "token": tok,
-        "user": uid,
-    }))
-}
-
 /// Görsel yükler (avatar, banner, gönderi, hikâye, mesaj) ve herkese açık adresini döner.
 pub async fn upload(http: &Http, root: &Path, local: &Path, folder: &str) -> Result<String> {
     let c = cfg()?;

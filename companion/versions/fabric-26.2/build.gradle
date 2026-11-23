@@ -11,8 +11,6 @@ dependencies {
     implementation "net.fabricmc:fabric-loader:${project.loader_version}"
     implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
     // Grup sesli sohbeti: saf Java Opus kodlayıcı (yerel kütüphane gerekmez), modun içine gömülür
-    implementation "io.github.jaredmdobson:concentus:1.0.2"
-    include "io.github.jaredmdobson:concentus:1.0.2"
 }
 
 // Sürümden bağımsız çekirdek (HUD, menü, düzenleyici) bu modun içine derlenir

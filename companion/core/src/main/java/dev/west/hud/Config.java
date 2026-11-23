@@ -41,10 +41,6 @@ public final class Config {
         public boolean smoothFont = true;
         /** Minecraft'ın başlık ekranı yerine West ana menüsü */
         public boolean customTitle = true;
-        /** Ana menüdeki "vanilla'yı mı tercih edersin?" kartı kapatıldı mı */
-        public boolean titleTipSeen = false;
-        /** Ana menü oyna kartında son seçilen sekme: 0 tek oyunculu, 1 çok oyunculu */
-        public int homeTab = 0;
         /** West arka plan müziği (menüde) */
         public boolean music = true;
         /** Müzik oyun içinde de çalsın (Minecraft'ın kendi müziğinin yerine) */
@@ -54,47 +50,8 @@ public final class Config {
         /** West HUD öğeleri gösterilsin mi (launcher'daki Erişilebilirlik'ten) */
         public boolean hudEnabled = true;
         public Map<String, Element> elements = new LinkedHashMap<>();
-        /** West Coin ile alınıp launcher'da kuşanılan görünümler: yuva → öğe (cape, hat, back, aura, menuTheme) */
-        public Map<String, String> cosmetics = new LinkedHashMap<>();
-        /** Sahip olunan (kullanılabilir) oyun içi öğeler ve West Coin bakiyesi (launcher yazar) */
-        public java.util.List<String> owned = new java.util.ArrayList<>();
-        public long coins = 0;
         /** Arayüz dili: "tr" | "en" | "de" (launcher yazar) */
         public String language = "tr";
-        /** West Plus açık mı (launcher yazar) */
-        public boolean plus = false;
-
-        // ───── Lobi (ana menü) ─────
-        /** Ana menü olarak 3B lobi (kapalıysa klasik West ana menüsü) */
-        public boolean lobby = true;
-        /** Seçili biyom: forest, snowy, badlands, desert, cherry, end, nether */
-        public String lobbyBiome = "forest";
-        /** Kameranın çok yavaş sinematik kayması */
-        public boolean lobbyCinematic = true;
-        /** Lobi sesleri (ışınlanma) */
-        public boolean lobbySound = true;
-        /** Hafif lobi: 3B dünya çizilmez, yalnızca karakterler ve sade arka plan */
-        public boolean lobbyLight = false;
-        /** Modül menüsünü açan tuş: esc, rshift, m, tab */
-        public String lobbyMenuKey = "esc";
-        /** Sol alt bilgi panelinde gösterilenler */
-        public Map<String, Boolean> lobbyInfo = new LinkedHashMap<>();
-
-        // ───── Grup sesli sohbeti ─────
-        /** Aynı lobideki (gruptaki) arkadaşlarla sesli konuşma */
-        public boolean voice = true;
-        /** auto (başka ses modu varsa bas-konuş, yoksa sesle), vad (sesle etkinleşme), ptt (bas-konuş) */
-        public String voiceMode = "auto";
-        /** Gürültü engelleme (fan, klima, klavye uğultusu) */
-        public boolean voiceNoise = true;
-        /** Sesle etkinleşme eşiği (dBFS): daha düşük = daha hassas */
-        public int voiceSensitivity = -44;
-        public float voiceInVol = 1f, voiceOutVol = 1f;
-        public boolean voiceMuted = false, voiceDeafened = false;
-        /** Seçili mikrofon (boş = sistem varsayılanı) */
-        public String voiceMic = "";
-        /** Sesini duymak istemediğin kişiler (West hesap kimliği) */
-        public java.util.List<String> voiceMutedPeople = new java.util.ArrayList<>();
     }
 
     private final Path path;
@@ -114,8 +71,6 @@ public final class Config {
                     // Eski (sürüm 1) dosyada fpsOverlay varsayılan kapalıydı; yoksa açık say
                     if (!o.has("fpsOverlay")) d.fpsOverlay = true;
                     if (d.elements == null) d.elements = new LinkedHashMap<>();
-                    if (d.voiceMutedPeople == null) d.voiceMutedPeople = new java.util.ArrayList<>();
-                    if (d.voiceMode == null) d.voiceMode = "auto";
                     data = d;
                 }
             }

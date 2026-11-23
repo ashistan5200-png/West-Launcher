@@ -219,24 +219,10 @@ public final class Gfx121 implements Gfx {
     }
 
     @Override
-    public boolean lobby(dev.west.hud.lobby.LobbyFrame frame) {
-        int w = g.guiWidth(), h = g.guiHeight();
-        boolean ready = frame.light || LobbyRender121.mesh(frame.scene.biome) != null;
-        var bounds = new net.minecraft.client.gui.navigation.ScreenRectangle(0, 0, w, h);
-        g.guiRenderState.submitPicturesInPictureState(new LobbyRender121.State(frame, 0, 0, w, h, 1f, null, bounds));
-        g.nextStratum();
-        return ready;
-    }
-
-    @Override
-    public boolean soft(int kind, float cx, float cy, float w, float h, float angle, int argb, boolean additive) {
-        Post121.soft(g, kind, cx, cy, w, h, angle, argb, additive);
+    public boolean texture(String loc, int x, int y, int w, int h, float u, float v, int uw, int vh, int texW, int texH, int color) {
+        if (w <= 0 || h <= 0) return false;
+        g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, Identifier.parse(loc), x, y, u, v, w, h, uw, vh, texW, texH, color);
         return true;
-    }
-
-    @Override
-    public boolean lobbyEdgeBlur(float rx, float ry) {
-        return Post121.edgeBlur(g, rx, ry);
     }
 
     @Override

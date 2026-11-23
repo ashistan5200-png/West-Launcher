@@ -23,12 +23,12 @@ async fn main() {
     install::extract_natives(&libs.natives, &natives).unwrap();
     let javas = java::detect(&paths).await;
     let j = java::pick(&javas, 21).expect("java 21").clone();
-    let opts = launch::LaunchOptions { java: j.path.clone(), game_dir: game.clone(), natives_dir: natives, memory_mb: 2048, jvm_flags: java::jvm::optimize(21, &java::jvm::hardware(), 2048).flags, extra_jvm_args: vec![], resolution: Some((1280, 720)), auth: AuthSession::offline("AshiWest"), join_server: None };
+    let opts = launch::LaunchOptions { java: j.path.clone(), game_dir: game.clone(), natives_dir: natives, memory_mb: 2048, jvm_flags: java::jvm::optimize(21, &java::jvm::hardware(), 2048).flags, extra_jvm_args: vec![], resolution: Some((1280, 720)), fullscreen: false, auth: AuthSession::offline("AshiWest"), join_server: None };
     let args = launch::build_args(&paths, &v, &libs, &opts).unwrap();
     let log = Arc::new(std::sync::Mutex::new(std::fs::File::create(root.join("game.log")).unwrap()));
     let l2 = log.clone();
     let (tx, rx) = std::sync::mpsc::channel();
-    let _h = launch::spawn(&j.path, args, &game, Arc::new(move |line, _| { use std::io::Write; let _ = writeln!(l2.lock().unwrap(), "{line}"); }), Arc::new(move |code| { let _ = tx.send(code); })).await.unwrap();
+    let _h = launch::spawn(&j.path, args, &game, "", Arc::new(move |line, _| { use std::io::Write; let _ = writeln!(l2.lock().unwrap(), "{line}"); }), Arc::new(move |code| { let _ = tx.send(code); })).await.unwrap();
     println!("oyun başlatıldı (pid {})", _h.pid);
     let wait: u64 = std::env::var("GAME_WAIT").ok().and_then(|s| s.parse().ok()).unwrap_or(400);
     match rx.recv_timeout(std::time::Duration::from_secs(wait)) { Ok(c) => println!("oyun kapandı: {:?}", c), Err(_) => println!("oyun hâlâ çalışıyor") }

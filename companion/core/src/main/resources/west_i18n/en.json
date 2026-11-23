@@ -462,5 +462,14 @@
  "Test: kendi sesini duyuyorsun": "Test: you're hearing yourself",
  "Testi bitir": "Stop test",
  "Varsayılan mikrofon": "Default microphone",
- "Yüksek": "High"
+ "Yüksek": "High",
+ "Bağlanılıyor…": "Connecting…",
+ "Kaldığın yerden devam et": "Pick up where you left off",
+ "Klasik Minecraft menüsü": "Classic Minecraft menu",
+ "Skin ayarları": "Skin customization",
+ "Uyumsuz sürüm": "Incompatible version",
+ "Yeni dünya oluştur": "Create new world",
+ "az önce": "just now",
+ "{0}/{1} çevrimiçi · {2} ms": "{0}/{1} online · {2} ms",
+ "İlk maceranı başlat": "Start your first adventure"
 }

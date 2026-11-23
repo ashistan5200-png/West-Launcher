@@ -86,26 +86,10 @@ public interface Gfx {
     default void nextLayer() {}
 
     /**
-     * Lobinin 3B sahnesi (biyom dünyası + karakterler) tüm ekrana. Arka plan saydam kalır
-     * (gökyüzü önceden çizilir). Sahne henüz hazırlanıyorsa ya da desteklenmiyorsa false.
+     * Oyunun kaynaklarındaki bir dokuyu çizer (ör. "minecraft:textures/gui/title/minecraft.png").
+     * (u,v,uw,vh) dokudaki kaynak alan, (texW,texH) dokunun boyutu. Desteklenmiyorsa false.
      */
-    default boolean lobby(dev.west.hud.lobby.LobbyFrame frame) { return false; }
-
-    /** Yumuşak dokular ({@link #soft}): ışıma (merkezi parlak yuvarlak), vinyet (kenarları koyu), şerit (dikey Gauss, yanları sönük) */
-    int SOFT_GLOW = 0, SOFT_VIGNETTE = 1, SOFT_BAND = 2;
-
-    /**
-     * Yumuşak (doğrusal süzülmüş) bir dokuyu merkezi (cx, cy), boyutu w×h, açısı angle (radyan) olacak
-     * şekilde renklendirerek çizer. additive: ışık gibi üst üste eklenir (parlama, ışık huzmesi).
-     * Desteklenmiyorsa false.
-     */
-    default boolean soft(int kind, float cx, float cy, float w, float h, float angle, int argb, boolean additive) { return false; }
-
-    /**
-     * {@link #lobby} sahnesinin kenarlarını ve köşelerini bulanıklaştırır; ortası (yarıçapları rx, ry ekran
-     * oranı) keskin kalır. Karede bir kez; desteklenmiyorsa ya da bulanıklık zaten kullanıldıysa false.
-     */
-    default boolean lobbyEdgeBlur(float rx, float ry) { return false; }
+    default boolean texture(String loc, int x, int y, int w, int h, float u, float v, int uw, int vh, int texW, int texH, int color) { return false; }
 
     /** Dünyanın küçük resmi; yoksa false */
     default boolean worldIcon(String id, String iconPath, int x, int y, int size) { return false; }

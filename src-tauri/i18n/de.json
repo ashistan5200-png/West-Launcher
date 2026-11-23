@@ -230,5 +230,8 @@
  "Depo henüz kurulmamış: Supabase'te supabase/depot.sql dosyasını çalıştır.": "Das Depot ist noch nicht eingerichtet: führe supabase/depot.sql in Supabase aus.",
  "Depo'ya yalnızca Onaylı kullanıcılar dosya yükleyebilir.": "Nur bestätigte Nutzer können Dateien ins Depot hochladen.",
  "Dosya Supabase'in boyut sınırını aşıyor (en fazla 50 MB).": "Die Datei überschreitet das Größenlimit von Supabase (max. 50 MB).",
- "Sürüm bulunamadı": "Version nicht gefunden"
+ "Sürüm bulunamadı": "Version nicht gefunden",
+ "Başlatma öncesi komut 5 dakikada bitmedi; oyun açılmadı.": "Der Befehl vor dem Start wurde nicht innerhalb von 5 Minuten beendet; das Spiel wurde nicht gestartet.",
+ "Başlatma öncesi komut hata verdi (çıkış kodu {0}); oyun açılmadı.": "Der Befehl vor dem Start ist fehlgeschlagen (Exit-Code {0}); das Spiel wurde nicht gestartet.",
+ "Komut çalıştırılamadı: {0}": "Befehl konnte nicht ausgeführt werden: {0}"
 }

@@ -158,12 +158,6 @@ public interface Game {
     /** Oyun içindeki yerleşik ses seviyesi (0–1, ana ses) */
     default float masterVolume() { return 1f; }
 
-    /** Grup sesli sohbetinin bas-konuş tuşu basılı mı (oyunda ekran yokken ya da West ekranı açıkken) */
-    default boolean pushToTalkDown() { return false; }
-
-    /** Bas-konuş tuşunun adı (Kontroller'den değiştirilebilir) */
-    default String pushToTalkKey() { return "G"; }
-
     /** Bir mod yüklü mü (ör. "voicechat") */
     default boolean modLoaded(String id) { return false; }
 }

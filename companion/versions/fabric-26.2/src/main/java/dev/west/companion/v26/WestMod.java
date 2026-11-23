@@ -18,8 +18,6 @@ public final class WestMod implements ClientModInitializer {
     /** West menüsü: varsayılan Sağ Shift (Kontroller'den değiştirilebilir) */
     public static final KeyMapping MENU = new KeyMapping("key.west_companion.menu", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_RIGHT_SHIFT, CATEGORY);
     /** HUD düzenleyici: varsayılan atanmamış */
-    /** Grup sesli sohbeti bas-konuş: varsayılan G (Simple Voice Chat'in tuşlarıyla çakışmaz) */
-    public static final KeyMapping TALK = new KeyMapping("key.west_companion.talk", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_G, CATEGORY);
     public static final KeyMapping EDITOR = new KeyMapping("key.west_companion.editor", InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), CATEGORY);
 
     @Override
@@ -39,11 +37,9 @@ public final class WestMod implements ClientModInitializer {
         });
         KeyMappingHelper.registerKeyMapping(MENU);
         KeyMappingHelper.registerKeyMapping(EDITOR);
-        KeyMappingHelper.registerKeyMapping(TALK);
         ClientTickEvents.END_CLIENT_TICK.register(WestMod::tick);
         // Dünya paylaşma: e4mc'nin verdiği herkese açık adresi sohbetten yakala
         net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents.GAME.register((msg, overlay) -> WestHud.safe("tunnel", () -> Game26.onChat(msg)));
-        WestHud.safe("cosmetics", WestCosmetics::register);
         // Vanilla başlık ekranında West ana menüsüne dönüş düğmesi (sağ üst)
         net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.AFTER_INIT.register((client, screen, w, h) -> {
             if (!(screen instanceof net.minecraft.client.gui.screens.TitleScreen) || WestHud.customTitle()) return;
@@ -72,10 +68,8 @@ public final class WestMod implements ClientModInitializer {
     }
 
     private static void tick(Minecraft mc) {
-        WestHud.safe("aura", () -> WestCosmetics.tick(mc));
         WestHud.tick();
         WestHud.safe("music", () -> WestMusic.tick(mc));
-        WestHud.safe("lobby-release", () -> LobbyRender26.releaseIfIdle(mc.level != null));
         WestHud.safe("pinger", Game26::tickPinger);
         WestHud.safe("restore-ops", Game26::restoreOps);
         WestHud.safe("debug-publish", () -> debugPublish(mc));
@@ -83,10 +77,6 @@ public final class WestMod implements ClientModInitializer {
         if (mc.gui.screen() instanceof net.minecraft.client.gui.screens.TitleScreen && WestHud.customTitle()) {
             Game26.refreshWorlds();
             mc.gui.setScreen(new WestHost(WestHud.home()));
-        }
-        // Duraklatma menüsü (Esc) → West duraklatma menüsü (F3+Esc ile açılan menüsüz duraklatma hariç)
-        if (mc.gui.screen() instanceof net.minecraft.client.gui.screens.PauseScreen ps && ps.showsPauseMenu() && WestHud.customTitle()) {
-            mc.gui.setScreen(new WestHost(WestHud.pause()));
         }
         while (MENU.consumeClick()) {
             if (mc.gui.screen() == null) WestHud.game.openWestScreen(false);

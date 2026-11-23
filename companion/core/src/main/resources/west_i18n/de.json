@@ -461,5 +461,14 @@
  "Test: kendi sesini duyuyorsun": "Test: du hörst dich selbst",
  "Testi bitir": "Test beenden",
  "Varsayılan mikrofon": "Standardmikrofon",
- "Yüksek": "Hoch"
+ "Yüksek": "Hoch",
+ "Bağlanılıyor…": "Verbinde…",
+ "Kaldığın yerden devam et": "Weitermachen, wo du aufgehört hast",
+ "Klasik Minecraft menüsü": "Klassisches Minecraft-Menü",
+ "Skin ayarları": "Skin-Anpassung",
+ "Uyumsuz sürüm": "Inkompatible Version",
+ "Yeni dünya oluştur": "Neue Welt erstellen",
+ "az önce": "gerade eben",
+ "{0}/{1} çevrimiçi · {2} ms": "{0}/{1} online · {2} ms",
+ "İlk maceranı başlat": "Starte dein erstes Abenteuer"
 }

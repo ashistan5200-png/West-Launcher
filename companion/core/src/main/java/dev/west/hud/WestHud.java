@@ -43,10 +43,9 @@ public final class WestHud {
 
     public static Theme theme() {
         Config.Data d = config.data;
-        String pack = d.cosmetics == null ? null : d.cosmetics.get("menuTheme");
-        String key = d.theme + "|" + pack;
+        String key = d.theme;
         if (theme == null || !key.equals(themeKey) || (themeAccent & 0xFFFFFF) != (d.accent & 0xFFFFFF)) {
-            theme = Theme.pack(pack, Theme.of(d.theme, d.accent));
+            theme = Theme.of(d.theme, d.accent);
             themeKey = key;
             themeAccent = d.accent;
         }
@@ -61,12 +60,10 @@ public final class WestHud {
         // Launcher'ın yaptığı ayar değişikliklerini ~2 sn'de bir yakala
         if (++ticks % 40 == 0) safe("config", () -> config.reloadIfChanged(HUD));
         safe("stats", () -> stats.tick(game));
-        safe("lobby", () -> dev.west.hud.lobby.LobbyClient.INSTANCE.tick(game));
         if (ticks % 20 == 0) safe("presence", () -> dev.west.hud.social.SocialClient.INSTANCE.heartbeat(game.inWorld() ? "Oynuyor · " + game.session().title() : "Menüde"));
     }
 
     public static void renderHud(Gfx g) {
-        if (config != null && !editorOpen) safe("voice-hud", () -> dev.west.hud.voice.VoiceHud.renderAlways(g, HUD.byId("voice")));
         if (config != null && !config.data.hudEnabled && !editorOpen) return;
         safe("hud", () -> HUD.render(g, game, theme(), editorOpen));
     }
@@ -75,13 +72,9 @@ public final class WestHud {
         return new MenuScreen();
     }
 
-    public static WestScreen pause() {
-        return new dev.west.hud.screen.PauseMenu();
-    }
-
+    /** West başlık ekranı (Minecraft'ın ana menüsünün yerine) */
     public static WestScreen home() {
-        if (config != null && config.data.lobby) return new dev.west.hud.screen.LobbyScreen();
-        return new dev.west.hud.screen.HomeScreen();
+        return new dev.west.hud.screen.TitleHome();
     }
 
     public static boolean customTitle() {
