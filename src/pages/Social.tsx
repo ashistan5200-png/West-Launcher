@@ -541,7 +541,7 @@ function FollowListModal({ userId, dir, onClose }: { userId: string; dir: "follo
   );
 }
 
-function EditProfileModal({ open, onClose, profile, onSaved }: { open: boolean; onClose: () => void; profile: Profile; onSaved: (p: Profile) => void }) {
+export function EditProfileModal({ open, onClose, profile, onSaved }: { open: boolean; onClose: () => void; profile: Profile; onSaved: (p: Profile) => void }) {
   const [d, setD] = useState(profile);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);

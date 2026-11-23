@@ -6,7 +6,6 @@ import {
 import clsx from "clsx";
 import { useAccounts } from "@/stores/accounts";
 import { SkinThumb } from "@/components/SkinThumb";
-import { WestAccountCard } from "@/components/WestAccountCard";
 import type { PreviewAnim } from "@/components/SkinPreview3D";
 import type { AccountView, Cape } from "@/lib/types";
 import { api, isTauri } from "@/lib/ipc";
@@ -76,7 +75,6 @@ export function SkinsPage() {
 
       {/* ── Sağ: hesap + eylemler ── */}
       <div className="stack">
-        <WestAccountCard />
         <AccountCard />
 
         <section className="card stack">

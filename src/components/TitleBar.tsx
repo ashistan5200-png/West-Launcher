@@ -4,6 +4,7 @@ import { Minus, Square, X } from "lucide-react";
 import { isTauri } from "@/lib/ipc";
 import { useAccounts } from "@/stores/accounts";
 import { useWest } from "@/stores/west";
+import { useSocial } from "@/stores/social";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/ipc";
 import { useInstances } from "@/stores/instances";
@@ -19,7 +20,10 @@ export function TitleBar() {
   const west = useWest((s) => s.account);
   const loadWest = useWest((s) => s.load);
   useEffect(() => void loadWest(), [loadWest]);
-  const name = west?.username ?? account?.username;
+  const me = useSocial((s) => s.me);
+  const name = west ? me?.display_name || west.username : account?.username;
+  const loadMe = useSocial((s) => s.loadMe);
+  useEffect(() => { if (west) void loadMe(); }, [west, loadMe]);
   return (
     <header className="titlebar" data-tauri-drag-region>
       <div className="titlebar-brand" data-tauri-drag-region>
@@ -29,8 +33,8 @@ export function TitleBar() {
       <div className="titlebar-actions">
         <RunningPill />
         <UpdateButton />
-        <button className="tb-account" onClick={() => navigate("/skins")} title={tx("Hesap ve skin")}>
-          <span className="tb-avatar">{(name ?? "?").slice(0, 1).toUpperCase()}</span>
+        <button className="tb-account" onClick={() => navigate("/account")} title={tx("Hesabım ve profilim")}>
+          {me?.avatar_url ? <img className="tb-avatar" src={me.avatar_url} alt="" /> : <span className="tb-avatar">{(name ?? "?").slice(0, 1).toUpperCase()}</span>}
           <span className="truncate">{name ?? tx("Giriş yap")}</span>
           {west ? <span className="tb-kind west">{tx("West")}</span> : account && <span className={`tb-kind ${account.kind}`}>{account.kind === "microsoft" ? "MS" : tx("Offline")}</span>}
         </button>

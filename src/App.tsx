@@ -10,6 +10,7 @@ import { AshiDock } from "@/components/AshiDock";
 import { AshiConfirmModal } from "@/components/AshiConfirmModal";
 import { useAshi } from "@/stores/ashi";
 import { HomePage } from "@/pages/Home";
+import { AccountPage } from "@/pages/Account";
 import { LibraryPage } from "@/pages/Library";
 import { InstancePage } from "@/pages/Instance";
 import { SettingsPage } from "@/pages/Settings";
@@ -99,6 +100,7 @@ export default function App() {
                   <Route path="/social/tag/:tag" element={<TagPage />} />
                   <Route path="/u/:username" element={<ProfilePage />} />
                   <Route path="/post/:id" element={<PostPage />} />
+                  <Route path="/account" element={<AccountPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                 </Routes>
               </motion.div>
