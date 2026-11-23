@@ -6,8 +6,8 @@ import { useSettings } from "@/stores/settings";
 import type { Instance } from "@/lib/types";
 import { paletteFor } from "./CoverArt";
 import { coverSeedOf } from "./InstanceBanner";
-import { useWallet } from "@/stores/wallet";
-import { SKIES, type SkyFx } from "@/lib/shop";
+type SkyFx = "meteors" | "snow" | "petals" | "embers" | "void" | "aurora" | null;
+interface SkyScene { sky: [string, string]; sun: string; layers: [string, string, string]; stars: boolean; fx: SkyFx }
 
 /** Öne çıkan instance: önce oynanan, yoksa en son oynanan, yoksa ilki. */
 export function useFeaturedInstance(): Instance | null {
@@ -77,9 +77,7 @@ export function AmbientSky() {
   const banner = inst?.banner ? (isTauri() ? convertFileSrc(inst.banner) : inst.banner) : null;
   const seed = inst ? coverSeedOf(inst) : "west-client";
   const [imgPal, setImgPal] = useState<Pal | null>(null);
-  // West Coin ile alınan arka plan sahnesi her şeyin önüne geçer
-  const skyId = useWallet((s) => s.view?.wallet.equipped.sky ?? null);
-  const scene = skyId ? SKIES[skyId] ?? null : null;
+  const scene = null as SkyScene | null;
   const fx: SkyFx = scene?.fx ?? null;
   const useBanner = !!banner && !scene;
 

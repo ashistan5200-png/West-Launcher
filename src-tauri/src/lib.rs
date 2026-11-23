@@ -22,8 +22,6 @@ pub mod state;
 pub mod updater;
 pub mod util;
 pub mod i18n;
-pub mod wallet;
-pub mod depot;
 
 use paths::Paths;
 use state::AppState;
@@ -58,9 +56,6 @@ pub fn run() {
             commands::ashi::analyze_crash,
             commands::ashi::fix_mod,
             commands::ashi::undo_fix,
-            commands::wallet::wallet_get,
-            commands::wallet::wallet_buy,
-            commands::wallet::wallet_equip,
             commands::settings::get_settings,
             commands::settings::save_settings,
             commands::settings::get_hardware,
@@ -122,11 +117,6 @@ pub fn run() {
             commands::cloud::west_reset_password,
             commands::cloud::west_api,
             commands::cloud::west_upload,
-            commands::depot::depot_inspect,
-            commands::depot::depot_upload,
-            commands::depot::depot_delete_file,
-            commands::depot::depot_install,
-            commands::depot::depot_installed,
             commands::content::list_content,
             commands::content::refresh_content,
             commands::content::set_content_enabled,

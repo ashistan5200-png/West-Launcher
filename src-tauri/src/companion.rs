@@ -162,7 +162,7 @@ pub fn write_config(game_dir: &Path, cfg: &CompanionConfig) -> Result<()> {
 
 /// Launcher ayarlarını (müzik, performans modu, West menüleri …) oyunun West Companion ayarına işler.
 /// Yalnızca bu alanlar değişir; HUD düzeni ve oyunda yapılan diğer ayarlar korunur.
-pub fn apply_prefs(game_dir: &Path, s: &crate::settings::Settings, w: &crate::wallet::Wallet) -> Result<()> {
+pub fn apply_prefs(game_dir: &Path, s: &crate::settings::Settings) -> Result<()> {
     let p = config_path(game_dir);
     if let Some(dir) = p.parent() {
         std::fs::create_dir_all(dir)?;
@@ -182,37 +182,16 @@ pub fn apply_prefs(game_dir: &Path, s: &crate::settings::Settings, w: &crate::wa
     o.insert("smoothFont".into(), a.smooth_font.into());
     // West shader kaldırıldı; eski ayar dosyalarında kalmasın
     o.remove("westShader");
-    // West Coin ile alınan görünüm öğeleri (yalnızca kullanılabilir olanlar)
-    let mut cos = serde_json::Map::new();
-    for (k, id) in &w.equipped {
-        if let Some(it) = crate::wallet::item(id) {
-            if w.can_use(it) {
-                cos.insert(k.clone(), id.clone().into());
-            }
-        }
+    // Mağaza ve West Coin kaldırıldı: eski görünüm/coin alanları oyun ayarından da silinir
+    for k in ["cosmetics", "owned", "coins", "plus"] {
+        o.remove(k);
     }
-    o.insert("cosmetics".into(), serde_json::Value::Object(cos));
-    o.insert("plus".into(), w.plus_active().into());
-    // Gardırop: kullanılabilir oyun içi öğeler ve bakiye
-    let owned: Vec<serde_json::Value> = crate::wallet::CATALOG
-        .iter()
-        .filter(|it| crate::wallet::GAME_SLOTS.contains(&crate::wallet::slot_of(it.id)) && w.can_use(it))
-        .map(|it| it.id.into())
-        .collect();
-    o.insert("owned".into(), serde_json::Value::Array(owned));
-    o.insert("coins".into(), w.coins.into());
     // Arayüz dili (oyun içi West menüleri de bunu kullanır)
     o.insert("language".into(), if s.language.is_empty() { "tr".into() } else { s.language.clone().into() });
     write_json_atomic(&p, &v)
 }
 
 /// Oyunun grafik ayarlarını hafifletir (options.txt). Var olan değerler yalnızca daha ağırsa düşürülür.
-/// Oyunda (Gardırop'ta) yapılan kozmetik seçimlerini oku
-pub fn read_cosmetics(game_dir: &Path) -> Option<std::collections::BTreeMap<String, String>> {
-    let v: serde_json::Value = serde_json::from_slice(&std::fs::read(config_path(game_dir)).ok()?).ok()?;
-    let m = v.get("cosmetics")?.as_object()?;
-    Some(m.iter().filter_map(|(k, v)| v.as_str().map(|s| (k.clone(), s.to_string()))).collect())
-}
 
 pub fn apply_low_graphics(game_dir: &Path) -> Result<()> {
     let p = game_dir.join("options.txt");
@@ -279,25 +258,19 @@ mod tests {
     fn prefs_keep_hud_and_low_graphics_lowers_only() {
         let dir = std::env::temp_dir().join(format!("west-prefs-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(dir.join("config")).unwrap();
-        std::fs::write(dir.join("config/west-companion.json"), r#"{"elements":{"fps":{"x":0.5}},"music":true}"#).unwrap();
+        std::fs::write(dir.join("config/west-companion.json"), r#"{"elements":{"fps":{"x":0.5}},"music":true,"coins":2450,"owned":["cape_west"],"cosmetics":{"cape":"cape_west"},"plus":true}"#).unwrap();
         let mut s = crate::settings::Settings::default();
         s.music = false;
         s.accessibility.performance_mode = true;
-        let mut w = crate::wallet::Wallet::default();
-        w.equipped.insert("cape".into(), "cape_west".into());
-        w.equipped.insert("hat".into(), "hat_crown".into()); // sahip değil → yazılmaz
-        apply_prefs(&dir, &s, &w).unwrap();
+        apply_prefs(&dir, &s).unwrap();
         let v: serde_json::Value = serde_json::from_slice(&std::fs::read(dir.join("config/west-companion.json")).unwrap()).unwrap();
         assert_eq!(v["music"], false);
         assert_eq!(v["performanceMode"], true);
         assert_eq!(v["elements"]["fps"]["x"], 0.5);
-        assert_eq!(v["cosmetics"]["cape"], "cape_west");
-        assert!(v["cosmetics"]["hat"].is_null());
-        assert_eq!(v["plus"], false);
-        // Gardırop listesi: hediye pelerin var, sahip olunmayan taç yok
-        let owned = v["owned"].as_array().unwrap();
-        assert!(owned.iter().any(|x| x == "cape_west"));
-        assert!(!owned.iter().any(|x| x == "hat_crown"));
+        // Mağaza kaldırıldı: eski coin/görünüm alanları silinir
+        for k in ["coins", "owned", "cosmetics", "plus"] {
+            assert!(v.get(k).is_none(), "{k} silinmeli");
+        }
 
         std::fs::write(dir.join("options.txt"), "renderDistance:4\nparticles:0\nfov:0.0\n").unwrap();
         apply_low_graphics(&dir).unwrap();

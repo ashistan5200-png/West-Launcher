@@ -9,10 +9,7 @@ import { api } from "@/lib/ipc";
 import { useInstances } from "@/stores/instances";
 import { Logo } from "./Logo";
 import { UpdateButton } from "./UpdateCenter";
-import { locale, tx } from "@/lib/i18n";
-import { PlusBadge } from "./PlusBadge";
-import { useWallet, usePlusActive } from "@/stores/wallet";
-import { CoinIcon } from "@/pages/Shop";
+import { tx } from "@/lib/i18n";
 
 const win = () => (isTauri() ? getCurrentWindow() : null);
 
@@ -23,26 +20,14 @@ export function TitleBar() {
   const loadWest = useWest((s) => s.load);
   useEffect(() => void loadWest(), [loadWest]);
   const name = west?.username ?? account?.username;
-  const plus = usePlusActive();
-  const coins = useWallet((s) => (s.view?.loggedIn === false ? null : s.view?.wallet.coins ?? null));
   return (
     <header className="titlebar" data-tauri-drag-region>
       <div className="titlebar-brand" data-tauri-drag-region>
         <Logo size={20} />
         <span className="wordmark" data-tauri-drag-region>{tx("West")}<b>{tx("Client")}</b></span>
-        {plus && (
-          <button className="tb-plus" onClick={() => navigate("/shop")} title="West Plus">
-            <PlusBadge size={15} />
-          </button>
-        )}
       </div>
       <div className="titlebar-actions">
         <RunningPill />
-        {coins !== null && (
-          <button className="tb-coins" onClick={() => navigate("/shop")} title={tx("West Coin mağazası")}>
-            <CoinIcon size={16} /> <span>{coins.toLocaleString(locale())}</span>
-          </button>
-        )}
         <UpdateButton />
         <button className="tb-account" onClick={() => navigate("/skins")} title={tx("Hesap ve skin")}>
           <span className="tb-avatar">{(name ?? "?").slice(0, 1).toUpperCase()}</span>

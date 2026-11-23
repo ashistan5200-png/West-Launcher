@@ -10,8 +10,6 @@ export interface Profile {
   website: string | null; location: string | null; links: { label: string; url: string }[]; mc_username: string | null;
   is_private: boolean; verified: boolean; allow_dms: "everyone" | "followers" | "none"; pinned_post_id: string | null;
   followers_count: number; following_count: number; posts_count: number; created_at: string;
-  /** West rolü (supabase/depot.sql); yoksa üye */
-  role?: "member" | "approved" | "moderator" | "admin";
 }
 export interface Media { url: string; w?: number; h?: number; alt?: string }
 export interface Poll { options: string[]; ends_at: string; counts: number[]; my_vote: number | null }

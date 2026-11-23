@@ -49,8 +49,7 @@ const hexRgb = (hex: string): [number, number, number] => {
 };
 
 /** Fare imlecinin geçtiği yerde, arka plan rengine göre renklenen küçük piksel parçacıklar. */
-import { useWallet } from "@/stores/wallet";
-import { TRAILS, type TrailStyle } from "@/lib/shop";
+type TrailStyle = "stars" | "snow" | "fire" | "hearts" | "rainbow";
 
 /** Kalp ve yıldız için küçük piksel desenleri (1 = dolu) */
 const HEART = ["0110110", "1111111", "1111111", "0111110", "0011100", "0001000"];
@@ -63,8 +62,7 @@ function stamp(ctx: CanvasRenderingContext2D, rows: string[], x: number, y: numb
 export function CursorTrail() {
   const enabled = useSettings((s) => s.settings.theme.cursorTrail && !s.settings.theme.reduceMotion);
   const accent = useSettings((s) => s.settings.theme.accent);
-  const trailId = useWallet((s) => s.view?.wallet.equipped.trail ?? null);
-  const style: TrailStyle | null = trailId ? TRAILS[trailId] ?? null : null;
+  const style = null as TrailStyle | null;
   const ref = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {

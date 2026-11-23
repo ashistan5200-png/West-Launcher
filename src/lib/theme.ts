@@ -27,28 +27,10 @@ const css = (c: RGB) => `${c[0]} ${c[1]} ${c[2]}`;
  * Tema motoru: tek bir vurgu renginden tüm ton paletini türetip CSS
  * değişkenlerine yazar. Bileşenler yalnızca `rgb(var(--accent) / α)` kullanır.
  */
-let pack: { bg: string; surface: string; surface2: string; surface3: string; accent: string; accent2?: string; aurora?: boolean } | null = null;
-let lastTheme: ThemeSettings | null = null;
-
-/** West Coin ile alınan launcher teması: yüzey renkleri ve vurgu. null → varsayılan. */
-export function applyPack(p: typeof pack) {
-  pack = p;
-  const root = document.documentElement;
-  const vars: [string, string | undefined][] = [["--bg", p?.bg], ["--surface", p?.surface], ["--surface-2", p?.surface2], ["--surface-3", p?.surface3]];
-  for (const [k, v] of vars) {
-    if (v) root.style.setProperty(k, v);
-    else root.style.removeProperty(k);
-  }
-  if (p?.accent2) root.style.setProperty("--accent-2", css(hexToRgb(p.accent2)));
-  else root.style.removeProperty("--accent-2");
-  root.dataset.pack = p?.aurora ? "aurora" : p ? "custom" : "";
-  if (lastTheme) applyTheme(lastTheme);
-}
 
 export function applyTheme(t: ThemeSettings) {
-  lastTheme = t;
   const root = document.documentElement;
-  const base = hexToRgb(pack?.accent ?? t.accent);
+  const base = hexToRgb(t.accent);
   const white: RGB = [255, 255, 255];
   const black: RGB = [0, 0, 0];
 

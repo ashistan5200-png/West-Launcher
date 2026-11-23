@@ -4,14 +4,13 @@ import { AnimatePresence, motion } from "framer-motion";
 import { open as openUrl } from "@tauri-apps/plugin-shell";
 import {
   ArrowLeft, AtSign, BadgeCheck, Bell, Bookmark, CalendarDays, Check, ChevronLeft, ChevronRight, Flag, Globe2, Hash, Heart, Home, ImagePlus,
-  Link2, Loader2, Lock, Mail, MapPin, MessageCircle, MoreHorizontal, PenSquare, Quote, Repeat2, Search, Shield, ShieldCheck, UserCheck, Warehouse, UserPlus, UserRound, UserX, VolumeX, X,
+  Link2, Loader2, Lock, Mail, MapPin, MessageCircle, MoreHorizontal, PenSquare, Quote, Repeat2, Search, Shield, UserCheck, UserPlus, UserRound, UserX, VolumeX, X,
 } from "lucide-react";
 import clsx from "clsx";
 import { api } from "@/lib/ipc";
 import * as S from "@/lib/social";
 import type { Post, Profile } from "@/lib/social";
 import { useWest } from "@/stores/west";
-import { RoleBadge } from "@/components/RoleBadge";
 import { useSocial } from "@/stores/social";
 import { pickCropped } from "@/components/ImageCropper";
 import { Avatar, PostCard, RichText, ago } from "@/components/social/PostCard";
@@ -253,9 +252,8 @@ const N_TEXT: Record<string, string> = {
   like: tx("gönderini beğendi"), reply: tx("gönderine yanıt verdi"), repost: tx("gönderini yeniden paylaştı"), quote: tx("gönderini alıntıladı"),
   mention: "senden bahsetti", follow: tx("seni takip etmeye başladı"), follow_request: "seni takip etmek istiyor", follow_accept: tx("takip isteğini kabul etti"),
   message: tx("sana mesaj gönderdi"), poll_vote: "anketine oy verdi",
-  role: tx("West yetkini güncelledi"), depot: tx("Depo'daki bir dosyanı kaldırdı"),
 };
-const N_ICON: Record<string, typeof Heart> = { like: Heart, reply: MessageCircle, repost: Repeat2, quote: Quote, mention: AtSign, follow: UserPlus, follow_request: Lock, follow_accept: UserCheck, message: MessageCircle, poll_vote: Check, role: ShieldCheck, depot: Warehouse };
+const N_ICON: Record<string, typeof Heart> = { like: Heart, reply: MessageCircle, repost: Repeat2, quote: Quote, mention: AtSign, follow: UserPlus, follow_request: Lock, follow_accept: UserCheck, message: MessageCircle, poll_vote: Check };
 
 export function NotificationsPage() {
   const me = useWest((s) => s.account);
@@ -295,7 +293,7 @@ export function NotificationsPage() {
         : shown.map((n) => {
           const Icon = N_ICON[n.type] ?? Bell;
           return (
-            <button key={n.id} className={clsx("s-notif", !n.read && "unread", n.type)} onClick={() => (n.type === "message" ? navigate("/social/messages") : n.type === "role" || n.type === "depot" ? navigate(n.type === "depot" ? "/depot?tab=mine" : "/depot") : n.post_id ? navigate(`/post/${n.post_id}`) : n.actor && navigate(`/u/${n.actor.username}`))}>
+            <button key={n.id} className={clsx("s-notif", !n.read && "unread", n.type)} onClick={() => (n.type === "message" ? navigate("/social/messages") : n.post_id ? navigate(`/post/${n.post_id}`) : n.actor && navigate(`/u/${n.actor.username}`))}>
               <Icon size={20} className="s-notif-ico" fill={n.type === "like" ? "currentColor" : "none"} />
               <div className="grow" style={{ minWidth: 0 }}>
                 <Avatar url={n.actor?.avatar_url} name={n.actor?.username ?? "?"} size={30} />
@@ -490,7 +488,7 @@ export function ProfilePage() {
           </div>
         </div>
         <div className="s-profile-info">
-          <h1 className="row" style={{ gap: 6 }}>{p.display_name || p.username}{p.verified && <BadgeCheck size={20} className="s-verified" />}{p.is_private && <Lock size={16} className="muted" />}<RoleBadge role={p.role} /></h1>
+          <h1 className="row" style={{ gap: 6 }}>{p.display_name || p.username}{p.verified && <BadgeCheck size={20} className="s-verified" />}{p.is_private && <Lock size={16} className="muted" />}</h1>
           <span className="muted">@{p.username} {rel.followsMe && <span className="s-follows-you">{tx("Seni takip ediyor")}</span>}</span>
           {p.bio && <p className="s-bio"><RichText text={p.bio} /></p>}
           <div className="s-meta">

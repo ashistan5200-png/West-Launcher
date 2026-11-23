@@ -1,6 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import type { DepotInspect, DepotUploaded } from "./depot";
 import type { CrashAnalysis, FixReport,
   ProjectDetail, ProjectVersion,
   ContentTags, WestStatus, WestAccount, WestSignupResult,
@@ -106,16 +105,7 @@ export const api = {
   westResetPassword: (email: string) => invoke<void>("west_reset_password", { email }),
   westApi: <T = unknown>(method: "GET" | "POST" | "PATCH" | "DELETE", path: string, opts: { query?: [string, string][]; body?: unknown; prefer?: string } = {}) =>
     invoke<T>("west_api", { method, path, query: opts.query ?? null, body: opts.body ?? null, prefer: opts.prefer ?? null }),
-  westUpload: (path: string, folder: "avatars" | "banners" | "posts" | "stories" | "messages" | "depot") => invoke<string>("west_upload", { path, folder }),
-  // West Depo (topluluk dosyaları)
-  depotInspect: (path: string) => invoke<DepotInspect>("depot_inspect", { path }),
-  depotUpload: (path: string) => invoke<DepotUploaded>("depot_upload", { path }),
-  depotDeleteFile: (filePath: string) => invoke<void>("depot_delete_file", { filePath }),
-  depotInstall: (itemId: string, instanceId: string | null, world: string | null, versionId: string | null = null) =>
-    invoke<{ installed: { path: string; place: string }; warnings: string[]; instanceId: string | null; replaced: string | null }>("depot_install", { itemId, instanceId, world, versionId }),
-  /** Bu instance'a Depo'dan kurulanlar: öğe kimliği → kurulu sürüm */
-  depotInstalled: (instanceId: string) =>
-    invoke<Record<string, { version: string; versionId: string | null; sha256: string; kind: string; place: string; at: string }>>("depot_installed", { instanceId }),
+  westUpload: (path: string, folder: "avatars" | "banners" | "posts" | "stories" | "messages") => invoke<string>("west_upload", { path, folder }),
   installContent: (instanceId: string, source: ContentSource, projectId: string, kind: ContentKind) =>
     invoke<InstallReport>("install_content", { instanceId, source, projectId, kind }),
   installModpack: (hit: ContentHit) => invoke<Instance>("install_modpack", { source: hit.source, projectId: hit.id }),

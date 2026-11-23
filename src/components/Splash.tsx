@@ -3,8 +3,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useOnboarding } from "@/stores/onboarding";
 import { useSettings } from "@/stores/settings";
 import { tx } from "@/lib/i18n";
-import { usePlusActive } from "@/stores/wallet";
-import { PlusBadge } from "./PlusBadge";
 
 /** Hızlı başlayıp güçlü yavaşlayan eğri — iğne "oturur" gibi durur. */
 const SETTLE = [0.12, 0.85, 0.16, 1] as const;
@@ -18,7 +16,6 @@ const DURATION_MS = 2300;
 export function Splash() {
   const { splashDone, finishSplash } = useOnboarding();
   const reduce = useSettings((s) => s.settings.theme.reduceMotion);
-  const plus = usePlusActive();
 
   useEffect(() => {
     const t = window.setTimeout(finishSplash, reduce ? 500 : DURATION_MS);
@@ -69,16 +66,6 @@ export function Splash() {
             >
               {tx("West Client")}
             </motion.h1>
-            {plus && (
-              <motion.span
-                className="splash-plus"
-                initial={{ opacity: 0, x: -10, scale: 0.6, rotate: -20 }}
-                animate={{ opacity: 1, x: 0, scale: 1, rotate: 0 }}
-                transition={{ type: "spring", stiffness: 380, damping: 18, delay: reduce ? 0 : 1.55 }}
-              >
-                <PlusBadge size={22} className="shine" />
-              </motion.span>
-            )}
           </div>
           <motion.span className="splash-sub" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: reduce ? 0 : 1.5 }}>
             {tx("Rotanı belirle.")}
