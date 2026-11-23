@@ -60,6 +60,9 @@ pub fn run() {
             commands::settings::save_settings,
             commands::settings::get_hardware,
             commands::settings::get_data_dir,
+            commands::settings::cache_size,
+            commands::settings::clear_cache,
+            commands::settings::reset_settings,
             commands::window::set_window_effect,
             // sürümler
             commands::versions::list_mc_versions,

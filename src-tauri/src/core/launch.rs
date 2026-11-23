@@ -24,6 +24,7 @@ pub struct LaunchOptions {
     /// Kullanıcının instance'a özel ek argümanları
     pub extra_jvm_args: Vec<String>,
     pub resolution: Option<(u32, u32)>,
+    pub fullscreen: bool,
     pub auth: AuthSession,
     /// Doğrudan sunucuya bağlan (1.20+ quickPlay, eski sürümlerde --server)
     pub join_server: Option<String>,
@@ -157,6 +158,9 @@ pub fn build_args(paths: &Paths, version: &VersionJson, libs: &ResolvedLibraries
     if opts.resolution.is_some() && !game_args.iter().any(|a| a == "--width") {
         game_args.extend(["--width".into(), w.to_string(), "--height".into(), h.to_string()]);
     }
+    if opts.fullscreen && !game_args.iter().any(|a| a == "--fullscreen") {
+        game_args.push("--fullscreen".into());
+    }
     if let Some(server) = &opts.join_server {
         let modern = version.arguments.as_ref().map(|a| {
             a.game.iter().any(|g| matches!(g, Argument::Ruled { value: ArgValue::Many(v), .. } if v.iter().any(|s| s == "--quickPlayMultiplayer")))
@@ -187,9 +191,37 @@ pub struct GameHandle {
     pub kill: oneshot::Sender<()>,
 }
 
-pub async fn spawn(java: &Path, args: Vec<String>, cwd: &Path, on_log: LogFn, on_exit: ExitFn) -> Result<GameHandle> {
+/// Bir kabuk komutu satırını parçalara ayırır (tırnaklar desteklenir)
+pub fn split_command(line: &str) -> Vec<String> {
+    let mut out = vec![];
+    let (mut cur, mut quote, mut any) = (String::new(), None::<char>, false);
+    for c in line.chars() {
+        match (quote, c) {
+            (Some(q), c) if c == q => quote = None,
+            (Some(_), c) => cur.push(c),
+            (None, '"' | '\'') => { quote = Some(c); any = true; }
+            (None, c) if c.is_whitespace() => {
+                if !cur.is_empty() || any { out.push(std::mem::take(&mut cur)); any = false; }
+            }
+            (None, c) => cur.push(c),
+        }
+    }
+    if !cur.is_empty() || any { out.push(cur); }
+    out
+}
+
+/// wrapper: Java'yı saran komut (boşsa doğrudan Java çalışır)
+pub async fn spawn(java: &Path, args: Vec<String>, cwd: &Path, wrapper: &str, on_log: LogFn, on_exit: ExitFn) -> Result<GameHandle> {
     std::fs::create_dir_all(cwd)?;
-    let mut cmd = Command::new(java);
+    let wrap = split_command(wrapper);
+    let mut cmd = match wrap.split_first() {
+        Some((prog, rest)) => {
+            let mut c = Command::new(prog);
+            c.args(rest).arg(java);
+            c
+        }
+        None => Command::new(java),
+    };
     cmd.args(&args)
         .current_dir(cwd)
         .stdin(Stdio::null())
@@ -201,7 +233,8 @@ pub async fn spawn(java: &Path, args: Vec<String>, cwd: &Path, on_log: LogFn, on
         const CREATE_NO_WINDOW: u32 = 0x0800_0000;
         cmd.creation_flags(CREATE_NO_WINDOW);
     }
-    let mut child = cmd.spawn().map_err(|e| AppError::msg(crate::i18n::tf("Java başlatılamadı ({0}): {1}", &[&java.display(), &e])))?;
+    let shown = if wrap.is_empty() { java.display().to_string() } else { format!("{} {}", wrap.join(" "), java.display()) };
+    let mut child = cmd.spawn().map_err(|e| AppError::msg(crate::i18n::tf("Java başlatılamadı ({0}): {1}", &[&shown, &e])))?;
     let pid = child.id().unwrap_or(0);
 
     if let Some(out) = child.stdout.take() {
@@ -236,4 +269,16 @@ pub async fn spawn(java: &Path, args: Vec<String>, cwd: &Path, on_log: LogFn, on
     });
 
     Ok(GameHandle { pid, kill: kill_tx })
+}
+
+#[cfg(test)]
+mod hook_tests {
+    use super::split_command;
+    #[test]
+    fn splits_wrapper_commands() {
+        assert_eq!(split_command("gamemoderun"), vec!["gamemoderun"]);
+        assert_eq!(split_command("  prime-run   mangohud "), vec!["prime-run", "mangohud"]);
+        assert_eq!(split_command(r#"env "A B=1" 'x y'"#), vec!["env", "A B=1", "x y"]);
+        assert!(split_command("   ").is_empty());
+    }
 }

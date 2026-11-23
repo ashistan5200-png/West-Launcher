@@ -1,6 +1,6 @@
 import { BookmarksPage, MessagesPage, PrivacyPage, NotificationsPage, PostPage, ProfilePage, SocialFeedPage, SocialSearchPage, TagPage } from "@/pages/Social";
-import { useEffect } from "react";
-import { Route, Routes, useLocation } from "react-router-dom";
+import { useEffect, useRef } from "react";
+import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, MotionConfig, motion } from "framer-motion";
 import { TitleBar } from "@/components/TitleBar";
 import { Sidebar } from "@/components/Sidebar";
@@ -43,6 +43,15 @@ import { useInstances } from "@/stores/instances";
 
 export default function App() {
   const location = useLocation();
+  const navigate = useNavigate();
+  // Açılış sayfası (Ayarlar → Genel): yalnızca ilk açılışta, ana sayfadaysak
+  const startPage = useSettings((s) => (s.loaded ? s.settings.startPage : null));
+  const startDone = useRef(false);
+  useEffect(() => {
+    if (!startPage || startDone.current) return;
+    startDone.current = true;
+    if (startPage !== "/" && location.pathname === "/") navigate(startPage, { replace: true });
+  }, [startPage]); // eslint-disable-line react-hooks/exhaustive-deps
   const loadSettings = useSettings((s) => s.load);
   const reduceMotion = useSettings((s) => s.settings.theme.reduceMotion);
   const { refresh, bindEvents } = useInstances();

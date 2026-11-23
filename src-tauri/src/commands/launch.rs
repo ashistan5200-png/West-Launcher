@@ -185,7 +185,9 @@ pub async fn start_game(app: &AppHandle, id: &str, auth: AuthSession, join_serve
         memory_mb: profile.memory_mb,
         jvm_flags: profile.flags.clone(),
         extra_jvm_args: {
-            let mut a = inst.extra_jvm_args.clone();
+            // Genel varsayılan JVM argümanları önce, instance'ınkiler sonra (aynı ayar varsa instance'ınki geçerli)
+            let mut a = state.settings.read().game.jvm_args.iter().filter(|x| !x.trim().is_empty()).cloned().collect::<Vec<_>>();
+            a.extend(inst.extra_jvm_args.iter().cloned());
             // Oyun içi Sosyal için launcher köprüsü (yalnızca West hesabı açıksa)
             if mode == LaunchMode::Play && crate::cloud::current_user(&state.http, &state.paths.root).await.is_some() {
                 if let Ok(b) = crate::bridge::ensure(&state.http, &state.paths.root).await {
@@ -194,7 +196,8 @@ pub async fn start_game(app: &AppHandle, id: &str, auth: AuthSession, join_serve
             }
             a
         },
-        resolution: inst.resolution,
+        resolution: inst.resolution.or(state.settings.read().game.resolution),
+        fullscreen: state.settings.read().game.fullscreen,
         auth,
         join_server,
     };
@@ -222,8 +225,15 @@ pub async fn start_game(app: &AppHandle, id: &str, auth: AuthSession, join_serve
         let _ = log_app.emit(EV_GAME_LOG, LogLine { instance_id: &log_id, line: safe, stderr });
     });
 
+    let hook_env = hook_env(&state, &inst, &java.path);
+    let (pre, post, wrapper) = {
+        let g = &state.settings.read().game;
+        (g.pre_launch.trim().to_string(), g.post_exit.trim().to_string(), g.wrapper.trim().to_string())
+    };
     let exit_app = app.clone();
     let exit_id = id.to_string();
+    let exit_game_dir = game_dir.clone();
+    let exit_env = hook_env.clone();
     let on_exit = Arc::new(move |code: Option<i32>| {
         let st = exit_app.state::<AppState>();
         let game = st.running.lock().remove(&exit_id);
@@ -234,6 +244,22 @@ pub async fn start_game(app: &AppHandle, id: &str, auth: AuthSession, join_serve
         }
         if let Some(w) = st.watchers.lock().get(&exit_id) {
             let _ = w.send(GameSignal::Exit(code));
+        }
+        if mode == LaunchMode::Play && !post.is_empty() {
+            let (cmd, env, dir) = (post.clone(), exit_env.clone(), exit_game_dir.clone());
+            tauri::async_runtime::spawn(async move {
+                if let Err(e) = run_hook(&cmd, &env, &dir, false).await {
+                    tracing::warn!("oyun sonrası komut: {e}");
+                }
+            });
+        }
+        // "Gizle" seçiliyse oyun kapanınca launcher geri gelir
+        if mode == LaunchMode::Play && st.running.lock().is_empty() && st.settings.read().launch_behavior == "hide" {
+            if let Some(w) = exit_app.get_webview_window("main") {
+                let _ = w.show();
+                let _ = w.unminimize();
+                let _ = w.set_focus();
+            }
         }
         let crashed = matches!(code, Some(c) if c != 0 && c != -1);
         if mode == LaunchMode::Play && st.running.lock().is_empty() {
@@ -252,12 +278,17 @@ pub async fn start_game(app: &AppHandle, id: &str, auth: AuthSession, join_serve
         );
     });
 
+    // Başlatma öncesi komut (yalnızca oyna): hata dönerse oyun açılmaz
+    if mode == LaunchMode::Play && !pre.is_empty() {
+        run_hook(&pre, &hook_env, &game_dir, true).await?;
+    }
+
     // Yarış durumunu önlemek için kaydı spawn'dan önce aç
     state.running.lock().insert(
         id.to_string(),
         RunningGame { pid: 0, started: std::time::Instant::now(), kill: None, log_tail: Default::default() },
     );
-    let handle = match spawn(&java.path, args, &game_dir, on_log, on_exit).await {
+    let handle = match spawn(&java.path, args, &game_dir, if mode == LaunchMode::Play { &wrapper } else { "" }, on_log, on_exit).await {
         Ok(h) => h,
         Err(e) => {
             state.running.lock().remove(id);
@@ -276,9 +307,14 @@ pub async fn start_game(app: &AppHandle, id: &str, auth: AuthSession, join_serve
             started_unix: chrono::Utc::now().timestamp(),
         });
     }
-    if mode == LaunchMode::Play && state.settings.read().close_on_launch {
+    if mode == LaunchMode::Play {
+        let behavior = state.settings.read().launch_behavior.clone();
         if let Some(w) = app.get_webview_window("main") {
-            let _ = w.minimize();
+            match behavior.as_str() {
+                "minimize" => { let _ = w.minimize(); }
+                "hide" => { let _ = w.hide(); }
+                _ => {}
+            }
         }
     }
     Ok(handle.pid)
@@ -361,4 +397,68 @@ pub fn get_companion(state: State<'_, AppState>, id: String) -> Result<Companion
 #[tauri::command]
 pub fn set_companion_config(state: State<'_, AppState>, id: String, config: crate::companion::CompanionConfig) -> Result<()> {
     crate::companion::write_config(&state.paths.instance_game_dir(&id), &config)
+}
+
+/// Başlatma komutlarına verilen ortam değişkenleri (Prism/MultiMC ile aynı adlar)
+fn hook_env(state: &AppState, inst: &crate::instance::Instance, java: &std::path::Path) -> Vec<(String, String)> {
+    vec![
+        ("INST_NAME".into(), inst.name.clone()),
+        ("INST_ID".into(), inst.id.clone()),
+        ("INST_DIR".into(), state.paths.instance_dir(&inst.id).display().to_string()),
+        ("INST_MC_DIR".into(), state.paths.instance_game_dir(&inst.id).display().to_string()),
+        ("INST_JAVA".into(), java.display().to_string()),
+        ("INST_MC_VERSION".into(), inst.mc_version.clone()),
+    ]
+}
+
+/// Kullanıcının başlatma komutunu sistem kabuğunda çalıştırır. wait: bitmesini bekle ve hata dönerse hata ver.
+pub async fn run_hook(command: &str, env: &[(String, String)], cwd: &std::path::Path, wait: bool) -> Result<()> {
+    #[cfg(windows)]
+    let mut cmd = {
+        let mut c = tokio::process::Command::new("cmd");
+        c.arg("/C").arg(command);
+        c
+    };
+    #[cfg(not(windows))]
+    let mut cmd = {
+        let mut c = tokio::process::Command::new("sh");
+        c.arg("-c").arg(command);
+        c
+    };
+    cmd.current_dir(cwd).envs(env.iter().map(|(k, v)| (k.as_str(), v.as_str()))).stdin(std::process::Stdio::null());
+    #[cfg(windows)]
+    {
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        cmd.creation_flags(CREATE_NO_WINDOW);
+    }
+    let mut child = cmd.spawn().map_err(|e| AppError::msg(crate::i18n::tf("Komut çalıştırılamadı: {0}", &[&e])))?;
+    if !wait {
+        let _ = child.wait().await;
+        return Ok(());
+    }
+    match tokio::time::timeout(std::time::Duration::from_secs(300), child.wait()).await {
+        Ok(Ok(st)) if st.success() => Ok(()),
+        Ok(Ok(st)) => Err(AppError::msg(crate::i18n::tf("Başlatma öncesi komut hata verdi (çıkış kodu {0}); oyun açılmadı.", &[&st.code().unwrap_or(-1)]))),
+        Ok(Err(e)) => Err(AppError::msg(e.to_string())),
+        Err(_) => {
+            let _ = child.kill().await;
+            Err(AppError::msg(crate::i18n::t("Başlatma öncesi komut 5 dakikada bitmedi; oyun açılmadı.")))
+        }
+    }
+}
+
+#[cfg(all(test, not(windows)))]
+mod hook_tests {
+    use super::run_hook;
+    #[tokio::test]
+    async fn hooks_run_with_env_and_fail_on_error() {
+        let dir = std::env::temp_dir();
+        let env = vec![("INST_NAME".to_string(), "Deneme".to_string())];
+        let out = dir.join(format!("west-hook-{}.txt", uuid::Uuid::new_v4()));
+        run_hook(&format!("echo \"$INST_NAME\" > '{}'", out.display()), &env, &dir, true).await.unwrap();
+        assert_eq!(std::fs::read_to_string(&out).unwrap().trim(), "Deneme");
+        let _ = std::fs::remove_file(&out);
+        let e = run_hook("exit 3", &env, &dir, true).await.unwrap_err().to_string();
+        assert!(e.contains('3'), "{e}");
+    }
 }

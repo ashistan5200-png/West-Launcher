@@ -71,6 +71,24 @@ impl Default for Accessibility {
     }
 }
 
+/// Tüm instance'lar için oyun varsayılanları (instance'ın kendi ayarı varsa o geçerli)
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct GameDefaults {
+    /// Oyun penceresinin boyutu (genişlik, yükseklik); None → Minecraft'ın varsayılanı
+    pub resolution: Option<(u32, u32)>,
+    /// Oyunu tam ekran başlat
+    pub fullscreen: bool,
+    /// Her instance'a eklenen JVM argümanları (instance'ınkilerden önce)
+    pub jvm_args: Vec<String>,
+    /// Oyun başlamadan çalışan komut; hata dönerse oyun açılmaz
+    pub pre_launch: String,
+    /// Oyun kapandıktan sonra çalışan komut
+    pub post_exit: String,
+    /// Java'yı saran komut (ör. "gamemoderun", "prime-run", "mangohud")
+    pub wrapper: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct Settings {
@@ -83,6 +101,11 @@ pub struct Settings {
     pub backup_dir: Option<String>,
     pub backup_keep: usize,
     pub close_on_launch: bool,
+    /// Oyun açılınca launcher: "keep" (açık kalsın) | "minimize" (küçült) | "hide" (gizle, oyun kapanınca geri gelsin)
+    pub launch_behavior: String,
+    /// Açılışta gösterilen sayfa: "/" | "/library" | "/browse" | "/social"
+    pub start_page: String,
+    pub game: GameDefaults,
     /// Mojang onaylı Azure uygulama kimliği (Microsoft girişi için)
     pub microsoft_client_id: Option<String>,
     /// Ashi'nin yapay zekası: "ollama" (ücretsiz, yerel) | "off" (anahtar kelime modu)
@@ -124,6 +147,9 @@ impl Default for Settings {
             backup_dir: None,
             backup_keep: 10,
             close_on_launch: false,
+            launch_behavior: "keep".into(),
+            start_page: "/".into(),
+            game: GameDefaults::default(),
             microsoft_client_id: None,
             ai_provider: "ollama".into(),
             ollama_url: crate::assistant::ollama::DEFAULT_URL.into(),
@@ -150,6 +176,14 @@ impl Settings {
                 // Claude seçeneği kaldırıldı → yerel modele geç (yoksa anahtar kelime moduna düşer)
                 if s.ai_provider != "off" {
                     s.ai_provider = "ollama".into();
+                }
+                // Eski "oyun açılınca küçült" anahtarı yeni davranış seçimine taşınır
+                if s.close_on_launch && (s.launch_behavior.is_empty() || s.launch_behavior == "keep") {
+                    s.launch_behavior = "minimize".into();
+                    s.close_on_launch = false;
+                }
+                if !["keep", "minimize", "hide"].contains(&s.launch_behavior.as_str()) {
+                    s.launch_behavior = "keep".into();
                 }
                 s
             })

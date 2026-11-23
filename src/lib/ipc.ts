@@ -20,6 +20,9 @@ export const api = {
   saveSettings: (settings: Settings) => invoke<void>("save_settings", { settings }),
   getHardware: () => invoke<Hardware>("get_hardware"),
   getDataDir: () => invoke<string>("get_data_dir"),
+  cacheSize: () => invoke<number>("cache_size"),
+  clearCache: () => invoke<void>("clear_cache"),
+  resetSettings: () => invoke<Settings>("reset_settings"),
   setWindowEffect: (effect: string) => invoke<void>("set_window_effect", { effect }),
 
   // sürümler

@@ -59,6 +59,15 @@ export interface Accessibility {
   launcherEffects: boolean;
 }
 
+export interface GameDefaults {
+  resolution: [number, number] | null;
+  fullscreen: boolean;
+  jvmArgs: string[];
+  preLaunch: string;
+  postExit: string;
+  wrapper: string;
+}
+
 export interface Settings {
   theme: ThemeSettings;
   defaultMemoryMb: number | null;
@@ -68,6 +77,11 @@ export interface Settings {
   backupDir: string | null;
   backupKeep: number;
   closeOnLaunch: boolean;
+  /** Oyun açılınca launcher: açık kalsın / küçült / gizle (oyun kapanınca geri gelir) */
+  launchBehavior: "keep" | "minimize" | "hide";
+  /** Açılışta gösterilen sayfa */
+  startPage: string;
+  game: GameDefaults;
   microsoftClientId: string | null;
   /** Ashi'nin yapay zekası: ücretsiz yerel model (Ollama) veya anahtar kelime modu */
   aiProvider: "ollama" | "off";

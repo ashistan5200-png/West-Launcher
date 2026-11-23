@@ -14,6 +14,9 @@ const DEFAULT: Settings = {
   backupDir: null,
   backupKeep: 10,
   closeOnLaunch: false,
+  launchBehavior: "keep",
+  startPage: "/",
+  game: { resolution: null, fullscreen: false, jvmArgs: [], preLaunch: "", postExit: "", wrapper: "" },
   microsoftClientId: null,
   aiProvider: "ollama",
   ollamaUrl: "http://localhost:11434",
@@ -40,6 +43,8 @@ interface SettingsState {
   update: (patch: Partial<Settings>) => Promise<void>;
   updateTheme: (patch: Partial<ThemeSettings>) => void;
   setOfflineName: (n: string) => void;
+  /** Ayarlar varsayılana döndü (sunucudan gelen yeni ayarlar) */
+  replace: (s: Settings) => void;
 }
 
 let saveTimer: number | undefined;
@@ -61,7 +66,7 @@ export const useSettings = create<SettingsState>((set, get) => ({
       settings = { ...settings, theme: { ...settings.theme, accent: DEFAULT_ACCENT } };
       if (isTauri()) void api.saveSettings(settings);
     }
-    settings = { ...DEFAULT, ...settings, accessibility: { ...DEFAULT.accessibility, ...(settings.accessibility ?? {}) } };
+    settings = { ...DEFAULT, ...settings, accessibility: { ...DEFAULT.accessibility, ...(settings.accessibility ?? {}) }, game: { ...DEFAULT.game, ...(settings.game ?? {}) } };
     // Dil: ilk açılışta sistem dilinden seç ve kaydet (oyun içi West arayüzü de bunu kullanır)
     if (!settings.language) {
       settings = { ...settings, language: detectLang() };
@@ -95,6 +100,11 @@ export const useSettings = create<SettingsState>((set, get) => ({
     if (patch.windowEffect && isTauri()) void api.setWindowEffect(patch.windowEffect);
     window.clearTimeout(saveTimer);
     saveTimer = window.setTimeout(() => isTauri() && api.saveSettings(get().settings), 300);
+  },
+
+  replace: (settings) => {
+    applyTheme(settings.theme);
+    set({ settings: { ...DEFAULT, ...settings, game: { ...DEFAULT.game, ...(settings.game ?? {}) } } });
   },
 
   setOfflineName: (n) => {
