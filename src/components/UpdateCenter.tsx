@@ -1,6 +1,6 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowUpCircle, Check, ExternalLink, Loader2 } from "lucide-react";
+import { ArrowUpCircle, Check, ExternalLink, Loader2, X } from "lucide-react";
 import { open as openUrl } from "@tauri-apps/plugin-shell";
 import { Modal } from "./Modal";
 import { useUpdate } from "@/stores/update";
@@ -118,3 +118,38 @@ export function UpdateModal() {
 }
 
 /** Ayarlar'daki "Güncellemeler" kartı. */
+
+const SKIP_KEY = "west.update.later";
+
+/**
+ * Başlık çubuğunun altında, yeni sürüm bulununca kendiliğinden açılan şerit. Kurulum yalnızca kullanıcı
+ * "Güncelle" deyince başlar; "Sonra" o sürüm için şeridi kapatır (başlıktaki düğme kalır).
+ */
+export function UpdateBanner() {
+  const { status, setOpen, install, installing } = useUpdate();
+  const info = status?.info;
+  const [later, setLater] = useState<string | null>(() => { try { return localStorage.getItem(SKIP_KEY); } catch { return null; } });
+  const show = !!info && later !== info.version;
+  const pct = status?.total ? Math.round((status.received / status.total) * 100) : 0;
+  const first = info?.notes.split(/\r?\n/).map((l) => l.trim()).find((l) => l && !/^(Co-Authored-By|Claude-Session):/i.test(l)) ?? "";
+  return (
+    <AnimatePresence>
+      {show && info && (
+        <motion.div className="update-banner" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}>
+          <div className="update-banner-in">
+            <ArrowUpCircle size={16} />
+            <strong>{tx("West Client v{0} çıktı", info.version)}</strong>
+            <span className="muted small truncate">{first}</span>
+            <span className="grow" />
+            {status?.downloading && <span className="muted tiny">{tx("İndiriliyor… %")}{pct}</span>}
+            <button className="btn btn-ghost btn-sm" onClick={() => setOpen(true)}>{tx("Neler yeni")}</button>
+            <button className="btn btn-primary btn-sm" disabled={installing || status?.downloading} onClick={() => (status?.downloaded ? void install() : setOpen(true))}>
+              {installing ? <Loader2 size={14} className="spin" /> : null} {status?.downloaded ? tx("Şimdi güncelle") : tx("Güncelle")}
+            </button>
+            <button className="icon-btn" title={tx("Sonra")} onClick={() => { try { localStorage.setItem(SKIP_KEY, info.version); } catch { /* yok say */ } setLater(info.version); }}><X size={15} /></button>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}

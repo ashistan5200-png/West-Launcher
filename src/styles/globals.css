@@ -2047,3 +2047,9 @@ img.tb-avatar { object-fit: cover; }
 .set-about { display: flex; gap: 12px; align-items: flex-start; margin-top: 14px; padding: 14px 16px; border-radius: 14px; background: rgb(var(--border) / 0.04); }
 .set-about > div { display: flex; flex-direction: column; gap: 4px; }
 .set-ctl .segmented button { white-space: nowrap; }
+.update-banner { overflow: hidden; flex: none; }
+.update-banner-in { display: flex; align-items: center; gap: 10px; padding: 7px 14px; font-size: var(--fs-sm);
+  background: linear-gradient(90deg, rgb(var(--accent) / 0.22), rgb(var(--accent) / 0.08)); border-bottom: 1px solid rgb(var(--accent) / 0.25); }
+.update-banner-in > svg { color: rgb(var(--accent)); flex: none; }
+.update-banner-in .truncate { max-width: 520px; display: inline-block; }
+.update-banner-in .btn-sm { height: 26px; }

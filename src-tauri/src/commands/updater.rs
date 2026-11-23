@@ -121,7 +121,7 @@ pub fn spawn_background(app: AppHandle) {
             if let Err(e) = check_and_fetch(&app, auto).await {
                 tracing::info!("güncelleme kontrolü: {e}");
             }
-            tokio::time::sleep(Duration::from_secs(6 * 3600)).await;
+            tokio::time::sleep(Duration::from_secs(3600)).await;
         }
     });
 }

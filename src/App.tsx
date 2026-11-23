@@ -20,7 +20,7 @@ import { GalleryPage } from "@/pages/Gallery";
 import { NewsPage } from "@/pages/News";
 import { Splash } from "@/components/Splash";
 import { TooltipLayer } from "@/components/TooltipLayer";
-import { UpdateModal } from "@/components/UpdateCenter";
+import { UpdateBanner, UpdateModal } from "@/components/UpdateCenter";
 import { LockScreen, SetupWizard } from "@/components/SetupWizard";
 import { LoginModal } from "@/components/LoginModal";
 import { ContextMenu } from "@/components/ContextMenu";
@@ -78,6 +78,7 @@ export default function App() {
     <MotionConfig reducedMotion={reduceMotion ? "always" : "never"} transition={{ type: "spring", stiffness: 420, damping: 34 }}>
       <div className="shell">
         <TitleBar />
+        <UpdateBanner />
         <div className="shell-body">
           <Sidebar />
           <main className="content">

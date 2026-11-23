@@ -54,11 +54,16 @@
         "sidebarImage": "installer/sidebar.bmp",
         "languages": [
           "Turkish",
-          "English"
+          "English",
+          "German"
         ],
-        "displayLanguageSelector": false,
-        "installMode": "currentUser"
+        "displayLanguageSelector": true,
+        "installMode": "currentUser",
+        "startMenuFolder": "West Client",
+        "compression": "lzma"
       }
-    }
+    },
+    "publisher": "West",
+    "shortDescription": "West Client — Minecraft launcher"
   }
 }
