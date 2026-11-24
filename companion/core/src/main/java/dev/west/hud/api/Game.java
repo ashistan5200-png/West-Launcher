@@ -158,6 +158,12 @@ public interface Game {
     /** Oyun içindeki yerleşik ses seviyesi (0–1, ana ses) */
     default float masterVolume() { return 1f; }
 
+    /** Geçerli Minecraft ekran nesnesi (yansıma ile açılan mod ekranlarına "üst ekran" olarak verilir) */
+    default Object screenObject() { return null; }
+
+    /** Bir Minecraft Screen nesnesini aç */
+    default void setScreenObject(Object screen) {}
+
     /** Bir mod yüklü mü (ör. "voicechat") */
     default boolean modLoaded(String id) { return false; }
 }

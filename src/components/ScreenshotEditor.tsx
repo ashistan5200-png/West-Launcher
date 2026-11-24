@@ -190,6 +190,7 @@ export function ScreenshotEditor({ shot }: { shot: Screenshot }) {
             image={img}
             title={shot.file}
             onClose={() => edit(null)}
+            onSimple={() => togglePro(false)}
             onSaveCopy={async (c) => {
               try {
                 const saved = await api.saveScreenshotEdit(shot.path, await canvasToBase64(c));
@@ -209,7 +210,6 @@ export function ScreenshotEditor({ shot }: { shot: Screenshot }) {
             }}
           />
         </Suspense>
-        <button className="wp-exitpro" onClick={() => togglePro(false)} title={tx("Basit düzenleyiciye dön")}><Layers size={13} /> {tx("Basit mod")}</button>
       </motion.div>
     );
   }

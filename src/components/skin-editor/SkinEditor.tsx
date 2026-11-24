@@ -5,8 +5,9 @@ import { loadSkinToCanvas } from "skinview-utils";
 import clsx from "clsx";
 import {
   Brush, Check, Download, Droplet, Eraser, Eye, EyeOff, FlipHorizontal2, FolderOpen, Grid3x3, Loader2, Moon, PaintBucket,
-  Pipette, Play, Redo2, Save, Sparkles, Sun, Undo2, Upload, X,
+  HelpCircle, MoreHorizontal, Pipette, Play, Redo2, Save, Sparkles, Sun, Undo2, Upload, X,
 } from "lucide-react";
+import { AshiGuide, firstTime, type GuideStep } from "@/components/AshiGuide";
 import type { Skin } from "@/lib/types";
 import { api } from "@/lib/ipc";
 import { tx } from "@/lib/i18n";
@@ -79,6 +80,10 @@ export default function SkinEditor({ initial, onClose, onSaved }: Props) {
   const [saving, setSaving] = useState<null | "save" | "apply">(null);
   const [err, setErr] = useState<string | null>(null);
   const [, bump] = useState(0);
+  const [menu, setMenu] = useState(false);
+  const [colorOpen, setColorOpen] = useState(false);
+  const [guide, setGuide] = useState(false);
+  useEffect(() => { if (firstTime("west.guide.skin")) window.setTimeout(() => setGuide(true), 500); }, []);
 
   const undo = useRef<ImageData[]>([]);
   const redo = useRef<ImageData[]>([]);
@@ -405,7 +410,7 @@ export default function SkinEditor({ initial, onClose, onSaved }: Props) {
       else if (k === "l") setLayer((l) => (l === "inner" ? "outer" : "inner"));
       else if (k === "[") setSize((s) => Math.max(1, s - 1));
       else if (k === "]") setSize((s) => Math.min(4, s + 1));
-      else if (k === "escape") onClose();
+      else if (k === "escape" && !document.querySelector(".guide-layer")) onClose();
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
@@ -442,158 +447,154 @@ export default function SkinEditor({ initial, onClose, onSaved }: Props) {
   };
 
   const hoverInfo = hover ? locate(slim, hover.x, hover.y) : null;
+  const startFrom = (src: string | null, kind: "skin" | "blank" | "clear") => { begin(); end(); setMenu(false); void loadFrom(src, kind); };
+  const toolInfo = TOOLS.find((t) => t.id === tool)!;
+
+  const guideSteps: GuideStep[] = [
+    { title: tx("Skin editörüne hoş geldin!"), text: tx("Burada kendi skinini sıfırdan çizebilir ya da var olanı düzenleyebilirsin. Sana kısaca göstereyim."), mood: "wave" },
+    { target: "sk-view", title: tx("Doğrudan modelin üstüne çiz"), text: tx("Sol tıkla modelin üstüne boya. Modelin dışında sürükleyerek ya da sağ tıkla döndür, tekerlekle yaklaş."), mood: "idle" },
+    { target: "sk-dock", title: tx("Araçlar"), text: tx("Kalem, silgi, kova, damlalık, gölgelendirme ve doku fırçası burada. Ayna açıkken sol tarafa çizdiğin sağ tarafa da çizilir."), mood: "think" },
+    { target: "sk-color", title: tx("Renk"), text: tx("Bu daireye tıklayınca renk seçici, hazır paletin ve son kullandığın renkler açılır."), mood: "idle" },
+    { target: "sk-layer", title: tx("Taban ve dış katman"), text: tx("Taban katman ten ve kıyafettir; dış katman şapka, ceket gibi üste binen kısımdır. Hangisine çizeceğini buradan seç (L tuşu)."), mood: "think" },
+    { target: "sk-flat", title: tx("Düz doku"), text: tx("Aynı skinin açılmış hâli. Piksel piksel çalışmak için burayı kullan; iki görünüm birbirine anında yansır."), mood: "search" },
+    { target: "sk-save", title: tx("Kaydet ve giy"), text: tx("Bitince \"Kaydet ve uygula\" ile arşivine ekle ve seçili hesabına giydir. Ctrl+Z her zaman geri alır."), mood: "celebrate" },
+  ];
 
   return (
     <div className="sked-backdrop">
       <div className="sked">
         <header className="sked-top">
-          <strong>{tx("Skin Editörü")}</strong>
+          <span className="sked-title"><Brush size={15} /> {tx("Skin Editörü")}</span>
           <input className="sked-name" value={name} maxLength={40} onChange={(e) => setName(e.target.value)} placeholder={tx("Skin adı")} />
           <div className="segmented mini">
-            <button className={clsx(!slim && "active")} onClick={() => setSlim(false)}>{tx("Klasik (4px)")}</button>
-            <button className={clsx(slim && "active")} onClick={() => setSlim(true)}>{tx("İnce (3px)")}</button>
+            <button className={clsx(!slim && "active")} onClick={() => setSlim(false)}>{tx("Klasik")}</button>
+            <button className={clsx(slim && "active")} onClick={() => setSlim(true)}>{tx("İnce")}</button>
           </div>
           <span className="grow" />
           <button className="icon-btn" title={tx("Geri al (Ctrl+Z)")} disabled={!undo.current.length} onClick={doUndo}><Undo2 size={16} /></button>
           <button className="icon-btn" title={tx("Yinele (Ctrl+Y)")} disabled={!redo.current.length} onClick={doRedo}><Redo2 size={16} /></button>
-          <span className="tb-sep" />
-          <button className="btn btn-ghost btn-sm" onClick={() => fileIn.current?.click()}><FolderOpen size={14} /> {tx("PNG aç")}</button>
-          <button className="btn btn-ghost btn-sm" onClick={exportPng}><Download size={14} /> {tx("PNG indir")}</button>
-          <button className="btn btn-ghost btn-sm" disabled={!!saving} onClick={() => void save(false)}>
-            {saving === "save" ? <Loader2 size={14} className="spin" /> : <Save size={14} />} {tx("Arşive kaydet")}
-          </button>
-          <button className="btn btn-primary btn-sm" disabled={!!saving} onClick={() => void save(true)}>
-            {saving === "apply" ? <Loader2 size={14} className="spin" /> : <Check size={14} />} {tx("Kaydet ve uygula")}
+          <div className="sked-more">
+            <button className={clsx("icon-btn", menu && "on")} title={tx("Diğer")} onClick={() => setMenu((m) => !m)}><MoreHorizontal size={16} /></button>
+            {menu && (
+              <div className="sked-menu" onMouseLeave={() => setMenu(false)}>
+                {initial && <button onClick={() => startFrom(initial.dataUrl, "skin")}><Upload size={14} /> {tx("Seçili skine dön")}</button>}
+                <button onClick={() => startFrom(null, "blank")}><Droplet size={14} /> {tx("Temel şablonla başla")}</button>
+                <button onClick={() => startFrom(null, "clear")}><Eraser size={14} /> {tx("Tamamen temizle")}</button>
+                <hr />
+                <button onClick={() => { setMenu(false); fileIn.current?.click(); }}><FolderOpen size={14} /> {tx("PNG aç")}</button>
+                <button onClick={() => { setMenu(false); exportPng(); }}><Download size={14} /> {tx("PNG indir")}</button>
+                <button onClick={() => { setMenu(false); void save(false); }}><Save size={14} /> {tx("Yalnızca arşive kaydet")}</button>
+              </div>
+            )}
+          </div>
+          <button className="icon-btn" title={tx("Ashi'den yardım al")} onClick={() => setGuide(true)}><HelpCircle size={16} /></button>
+          <button data-guide="sk-save" className="btn btn-primary btn-sm" disabled={!!saving} onClick={() => void save(true)}>
+            {saving ? <Loader2 size={14} className="spin" /> : <Check size={14} />} {tx("Kaydet ve uygula")}
           </button>
           <button className="icon-btn" title={tx("Kapat (Esc)")} onClick={onClose}><X size={17} /></button>
           <input ref={fileIn} type="file" accept="image/png" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) importFile(f); e.target.value = ""; }} />
         </header>
 
         <div className="sked-body">
-          {/* Araçlar */}
-          <aside className="sked-tools">
-            {TOOLS.map((t) => (
-              <button key={t.id} className={clsx("sked-tool", tool === t.id && "active")} title={`${t.label} (${t.key})`} onClick={() => setTool(t.id)}>
-                <t.icon size={18} />
-              </button>
-            ))}
-            <span className="sked-div" />
-            <button className={clsx("sked-tool", mirrorOn && "active")} title={tx("Ayna: sol-sağ simetrik çiz (X)")} onClick={() => setMirrorOn((m) => !m)}><FlipHorizontal2 size={18} /></button>
-            <button className={clsx("sked-tool", grid && "active")} title={tx("Izgara")} onClick={() => setGrid((g) => !g)}><Grid3x3 size={18} /></button>
-            <button className={clsx("sked-tool", walk && "active")} title={tx("Yürüme önizlemesi")} onClick={() => setWalk((w) => !w)}><Play size={18} /></button>
-          </aside>
-
-          {/* 3D */}
-          <section className="sked-3d">
+          {/* 3D sahne + yüzen araç çubuğu */}
+          <section className="sked-3d" data-guide="sk-view">
             <canvas ref={view3d} />
-            <div className="sked-layer">
+            <div className="sked-layer" data-guide="sk-layer">
               <div className="segmented mini">
-                <button className={clsx(layer === "inner" && "active")} onClick={() => setLayer("inner")}>{tx("Taban katman")}</button>
+                <button className={clsx(layer === "inner" && "active")} onClick={() => setLayer("inner")}>{tx("Taban")}</button>
                 <button className={clsx(layer === "outer" && "active")} onClick={() => setLayer("outer")}>{tx("Dış katman")}</button>
               </div>
-            </div>
-            <p className="sked-hint muted tiny">{tx("Sol tık: boya · modelin dışında sürükle ya da sağ tık: döndür · tekerlek: yakınlaştır · L: katman değiştir")}</p>
-          </section>
-
-          {/* 2D doku */}
-          <section className="sked-2d">
-            <canvas
-              ref={flat}
-              width={512}
-              height={512}
-              onPointerDown={(e) => {
-                const p = flatPos(e);
-                if (!p || e.button !== 0) return;
-                e.currentTarget.setPointerCapture(e.pointerId);
-                flatPainting.current = true;
-                begin();
-                apply(p.x, p.y);
-              }}
-              onPointerMove={(e) => {
-                const p = flatPos(e);
-                hoverRef.current = p;
-                setHover(p);
-                if (flatPainting.current && p) apply(p.x, p.y);
-                else redraw2d();
-              }}
-              onPointerUp={() => {
-                if (!flatPainting.current) return;
-                flatPainting.current = false;
-                end();
-                if (st.current.tool !== "eraser" && st.current.tool !== "shade") remember(st.current.color);
-              }}
-              onPointerLeave={() => { hoverRef.current = null; setHover(null); redraw2d(); }}
-            />
-            <div className="sked-status muted tiny">
-              {hover ? `${hover.x}, ${hover.y}` : "—"}
-              {hoverInfo && ` · ${PART_LABEL[hoverInfo.box.part]} · ${hoverInfo.box.layer === "inner" ? tx("taban") : tx("dış")} · ${faceLabel(hoverInfo.face)}`}
-            </div>
-          </section>
-
-          {/* Sağ panel */}
-          <aside className="sked-side">
-            <div className="sked-block">
-              <h4>{tx("Renk")}</h4>
-              <div className="sked-color">
-                <input type="color" value={hex(color)} onChange={(e) => setColor(parseHex(e.target.value))} />
-                <input className="sked-hex" value={hex(color)} onChange={(e) => /^#[0-9a-f]{6}$/i.test(e.target.value) && setColor(parseHex(e.target.value))} />
-              </div>
-              <div className="sked-swatches">
-                {PRESETS.map((c) => <button key={c} style={{ background: c }} className={clsx(hex(color) === c && "on")} onClick={() => { setColor(parseHex(c)); if (tool === "eraser" || tool === "picker") setTool("pencil"); }} />)}
-              </div>
-              {recent.length > 0 && (
-                <>
-                  <span className="muted tiny">{tx("Son kullanılanlar")}</span>
-                  <div className="sked-swatches">{recent.map((c) => <button key={c} style={{ background: c }} onClick={() => setColor(parseHex(c))} />)}</div>
-                </>
-              )}
+              <button className={clsx("sked-chip", walk && "on")} title={tx("Yürüme önizlemesi")} onClick={() => setWalk((w) => !w)}><Play size={13} /></button>
             </div>
 
-            <div className="sked-block">
-              <h4>{tx("Fırça")}</h4>
-              <div className="segmented mini">
-                {[1, 2, 3, 4].map((n) => <button key={n} className={clsx(size === n && "active")} onClick={() => setSize(n)}>{n}px</button>)}
+            <div className="sked-dock" data-guide="sk-dock">
+              <div className="sked-colorwrap" data-guide="sk-color">
+                <button className="sked-swatch" style={{ background: hex(color) }} title={tx("Renk")} onClick={() => setColorOpen((o) => !o)} />
+                {colorOpen && (
+                  <div className="sked-pop" onMouseLeave={() => setColorOpen(false)}>
+                    <div className="sked-color">
+                      <input type="color" value={hex(color)} onChange={(e) => setColor(parseHex(e.target.value))} />
+                      <input className="sked-hex" value={hex(color)} onChange={(e) => /^#[0-9a-f]{6}$/i.test(e.target.value) && setColor(parseHex(e.target.value))} />
+                    </div>
+                    <div className="sked-swatches">
+                      {PRESETS.map((c) => <button key={c} style={{ background: c }} className={clsx(hex(color) === c && "on")} onClick={() => { setColor(parseHex(c)); if (tool === "eraser" || tool === "picker") setTool("pencil"); }} />)}
+                    </div>
+                    {recent.length > 0 && <div className="sked-swatches recent">{recent.map((c) => <button key={c} style={{ background: c }} onClick={() => setColor(parseHex(c))} />)}</div>}
+                  </div>
+                )}
               </div>
+              <span className="sked-sep" />
+              {TOOLS.map((t) => (
+                <button key={t.id} className={clsx("sked-tool", tool === t.id && "active")} title={`${t.label} (${t.key})`} onClick={() => setTool(t.id)}><t.icon size={17} /></button>
+              ))}
+              <span className="sked-sep" />
+              <button className={clsx("sked-tool", mirrorOn && "active")} title={tx("Ayna: sol-sağ simetrik çiz (X)")} onClick={() => setMirrorOn((m) => !m)}><FlipHorizontal2 size={17} /></button>
+              <span className="sked-sep" />
+              {[1, 2, 3].map((n) => (
+                <button key={n} className={clsx("sked-size", size === n && "active")} title={`${n}px`} onClick={() => setSize(n)}><i style={{ width: 3 + n * 3, height: 3 + n * 3 }} /></button>
+              ))}
+              {(tool === "shade" || tool === "noise" || tool === "fill") && <span className="sked-sep" />}
               {tool === "shade" && (
                 <div className="segmented mini">
-                  <button className={clsx(shadeMode === "dark" && "active")} onClick={() => setShadeMode("dark")}><Moon size={12} /> {tx("Karart")}</button>
-                  <button className={clsx(shadeMode === "light" && "active")} onClick={() => setShadeMode("light")}><Sun size={12} /> {tx("Aydınlat")}</button>
+                  <button className={clsx(shadeMode === "dark" && "active")} title={tx("Karart")} onClick={() => setShadeMode("dark")}><Moon size={12} /></button>
+                  <button className={clsx(shadeMode === "light" && "active")} title={tx("Aydınlat")} onClick={() => setShadeMode("light")}><Sun size={12} /></button>
                 </div>
               )}
-              <label className="sked-range">
-                <span className="small">{tx("Doku (gürültü)")}</span>
-                <input type="range" min={0} max={40} value={noise} onChange={(e) => setNoise(+e.target.value)} />
-                <span className="muted tiny">{noise}</span>
-              </label>
-              <p className="muted tiny">{tx("Doku fırçası ve kova, rengi bu kadar rastgele açıp koyulaştırır; kumaş ve saç için ideal.")}</p>
+              {(tool === "noise" || tool === "fill") && (
+                <label className="sked-noise" title={tx("Doku (gürültü)")}><Sparkles size={13} /><input type="range" min={0} max={40} value={noise} onChange={(e) => setNoise(+e.target.value)} /></label>
+              )}
             </div>
+            <div className="sked-toolname">{toolInfo.label}</div>
+          </section>
 
-            <div className="sked-block">
-              <h4>{tx("Görünürlük")}</h4>
-              <div className="sked-parts">
-                {PARTS.map((p) => (
-                  <button key={p} className={clsx("sked-part", hidden.has(p) && "off")} onClick={() => toggleHidden(p)}>
-                    {hidden.has(p) ? <EyeOff size={13} /> : <Eye size={13} />} {PART_LABEL[p]}
-                  </button>
-                ))}
-                <button className={clsx("sked-part", hidden.has("inner") && "off")} onClick={() => toggleHidden("inner")}>{hidden.has("inner") ? <EyeOff size={13} /> : <Eye size={13} />} {tx("Taban")}</button>
-                <button className={clsx("sked-part", hidden.has("outer") && "off")} onClick={() => toggleHidden("outer")}>{hidden.has("outer") ? <EyeOff size={13} /> : <Eye size={13} />} {tx("Dış katman")}</button>
+          {/* Sağ: düz doku + görünürlük */}
+          <aside className="sked-side">
+            <div className="sked-flatwrap" data-guide="sk-flat">
+              <canvas
+                ref={flat}
+                width={512}
+                height={512}
+                onPointerDown={(e) => {
+                  const p = flatPos(e);
+                  if (!p || e.button !== 0) return;
+                  e.currentTarget.setPointerCapture(e.pointerId);
+                  flatPainting.current = true;
+                  begin();
+                  apply(p.x, p.y);
+                }}
+                onPointerMove={(e) => {
+                  const p = flatPos(e);
+                  hoverRef.current = p;
+                  setHover(p);
+                  if (flatPainting.current && p) apply(p.x, p.y);
+                  else redraw2d();
+                }}
+                onPointerUp={() => {
+                  if (!flatPainting.current) return;
+                  flatPainting.current = false;
+                  end();
+                  if (st.current.tool !== "eraser" && st.current.tool !== "shade") remember(st.current.color);
+                }}
+                onPointerLeave={() => { hoverRef.current = null; setHover(null); redraw2d(); }}
+              />
+              <div className="sked-status muted tiny">
+                <span>{hoverInfo ? `${PART_LABEL[hoverInfo.box.part]} · ${hoverInfo.box.layer === "inner" ? tx("taban") : tx("dış")} · ${faceLabel(hoverInfo.face)}` : tx("Düz doku")}</span>
+                <button className={clsx("sked-chip", grid && "on")} title={tx("Izgara")} onClick={() => setGrid((g) => !g)}><Grid3x3 size={12} /></button>
               </div>
-              <p className="muted tiny">{tx("Gizli parçalar boyanmaz; içteki katmana ulaşmak için dış katmanı gizle.")}</p>
             </div>
-
-            <div className="sked-block">
-              <h4>{tx("Başlangıç")}</h4>
-              <div className="sked-start">
-                {initial && <button className="btn btn-ghost btn-sm" onClick={() => { begin(); end(); void loadFrom(initial.dataUrl, "skin"); }}><Upload size={13} /> {tx("Seçili skin")}</button>}
-                <button className="btn btn-ghost btn-sm" onClick={() => { begin(); end(); void loadFrom(null, "blank"); }}><Droplet size={13} /> {tx("Temel şablon")}</button>
-                <button className="btn btn-ghost btn-sm" onClick={() => { begin(); end(); void loadFrom(null, "clear"); }}><Eraser size={13} /> {tx("Tamamen temizle")}</button>
-              </div>
+            <div className="sked-parts">
+              {PARTS.map((p) => (
+                <button key={p} className={clsx("sked-part", hidden.has(p) && "off")} title={hidden.has(p) ? tx("Göster") : tx("Gizle")} onClick={() => toggleHidden(p)}>
+                  {hidden.has(p) ? <EyeOff size={12} /> : <Eye size={12} />} {PART_LABEL[p]}
+                </button>
+              ))}
+              <button className={clsx("sked-part", hidden.has("outer") && "off")} onClick={() => toggleHidden("outer")}>{hidden.has("outer") ? <EyeOff size={12} /> : <Eye size={12} />} {tx("Dış katman")}</button>
             </div>
             {err && <p className="hint error">{err}</p>}
           </aside>
         </div>
       </div>
+      <AshiGuide steps={guideSteps} open={guide} onClose={() => setGuide(false)} label={tx("Skin editörü rehberi")} />
     </div>
   );
 }

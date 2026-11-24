@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
 import {
   ArrowLeftRight, Brush, Crop, Droplets, Eraser, Hand, Lasso, Loader2, Move, PaintBucket, Pipette, RectangleHorizontal,
-  Save, Shapes, Sparkles, Stamp, Sun, Type, Wand2, X, ZoomIn, Blend as BlendIcon, Check,
+  Save, Shapes, Sparkles, Stamp, Sun, Type, Wand2, X, ZoomIn, Blend as BlendIcon, Check, Undo2, Redo2, HelpCircle, Minus, Plus,
+  Layers as LayersIcon, Palette, History as HistoryIcon, Zap,
 } from "lucide-react";
 import { tx } from "@/lib/i18n";
 import {
@@ -12,6 +13,7 @@ import {
 } from "./core";
 import { ADJUSTMENTS, defaults, FILTERS, type Op, type Values } from "./fx";
 import { ColorPanel, EffectsDialog, HistoryPanel, LayersPanel, NumDialog, OpDialog, TextPanel, type NumField } from "./panels";
+import { AshiGuide, firstTime, type GuideStep } from "@/components/AshiGuide";
 
 type Tool = "move" | "marquee" | "lasso" | "wand" | "crop" | "picker" | "heal" | "brush" | "clone" | "eraser" | "gradient" | "bucket" | "tone" | "focus" | "text" | "shape" | "hand" | "zoom";
 
@@ -36,6 +38,21 @@ const TOOLS: { id: Tool; icon: typeof Brush; label: string; key: string }[] = [
   { id: "zoom", icon: ZoomIn, label: "Yakınlaştır", key: "Z" },
 ];
 
+/** Araç çubuğundaki gruplar: aynı işi gören araçlar tek düğmede; tekrar tıklayınca seçenekler açılır */
+const GROUPS: { id: string; tools: Tool[] }[] = [
+  { id: "move", tools: ["move"] },
+  { id: "select", tools: ["marquee", "lasso", "wand"] },
+  { id: "crop", tools: ["crop"] },
+  { id: "brush", tools: ["brush"] },
+  { id: "eraser", tools: ["eraser"] },
+  { id: "retouch", tools: ["heal", "clone"] },
+  { id: "fill", tools: ["gradient", "bucket"] },
+  { id: "tone", tools: ["tone", "focus"] },
+  { id: "text", tools: ["text"] },
+  { id: "shape", tools: ["shape"] },
+  { id: "picker", tools: ["picker"] },
+];
+
 interface Brush { size: number; hardness: number; opacity: number; flow: number }
 interface Tf { layerId: string; float: HTMLCanvasElement; base: HTMLCanvasElement; box: { x: number; y: number; w: number; h: number }; cx: number; cy: number; sx: number; sy: number; rot: number; sel: HTMLCanvasElement | null }
 type Pt = { x: number; y: number };
@@ -47,13 +64,15 @@ interface Props {
   onSaveCopy: (c: HTMLCanvasElement) => Promise<void>;
   onCopy: (c: HTMLCanvasElement) => Promise<void>;
   onExport: (c: HTMLCanvasElement, fmt: "png" | "jpg") => Promise<void>;
+  /** Basit düzenleyiciye dön */
+  onSimple?: () => void;
 }
 
 /**
  * WestPhoto: katmanlı, maskeli, seçimli, geçmişli tam bir görüntü düzenleyici. Ekran görüntüsü düzenleyicisinde
  * "WestPhoto modu" açılınca bu ekran gelir. Orijinal dosya hiç değişmez; sonuç kopya olarak kaydedilir.
  */
-export default function WestPhoto({ image, title, onClose, onSaveCopy, onCopy, onExport }: Props) {
+export default function WestPhoto({ image, title, onClose, onSaveCopy, onCopy, onExport, onSimple }: Props) {
   const [hist, setHist] = useState<History>(() => ({ items: [{ label: "Aç", doc: newDoc(image) }], index: 0 }));
   const doc = hist.items[hist.index].doc;
   const docRef = useRef(doc);
@@ -82,7 +101,11 @@ export default function WestPhoto({ image, title, onClose, onSaveCopy, onCopy, o
   const [busy, setBusy] = useState<string | null>(null);
   const [status, setStatus] = useState<{ x: number; y: number; c: string } | null>(null);
   const [zoomPct, setZoomPct] = useState(100);
-  const [panel, setPanel] = useState<"color" | "history">("color");
+  const [panel, setPanel] = useState<"layers" | "quick" | "color" | "history">("layers");
+  const [fly, setFly] = useState<string | null>(null);
+  const [lastInGroup, setLastInGroup] = useState<Record<string, Tool>>({});
+  const [guide, setGuide] = useState(false);
+  useEffect(() => { if (firstTime("west.guide.westphoto")) window.setTimeout(() => setGuide(true), 600); }, []);
   const [cropRect, setCropRect] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
   const lastFilter = useRef<{ op: Op; values: Values } | null>(null);
   const clipboard = useRef<{ canvas: HTMLCanvasElement; x: number; y: number } | null>(null);
@@ -100,7 +123,13 @@ export default function WestPhoto({ image, title, onClose, onSaveCopy, onCopy, o
   const space = useRef(false);
   const cloneSrc = useRef<Pt | null>(null);
 
-  const setTool = (t: Tool) => { setToolRaw(t); setMenu(null); };
+  const setTool = (t: Tool) => {
+    setToolRaw(t);
+    setMenu(null);
+    setFly(null);
+    const g = GROUPS.find((x) => x.tools.includes(t));
+    if (g) setLastInGroup((m) => ({ ...m, [g.id]: t }));
+  };
   const layer = activeLayer(doc);
 
   // ── geçmiş ──
@@ -1038,6 +1067,7 @@ export default function WestPhoto({ image, title, onClose, onSaveCopy, onCopy, o
     const down = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      if (document.querySelector(".guide-layer")) return;
       const k = e.key.toLowerCase(), ctrl = e.ctrlKey || e.metaKey;
       if (k === " ") { space.current = true; e.preventDefault(); return; }
       if (tfRef.current) { if (k === "enter") { applyTf(); return; } if (k === "escape") { cancelTf(); return; } }
@@ -1196,13 +1226,29 @@ export default function WestPhoto({ image, title, onClose, onSaveCopy, onCopy, o
     commit(label, patchLayer(d, l.id, { text: t, canvas: renderText(d.w, d.h, t) }));
   };
 
+  const quick = (id: string, v: Values) => {
+    const op = [...ADJUSTMENTS, ...FILTERS].find((o) => o.id === id);
+    if (op) runOp(op, { ...defaults(op), ...v });
+  };
+
+  const guideSteps: GuideStep[] = [
+    { title: tx("WestPhoto'ya hoş geldin!"), text: tx("Ekran görüntülerini katmanlarla, seçimlerle ve filtrelerle düzenleyebileceğin tam bir editör. Kısaca gezdireyim."), mood: "wave" },
+    { target: "wp-tools", title: tx("Araçlar"), text: tx("Taşı, seçim, kırp, fırça, silgi, rötuş, degrade, ton, yazı ve şekil. Köşesinde nokta olan araca tekrar tıklayınca benzer araçlar açılır (ör. Seçim → Kement, Sihirli değnek)."), mood: "idle" },
+    { target: "wp-opts", title: tx("Araç ayarları"), text: tx("Seçili aracın boyutu, sertliği, opaklığı gibi ayarları bu şeritte. Araç değişince şerit de değişir."), mood: "think" },
+    { target: "wp-stage", title: tx("Tuval"), text: tx("Tekerlekle yakınlaş, boşluk tuşunu basılı tutup sürükleyerek kaydır. Seçim yaptığında her işlem yalnızca seçili alana uygulanır."), mood: "search" },
+    { target: "wp-quick", title: tx("Hızlı düzenleme"), text: tx("Tek tıkla otomatik ton, canlı renkler, siyah-beyaz, minyatür gibi görünümler; tüm ayarlamalar ve filtreler de burada."), mood: "celebrate", enter: () => setPanel("quick") },
+    { target: "wp-tabs", title: tx("Katmanlar"), text: tx("Her şeyi ayrı katmanlarda tut: göster/gizle, opaklık, karışım modu, maske ve gölge gibi stiller. Yazılar düzenlenebilir katman olarak kalır."), mood: "think", enter: () => setPanel("layers") },
+    { target: "wp-menus", title: tx("Tüm komutlar"), text: tx("Görüntü boyutu, döndürme, seçimi genişletme, katman birleştirme gibi her şey üstteki menülerde. Kısayollar menüde yazıyor."), mood: "idle" },
+    { target: "wp-save", title: tx("Kaydet"), text: tx("Bitince kopya olarak kaydet; orijinal ekran görüntün hiç değişmez. Takılırsan ? düğmesiyle beni tekrar çağır."), mood: "wave" },
+  ];
+
   const cursor = tool === "hand" || space.current ? "grab" : tool === "zoom" ? "zoom-in" : tool === "move" ? "move" : tool === "text" ? "text" : ["brush", "eraser", "clone", "heal", "tone", "focus"].includes(tool) ? "none" : "crosshair";
 
   return (
-    <div className="wp" onPointerDown={(e) => { if (!(e.target as HTMLElement).closest(".wp-menu")) setMenu(null); }}>
+    <div className="wp" onPointerDown={(e) => { const t = e.target as HTMLElement; if (!t.closest(".wp-menu")) setMenu(null); if (!t.closest(".wp-tgroup")) setFly(null); }}>
       <header className="wp-bar">
         <span className="wp-brand"><b>West</b>Photo</span>
-        <nav className="wp-menus">
+        <nav className="wp-menus" data-guide="wp-menus">
           {menus.map((m) => (
             <div key={m.id} className="wp-menu">
               <button className={clsx(menu === m.id && "open")} onClick={() => setMenu(menu === m.id ? null : m.id)} onMouseEnter={() => menu && setMenu(m.id)}>{m.label}</button>
@@ -1219,16 +1265,28 @@ export default function WestPhoto({ image, title, onClose, onSaveCopy, onCopy, o
             </div>
           ))}
         </nav>
+        <span className="grow" />
         <span className="wp-title truncate">{title}</span>
         <span className="grow" />
         {busy && <span className="muted tiny"><Loader2 size={12} className="spin" /> {busy === "save" ? tx("Kaydediliyor…") : tx(busy)}</span>}
-        <button className="btn btn-primary btn-sm" disabled={!!busy} onClick={() => void save()}><Save size={14} /> {tx("Kopya olarak kaydet")}</button>
+        <div className="wp-iconrow">
+          <button className="icon-btn" title={tx("Geri al (Ctrl+Z)")} disabled={hist.index === 0} onClick={undo}><Undo2 size={16} /></button>
+          <button className="icon-btn" title={tx("Yinele (Ctrl+Y)")} disabled={hist.index >= hist.items.length - 1} onClick={redo}><Redo2 size={16} /></button>
+        </div>
+        <div className="wp-zoom">
+          <button title={tx("Uzaklaştır")} onClick={() => zoomAt(0.8)}><Minus size={13} /></button>
+          <button className="wp-zoom-v" title={tx("Ekrana sığdır")} onClick={fit}>{zoomPct}%</button>
+          <button title={tx("Yakınlaştır")} onClick={() => zoomAt(1.25)}><Plus size={13} /></button>
+        </div>
+        <button className="icon-btn" title={tx("Ashi'den yardım al")} onClick={() => setGuide(true)}><HelpCircle size={16} /></button>
+        {onSimple && <button className="btn btn-ghost btn-sm" title={tx("Basit düzenleyiciye dön")} onClick={onSimple}>{tx("Basit mod")}</button>}
+        <button data-guide="wp-save" className="btn btn-primary btn-sm" disabled={!!busy} onClick={() => void save()}><Save size={14} /> {tx("Kopya olarak kaydet")}</button>
         <button className="icon-btn" title={tx("WestPhoto'yu kapat")} onClick={onClose}><X size={17} /></button>
         <input ref={fileIn} type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) placeImage(f); e.target.value = ""; }} />
       </header>
 
       {/* Seçenek çubuğu */}
-      <div className="wp-opts">
+      <div className="wp-opts" data-guide="wp-opts">
         <span className="wp-opts-tool">{tx(TOOLS.find((t) => t.id === tool)!.label)}</span>
         {tf ? (
           <>
@@ -1311,10 +1369,33 @@ export default function WestPhoto({ image, title, onClose, onSaveCopy, onCopy, o
       </div>
 
       <div className="wp-main">
-        <aside className="wp-tools">
-          {TOOLS.map((t) => (
-            <button key={t.id} className={clsx(tool === t.id && "active")} title={`${tx(t.label)} (${t.key})`} onClick={() => setTool(t.id)}><t.icon size={17} /></button>
-          ))}
+        <aside className="wp-tools" data-guide="wp-tools">
+          {GROUPS.map((g) => {
+            const cur = g.tools.includes(tool) ? tool : lastInGroup[g.id] ?? g.tools[0];
+            const info = TOOLS.find((x) => x.id === cur)!;
+            const on = g.tools.includes(tool);
+            return (
+              <div key={g.id} className="wp-tgroup">
+                <button
+                  className={clsx(on && "active")}
+                  title={`${tx(info.label)} (${info.key})${g.tools.length > 1 ? " · " + tx("tekrar tıkla: diğer araçlar") : ""}`}
+                  onClick={() => (on && g.tools.length > 1 ? setFly(fly === g.id ? null : g.id) : setTool(cur))}
+                >
+                  <info.icon size={17} />
+                  {g.tools.length > 1 && <i className="wp-more" />}
+                </button>
+                {fly === g.id && (
+                  <div className="wp-fly">
+                    {g.tools.map((id) => {
+                      const t = TOOLS.find((x) => x.id === id)!;
+                      return <button key={id} className={clsx(tool === id && "active")} onClick={() => setTool(id)}><t.icon size={15} /> <span>{tx(t.label)}</span> <kbd>{t.key}</kbd></button>;
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          <span className="grow" />
           <div className="wp-fgbg">
             <label className="fg" style={{ background: fg }} title={tx("Ön plan rengi")}><input type="color" value={fg} onChange={(e) => setFg(e.target.value)} /></label>
             <label className="bg" style={{ background: bg }} title={tx("Arka plan rengi")}><input type="color" value={bg} onChange={(e) => setBg(e.target.value)} /></label>
@@ -1322,7 +1403,7 @@ export default function WestPhoto({ image, title, onClose, onSaveCopy, onCopy, o
           </div>
         </aside>
 
-        <div className="wp-stage" ref={wrap}>
+        <div className="wp-stage" ref={wrap} data-guide="wp-stage">
           <canvas
             ref={view}
             style={{ cursor }}
@@ -1336,46 +1417,53 @@ export default function WestPhoto({ image, title, onClose, onSaveCopy, onCopy, o
             onContextMenu={(e) => e.preventDefault()}
           />
           {msg && <div className="wp-toast">{msg}</div>}
+          <div className="wp-coord">{doc.w}×{doc.h}{status && <> · {status.x}, {status.y} <i className="wp-sw" style={{ background: status.c }} /></>}</div>
         </div>
 
         <aside className="wp-side">
-          <div className="wp-tabs">
-            <button className={clsx(panel === "color" && "active")} onClick={() => setPanel("color")}>{textLayer ? tx("Yazı") : tx("Renk")}</button>
-            <button className={clsx(panel === "history" && "active")} onClick={() => setPanel("history")}>{tx("Geçmiş")}</button>
+          <div className="wp-tabs" data-guide="wp-tabs">
+            {([["layers", LayersIcon, tx("Katmanlar")], ["quick", Zap, tx("Hızlı")], ["color", Palette, tx("Renk")], ["history", HistoryIcon, tx("Geçmiş")]] as const).map(([id, Icon, label]) => (
+              <button key={id} data-guide={id === "quick" ? "wp-quick" : undefined} className={clsx(panel === id && "active")} title={label} onClick={() => setPanel(id)}><Icon size={14} /> <span>{label}</span></button>
+            ))}
           </div>
-          <div className="wp-panel">
-            {panel === "history" ? (
-              <HistoryPanel hist={hist} onJump={(i) => setHist((h) => ({ ...h, index: i }))} />
-            ) : textLayer?.text ? (
-              <TextPanel t={textLayer.text} onChange={updateText} />
-            ) : (
-              <ColorPanel fg={fg} bg={bg} setFg={setFg} setBg={setBg} />
-            )}
-          </div>
-          <LayersPanel
-            doc={doc}
-            onSelect={(id, mask) => silent((d) => ({ ...d, active: id, editMask: mask && !!d.layers.find((l) => l.id === id)?.mask }))}
-            onPatch={(id, p, label) => (label ? commit(label, patchLayer(docRef.current, id, p)) : silent((d) => patchLayer(d, id, p)))}
-            onAdd={() => addLayer()}
-            onDup={dupLayer}
-            onDel={delLayer}
-            onMask={() => (layer.mask ? removeMask() : addMask(!!doc.sel))}
-            onFx={() => setDialog({ kind: "fx" })}
-            onMove={moveLayer}
-            onMerge={mergeDown}
-            onSelectPixels={(id) => selFromLayer(id)}
-          />
+          {panel === "layers" && (
+            <>
+              {textLayer?.text && <div className="wp-panel"><TextPanel t={textLayer.text} onChange={updateText} /></div>}
+              <LayersPanel
+                doc={doc}
+                onSelect={(id, mask) => silent((d) => ({ ...d, active: id, editMask: mask && !!d.layers.find((l) => l.id === id)?.mask }))}
+                onPatch={(id, p, label) => (label ? commit(label, patchLayer(docRef.current, id, p)) : silent((d) => patchLayer(d, id, p)))}
+                onAdd={() => addLayer()}
+                onDup={dupLayer}
+                onDel={delLayer}
+                onMask={() => (layer.mask ? removeMask() : addMask(!!doc.sel))}
+                onFx={() => setDialog({ kind: "fx" })}
+                onMove={moveLayer}
+                onMerge={mergeDown}
+                onSelectPixels={(id) => selFromLayer(id)}
+              />
+            </>
+          )}
+          {panel === "quick" && (
+            <div className="wp-panel wp-quick">
+              <h5>{tx("Tek tıkla görünüm")}</h5>
+              <div className="wp-looks">
+                {LOOKS.map((l) => (
+                  <button key={l.label} onClick={() => (l.op === "auto" ? autoTone() : quick(l.op, l.v))} style={{ background: l.bg }}><span>{tx(l.label)}</span></button>
+                ))}
+              </div>
+              <h5>{tx("Ayarlamalar")}</h5>
+              <div className="wp-chips">{ADJUSTMENTS.map((op) => <button key={op.id} onClick={() => openOp(op)}>{tx(op.label)}</button>)}</div>
+              <h5>{tx("Filtreler")}</h5>
+              <div className="wp-chips">{FILTERS.map((op) => <button key={op.id} onClick={() => openOp(op)}>{tx(op.label)}</button>)}</div>
+              <p className="muted tiny">{tx("Seçim varsa yalnızca seçili alana uygulanır. Ctrl+Z ile geri alabilirsin.")}</p>
+            </div>
+          )}
+          {panel === "color" && <div className="wp-panel"><ColorPanel fg={fg} bg={bg} setFg={setFg} setBg={setBg} /></div>}
+          {panel === "history" && <div className="wp-panel"><HistoryPanel hist={hist} onJump={(i) => setHist((h) => ({ ...h, index: i }))} /></div>}
         </aside>
       </div>
 
-      <footer className="wp-status">
-        <span>{zoomPct}%</span>
-        <span>{doc.w} × {doc.h} px</span>
-        <span>{tx("{0} katman", doc.layers.length)}</span>
-        {status && <span>{status.x}, {status.y} <i className="wp-sw" style={{ background: status.c }} /> {status.c}</span>}
-        <span className="grow" />
-        <span className="muted">{tx("Boşluk+sürükle: kaydır · tekerlek: yakınlaştır · [ ]: fırça boyutu")}</span>
-      </footer>
 
       {dialog?.kind === "op" && (
         <OpDialog
@@ -1396,10 +1484,24 @@ export default function WestPhoto({ image, title, onClose, onSaveCopy, onCopy, o
           onCancel={(before) => { silent((d) => patchLayer(d, layer.id, { fx: before })); setDialog(null); }}
         />
       )}
+      <AshiGuide steps={guideSteps} open={guide} onClose={() => setGuide(false)} label={tx("WestPhoto rehberi")} />
       {dialog?.kind === "num" && <NumDialog title={dialog.title} fields={dialog.fields} onCancel={() => setDialog(null)} onApply={(v) => { setDialog(null); dialog.run(v); }} />}
     </div>
   );
 }
+
+const LOOKS: { label: string; op: string; v: Values; bg: string }[] = [
+  { label: "Otomatik", op: "auto", v: {}, bg: "linear-gradient(135deg,#3a6ea5,#e8a33d)" },
+  { label: "Canlı", op: "vibrance", v: { v: 45, s: 10 }, bg: "linear-gradient(135deg,#ff5f6d,#ffc371)" },
+  { label: "Sıcak", op: "photo", v: { c: "#ec8a2d", dn: 25, pl: true }, bg: "linear-gradient(135deg,#f6a35b,#b0522c)" },
+  { label: "Soğuk", op: "photo", v: { c: "#3a86ff", dn: 22, pl: true }, bg: "linear-gradient(135deg,#4facfe,#2a3f8f)" },
+  { label: "Siyah-Beyaz", op: "bw", v: {}, bg: "linear-gradient(135deg,#e6e6e6,#2b2b2b)" },
+  { label: "Kontrast", op: "bc", v: { b: 0, c: 28 }, bg: "linear-gradient(135deg,#111,#f2f2f2)" },
+  { label: "Işıltı", op: "glow", v: { t: 165, r: 18, k: 60 }, bg: "linear-gradient(135deg,#fceabb,#f8b500)" },
+  { label: "Minyatür", op: "tilt", v: {}, bg: "linear-gradient(135deg,#43cea2,#185a9d)" },
+  { label: "Vinyet", op: "vignette", v: {}, bg: "radial-gradient(circle,#c9b28a,#2a2016)" },
+  { label: "Keskin", op: "unsharp", v: {}, bg: "linear-gradient(135deg,#8e9eab,#eef2f3)" },
+];
 
 const HANDLES: [number, number][] = [[-1, -1], [0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0]];
 const inRect = (p: Pt, r: { x: number; y: number; w: number; h: number }) => p.x >= r.x && p.y >= r.y && p.x <= r.x + r.w && p.y <= r.y + r.h;

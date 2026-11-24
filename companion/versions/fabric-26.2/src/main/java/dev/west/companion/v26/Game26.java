@@ -461,6 +461,16 @@ public final class Game26 implements Game {
     }
 
     @Override
+    public Object screenObject() {
+        return mc().gui.screen();
+    }
+
+    @Override
+    public void setScreenObject(Object screen) {
+        if (screen instanceof net.minecraft.client.gui.screens.Screen) mc().gui.setScreen((net.minecraft.client.gui.screens.Screen) screen);
+    }
+
+    @Override
     public boolean modLoaded(String id) {
         return net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded(id);
     }
