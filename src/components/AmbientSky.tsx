@@ -70,7 +70,9 @@ async function paletteFromImage(src: string): Promise<Pal | null> {
  */
 export function AmbientSky() {
   const inst = useFeaturedInstance();
-  const reduce = useSettings((s) => s.settings.theme.reduceMotion);
+  // Oyun açıkken sahne durağan çizilir (tek kare), döngü çalışmaz
+  const gameRunning = useInstances((s) => Object.keys(s.running).length > 0);
+  const reduce = useSettings((s) => s.settings.theme.reduceMotion) || gameRunning;
   const canvas = useRef<HTMLCanvasElement>(null);
   const holder = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState(0);

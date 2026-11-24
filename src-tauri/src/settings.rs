@@ -147,7 +147,7 @@ impl Default for Settings {
             backup_dir: None,
             backup_keep: 10,
             close_on_launch: false,
-            launch_behavior: "keep".into(),
+            launch_behavior: "minimize".into(),
             start_page: "/".into(),
             game: GameDefaults::default(),
             microsoft_client_id: None,

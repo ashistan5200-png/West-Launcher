@@ -55,6 +55,12 @@ export default function App() {
   const loadSettings = useSettings((s) => s.load);
   const reduceMotion = useSettings((s) => s.settings.theme.reduceMotion);
   const { refresh, bindEvents } = useInstances();
+  // Oyun açıkken launcher dinlenir: animasyonlar, geçişler ve bulanıklık durur (ekran kartı/işlemci oyuna kalır)
+  const gameRunning = useInstances((s) => Object.keys(s.running).length > 0);
+  useEffect(() => {
+    if (gameRunning) document.documentElement.dataset.game = "1";
+    else delete document.documentElement.dataset.game;
+  }, [gameRunning]);
   const { bindEvents: bindAshi, loadSkin } = useAshi();
 
   useEffect(() => {

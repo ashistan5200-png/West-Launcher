@@ -70,23 +70,30 @@ pub fn optimize(java_major: u32, hw: &Hardware, memory_mb: u32) -> JvmProfile {
     flags.push(format!("-XX:ParallelGCThreads={}", (cores * 5 / 8).clamp(2, 12)));
     flags.push(format!("-XX:ConcGCThreads={}", (cores / 4).clamp(1, 4)));
 
-    let big = memory_mb > 12288;
+    // İstemci (oyun) için ayarlı G1: kısa duraklama hedefi, israf payı yüksek tutularak seyrek "karışık"
+    // toplamalar, eşzamanlı işaretleme küçük adımlarla (kare süresine yayılmaz). Aikar'ın sunucu ayarları
+    // (düşük IHOP, %5 israf) istemcide sürekli arka plan temizliğine ve takılmaya yol açıyordu.
     flags.extend([
         "-XX:+UseG1GC".into(),
-        "-XX:MaxGCPauseMillis=40".into(),
-        format!("-XX:G1NewSizePercent={}", if big { 40 } else { 30 }),
-        format!("-XX:G1MaxNewSizePercent={}", if big { 50 } else { 40 }),
-        format!("-XX:G1HeapRegionSize={}M", if big { 16 } else { 8 }),
-        format!("-XX:G1ReservePercent={}", if big { 15 } else { 20 }),
-        "-XX:G1HeapWastePercent=5".into(),
-        "-XX:G1MixedGCCountTarget=4".into(),
-        format!("-XX:InitiatingHeapOccupancyPercent={}", if big { 20 } else { 15 }),
+        "-XX:MaxGCPauseMillis=37".into(),
+        "-XX:G1NewSizePercent=23".into(),
+        "-XX:G1MaxNewSizePercent=50".into(),
+        "-XX:G1HeapRegionSize=16M".into(),
+        "-XX:G1ReservePercent=20".into(),
+        "-XX:G1HeapWastePercent=20".into(),
+        "-XX:G1MixedGCCountTarget=3".into(),
+        "-XX:InitiatingHeapOccupancyPercent=20".into(),
         "-XX:G1MixedGCLiveThresholdPercent=90".into(),
-        "-XX:G1RSetUpdatingPauseTimePercent=5".into(),
+        "-XX:G1RSetUpdatingPauseTimePercent=0".into(),
         "-XX:SurvivorRatio=32".into(),
-        "-XX:+PerfDisableSharedMem".into(),
         "-XX:MaxTenuringThreshold=1".into(),
+        "-XX:GCTimeRatio=99".into(),
+        "-XX:+PerfDisableSharedMem".into(),
     ]);
+    if java_major >= 17 {
+        flags.push("-XX:G1SATBBufferEnqueueingThresholdPercent=30".into());
+        flags.push("-XX:G1ConcMarkStepDurationMillis=5".into());
+    }
     if java_major >= 17 {
         flags.push("-XX:+UseStringDeduplication".into());
     }
@@ -94,7 +101,7 @@ pub fn optimize(java_major: u32, hw: &Hardware, memory_mb: u32) -> JvmProfile {
         memory_mb,
         gc: Gc::G1,
         flags,
-        reason: crate::i18n::tf("Java {0}, {1} MB heap → ayarlı G1GC (Aikar)", &[&java_major, &memory_mb]),
+        reason: crate::i18n::tf("Java {0}, {1} MB heap → oyuna göre ayarlı G1GC", &[&java_major, &memory_mb]),
     }
 }
 
@@ -109,7 +116,7 @@ mod tests {
         let p = optimize(21, &hw(32768, 16), 8192);
         assert_eq!(p.gc, Gc::G1);
         assert!(!p.flags.iter().any(|f| f.contains("ZGC")));
-        assert!(p.flags.iter().any(|f| f == "-XX:MaxGCPauseMillis=40"));
+        assert!(p.flags.iter().any(|f| f == "-XX:MaxGCPauseMillis=37"));
         assert_eq!(optimize(17, &hw(8192, 4), 4096).gc, Gc::G1);
     }
     #[test]

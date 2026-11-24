@@ -2264,3 +2264,6 @@ img.tb-avatar { object-fit: cover; }
 .wp-fx { display: flex; flex-direction: column; gap: 6px; padding: 9px; border-radius: 10px; background: rgb(var(--border) / 0.04); }
 .wp-fxnum { display: grid; grid-template-columns: 86px 1fr 56px; gap: 8px; align-items: center; color: rgb(var(--text-muted)); }
 .wp-coord { position: absolute; left: 10px; bottom: 8px; font-size: 11px; color: rgb(var(--text-faint)); font-variant-numeric: tabular-nums; pointer-events: none; }
+
+/* Oyun açıkken: launcher'ın tüm animasyon ve bulanıklık efektleri durur */
+:root[data-game="1"] *, :root[data-game="1"] *::before, :root[data-game="1"] *::after { animation-play-state: paused !important; transition: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }

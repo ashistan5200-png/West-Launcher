@@ -98,7 +98,10 @@ export const useInstances = create<InstancesState>((set, get) => ({
     const un = await Promise.all([
       events.onProgress((p) => set((s) => ({ progress: { ...s.progress, [p.task]: p } }))),
       events.onGameLog((l) => {
-        (pending[l.instanceId] ??= []).push({ line: l.line, stderr: l.stderr });
+        // Pencere gizli/küçükken kare çizilmez (flush bekler): birikim sınırlı kalsın
+        const q = (pending[l.instanceId] ??= []);
+        q.push({ line: l.line, stderr: l.stderr });
+        if (q.length > MAX_LOG) q.splice(0, q.length - MAX_LOG);
         if (!raf) raf = requestAnimationFrame(flush);
       }),
       events.onGameExit((x) => {
