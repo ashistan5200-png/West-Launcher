@@ -244,6 +244,13 @@ public final class Game26 implements Game {
     private static final java.util.Map<String, Long> PINGED_AT = new java.util.HashMap<>();
 
     /** İstemci tick'inde: açık ping bağlantılarını ilerlet */
+    private static final java.util.concurrent.ExecutorService PING_POOL = java.util.concurrent.Executors.newFixedThreadPool(2, r -> {
+        Thread t = new Thread(r, "West Server Pinger");
+        t.setDaemon(true);
+        t.setContextClassLoader(Minecraft.class.getClassLoader());
+        return t;
+    });
+
     static void tickPinger() {
         PINGER.tick();
     }
@@ -261,15 +268,22 @@ public final class Game26 implements Game {
             PINGED_AT.put(address, now);
             ServerData target = d == null ? nd : d;
             target.setState(ServerData.State.PINGING);
-            java.util.concurrent.CompletableFuture.runAsync(() -> {
+            // Minecraft'ın kendi ping havuzu gibi, oyunun sınıf yükleyicisine sahip ayrı bir iş parçacığında.
+            // (Java'nın ortak havuzunda ağ katmanı ilk kez başlatılırsa başlatma bozulur ve oturum boyunca
+            // hiçbir sunucuya ping atılamaz/bağlanılamaz.)
+            PING_POOL.execute(() -> {
                 try {
                     PINGER.pingServer(target, () -> {}, () -> {}, net.minecraft.server.network.EventLoopGroupHolder.remote(mc().options.useNativeTransport()));
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     target.setState(ServerData.State.UNREACHABLE);
+                    WestHud.LOG.debug("Sunucu durumu alınamadı ({}): {}", target.ip, e.toString());
                 }
             });
             if (d == null) return new ServerStatus(0, 0, 0, -1);
         }
+        // Pinger yanıt gelince yalnızca verileri doldurur; durumu (vanilla listesi gibi) sürüme göre biz belirleriz
+        if (d.state() == ServerData.State.PINGING && d.players != null)
+            d.setState(d.protocol == net.minecraft.SharedConstants.getCurrentVersion().protocolVersion() ? ServerData.State.SUCCESSFUL : ServerData.State.INCOMPATIBLE);
         return switch (d.state()) {
             case SUCCESSFUL -> new ServerStatus(1, d.players == null ? 0 : d.players.online(), d.players == null ? 0 : d.players.max(), d.ping);
             case UNREACHABLE -> new ServerStatus(2, 0, 0, -1);

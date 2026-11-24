@@ -22,6 +22,9 @@
 !define MUI_INSTFILESPAGE_PROGRESSBAR "smooth"
 !define MUI_HEADERIMAGE_RIGHT
 !define MUI_ABORTWARNING
+; Boş ayrıntı listesi yerine West görseli gösterilir
+ShowInstDetails nevershow
+ShowUninstDetails nevershow
 !define MUI_UNABORTWARNING
 !define MUI_CUSTOMFUNCTION_GUIINIT westGuiInit
 !define MUI_CUSTOMFUNCTION_UNGUIINIT un.westGuiInit

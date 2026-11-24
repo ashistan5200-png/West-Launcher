@@ -46,6 +46,9 @@ ManifestDPIAwareness PerMonitorV2
 !define MUI_INSTFILESPAGE_PROGRESSBAR "smooth"
 !define MUI_HEADERIMAGE_RIGHT
 !define MUI_ABORTWARNING
+; Boş ayrıntı listesi yerine West görseli gösterilir
+ShowInstDetails nevershow
+ShowUninstDetails nevershow
 !define MUI_UNABORTWARNING
 !define MUI_CUSTOMFUNCTION_GUIINIT westGuiInit
 !define MUI_CUSTOMFUNCTION_UNGUIINIT un.westGuiInit
@@ -584,7 +587,47 @@ Var AppStartMenuFolder
 !insertmacro MUI_PAGE_STARTMENU Application $AppStartMenuFolder
 
 ; 7. Installation page
-!define MUI_PAGE_CUSTOMFUNCTION_SHOW westShow
+
+!searchreplace WEST_INSTALL_ART "${SIDEBARIMAGE}" "sidebar.bmp" "install-art.bmp"
+Function westInstShow
+  Call westShow
+  Push $0
+  Push $1
+  Push $2
+  Push $3
+  Push $4
+  Push $5
+  InitPluginsDir
+  File "/oname=$PLUGINSDIR\west-install.bmp" "${WEST_INSTALL_ART}"
+  FindWindow $0 "#32770" "" $HWNDPARENT
+  ; Sayfanın genişliği ($2) ve yüksekliği ($3)
+  System::Call '*(i,i,i,i) p.r1'
+  System::Call 'user32::GetClientRect(p r0, p r1)'
+  System::Call '*$1(i,i,i.r2,i.r3)'
+  ; İlerleme çubuğunun alt kenarı ($5)
+  GetDlgItem $4 $0 1004
+  System::Call 'user32::GetWindowRect(p r4, p r1)'
+  System::Call 'user32::MapWindowPoints(p 0, p r0, p r1, i 2)'
+  System::Call '*$1(i,i,i,i.r5)'
+  System::Free $1
+  IntOp $5 $5 + 14
+  ; Görsel 3:1; sayfa genişliğine sığdır, kalan yüksekliği aşmasın
+  IntOp $4 $2 / 3
+  IntOp $1 $3 - $5
+  IntCmp $4 $1 +2 +2 0
+  StrCpy $4 $1
+  IntOp $2 $4 * 3
+  System::Call 'user32::CreateWindowExW(i 0, w "STATIC", w "", i 0x5000000E, i 0, i r5, i r2, i r4, p r0, p 1300, p 0, p 0) p.r3'
+  System::Call 'user32::LoadImageW(p 0, w "$PLUGINSDIR\west-install.bmp", i 0, i r2, i r4, i 0x10) p.r1'
+  SendMessage $3 0x172 0 $1
+  Pop $5
+  Pop $4
+  Pop $3
+  Pop $2
+  Pop $1
+  Pop $0
+FunctionEnd
+!define MUI_PAGE_CUSTOMFUNCTION_SHOW westInstShow
 !insertmacro MUI_PAGE_INSTFILES
 
 ; 8. Finish page
