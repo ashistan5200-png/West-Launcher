@@ -55,8 +55,8 @@ pub fn recommend_memory(hw: &Hardware, mod_count: usize) -> u32 {
 }
 
 /// Java sürümü + donanım + heap'e göre GC ve bayrak seti.
-/// - Java 21+, ≥4 çekirdek, heap ≥ 6 GB → Generational ZGC (mikro takılmasız, düşük pause)
-/// - Diğer durumlar → Aikar tabanlı ayarlı G1GC
+/// Oyun istemcisi için ayarlı G1GC: ZGC'nin yük bariyerleri istemcide FPS'i düşürdüğü için kullanılmaz.
+/// Duraklama hedefi sunucu ayarlarından (200 ms) çok daha düşük tutulur; kısa ve sık toplamalar takılma yapmaz.
 pub fn optimize(java_major: u32, hw: &Hardware, memory_mb: u32) -> JvmProfile {
     let mut flags = vec![
         "-XX:+UnlockExperimentalVMOptions".to_string(),
@@ -65,26 +65,15 @@ pub fn optimize(java_major: u32, hw: &Hardware, memory_mb: u32) -> JvmProfile {
         "-XX:+ParallelRefProcEnabled".into(),
         "-Dfile.encoding=UTF-8".into(),
     ];
-
-    if java_major >= 21 && hw.logical_cores >= 4 && memory_mb >= 6144 {
-        flags.push("-XX:+UseZGC".into());
-        if java_major < 23 {
-            // 23+ sürümlerde varsayılan; bayrak kullanımdan kaldırıldı
-            flags.push("-XX:+ZGenerational".into());
-        }
-        flags.push(format!("-XX:ConcGCThreads={}", (hw.logical_cores / 4).max(1)));
-        return JvmProfile {
-            memory_mb,
-            gc: Gc::GenerationalZgc,
-            flags,
-            reason: crate::i18n::tf("Java {0}, {1} çekirdek ve {2} MB heap → Generational ZGC", &[&java_major, &hw.logical_cores, &memory_mb]),
-        };
-    }
+    // Çekirdek sayısına göre eşzamanlı GC iş parçacıkları (oyunun ana iş parçacığına yer bırak)
+    let cores = hw.logical_cores.max(2);
+    flags.push(format!("-XX:ParallelGCThreads={}", (cores * 5 / 8).clamp(2, 12)));
+    flags.push(format!("-XX:ConcGCThreads={}", (cores / 4).clamp(1, 4)));
 
     let big = memory_mb > 12288;
     flags.extend([
         "-XX:+UseG1GC".into(),
-        "-XX:MaxGCPauseMillis=200".into(),
+        "-XX:MaxGCPauseMillis=40".into(),
         format!("-XX:G1NewSizePercent={}", if big { 40 } else { 30 }),
         format!("-XX:G1MaxNewSizePercent={}", if big { 50 } else { 40 }),
         format!("-XX:G1HeapRegionSize={}M", if big { 16 } else { 8 }),
@@ -116,10 +105,12 @@ mod tests {
         Hardware { total_memory_mb: mem, available_memory_mb: mem / 2, logical_cores: cores, cpu_brand: String::new() }
     }
     #[test]
-    fn picks_zgc_on_modern_big_heap() {
-        assert_eq!(optimize(21, &hw(32768, 16), 8192).gc, Gc::GenerationalZgc);
-        assert_eq!(optimize(17, &hw(32768, 16), 8192).gc, Gc::G1);
-        assert_eq!(optimize(21, &hw(8192, 4), 4096).gc, Gc::G1);
+    fn always_tuned_g1_for_the_client() {
+        let p = optimize(21, &hw(32768, 16), 8192);
+        assert_eq!(p.gc, Gc::G1);
+        assert!(!p.flags.iter().any(|f| f.contains("ZGC")));
+        assert!(p.flags.iter().any(|f| f == "-XX:MaxGCPauseMillis=40"));
+        assert_eq!(optimize(17, &hw(8192, 4), 4096).gc, Gc::G1);
     }
     #[test]
     fn memory_respects_ceiling() {

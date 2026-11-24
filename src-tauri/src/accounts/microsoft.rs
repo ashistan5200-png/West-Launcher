@@ -271,8 +271,16 @@ pub async fn finish_login(http: &Http, ms_access: &str, ms_refresh: &str, live: 
 /// Minecraft token'ı süresi dolmak üzereyse refresh token ile yeniler (yerinde).
 pub async fn ensure_fresh(http: &Http, client_id: &str, acc: &mut Account) -> Result<bool> {
     let Some(ms) = acc.ms.as_ref() else { return Ok(false) };
-    if ms.mc_expires_at > Utc::now() + ChronoDuration::minutes(5) {
-        return Ok(false);
+    // Oyun oturumları uzun sürebilir: 12 saatten az kaldıysa yenile. Süresi yeterliyse de Mojang'a sorarak
+    // anahtarın gerçekten geçerli olduğunu doğrula (iptal edilmiş/bozuk anahtarla sunucular "geçersiz oturum" der).
+    if ms.mc_expires_at > Utc::now() + ChronoDuration::hours(12) {
+        let check = http.client.get(MC_PROFILE).bearer_auth(&ms.mc_access_token).timeout(std::time::Duration::from_secs(5)).send().await;
+        match check {
+            Ok(r) if r.status() == reqwest::StatusCode::UNAUTHORIZED || r.status() == reqwest::StatusCode::FORBIDDEN => {
+                tracing::warn!("Minecraft oturum anahtarı geçersiz; yenileniyor");
+            }
+            _ => return Ok(false), // geçerli ya da ağ hatası: mevcut anahtarla devam
+        }
     }
     let live = ms.live;
     let (access, refresh) = if live { live_refresh(http, &ms.refresh_token).await? } else { refresh_ms(http, client_id, &ms.refresh_token).await? };

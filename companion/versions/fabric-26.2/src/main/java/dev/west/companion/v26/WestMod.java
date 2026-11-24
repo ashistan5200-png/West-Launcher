@@ -40,6 +40,32 @@ public final class WestMod implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(WestMod::tick);
         // Dünya paylaşma: e4mc'nin verdiği herkese açık adresi sohbetten yakala
         net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents.GAME.register((msg, overlay) -> WestHud.safe("tunnel", () -> Game26.onChat(msg)));
+        // Duraklatma ekranı: sol altta Essential / Flashback kartları
+        net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.AFTER_INIT.register((client, screen, w, h) -> {
+            if (!(screen instanceof net.minecraft.client.gui.screens.PauseScreen ps) || !ps.showsPauseMenu() || !dev.west.hud.compat.ModCards.any()) return;
+            WestHud.safe("mod-cards", () -> net.fabricmc.fabric.api.client.screen.v1.Screens.getWidgets(screen).add(new ModCardsLayer(w, h)));
+        });
+        // Bağlantı reddedildiğinde sebebi ve çözümü göster (geçersiz oturum, çevrimdışı hesap, Xbox ayarı…)
+        net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.AFTER_INIT.register((client, screen, w, h) -> {
+            if (!(screen instanceof net.minecraft.client.gui.screens.DisconnectedScreen)) return;
+            WestHud.safe("connect-help", () -> {
+                java.util.List<String> keys = new java.util.ArrayList<>();
+                StringBuilder text = new StringBuilder();
+                for (var widget : net.fabricmc.fabric.api.client.screen.v1.Screens.getWidgets(screen)) {
+                    collectKeys(widget.getMessage(), keys);
+                    text.append(widget.getMessage().getString()).append('\n');
+                }
+                collectKeys(screen.getTitle(), keys);
+                boolean offline = client.getUser().getAccessToken().length() < 20;
+                String hint = dev.west.hud.compat.ConnectHelp.hint(keys, text.toString(), offline);
+                if (hint == null) return;
+                var label = new net.minecraft.client.gui.components.MultiLineTextWidget(
+                        net.minecraft.network.chat.Component.literal("⚠ " + hint).withStyle(net.minecraft.ChatFormatting.YELLOW), client.font);
+                label.setMaxWidth(Math.min(w - 40, 420));
+                label.setPosition((w - label.getWidth()) / 2, 10);
+                net.fabricmc.fabric.api.client.screen.v1.Screens.getWidgets(screen).add(label);
+            });
+        });
         // Vanilla başlık ekranında West ana menüsüne dönüş düğmesi (sağ üst)
         net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.AFTER_INIT.register((client, screen, w, h) -> {
             if (!(screen instanceof net.minecraft.client.gui.screens.TitleScreen) || WestHud.customTitle()) return;
@@ -50,7 +76,16 @@ public final class WestMod implements ClientModInitializer {
             }).bounds(w - 66, 6, 60, 20).build());
         });
         HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT, Identifier.fromNamespaceAndPath("west_companion", "hud"),
-                (g, delta) -> WestHud.renderHud(new Gfx26(g)));
+                (g, delta) -> { frame(); WestHud.renderHud(new Gfx26(g)); });
+    }
+
+    private static void collectKeys(net.minecraft.network.chat.Component c, java.util.List<String> keys) {
+        if (c == null) return;
+        if (c.getContents() instanceof net.minecraft.network.chat.contents.TranslatableContents tc) {
+            keys.add(tc.getKey());
+            for (Object a : tc.getArgs()) if (a instanceof net.minecraft.network.chat.Component ac) collectKeys(ac, keys);
+        }
+        for (var s : c.getSiblings()) collectKeys(s, keys);
     }
 
     private static boolean debugPublished;
@@ -65,6 +100,31 @@ public final class WestMod implements ClientModInitializer {
         srv.setUsesAuthentication(!(p.length > 1 && p[1].equals("offline")));
         boolean ok = srv.publishServer(net.minecraft.server.MinecraftServer.MultiplayerScope.LAN, net.minecraft.world.level.GameType.SURVIVAL, false, Integer.parseInt(p[0]));
         WestHud.LOG.info("debugPublish {} -> {}", v, ok);
+    }
+
+    // Yalnızca ölçüm: -Dwest.frameLog=1 ile 10 sn'de bir ortalama FPS ve takılma (>50 ms kare) sayısı
+    private static final boolean FRAME_LOG = Boolean.getBoolean("west.frameLog");
+    private static long lastFrame, winStart;
+    private static int frames, spikes;
+    private static long worst;
+
+    static void frame() {
+        if (!FRAME_LOG) return;
+        long now = System.nanoTime();
+        if (lastFrame != 0) {
+            long d = now - lastFrame;
+            if (d > 50_000_000L) spikes++;
+            worst = Math.max(worst, d);
+        }
+        lastFrame = now;
+        frames++;
+        if (winStart == 0) winStart = now;
+        if (now - winStart > 10_000_000_000L) {
+            WestHud.LOG.info("frameLog fps={} spikes>50ms={} worst={}ms", Math.round(frames / ((now - winStart) / 1e9)), spikes, worst / 1_000_000);
+            winStart = now;
+            frames = spikes = 0;
+            worst = 0;
+        }
     }
 
     private static void tick(Minecraft mc) {

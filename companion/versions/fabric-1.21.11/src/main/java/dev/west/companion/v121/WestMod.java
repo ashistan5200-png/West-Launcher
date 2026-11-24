@@ -40,6 +40,32 @@ public final class WestMod implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(WestMod::tick);
         // Dünya paylaşma: e4mc'nin verdiği herkese açık adresi sohbetten yakala
         net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents.GAME.register((msg, overlay) -> WestHud.safe("tunnel", () -> Game121.onChat(msg)));
+        // Duraklatma ekranı: sol altta Essential / Flashback kartları
+        net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.AFTER_INIT.register((client, screen, w, h) -> {
+            if (!(screen instanceof net.minecraft.client.gui.screens.PauseScreen ps) || !ps.showsPauseMenu() || !dev.west.hud.compat.ModCards.any()) return;
+            WestHud.safe("mod-cards", () -> net.fabricmc.fabric.api.client.screen.v1.Screens.getButtons(screen).add(new ModCardsLayer(w, h)));
+        });
+        // Bağlantı reddedildiğinde sebebi ve çözümü göster (geçersiz oturum, çevrimdışı hesap, Xbox ayarı…)
+        net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.AFTER_INIT.register((client, screen, w, h) -> {
+            if (!(screen instanceof net.minecraft.client.gui.screens.DisconnectedScreen)) return;
+            WestHud.safe("connect-help", () -> {
+                java.util.List<String> keys = new java.util.ArrayList<>();
+                StringBuilder text = new StringBuilder();
+                for (var widget : net.fabricmc.fabric.api.client.screen.v1.Screens.getButtons(screen)) {
+                    collectKeys(widget.getMessage(), keys);
+                    text.append(widget.getMessage().getString()).append('\n');
+                }
+                collectKeys(screen.getTitle(), keys);
+                boolean offline = client.getUser().getAccessToken().length() < 20;
+                String hint = dev.west.hud.compat.ConnectHelp.hint(keys, text.toString(), offline);
+                if (hint == null) return;
+                var label = new net.minecraft.client.gui.components.MultiLineTextWidget(
+                        net.minecraft.network.chat.Component.literal("⚠ " + hint).withStyle(net.minecraft.ChatFormatting.YELLOW), client.font);
+                label.setMaxWidth(Math.min(w - 40, 420));
+                label.setPosition((w - label.getWidth()) / 2, 10);
+                net.fabricmc.fabric.api.client.screen.v1.Screens.getButtons(screen).add(label);
+            });
+        });
         // Vanilla başlık ekranında West ana menüsüne dönüş düğmesi (sağ üst)
         net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.AFTER_INIT.register((client, screen, w, h) -> {
             if (!(screen instanceof net.minecraft.client.gui.screens.TitleScreen) || WestHud.customTitle()) return;
@@ -51,6 +77,15 @@ public final class WestMod implements ClientModInitializer {
         });
         HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT, Identifier.fromNamespaceAndPath("west_companion", "hud"),
                 (g, delta) -> WestHud.renderHud(new Gfx121(g)));
+    }
+
+    private static void collectKeys(net.minecraft.network.chat.Component c, java.util.List<String> keys) {
+        if (c == null) return;
+        if (c.getContents() instanceof net.minecraft.network.chat.contents.TranslatableContents tc) {
+            keys.add(tc.getKey());
+            for (Object a : tc.getArgs()) if (a instanceof net.minecraft.network.chat.Component ac) collectKeys(ac, keys);
+        }
+        for (var s : c.getSiblings()) collectKeys(s, keys);
     }
 
     private static void tick(Minecraft mc) {

@@ -81,17 +81,28 @@ public final class Stats {
         if (System.currentTimeMillis() - dirtySince > 30_000) save();
     }
 
+    private static final java.util.concurrent.ExecutorService WRITER = java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "West stats writer");
+        t.setDaemon(true);
+        t.setPriority(Thread.MIN_PRIORITY);
+        return t;
+    });
+
     public void save() {
         dirtySince = System.currentTimeMillis();
         // Son 400 gün yeter
         while (data.days.size() > 400) data.days.remove(data.days.keySet().iterator().next());
-        try {
-            Path tmp = path.resolveSibling(path.getFileName() + ".tmp");
-            Files.writeString(tmp, GSON.toJson(data), StandardCharsets.UTF_8);
-            Files.move(tmp, path, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-        } catch (Exception e) {
-            WestHud.LOG.warn("west-stats.json yazılamadı: {}", e.toString());
-        }
+        // JSON ana iş parçacığında üretilir (veri tutarlı kalsın), diske yazma arka planda: oyun takılmaz
+        String json = GSON.toJson(data);
+        WRITER.execute(() -> {
+            try {
+                Path tmp = path.resolveSibling(path.getFileName() + ".tmp");
+                Files.writeString(tmp, json, StandardCharsets.UTF_8);
+                Files.move(tmp, path, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            } catch (Exception e) {
+                WestHud.LOG.warn("west-stats.json yazılamadı: {}", e.toString());
+            }
+        });
     }
 
     public long total() {

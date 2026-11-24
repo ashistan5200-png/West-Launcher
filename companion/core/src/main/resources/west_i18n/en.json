@@ -476,5 +476,20 @@
  "Ekran görüntüleri": "Screenshots",
  "Dünya barındır / davet et": "Host world / invite",
  "Essential ayarları": "Essential settings",
- "Kayıtlar": "Replays"
+ "Kayıtlar": "Replays",
+ "Kaydediliyor": "Recording",
+ "Kayıt": "Record",
+ "Flashback · kayıt sürüyor": "Flashback · recording",
+ "Flashback ile kaydet": "Save a replay with Flashback",
+ "Flashback tekrarları": "Flashback replays",
+ "Bitir": "Stop",
+ "Başlat": "Start",
+ "Aç": "Open",
+ "Çevrimdışı (offline) hesapla oynuyorsun. Çevrimiçi sunucular ve Essential dünyaları Microsoft hesabı ister: West Client'ta Microsoft hesabını seçip oyunu yeniden başlat.": "You're playing with an offline account. Online servers and Essential worlds need a Microsoft account: select your Microsoft account in West Client and restart the game.",
+ "Minecraft oturumun geçersiz ya da süresi dolmuş. Oyunu kapatıp West Client'tan yeniden başlat; oturum açılışta yenilenir. Düzelmezse West Client'ta hesabından çıkıp yeniden giriş yap.": "Your Minecraft session is invalid or expired. Close the game and start it again from West Client; the session is refreshed at launch. If that doesn't help, sign out of your account in West Client and sign in again.",
+ "Xbox/Microsoft hesabında çok oyunculu oyun kapalı. account.xbox.com → Gizlilik ve çevrimiçi güvenlik → \"Xbox dışındaki çok oyunculu oyunlara katılabilirsin\" ayarını İzin ver yap (çocuk hesabıysa aile yöneticisi açmalı).": "Multiplayer is disabled on your Xbox/Microsoft account. Go to account.xbox.com → Privacy & online safety and allow \"You can join multiplayer games outside of Xbox\" (for child accounts, a family organizer must enable it).",
+ "Mojang'ın oturum sunucularına ulaşılamıyor. İnternet bağlantını, varsa VPN/proxy'ni ve güvenlik duvarını kontrol et; biraz sonra tekrar dene.": "Mojang's session servers can't be reached. Check your internet, any VPN/proxy and your firewall; try again shortly.",
+ "Bu hesap çevrimiçi oyundan yasaklanmış; sunuculara giremez.": "This account is banned from online play and can't join servers.",
+ "Sunucu başka bir Minecraft sürümü kullanıyor. Sunucunun sürümünde bir instance oluşturup onunla bağlan.": "The server uses a different Minecraft version. Create an instance for that version and connect with it.",
+ "Sunucuya ulaşılamadı. Adresi kontrol et; sunucu kapalı olabilir ya da güvenlik duvarı Java'yı engelliyor olabilir.": "Couldn't reach the server. Check the address; the server may be down or a firewall may be blocking Java."
 }

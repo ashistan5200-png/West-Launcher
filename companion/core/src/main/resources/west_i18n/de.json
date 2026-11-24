@@ -475,5 +475,20 @@
  "Ekran görüntüleri": "Screenshots",
  "Dünya barındır / davet et": "Welt hosten / einladen",
  "Essential ayarları": "Essential-Einstellungen",
- "Kayıtlar": "Aufnahmen"
+ "Kayıtlar": "Aufnahmen",
+ "Kaydediliyor": "Aufnahme läuft",
+ "Kayıt": "Aufnahme",
+ "Flashback · kayıt sürüyor": "Flashback · Aufnahme läuft",
+ "Flashback ile kaydet": "Mit Flashback aufnehmen",
+ "Flashback tekrarları": "Flashback-Aufnahmen",
+ "Bitir": "Beenden",
+ "Başlat": "Starten",
+ "Aç": "Öffnen",
+ "Çevrimdışı (offline) hesapla oynuyorsun. Çevrimiçi sunucular ve Essential dünyaları Microsoft hesabı ister: West Client'ta Microsoft hesabını seçip oyunu yeniden başlat.": "Du spielst mit einem Offline-Konto. Online-Server und Essential-Welten brauchen ein Microsoft-Konto: Wähle es in West Client und starte das Spiel neu.",
+ "Minecraft oturumun geçersiz ya da süresi dolmuş. Oyunu kapatıp West Client'tan yeniden başlat; oturum açılışta yenilenir. Düzelmezse West Client'ta hesabından çıkıp yeniden giriş yap.": "Deine Minecraft-Sitzung ist ungültig oder abgelaufen. Schließe das Spiel und starte es über West Client neu; die Sitzung wird beim Start erneuert. Hilft das nicht, melde dich in West Client ab und wieder an.",
+ "Xbox/Microsoft hesabında çok oyunculu oyun kapalı. account.xbox.com → Gizlilik ve çevrimiçi güvenlik → \"Xbox dışındaki çok oyunculu oyunlara katılabilirsin\" ayarını İzin ver yap (çocuk hesabıysa aile yöneticisi açmalı).": "Mehrspieler ist in deinem Xbox-/Microsoft-Konto deaktiviert. Erlaube unter account.xbox.com → Datenschutz & Onlinesicherheit „Du kannst an Multiplayer-Spielen außerhalb von Xbox teilnehmen“ (bei Kinderkonten muss ein Familienorganisator das tun).",
+ "Mojang'ın oturum sunucularına ulaşılamıyor. İnternet bağlantını, varsa VPN/proxy'ni ve güvenlik duvarını kontrol et; biraz sonra tekrar dene.": "Mojangs Sitzungsserver sind nicht erreichbar. Prüfe Internet, VPN/Proxy und Firewall und versuche es gleich noch einmal.",
+ "Bu hesap çevrimiçi oyundan yasaklanmış; sunuculara giremez.": "Dieses Konto ist vom Onlinespiel gesperrt und kann keinen Servern beitreten.",
+ "Sunucu başka bir Minecraft sürümü kullanıyor. Sunucunun sürümünde bir instance oluşturup onunla bağlan.": "Der Server nutzt eine andere Minecraft-Version. Erstelle dafür eine Instanz und verbinde dich damit.",
+ "Sunucuya ulaşılamadı. Adresi kontrol et; sunucu kapalı olabilir ya da güvenlik duvarı Java'yı engelliyor olabilir.": "Server nicht erreichbar. Prüfe die Adresse; der Server ist evtl. offline oder eine Firewall blockiert Java."
 }

@@ -26,8 +26,8 @@ public final class TitleHome implements WestScreen {
     private float dt;
     private List<Game.ServerInfo> servers;
     private int tick;
-    /** Açık mod menüsü (Essential, Flashback) */
-    private String openMod;
+    /** Essential / Flashback kısayol kartları */
+    private final dev.west.hud.compat.ModCards cards = new dev.west.hud.compat.ModCards();
 
     @Override
     public void render(Gfx g, int mx, int my, float delta) {
@@ -120,10 +120,10 @@ public final class TitleHome implements WestScreen {
         }
 
         // ── kaldığın yerden devam kartı ──
-        continueCard(g, worlds, sw, sh, in, accent);
+        int[] card = continueCard(g, worlds, sw, sh, in, accent);
+        // ── Essential / Flashback kartları: devam kartının hemen üstünde ──
+        cards.render(g, card[0], card[1] - 6, card[2], mx, my, false);
 
-        // ── Essential / Flashback düğmeleri (sağ üst) ──
-        modMenus(g, sw, pad, in);
 
         // ── alt bilgi ──
         String ver = "Minecraft " + game.minecraftVersion() + " · " + game.loaderName();
@@ -140,7 +140,8 @@ public final class TitleHome implements WestScreen {
         ui.end();
     }
 
-    private void continueCard(Gfx g, List<Game.WorldInfo> worlds, int sw, int sh, float in, int accent) {
+    /** @return {x, y, w} kartın konumu */
+    private int[] continueCard(Gfx g, List<Game.WorldInfo> worlds, int sw, int sh, float in, int accent) {
         Game game = WestHud.game;
         int pad = clamp(Math.round(sw * 0.045f), 12, 34);
         int cw = clamp(Math.round(sw * 0.38f), 190, 250);
@@ -179,55 +180,7 @@ public final class TitleHome implements WestScreen {
                 game.joinServer(0);
             }
         }
-    }
-
-    /** Yüklü modların kendi menüleri: sağ üstte düğmeler, tıklayınca özellik listesi açılır */
-    private void modMenus(Gfx g, int sw, int pad, float in) {
-        var mods = dev.west.hud.compat.ModMenus.mods();
-        if (mods.isEmpty()) return;
-        Game game = WestHud.game;
-        int y = clamp(Math.round(g.height() * 0.10f), 10, 40), h = 20, x = sw - pad;
-        boolean clickUsed = false;
-        for (int i = mods.size() - 1; i >= 0; i--) {
-            var m = mods.get(i);
-            int w = g.textBoldWidth(m.name()) + 36;
-            x -= w;
-            boolean open = m.id().equals(openMod);
-            float a = anim("m" + m.id(), open || ui.hover(x, y, w, h));
-            int c = 0xFF000000 | m.color();
-            Ui.round(g, x, y, w, h, 10, mix(0xB0101218, 0xE01A1C24, a));
-            Ui.outline(g, x, y, w, h, 10, mix((0x66 << 24) | m.color(), c, a));
-            Ui.round(g, x + 6, y + 6, 8, 8, 4, c);
-            g.textBold(m.name(), x + 19, y + 6, (int) (255 * in) << 24 | 0xFFFFFF, false);
-            Icons.draw(g, Icon.CHEVRON_DOWN, x + w - 13, y + 7, 6, 0xAAFFFFFF);
-            if (ui.clicked(x, y, w, h)) {
-                game.click();
-                openMod = open ? null : m.id();
-                clickUsed = true;
-            }
-            if (open) {
-                int pw = 150, rowH = 18, ph = m.actions().size() * rowH + 8, px = Math.min(sw - pad - pw, x), py = y + h + 4;
-                g.nextLayer();
-                Ui.round(g, px, py + 2, pw, ph, 9, 0x50000000);
-                Ui.round(g, px, py, pw, ph, 8, 0xF20F1016);
-                Ui.outline(g, px, py, pw, ph, 8, (0x55 << 24) | m.color());
-                for (int k = 0; k < m.actions().size(); k++) {
-                    var act = m.actions().get(k);
-                    int ry = py + 4 + k * rowH;
-                    boolean hv = ui.hover(px + 4, ry, pw - 8, rowH);
-                    if (hv) Ui.round(g, px + 4, ry, pw - 8, rowH, 5, 0x1FFFFFFF);
-                    Icons.draw(g, act.icon(), px + 10, ry + 4, 10, hv ? c : 0xFFB9BDC7);
-                    g.text(ui.fit(act.label(), pw - 34), px + 26, ry + 5, 0xFFE6E7EA, false);
-                    if (ui.clicked(px + 4, ry, pw - 8, rowH)) {
-                        game.click();
-                        openMod = null;
-                        act.run().accept(game.screenObject());
-                        clickUsed = true;
-                    }
-                }
-                if (!clickUsed && ui.clicked(0, 0, sw, g.height())) openMod = null;
-            }
-        }
+        return new int[] { cx, cy, cw };
     }
 
     /** Devam kartındaki satır: simge, başlık, alt yazı ve sağda oynat düğmesi */
@@ -308,6 +261,7 @@ public final class TitleHome implements WestScreen {
 
     @Override
     public void mouseClicked(double x, double y, int button) {
+        if (button == 0 && cards.click(x, y)) return;
         ui.click((int) x, (int) y, button);
     }
 

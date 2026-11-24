@@ -54,22 +54,15 @@ let seed = 0;
 const nextSeed = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff);
 
 export const useAshi = create<AshiState>((set, get) => ({
-  // Mojang'dan gelene kadar (veya çevrimdışıyken) paketli AshiWest skini
+  // Ashi'nin sabit skini (paketli)
   skin: { dataUrl: fallbackSkin, slim: true },
   offer: null,
   confirm: null,
   hunts: {},
   busy: false,
 
-  loadSkin: async () => {
-    if (!isTauri()) return;
-    try {
-      const skin = await api.ashiSkin();
-      if (skin?.dataUrl) set({ skin });
-    } catch {
-      /* paketli skinle devam */
-    }
-  },
+  // Ashi'nin skini sabit: paketli skin kullanılır, Mojang'dan güncel skin çekilmez
+  loadSkin: async () => {},
 
   showOffer: (o) => set({ offer: { ...o, line: ashiLines.offer(o.name, nextSeed()) } }),
   dismissOffer: () => set({ offer: null }),

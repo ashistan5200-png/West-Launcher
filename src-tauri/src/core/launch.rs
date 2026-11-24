@@ -128,7 +128,8 @@ pub fn build_args(paths: &Paths, version: &VersionJson, libs: &ResolvedLibraries
     ]);
 
     let features = Features { is_demo_user: false, has_custom_resolution: opts.resolution.is_some() };
-    let mut args = vec![format!("-Xmx{}M", opts.memory_mb), format!("-Xms{}M", (opts.memory_mb / 2).max(512))];
+    // Xms = Xmx: yığın oyun sırasında büyümez/küçülmez (yeniden boyutlandırma takılma yapar)
+    let mut args = vec![format!("-Xmx{}M", opts.memory_mb), format!("-Xms{}M", opts.memory_mb)];
     args.extend(opts.jvm_flags.iter().cloned());
     args.extend(opts.extra_jvm_args.iter().cloned());
 
