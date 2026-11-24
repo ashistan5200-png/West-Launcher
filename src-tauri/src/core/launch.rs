@@ -212,7 +212,31 @@ pub fn split_command(line: &str) -> Vec<String> {
 }
 
 /// wrapper: Java'yı saran komut (boşsa doğrudan Java çalışır)
+/// Windows: bu Java için "yüksek performanslı ekran kartı" tercihini (Ayarlar → Ekran → Grafik ile aynı yer,
+/// yalnızca bu kullanıcı) yazar. Entegre grafikli işlemcilerde Windows Java'yı aksi halde zayıf GPU'da çalıştırabilir.
+#[cfg(windows)]
+pub fn prefer_dedicated_gpu(java: &Path) {
+    use std::os::windows::process::CommandExt;
+    const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+    let dir = java.parent().map(|d| d.to_path_buf()).unwrap_or_default();
+    for exe in [java.to_path_buf(), dir.join("javaw.exe"), dir.join("java.exe")] {
+        if !exe.exists() {
+            continue;
+        }
+        let _ = std::process::Command::new("reg")
+            .args(["add", r"HKCU\Software\Microsoft\DirectX\UserGpuPreferences", "/v"])
+            .arg(&exe)
+            .args(["/t", "REG_SZ", "/d", "GpuPreference=2;", "/f"])
+            .creation_flags(CREATE_NO_WINDOW)
+            .output();
+    }
+}
+
+#[cfg(not(windows))]
+pub fn prefer_dedicated_gpu(_java: &Path) {}
+
 pub async fn spawn(java: &Path, args: Vec<String>, cwd: &Path, wrapper: &str, on_log: LogFn, on_exit: ExitFn) -> Result<GameHandle> {
+    prefer_dedicated_gpu(java);
     std::fs::create_dir_all(cwd)?;
     let wrap = split_command(wrapper);
     let mut cmd = match wrap.split_first() {

@@ -88,7 +88,19 @@ public final class WestMod implements ClientModInitializer {
         for (var s : c.getSiblings()) collectKeys(s, keys);
     }
 
+    private static boolean gpuChecked;
+    private static int gpuWait;
+
     private static void tick(Minecraft mc) {
+        // İlk dünyaya girişte bir kez: oyun zayıf (entegre/yazılımsal) grafikte mi çalışıyor?
+        // Dünya yüklenip sohbet hazır olsun diye ~5 sn bekle
+        if (!gpuChecked && mc.player != null && ++gpuWait > 100) {
+            gpuChecked = true;
+            WestHud.safe("gpu-check", () -> {
+                String hint = dev.west.hud.compat.GpuCheck.hint(com.mojang.blaze3d.systems.RenderSystem.getDevice().getRenderer(), null);
+                if (hint != null) mc.player.displayClientMessage(net.minecraft.network.chat.Component.literal("⚠ " + hint).withStyle(net.minecraft.ChatFormatting.YELLOW), false);
+            });
+        }
         WestHud.tick();
         WestHud.safe("music", () -> WestMusic.tick(mc));
         WestHud.safe("pinger", Game121::tickPinger);
