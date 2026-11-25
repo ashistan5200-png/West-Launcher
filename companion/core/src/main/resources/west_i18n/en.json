@@ -638,5 +638,18 @@
  "Yeni oyun bu değişikliklerle açılamadı, oyunun korundu: {0}.": "The new game could not start with these changes; your game was kept: {0}.",
  "Sorunlu olanı geri al, sonra Tekrar dene. Bu değişiklikler sen karar verene dek uygulanmaz.": "Undo the faulty one, then Try again. These changes are not applied until you decide.",
  "Bazı değişikliklerle oyun açılamadı": "The game failed to start with some changes",
- "İncele": "Review"
+ "İncele": "Review",
+ "Setler": "Sets",
+ "Set, hangi modların ve paketlerin açık olacağını hatırlar (ör. PvP, Shader, Hafif). Sete geçince paketler hemen değişir, modlar oyun kapanmadan arka planda uygulanır.": "A set remembers which mods and packs are on (e.g. PvP, Shaders, Lite). Switching changes packs right away; mods apply in the background without closing the game.",
+ "Henüz set yok. Modlarını istediğin gibi aç-kapat, sonra aşağıdan kaydet.": "No sets yet. Turn mods on or off the way you like, then save below.",
+ "Etkin": "Active",
+ "Geç": "Switch",
+ "{0} açık · {1} kapalı": "{0} on · {1} off",
+ "Yeni set adı (ör. PvP)": "New set name (e.g. PvP)",
+ "Şu anki düzeni kaydet": "Save current setup",
+ "Bekleyen değişiklikler kayda girmez; önce uygula.": "Pending changes are not saved; apply them first.",
+ "\"{0}\" seti kaydedildi": "Saved set \"{0}\"",
+ "\"{0}\" setine geçildi": "Switched to set \"{0}\"",
+ "{0} içerik için güncelleme var": "Updates available for {0} items",
+ "H → Güncellemeler · oyun kapanmadan uygulanır": "H → Updates · applied without closing the game"
 }

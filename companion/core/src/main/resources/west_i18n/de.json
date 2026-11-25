@@ -637,5 +637,18 @@
  "Yeni oyun bu değişikliklerle açılamadı, oyunun korundu: {0}.": "Das neue Spiel konnte mit diesen Änderungen nicht starten; dein Spiel blieb erhalten: {0}.",
  "Sorunlu olanı geri al, sonra Tekrar dene. Bu değişiklikler sen karar verene dek uygulanmaz.": "Mach die fehlerhafte rückgängig, dann Erneut versuchen. Diese Änderungen werden erst angewendet, wenn du entscheidest.",
  "Bazı değişikliklerle oyun açılamadı": "Mit einigen Änderungen startete das Spiel nicht",
- "İncele": "Prüfen"
+ "İncele": "Prüfen",
+ "Setler": "Sets",
+ "Set, hangi modların ve paketlerin açık olacağını hatırlar (ör. PvP, Shader, Hafif). Sete geçince paketler hemen değişir, modlar oyun kapanmadan arka planda uygulanır.": "Ein Set merkt sich, welche Mods und Pakete aktiv sind (z. B. PvP, Shader, Leicht). Beim Wechsel ändern sich Pakete sofort; Mods werden im Hintergrund angewendet, ohne das Spiel zu schließen.",
+ "Henüz set yok. Modlarını istediğin gibi aç-kapat, sonra aşağıdan kaydet.": "Noch keine Sets. Schalte Mods nach Wunsch an oder aus und speichere unten.",
+ "Etkin": "Aktiv",
+ "Geç": "Wechseln",
+ "{0} açık · {1} kapalı": "{0} an · {1} aus",
+ "Yeni set adı (ör. PvP)": "Name des neuen Sets (z. B. PvP)",
+ "Şu anki düzeni kaydet": "Aktuelles Setup speichern",
+ "Bekleyen değişiklikler kayda girmez; önce uygula.": "Ausstehende Änderungen werden nicht gespeichert; wende sie zuerst an.",
+ "\"{0}\" seti kaydedildi": "Set „{0}“ gespeichert",
+ "\"{0}\" setine geçildi": "Zu Set „{0}“ gewechselt",
+ "{0} içerik için güncelleme var": "Updates für {0} Inhalte verfügbar",
+ "H → Güncellemeler · oyun kapanmadan uygulanır": "H → Updates · ohne Spiel zu schließen"
 }

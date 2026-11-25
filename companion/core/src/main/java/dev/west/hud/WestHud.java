@@ -69,6 +69,7 @@ public final class WestHud {
             safe("later", job);
         }
         safe("handoff", () -> dev.west.hud.mods.Handoff.tick(game));
+        safe("update-hint", () -> dev.west.hud.mods.UpdateHint.tick(game));
         // Launcher'ın yaptığı ayar değişikliklerini ~2 sn'de bir yakala
         if (++ticks % 40 == 0) safe("config", () -> config.reloadIfChanged(HUD));
         safe("stats", () -> stats.tick(game));
@@ -77,6 +78,7 @@ public final class WestHud {
 
     public static void renderHud(Gfx g) {
         safe("handoff-overlay", () -> dev.west.hud.mods.Handoff.overlay(g));
+        safe("update-hint", () -> dev.west.hud.mods.UpdateHint.overlay(g));
         if (config != null && !config.data.hudEnabled && !editorOpen) return;
         safe("hud", () -> HUD.render(g, game, theme(), editorOpen));
     }

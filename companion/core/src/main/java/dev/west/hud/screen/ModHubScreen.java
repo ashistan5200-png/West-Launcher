@@ -29,10 +29,10 @@ import java.util.Set;
  * kaldırılamadığı için) yeniden başlatınca uygulanır. Yeniden başlatma aynı dünyaya / sunucuya geri döner.
  */
 public final class ModHubScreen implements WestScreen {
-    private enum Tab { INSTALLED, BROWSE, UPDATES, PENDING }
+    private enum Tab { INSTALLED, BROWSE, SETS, UPDATES, PENDING }
 
-    private static final String[] TAB_NAMES = { Tr.t("Yüklü"), Tr.t("Keşfet"), Tr.t("Güncellemeler"), Tr.t("Bekleyenler") };
-    private static final Icon[] TAB_ICONS = { Icon.BOX, Icon.COMPASS, Icon.STAR, Icon.CLOCK };
+    private static final String[] TAB_NAMES = { Tr.t("Yüklü"), Tr.t("Keşfet"), Tr.t("Setler"), Tr.t("Güncellemeler"), Tr.t("Bekleyenler") };
+    private static final Icon[] TAB_ICONS = { Icon.BOX, Icon.COMPASS, Icon.LIST, Icon.STAR, Icon.CLOCK };
     private static final String[] FILTERS = { Tr.t("Tümü"), Tr.t("Modlar"), Tr.t("Paketler"), Tr.t("Shader") };
     private static final String[] KINDS = { "mod", "resourcepack", "shader", "datapack" };
     private static final String[] KIND_NAMES = { Tr.t("Mod"), Tr.t("Kaynak paketi"), Tr.t("Shader"), Tr.t("Veri paketi") };
@@ -71,6 +71,9 @@ public final class ModHubScreen implements WestScreen {
     /** İşlem sürerken satırlarda dönen gösterge */
     private final Set<String> busy = new LinkedHashSet<>();
     private boolean dropHover, goBack;
+    /** Setler: yeni set adı alanı */
+    private String setName = "";
+    private boolean setNameFocus;
     private static int lastTab;
 
     /** Onay penceresi */
@@ -78,7 +81,8 @@ public final class ModHubScreen implements WestScreen {
 
     public ModHubScreen(WestScreen back) {
         this.back = back;
-        this.tab = Tab.values()[lastTab];
+        this.tab = Tab.values()[Math.min(lastTab, Tab.values().length - 1)];
+        if (tab == Tab.SETS) api.loadSets();
         if (api.available()) {
             api.reload();
             if (!api.loaded) api.checkUpdates();
@@ -155,6 +159,7 @@ public final class ModHubScreen implements WestScreen {
             case BROWSE -> browse(cx, top + 2, cw);
             case UPDATES -> updates(cx, top + 2, cw);
             case PENDING -> pendingList(cx, top + 2, cw);
+            case SETS -> setsTab(cx, top + 2, cw);
         };
         ui.my = realMy;
         g.pop();
@@ -791,6 +796,82 @@ public final class ModHubScreen implements WestScreen {
         return y + h + 6;
     }
 
+    // ───────── Setler ─────────
+
+    private int setsTab(int x, int y, int w) {
+        Gfx g = ui.g;
+        Theme t = ui.t;
+        y = note(x, y, w, Icon.LIST, Tr.t("Set, hangi modların ve paketlerin açık olacağını hatırlar (ör. PvP, Shader, Hafif). Sete geçince paketler hemen değişir, modlar oyun kapanmadan arka planda uygulanır."));
+        if (!api.setsLoaded) return loadingText(x, y, Tr.t("Yükleniyor…"));
+        List<JsonObject> sets = api.sets;
+        if (sets.isEmpty()) {
+            g.text(Tr.t("Henüz set yok. Modlarını istediğin gibi aç-kapat, sonra aşağıdan kaydet."), x, y + 2, 0x99FFFFFF, false);
+            y += 18;
+        }
+        for (JsonObject m : sets) {
+            String id = ModBridge.str(m, "id"), name = ModBridge.str(m, "name");
+            boolean active = id.equals(api.activeSet);
+            int h = 30;
+            Ui.round(g, x, y, w, h, 8, active ? Theme.alpha(t.accent, 0x22) : 0xFF15161E);
+            Ui.outline(g, x, y, w, h, 8, active ? Theme.alpha(t.accent, 0x80) : 0x14FFFFFF);
+            letter(g, name, "mod", x + 6, y + 5, 20);
+            int on = m.get("enabled") instanceof JsonArray a ? a.size() : 0, off = m.get("disabled") instanceof JsonArray b ? b.size() : 0;
+            String lbl = active ? Tr.t("Etkin") : Tr.t("Geç");
+            int bw = g.textWidth(lbl) + 16;
+            g.textBold(ui.fit(name, w - 40 - bw - 16), x + 32, y + 6, 0xFFFFFFFF, false);
+            smallText(g, Tr.t("{0} açık · {1} kapalı", on, off), x + 32, y + 18, 0x88FFFFFF);
+            if (active) badge(g, lbl, x + w - bw - 8, y + 10, Theme.alpha(t.accent, 0x50), 0xFFFFFFFF);
+            else if (pill(lbl, x + w - bw - 8, y + 8, bw, 14, true)) switchSet(id, name);
+            y += h + 4;
+        }
+        // Yeni set: şu anki düzeni kaydet
+        y += 6;
+        String saveLbl = Tr.t("Şu anki düzeni kaydet");
+        int sbw = g.textWidth(saveLbl) + 16;
+        int fw = Math.min(220, w - sbw - 6);
+        boolean hv = ui.hover(x, y, fw, 18);
+        Ui.round(g, x, y, fw, 18, 6, setNameFocus ? 0x99000000 : hv ? 0x80000000 : 0x66000000);
+        Ui.outline(g, x, y, fw, 18, 6, setNameFocus ? Theme.alpha(t.accent, 0xCC) : 0x26FFFFFF);
+        boolean blink = ((int) (ui.time * 2)) % 2 == 0;
+        String shown = setName.isEmpty() && !setNameFocus ? Tr.t("Yeni set adı (ör. PvP)") : setName + (setNameFocus && blink ? "|" : "");
+        g.text(ui.fit(shown, fw - 12), x + 6, y + 5, setName.isEmpty() && !setNameFocus ? 0x77FFFFFF : 0xFFFFFFFF, false);
+        if (ui.clicked(x, y, fw, 18)) {
+            setNameFocus = true;
+            searchFocus = false;
+        } else if (!hv && ui.pressedAt(0, 0, 99999, 99999)) setNameFocus = false;
+        if (pill(saveLbl, x + fw + 6, y + 2, sbw, 14, !setName.isBlank())) saveSet();
+        smallText(g, Tr.t("Bekleyen değişiklikler kayda girmez; önce uygula."), x, y + 24, 0x77FFFFFF);
+        return y + 38;
+    }
+
+    private void saveSet() {
+        String n = setName.trim();
+        if (n.isEmpty()) {
+            setNameFocus = true;
+            return;
+        }
+        setNameFocus = false;
+        setName = "";
+        api.saveSet(n, null);
+    }
+
+    private void switchSet(String id, String name) {
+        if (api.handoffRunning()) {
+            api.say(Tr.t("Yeni mod düzeni zaten yükleniyor"));
+            return;
+        }
+        api.switchSet(id, (on, off, mods) -> WestHud.later(() -> {
+            List<String> packsOn = new ArrayList<>(), packsOff = new ArrayList<>();
+            for (String i : on) if (i.startsWith("resourcepacks/")) packsOn.add(i);
+            for (String i : off) if (i.startsWith("resourcepacks/")) packsOff.add(i);
+            // Kapatılacak paketler önce oyundan çıkarılır (dosya kilidi), sonra diskte kapatılır
+            if (!packsOn.isEmpty() || !packsOff.isEmpty()) game.applyResourcePacks(packsOn, packsOff, () -> { if (!off.isEmpty()) api.toggle(off, false, l -> {}); });
+            else if (!off.isEmpty()) api.toggle(off, false, l -> {});
+            if (mods > 0) askRestart();
+            else api.say(Tr.t("\"{0}\" setine geçildi", name));
+        }));
+    }
+
     // ───────── Keşfet ─────────
 
     private void newSearch() {
@@ -1242,6 +1323,7 @@ public final class ModHubScreen implements WestScreen {
     }
 
     private void setTab(Tab p) {
+        if (p == Tab.SETS) api.loadSets();
         if (tab == p) return;
         tab = p;
         lastTab = p.ordinal();
@@ -1330,6 +1412,12 @@ public final class ModHubScreen implements WestScreen {
             else detailId = null;
             return true;
         }
+        if (setNameFocus) {
+            if (key == 259 && !setName.isEmpty()) setName = setName.substring(0, setName.length() - 1);
+            else if (key == 257) saveSet();
+            else if (key == 256) setNameFocus = false;
+            return true;
+        }
         if (!searchFocus) return false;
         if (key == 259 && !search.isEmpty()) {
             search = search.substring(0, search.length() - 1);
@@ -1340,6 +1428,10 @@ public final class ModHubScreen implements WestScreen {
 
     @Override
     public void charTyped(char c) {
+        if (setNameFocus && c >= 32 && setName.length() < 32) {
+            setName += c;
+            return;
+        }
         if (searchFocus && c >= 32 && search.length() < 48) {
             search += c;
             typed();

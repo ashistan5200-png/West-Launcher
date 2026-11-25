@@ -282,6 +282,51 @@ public final class ModBridge {
         }, e -> fail.run());
     }
 
+    // ───── Mod setleri (launcher'daki "oyun modları") ─────
+
+    public volatile List<JsonObject> sets = List.of();
+    public volatile String activeSet;
+    public volatile boolean setsLoaded;
+
+    public void loadSets() {
+        get("/mods/sets", v -> {
+            JsonObject o = v.getAsJsonObject();
+            sets = list(o.getAsJsonArray("modes"));
+            activeSet = o.has("active") && !o.get("active").isJsonNull() ? o.get("active").getAsString() : null;
+            setsLoaded = true;
+        }, e -> setsLoaded = true);
+    }
+
+    /** Şu anki açık/kapalı düzeni yeni set olarak kaydet */
+    public void saveSet(String name, Runnable done) {
+        JsonObject b = new JsonObject();
+        b.addProperty("name", name);
+        b.addProperty("icon", "🎮");
+        post("/mods/sets/save", b, v -> {
+            say(Tr.t("\"{0}\" seti kaydedildi", name));
+            loadSets();
+            if (done != null) done.run();
+        }, null);
+    }
+
+    /** Sete geç: paketler hemen, modlar bekleyen değişiklik olarak. done(liveOn, liveOff, modDeğişikliği) */
+    public void switchSet(String id, SetSwitched done) {
+        JsonObject b = new JsonObject();
+        b.addProperty("modeId", id);
+        post("/mods/sets/switch", b, v -> {
+            JsonObject o = v.getAsJsonObject();
+            pending = list(o.getAsJsonArray("pending"));
+            activeSet = id;
+            reload();
+            done.accept(strings(o.getAsJsonArray("liveOn")), strings(o.getAsJsonArray("liveOff")), o.get("mods").getAsInt());
+        }, null);
+    }
+
+    @FunctionalInterface
+    public interface SetSwitched {
+        void accept(List<String> liveOn, List<String> liveOff, int modChanges);
+    }
+
     // ───── Mağaza ─────
 
     public void search(String q, String kind, String sort, String cat, int offset) {

@@ -884,6 +884,39 @@ pub async fn route(method: &str, path: &str, query: &str, body: &Value) -> Resul
             push_op(&dir, "install", mods, &label)?;
             Ok(json!({ "added": added, "pending": load_pending(&dir) }))
         }
+        // Mod setleri (launcher'daki "oyun modları"): listele, şu anki düzeni kaydet, oyun açıkken geç
+        ("GET", "/mods/sets") => {
+            let mut m = crate::instance::modes::load(&dir);
+            m.active = crate::instance::modes::matching(&dir, &game);
+            Ok(serde_json::to_value(m)?)
+        }
+        ("POST", "/mods/sets/save") => {
+            let name = body["name"].as_str().unwrap_or_default();
+            let icon = body["icon"].as_str().unwrap_or("🎮");
+            let m = crate::instance::modes::capture(&dir, &game, None, name, icon, true)?;
+            Ok(serde_json::to_value(m)?)
+        }
+        ("POST", "/mods/sets/switch") => {
+            let mode_id = body["modeId"].as_str().unwrap_or_default().to_string();
+            let (enable, disable) = crate::instance::modes::plan_switch(&dir, &game, &mode_id)?;
+            // Paketler ve shader'lar hemen (oyun yeniden yükler); modlar bekleyen değişiklik olur
+            let (mods_on, live_on): (Vec<String>, Vec<String>) = enable.into_iter().partition(|i| is_mod(i));
+            let (mods_off, live_off): (Vec<String>, Vec<String>) = disable.into_iter().partition(|i| is_mod(i));
+            if !live_on.is_empty() {
+                manage::set_enabled(&game, &live_on, true)?;
+            }
+            // Kapatılacak paketler oyunda açık olabilir (Windows kilidi): onları oyun bırakınca kapatır
+            let list = manage::list(&dir, &game);
+            let name = crate::instance::modes::load(&dir).modes.into_iter().find(|m| m.id == mode_id).map(|m| m.name).unwrap_or_default();
+            if !mods_on.is_empty() {
+                push_toggle(&dir, &game, &mods_on, true, &crate::i18n::tf("{0}: {1} açılacak", &[&name, &titles(&list, &mods_on)]))?;
+            }
+            if !mods_off.is_empty() {
+                push_toggle(&dir, &game, &mods_off, false, &crate::i18n::tf("{0}: {1} kapanacak", &[&name, &titles(&list, &mods_off)]))?;
+            }
+            crate::instance::modes::set_active(&dir, &mode_id)?;
+            Ok(json!({ "liveOn": live_on, "liveOff": live_off, "mods": mods_on.len() + mods_off.len(), "pending": load_pending(&dir) }))
+        }
         ("POST", "/mods/retry") => Ok(json!({ "pending": clear_failed(&dir, &game) })),
         ("GET", "/mods/pending") => Ok(json!({ "pending": load_pending(&dir) })),
         ("POST", "/mods/undo") => {

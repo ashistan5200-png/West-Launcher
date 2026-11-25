@@ -147,6 +147,37 @@ pub fn apply(instance_dir: &Path, game_dir: &Path, id: &str) -> Result<ApplyRepo
     Ok(ApplyReport { enabled: on.len(), disabled: off.len(), options_restored, missing: miss_a + miss_b })
 }
 
+/// Oyun açıkken moda geçiş planı: (açılacaklar, kapanacaklar). Yalnızca durumu gerçekten değişecek
+/// ve hâlâ var olan içerikler döner; dosyalara dokunmaz (oyun içi Mod Merkezi bunları uygular).
+pub fn plan_switch(instance_dir: &Path, game_dir: &Path, id: &str) -> Result<(Vec<String>, Vec<String>)> {
+    let m = load(instance_dir);
+    let mode = m.modes.iter().find(|x| x.id == id).ok_or_else(|| AppError::msg(crate::i18n::t("Mod bulunamadı")))?;
+    let (on_now, off_now) = current_state(game_dir);
+    let enable = mode.enabled.iter().filter(|i| off_now.contains(i)).cloned().collect();
+    let disable = mode.disabled.iter().filter(|i| on_now.contains(i)).cloned().collect();
+    Ok((enable, disable))
+}
+
+/// Diskteki gerçek durumla birebir örtüşen mod (yoksa None): "etkin" rozeti tahmin değil gerçek olsun
+pub fn matching(instance_dir: &Path, game_dir: &Path) -> Option<String> {
+    let (on_now, off_now) = current_state(game_dir);
+    load(instance_dir)
+        .modes
+        .into_iter()
+        .find(|m| m.enabled.iter().all(|i| !off_now.contains(i)) && m.disabled.iter().all(|i| !on_now.contains(i)))
+        .map(|m| m.id)
+}
+
+/// Aktif modu işaretle (geçiş oyun içinden yapıldığında)
+pub fn set_active(instance_dir: &Path, id: &str) -> Result<()> {
+    let mut m = load(instance_dir);
+    if !m.modes.iter().any(|x| x.id == id) {
+        return Err(AppError::msg(crate::i18n::t("Mod bulunamadı")));
+    }
+    m.active = Some(id.to_string());
+    save(instance_dir, &m)
+}
+
 pub fn delete(instance_dir: &Path, id: &str) -> Result<()> {
     let mut m = load(instance_dir);
     m.modes.retain(|x| x.id != id);
