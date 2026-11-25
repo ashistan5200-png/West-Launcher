@@ -298,3 +298,21 @@ main, footer { position: relative; z-index: 1; }
 .live-dot { display: inline-block; width: 8px; height: 8px; border-radius: 4px; background: var(--green); box-shadow: 0 0 0 0 rgb(112 196 142 / .6); animation: live 1.8s infinite; margin-right: 6px; vertical-align: 1px; }
 @keyframes live { 70% { box-shadow: 0 0 0 10px rgb(112 196 142 / 0); } 100% { box-shadow: 0 0 0 0 rgb(112 196 142 / 0); } }
 @media (max-width: 700px) { .community { grid-template-columns: 1fr; } }
+
+/* Tek sütunlu metin bölümü (görselsiz) */
+.spot.solo { grid-template-columns: 1fr; max-width: 760px; }
+/* Diğer özellikler: kart ızgarası yerine sade tanım listesi */
+.facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 48px; margin: 48px auto 0; max-width: 980px; }
+.facts > div { padding: 20px 0; border-top: 1px solid var(--line); }
+.facts dt { font-weight: 700; font-size: 17px; margin-bottom: 6px; }
+.facts dd { margin: 0; color: var(--muted); line-height: 1.6; }
+@media (max-width: 760px) { .facts { grid-template-columns: 1fr; } }
+.frame img, .window img { cursor: zoom-in; }
+/* Sürüm notu başlıkları dar ekranda taşmasın: başlık kısalır, tarih alta iner */
+.rel-head h3 { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 600px) {
+  .rel { padding-left: 34px; }
+  .rel-head { flex-wrap: wrap; padding: 14px 16px; gap: 6px 10px; }
+  .rel-head h3 { flex-basis: calc(100% - 40px); font-size: 17px; }
+  .rel-date { order: 3; }
+}

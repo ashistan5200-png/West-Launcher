@@ -115,26 +115,9 @@
       if (!e.isIntersecting) continue;
       e.target.classList.add("in");
       io.unobserve(e.target);
-      $$("[data-count]", e.target).forEach(count);
     }
   }, { threshold: 0.12, rootMargin: "0px 0px -40px 0px" });
   $$(".reveal").forEach((el) => io.observe(el));
-  function count(el) {
-    const end = +el.dataset.count, suf = el.dataset.suffix || "", start = performance.now(), dur = 1400;
-    const step = (now) => {
-      const k = Math.min(1, (now - start) / dur), e = 1 - Math.pow(1 - k, 3);
-      el.textContent = (suf === "%" ? "%" : "") + Math.round(end * e) + (suf === "%" ? "" : suf);
-      if (k < 1) requestAnimationFrame(step);
-    };
-    requestAnimationFrame(step);
-  }
-
-  // ───────── Özellik kartlarında ışık takibi ─────────
-  $$(".feature").forEach((f) => f.addEventListener("pointermove", (e) => {
-    const b = f.getBoundingClientRect();
-    f.style.setProperty("--mx", `${e.clientX - b.left}px`);
-    f.style.setProperty("--my", `${e.clientY - b.top}px`);
-  }));
 
   // ───────── Ashi'nin avı (canlandırma) ─────────
   const modsEl = $("#mods"), huntText = $("#huntText"), bar = $("#huntBar");
@@ -183,44 +166,9 @@
   }
   new IntersectionObserver(([e]) => { if (e.isIntersecting) hunt(); }, { threshold: 0.3 }).observe($("#hunt"));
 
-  // ───────── Ekran görüntüleri ─────────
-  const SHOTS = [
-    ["home", "Ana sayfa", "Kaldığın yerden devam et; son oynananlar ve Minecraft haberleri."],
-    ["library", "Kütüphane", "Her paketin kendi piksel manzarası ve kapağı."],
-    ["ingame", "Oyun içi ana menü", "Minecraft'ın içinde West ana menüsü: hızlı oyna, dünyalar, sosyal ve gardırop."],
-    ["shop", "West Coin mağazası", "Oynadıkça coin kazan; pelerin, kanat, şapka, tema ve West Plus al."],
-    ["wardrobe", "Gardırop", "Aksesuarlarını oyunun içinde tak, çıkar, dönen karakterinde gör."],
-    ["solver", "Ashi Çözücü", "Çökme raporunu okur, suçlu modu bulur, gerekirse modu kendisi onarır."],
-    ["invite", "Dünya davetleri", "Arkadaşının davetine tıkla, uygun instance'ı seç, doğrudan dünyasına gir."],
-    ["instance", "Instance", "Modlar tek tabloda: güncelle, aç-kapat, kaldır."],
-    ["browse", "Keşfet", "Sürüm, yükleyici, istemci/sunucu ve kategoriye göre süzme."],
-    ["gallery", "Mod galerisi", "Bir moda tıkla; ekran görüntüleri ve açıklaması."],
-    ["versions", "Sürüm notları", "Her güncellemede neyin değiştiği."],
-    ["social", "West sosyal", "Akış, anketler, gündem ve takip önerileri."],
-    ["profile", "Profil", "Biyografi, bağlantılar ve gönderiler."],
-    ["messages", "Mesajlar", "Arkadaşlarınla birebir sohbet."],
-    ["story", "Hikâyeler", "24 saatlik hikâyeler."],
-  ];
-  const tabs = $("#gTabs"), stage = $("#gStage"), cap = $("#gCap");
-  const imgs = SHOTS.map(([f, t]) => {
-    const im = new Image(); im.src = `assets/shots/${f}.webp`; im.alt = t; im.loading = "lazy"; stage.appendChild(im); return im;
-  });
-  let cur = 0, timer;
-  const show = (i) => {
-    cur = (i + SHOTS.length) % SHOTS.length;
-    imgs.forEach((im, j) => im.classList.toggle("on", j === cur));
-    $$("button", tabs).forEach((b, j) => b.classList.toggle("on", j === cur));
-    cap.innerHTML = `<b>${SHOTS[cur][1]}</b>${SHOTS[cur][2]}`;
-  };
-  SHOTS.forEach(([, t], i) => {
-    const b = document.createElement("button"); b.textContent = t;
-    b.onclick = () => { show(i); clearInterval(timer); };
-    tabs.appendChild(b);
-  });
-  show(0);
-  if (!reduce) timer = setInterval(() => show(cur + 1), 4500);
+  // ───────── Ekran görüntüsünü büyüt ─────────
   const lb = $("#lightbox");
-  stage.onclick = () => { $("img", lb).src = imgs[cur].src; lb.classList.add("on"); };
+  $$(".frame img, .window img").forEach((im) => (im.onclick = () => { $("img", lb).src = im.src; $("img", lb).alt = im.alt; lb.classList.add("on"); }));
   lb.onclick = () => lb.classList.remove("on");
   addEventListener("keydown", (e) => { if (e.key === "Escape") lb.classList.remove("on"); });
 
@@ -287,25 +235,4 @@
       $("#timeline").innerHTML = `<p class="muted center">Güncelleme notları şu an yüklenemedi. <a class="amber" href="https://github.com/${REPO}/releases" target="_blank" rel="noopener">GitHub'da gör →</a></p>`;
     });
 
-  // ───────── Canlı topluluk (yalnızca toplam sayılar ve gündem etiketleri) ─────────
-  const sbCount = async (path) => {
-    const resp = await fetch(`${SB}/rest/v1/${path}`, { headers: { apikey: SBKEY, Prefer: "count=exact", Range: "0-0" } });
-    if (!resp.ok) throw new Error(String(resp.status));
-    return +(resp.headers.get("content-range") || "").split("/")[1] || 0;
-  };
-  const setCount = (el, n) => { el.dataset.count = String(n); el.textContent = "0"; };
-  Promise.all([
-    sbCount("profiles?select=id"),
-    sbCount("posts?select=id&repost_of=is.null"),
-    sbCount(`posts?select=id&created_at=gt.${new Date(Date.now() - 86400e3).toISOString()}`),
-  ]).then(([users, posts, today]) => {
-    if (users < 1) return; // henüz kimse yoksa bölümü gösterme
-    setCount($("#cUsers"), users); setCount($("#cPosts"), posts); setCount($("#cToday"), today);
-    const sec = $("#topluluk");
-    sec.hidden = false;
-    $$(".reveal", sec).forEach((el) => io.observe(el));
-    return fetch(`${SB}/rest/v1/rpc/trending_tags`, { method: "POST", headers: { apikey: SBKEY, "Content-Type": "application/json" }, body: JSON.stringify({ p_limit: 12 }) })
-      .then((resp) => (resp.ok ? resp.json() : []))
-      .then((tags) => { $("#cTags").innerHTML = tags.map((t, i) => `<span style="animation-delay:${i * 0.05}s">#${esc(t.tag)}</span>`).join(""); });
-  }).catch(() => {});
 })();
