@@ -175,11 +175,111 @@ public final class ModBridge {
         }, null);
     }
 
-    /** Launcher'a "oyun kapanınca bekleyenleri uygula ve beni buraya geri aç" de; sonra oyun kapatılır */
-    public void restart(String join, Runnable then) {
+    // ───── Yeniden başlatma / devralma ─────
+
+    /** Devralma durumu (eski oyunda): null | starting | ready | failed */
+    public volatile String handoffState;
+    public volatile String handoffError;
+    public volatile long handoffSecs, handoffAt;
+    private volatile boolean polling;
+    private volatile long lastPoll;
+
+    /**
+     * Değişiklikleri uygula. Launcher yeni mod düzenini arka planda açabiliyorsa ("handoff") oyun açık kalır ve
+     * yeni oyun hazır olunca kapanır; açamıyorsa ("restart") onRestart çağrılır (oyun hemen kapatılmalı).
+     */
+    public void restart(String join, Runnable onRestart) {
         JsonObject b = new JsonObject();
         if (join != null) b.addProperty("join", join);
-        post("/mods/restart", b, v -> then.run(), null);
+        b.addProperty("handoff", true);
+        post("/mods/restart", b, v -> {
+            if ("handoff".equals(str(v.getAsJsonObject(), "mode"))) {
+                handoffState = "starting";
+                handoffError = null;
+                handoffSecs = 0;
+                handoffAt = System.currentTimeMillis();
+                polling = true;
+            } else onRestart.run();
+        }, null);
+    }
+
+    public boolean handoffRunning() {
+        return "starting".equals(handoffState) || "ready".equals(handoffState);
+    }
+
+    /** Açılamayan değişikliklerin işaretini kaldır (kapatılan jar'lar geri açılır) */
+    public void retry(Runnable then) {
+        post("/mods/retry", new JsonObject(), v -> {
+            pending = list(v.getAsJsonObject().getAsJsonArray("pending"));
+            reload();
+            if (then != null) then.run();
+        }, null);
+    }
+
+    /** Yeni oturumun açılamadığı değişikliklerin ilk sebebi (yoksa null) */
+    public String failedReason() {
+        for (JsonObject op : pending) {
+            JsonElement f = op.get("failed");
+            if (f != null && !f.isJsonNull()) return f.getAsString();
+        }
+        return null;
+    }
+
+    public void cancelHandoff() {
+        post("/mods/handoff/cancel", new JsonObject(), v -> {}, null);
+    }
+
+    /** Eski oyun: her tick çağrılır; saniyede bir devralma durumunu sorar. Hazırsa oyunu kapatır. */
+    public void pollRestart() {
+        if (!polling || !available()) return;
+        long now = System.currentTimeMillis();
+        if (now - lastPoll < 1000) return;
+        lastPoll = now;
+        get("/mods/restart-status", v -> {
+            JsonObject o = v.getAsJsonObject();
+            String st = str(o, "state");
+            if (o.has("secs")) handoffSecs = o.get("secs").getAsLong();
+            if (!st.equals(handoffState)) handoffAt = System.currentTimeMillis();
+            switch (st) {
+                case "ready", "go" -> {
+                    handoffState = "ready";
+                    polling = false;
+                    // Hazır: kısa bir uyarıdan sonra kaydedip kapan, yeni oyun buraya geçer
+                    new Thread(() -> {
+                        try {
+                            Thread.sleep(900);
+                        } catch (InterruptedException ignored) {
+                        }
+                        WestHud.later(WestHud.game::stopGame);
+                    }, "west-handoff").start();
+                }
+                case "failed" -> {
+                    handoffState = "failed";
+                    handoffError = o.has("error") && !o.get("error").isJsonNull() ? o.get("error").getAsString() : null;
+                    polling = false;
+                    say(Tr.t("Yeni mod düzeni açılamadı; oyunun açık kaldı"));
+                    reload();
+                }
+                case "none" -> {
+                    handoffState = null;
+                    polling = false;
+                }
+                default -> handoffState = st;
+            }
+        }, null);
+    }
+
+    /** Yeni oyun: ana menüye ulaştım */
+    public void handoffReady() {
+        post("/mods/handoff/ready", new JsonObject(), v -> {}, null);
+    }
+
+    /** Yeni oyun: eski oyun kapandı mı (state "go") ve nereye girilecek */
+    public void handoffStatus(java.util.function.BiConsumer<String, String> done, Runnable fail) {
+        get("/mods/handoff/status", v -> {
+            JsonObject o = v.getAsJsonObject();
+            done.accept(str(o, "state"), o.has("join") && !o.get("join").isJsonNull() ? o.get("join").getAsString() : null);
+        }, e -> fail.run());
     }
 
     // ───── Mağaza ─────

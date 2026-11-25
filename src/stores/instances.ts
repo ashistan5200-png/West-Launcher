@@ -105,6 +105,11 @@ export const useInstances = create<InstancesState>((set, get) => ({
           void get().launch(instanceId, useSettings.getState().offlineName, join ?? undefined).catch(() => undefined);
         }, 400);
       }),
+      // Mod merkezi yeni oturumu hazır komutla ya da arka planda açtı: "çalışıyor" durumunu güncelle
+      listen<{ instanceId: string; pid: number }>("live-relaunched", (e) => {
+        const { instanceId, pid } = e.payload;
+        set((s) => ({ running: { ...s.running, [instanceId]: pid } }));
+      }),
       events.onProgress((p) => set((s) => ({ progress: { ...s.progress, [p.task]: p } }))),
       events.onGameLog((l) => {
         // Pencere gizli/küçükken kare çizilmez (flush bekler): birikim sınırlı kalsın

@@ -162,24 +162,34 @@ pub fn build_args(paths: &Paths, version: &VersionJson, libs: &ResolvedLibraries
     if opts.fullscreen && !game_args.iter().any(|a| a == "--fullscreen") {
         game_args.push("--fullscreen".into());
     }
-    if let Some(world) = opts.join_server.as_deref().and_then(|s| s.strip_prefix("world:")) {
-        // Tek oyunculu dünyaya doğrudan gir (oyun içi mod merkezinin "yeniden başlat ve dön" özelliği)
-        game_args.extend(["--quickPlaySingleplayer".into(), world.to_string()]);
-    } else if let Some(server) = &opts.join_server {
-        let modern = version.arguments.as_ref().map(|a| {
-            a.game.iter().any(|g| matches!(g, Argument::Ruled { value: ArgValue::Many(v), .. } if v.iter().any(|s| s == "--quickPlayMultiplayer")))
-        });
-        if modern == Some(true) {
-            game_args.extend(["--quickPlayMultiplayer".into(), server.clone()]);
-        } else {
-            let (host, port) = server.split_once(':').unwrap_or((server.as_str(), "25565"));
-            game_args.extend(["--server".into(), host.into(), "--port".into(), port.into()]);
-        }
-    }
+    game_args.extend(join_args(supports_quick_play(version), opts.join_server.as_deref()));
 
     args.push(main_class);
     args.extend(game_args);
     Ok(args)
+}
+
+/// Sürüm 1.20+ quickPlay argümanlarını destekliyor mu
+pub fn supports_quick_play(version: &VersionJson) -> bool {
+    version
+        .arguments
+        .as_ref()
+        .map(|a| a.game.iter().any(|g| matches!(g, Argument::Ruled { value: ArgValue::Many(v), .. } if v.iter().any(|s| s == "--quickPlayMultiplayer"))))
+        .unwrap_or(false)
+}
+
+/// Açılışta doğrudan bir dünyaya ("world:<klasör>") ya da sunucuya ("adres[:port]") girmek için oyun argümanları
+pub fn join_args(quick_play: bool, join: Option<&str>) -> Vec<String> {
+    let Some(join) = join.map(str::trim).filter(|j| !j.is_empty()) else { return vec![] };
+    if let Some(world) = join.strip_prefix("world:") {
+        // Tek oyunculu dünyaya doğrudan gir (oyun içi mod merkezinin "yeniden başlat ve dön" özelliği)
+        return vec!["--quickPlaySingleplayer".into(), world.to_string()];
+    }
+    if quick_play {
+        return vec!["--quickPlayMultiplayer".into(), join.to_string()];
+    }
+    let (host, port) = join.split_once(':').unwrap_or((join, "25565"));
+    vec!["--server".into(), host.into(), "--port".into(), port.into()]
 }
 
 /// Konsolda erişim token'ını asla göstermemek için.
@@ -301,7 +311,18 @@ pub async fn spawn(java: &Path, args: Vec<String>, cwd: &Path, wrapper: &str, on
 
 #[cfg(test)]
 mod hook_tests {
-    use super::split_command;
+    use super::{join_args, split_command};
+
+    #[test]
+    fn join_args_for_worlds_and_servers() {
+        assert!(join_args(true, None).is_empty());
+        assert!(join_args(true, Some("  ")).is_empty());
+        assert_eq!(join_args(true, Some("world:New World")), vec!["--quickPlaySingleplayer", "New World"]);
+        assert_eq!(join_args(true, Some("mc.example.net")), vec!["--quickPlayMultiplayer", "mc.example.net"]);
+        assert_eq!(join_args(false, Some("mc.example.net:25570")), vec!["--server", "mc.example.net", "--port", "25570"]);
+        assert_eq!(join_args(false, Some("mc.example.net")), vec!["--server", "mc.example.net", "--port", "25565"]);
+    }
+
     #[test]
     fn splits_wrapper_commands() {
         assert_eq!(split_command("gamemoderun"), vec!["gamemoderun"]);

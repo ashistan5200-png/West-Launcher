@@ -180,7 +180,7 @@ public final class ModHubScreen implements WestScreen {
             ui.suspended = false;
             dialog(sw, sh);
         }
-        toast(g, sw, py + ph);
+        toast(g, sw, py + ph - footH);
         ui.end();
     }
 
@@ -376,6 +376,7 @@ public final class ModHubScreen implements WestScreen {
             }
             return y + 40;
         }
+        y = handoffCard(x, y, w);
         if (filter == 3 && !game.shadersSupported()) {
             y = note(x, y, w, Icon.SUN, Tr.t("Shader'ları canlı açmak için Iris gerekli. Keşfet → Mod'dan Iris'i kurabilirsin."));
         }
@@ -444,9 +445,11 @@ public final class ModHubScreen implements WestScreen {
                 case "disable" -> Tr.t("kapanacak");
                 case "delete" -> Tr.t("silinecek");
                 case "update" -> Tr.t("güncellenecek");
+                case "failed" -> Tr.t("açılamadı");
                 default -> Tr.t("yeni");
             };
-            bx = badge(g, s, bx, y + 6, 0x40E8A33D, 0xFFF2C27A) + 4;
+            boolean bad = op.equals("failed");
+            bx = badge(g, s, bx, y + 6, bad ? 0x40E5566E : 0x40E8A33D, bad ? 0xFFF08A9A : 0xFFF2C27A) + 4;
         } else if (k.equals("mod") && ModBridge.bool(it, "enabled") && !loadedNow(it) && bx + 60 < right) {
             bx = badge(g, Tr.t("yeniden başlatınca"), bx, y + 6, 0x40E8A33D, 0xFFF2C27A) + 4;
         } else if (hasUpdate && bx + 40 < right) {
@@ -663,6 +666,7 @@ public final class ModHubScreen implements WestScreen {
     private int pendingList(int x, int y, int w) {
         Gfx g = ui.g;
         Theme t = ui.t;
+        y = handoffCard(x, y, w);
         List<JsonObject> ops = api.pending;
         if (ops.isEmpty()) {
             Icons.draw(g, Icon.CHECK, x, y + 4, 12, 0xFF4ADE80);
@@ -670,7 +674,10 @@ public final class ModHubScreen implements WestScreen {
             smallText(g, Tr.t("Mod açma, kapama, silme ve kurma işlemleri burada toplanır; tek tıkla uygulanır."), x, y + 22, 0x77FFFFFF);
             return y + 36;
         }
-        y = note(x, y, w, Icon.SHIELD, Tr.t("Modlar oyun çalışırken güvenle değiştirilemez. Uygula'ya basınca oyun kaydedilip kapanır, değişiklikler uygulanır ve aynı yere geri dönersin."));
+        String failed = api.failedReason();
+        if (failed != null) {
+            y = note(x, y, w, Icon.CLOSE, Tr.t("Yeni oyun bu değişikliklerle açılamadı, oyunun korundu: {0}.", failed) + " " + Tr.t("Sorunlu olanı geri al, sonra Tekrar dene. Bu değişiklikler sen karar verene dek uygulanmaz."));
+        } else y = note(x, y, w, Icon.SHIELD, Tr.t("Uygula'ya basınca oyun kapanmaz: yeni mod düzeni arka planda yüklenir, hazır olunca aynı yere geçersin. Yeni düzen çökerse bu oyun açık kalır."));
         for (int i = 0; i < ops.size(); i++) {
             JsonObject op = ops.get(i);
             int h = 28;
@@ -684,7 +691,9 @@ public final class ModHubScreen implements WestScreen {
                 case "disable" -> Icon.PAUSE;
                 default -> Icon.PLAY;
             };
-            int col = k.equals("delete") ? 0xFFE5566E : k.equals("disable") ? 0xFF9A9DA6 : t.accent | 0xFF000000;
+            boolean bad = op.has("failed") && !op.get("failed").isJsonNull();
+            if (bad) Ui.outline(g, x, y, w, h, 8, 0x80E5566E);
+            int col = bad || k.equals("delete") ? 0xFFE5566E : k.equals("disable") ? 0xFF9A9DA6 : t.accent | 0xFF000000;
             Ui.round(g, x + 6, y + 5, 18, 18, 5, Theme.alpha(col, 0x30));
             Icons.draw(g, ic, x + 10, y + 9, 10, col);
             String lbl = Tr.t("Geri al");
@@ -697,8 +706,13 @@ public final class ModHubScreen implements WestScreen {
             y += h + 4;
         }
         y += 4;
-        if (ui.button(Tr.t("Uygula ve yeniden başlat"), x, y, 160, 20, true)) askRestart();
-        smallText(g, Tr.t("Ya da oyunu kapattığında otomatik uygulanır."), x, y + 26, 0x88FFFFFF);
+        if (!api.handoffRunning() && failed != null) {
+            if (ui.button(Tr.t("Tekrar dene"), x, y, 160, 20, true)) {
+                game.click();
+                api.retry(() -> WestHud.later(this::askRestart));
+            }
+        } else if (!api.handoffRunning() && ui.button(Tr.t("Uygula"), x, y, 160, 20, true)) askRestart();
+        if (failed == null) smallText(g, Tr.t("Ya da oyunu kapattığında otomatik uygulanır."), x, y + 26, 0x88FFFFFF);
         return y + 40;
     }
 
@@ -708,27 +722,73 @@ public final class ModHubScreen implements WestScreen {
         Ui.round(g, x, y, w, h, 8, Theme.alpha(t.accent, 0x28));
         Ui.outline(g, x, y, w, h, 8, Theme.alpha(t.accent, 0x70));
         Icons.draw(g, Icon.CLOCK, x + 8, y + (h - 10) / 2, 10, t.accent | 0xFF000000);
-        String lbl = Tr.t("Uygula ve yeniden başlat");
+        String lbl = api.handoffRunning() ? Tr.t("Yükleniyor… {0} sn", api.handoffSecs) : api.failedReason() != null ? Tr.t("İncele") : Tr.t("Uygula");
         int bw = g.textWidth(lbl) + 14;
         String see = Tr.t("Gör");
         int sw = g.textWidth(see) + 12;
-        String s = Tr.t("{0} bekleyen değişiklik", api.pending.size());
+        String s = api.failedReason() != null ? Tr.t("Bazı değişikliklerle oyun açılamadı") : Tr.t("{0} bekleyen değişiklik", api.pending.size());
         g.text(ui.fit(s, w - 30 - bw - sw - 16), x + 24, y + (h - 8) / 2, 0xFFFFFFFF, false);
         if (pill(see, x + w - bw - sw - 12, y + (h - 14) / 2, sw, 14, false)) setTab(Tab.PENDING);
-        if (pill(lbl, x + w - bw - 6, y + (h - 14) / 2, bw, 14, true)) askRestart();
+        if (pill(lbl, x + w - bw - 6, y + (h - 14) / 2, bw, 14, true)) {
+            if (api.handoffRunning() || api.failedReason() != null) setTab(Tab.PENDING);
+            else askRestart();
+        }
     }
 
     private void askRestart() {
         game.click();
+        if (api.handoffRunning()) {
+            api.say(Tr.t("Yeni mod düzeni zaten yükleniyor"));
+            return;
+        }
         String world = game.worldFolder(), server = game.serverAddress();
-        String where = world != null ? Tr.t("Dünya kaydedilecek ve aynı dünyaya geri döneceksin.") : server != null ? Tr.t("Sunucuya ({0}) otomatik yeniden bağlanacaksın.", server) : "";
+        String where = world != null ? Tr.t("Hazır olunca dünyan kaydedilir ve aynı dünyaya geçersin.") : server != null ? Tr.t("Hazır olunca sunucuya ({0}) otomatik yeniden bağlanırsın.", server) : "";
         List<String> names = new ArrayList<>();
         for (JsonObject op : api.pending) names.add(ModBridge.str(op, "label"));
-        dialog = new Dialog(Tr.t("Değişiklikler uygulansın mı?"), (Tr.t("Oyun kapanacak, değişiklikler uygulanacak ve oyun yeniden açılacak.") + " " + where).strip(), names, Tr.t("Uygula"), false, () -> {
-            String join = world != null ? "world:" + world : server;
-            api.say(Tr.t("Yeniden başlatılıyor…"));
-            api.restart(join, () -> WestHud.later(game::stopGame));
-        });
+        dialog = new Dialog(Tr.t("Değişiklikler uygulansın mı?"),
+                (Tr.t("Oyun kapanmaz: yeni mod düzeni arka planda yüklenirken oynamaya devam edersin.") + " " + where + " "
+                        + Tr.t("Yeni düzen çökerse bu oyun açık kalır ve hiçbir şey değişmez.")).replace("  ", " ").strip(),
+                names, Tr.t("Uygula"), false, () -> {
+                    String join = world != null ? "world:" + world : server;
+                    api.restart(join, () -> {
+                        // Yeterli bellek yoksa: klasik ama hızlı yeniden başlatma
+                        api.say(Tr.t("Yeniden başlatılıyor…"));
+                        WestHud.later(game::stopGame);
+                    });
+                    api.say(Tr.t("Yeni mod düzeni hazırlanıyor…"));
+                    close();
+                });
+    }
+
+    /** Devralma sürüyorsa ya da çöktüyse durum kartı; içerik y'sini döner */
+    private int handoffCard(int x, int y, int w) {
+        Gfx g = ui.g;
+        Theme t = ui.t;
+        String st = api.handoffState;
+        if (st == null) return y;
+        boolean failed = "failed".equals(st);
+        if (!failed && !api.handoffRunning()) return y;
+        String msg = failed ? Tr.t("Yeni mod düzeni açılamadı; oyunun açık kaldı, değişiklikler uygulanmadı.")
+                : "ready".equals(st) ? Tr.t("Yeni mod düzeni hazır · geçiliyor…") : Tr.t("Yeni mod düzeni arka planda yükleniyor · {0} sn", api.handoffSecs);
+        List<String> lines = wrap(g, msg, w - 100);
+        if (failed && api.handoffError != null) lines.addAll(wrap(g, api.handoffError, w - 100));
+        int h = 12 + lines.size() * 11;
+        Ui.round(g, x, y, w, h, 8, failed ? 0x30E5566E : Theme.alpha(t.accent, 0x26));
+        Ui.outline(g, x, y, w, h, 8, failed ? 0x80E5566E : Theme.alpha(t.accent, 0x80));
+        if (failed) Icons.draw(g, Icon.CLOSE, x + 8, y + 7, 9, 0xFFE5566E);
+        else spinner(g, x + 12, y + 11, t.accent | 0xFF000000);
+        int ly = y + 7;
+        for (int i = 0; i < lines.size(); i++) {
+            g.text(lines.get(i), x + 24, ly, i == 0 ? 0xFFFFFFFF : 0xFFF08A9A, false);
+            ly += 11;
+        }
+        String b = failed ? Tr.t("Tamam") : Tr.t("İptal");
+        int bw = g.textWidth(b) + 14;
+        if (pill(b, x + w - bw - 8, y + (h - 14) / 2, bw, 14, false)) {
+            if (failed) api.handoffState = null;
+            else api.cancelHandoff();
+        }
+        return y + h + 6;
     }
 
     // ───────── Keşfet ─────────
@@ -1176,7 +1236,7 @@ public final class ModHubScreen implements WestScreen {
     private String pendingKind(String id) {
         String kind = null;
         for (JsonObject op : api.pending) {
-            if (op.get("ids") instanceof JsonArray a) for (JsonElement e : a) if (id.equals(e.getAsString())) kind = ModBridge.str(op, "kind");
+            if (op.get("ids") instanceof JsonArray a) for (JsonElement e : a) if (id.equals(e.getAsString())) kind = op.has("failed") && !op.get("failed").isJsonNull() ? "failed" : ModBridge.str(op, "kind");
         }
         return kind;
     }

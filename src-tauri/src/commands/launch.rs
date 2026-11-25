@@ -1,7 +1,7 @@
 use super::{progress_emitter, EV_GAME_EXIT, EV_GAME_LOG};
 use crate::core::auth::AuthSession;
 use crate::core::install::{extract_natives, install_version};
-use crate::core::launch::{build_args, redact, spawn, LaunchOptions};
+use crate::core::launch::{build_args, join_args, redact, spawn, supports_quick_play, LaunchOptions};
 use crate::core::manifest::{ensure_vanilla_json, resolve_version};
 use crate::error::{AppError, Result};
 use crate::instance::{loaders::install_loader, InstanceManager};
@@ -69,6 +69,7 @@ pub async fn start_game(app: &AppHandle, id: &str, auth: AuthSession, join_serve
     // Önceki oturum çöktüyse oyun içi mod merkezinde kalan bekleyen değişiklikleri şimdi uygula
     if mode == LaunchMode::Play {
         let _ = crate::livemods::apply_pending(&state, id).await;
+        crate::livemods::clean_staged(&state.paths.instance_dir(id));
     }
     let mgr = InstanceManager::new(&state.paths);
     let mut inst = mgr.get(id)?;
@@ -182,7 +183,7 @@ pub async fn start_game(app: &AppHandle, id: &str, auth: AuthSession, join_serve
 
     let token = auth.access_token.clone();
     let game_dir = state.paths.instance_game_dir(id);
-    let opts = LaunchOptions {
+    let mut opts = LaunchOptions {
         java: java.path.clone(),
         game_dir: game_dir.clone(),
         natives_dir: natives,
@@ -205,14 +206,100 @@ pub async fn start_game(app: &AppHandle, id: &str, auth: AuthSession, join_serve
         auth,
         join_server,
     };
-    let args = build_args(&state.paths, &version, &libs, &opts)?;
-    tracing::info!("başlatılıyor {id}: {} {}", java.path.display(), redact(&args, &token).join(" "));
+    // Katılma argümanları sona eklenir; önbellekteki komut onlarsız saklanır ki hızlı yeniden başlatmada hedef değişebilsin
+    let join = opts.join_server.take();
+    let base_args = build_args(&state.paths, &version, &libs, &opts)?;
+    let quick_play = supports_quick_play(&version);
 
-    // 5) Spawn + olay köprüsü
+    let hook_env = hook_env(&state, &inst, &java.path);
+    let (pre, post, wrapper) = {
+        let g = &state.settings.read().game;
+        (g.pre_launch.trim().to_string(), g.post_exit.trim().to_string(), g.wrapper.trim().to_string())
+    };
+    // Başlatma öncesi komut (yalnızca oyna): hata dönerse oyun açılmaz
+    if mode == LaunchMode::Play && !pre.is_empty() {
+        run_hook(&pre, &hook_env, &game_dir, true).await?;
+    }
+    let loader = format!("{:?}", inst.loader.kind);
+    let prepared = Prepared {
+        java: java.path.clone(),
+        args: base_args,
+        quick_play,
+        game_dir,
+        wrapper: if mode == LaunchMode::Play { wrapper } else { String::new() },
+        token,
+        post,
+        hook_env,
+        inst_name: inst.name.clone(),
+        presence: format!("{} {} · {} mod", loader, inst.mc_version, mod_count),
+        memory_mb: profile.memory_mb as u64,
+    };
+    if mode == LaunchMode::Play {
+        crate::livemods::remember(id, prepared.clone());
+    }
+    let pid = run_prepared(app, id, mode, &prepared, join.as_deref(), &[], Role::Normal).await?;
+    if mode == LaunchMode::Play {
+        let behavior = state.settings.read().launch_behavior.clone();
+        if let Some(w) = app.get_webview_window("main") {
+            match behavior.as_str() {
+                "minimize" => { let _ = w.minimize(); }
+                "hide" => { let _ = w.hide(); }
+                _ => {}
+            }
+        }
+    }
+    Ok(pid)
+}
+
+/// Bir oyunu yeniden çalıştırmak için gereken her şey. İlk başlatmada hazırlanır; oyun içi mod merkezinin
+/// yeniden başlatması bunu kullanır, böylece Java/dosya doğrulama/indirme adımları tekrarlanmaz.
+#[derive(Clone)]
+pub struct Prepared {
+    pub java: PathBuf,
+    /// Katılma (quickPlay) argümanları olmadan tam komut
+    pub args: Vec<String>,
+    pub quick_play: bool,
+    pub game_dir: PathBuf,
+    pub wrapper: String,
+    pub token: String,
+    pub post: String,
+    pub hook_env: Vec<(String, String)>,
+    pub inst_name: String,
+    pub presence: String,
+    pub memory_mb: u64,
+}
+
+/// Çalıştırılan sürecin rolü
+#[derive(Clone)]
+pub enum Role {
+    /// Sıradan oyun: instance'ın çalışan oyunu olarak kaydedilir
+    Normal,
+    /// Devralma: eski oyun açıkken arka planda açılır; eski oyun kapanınca "terfi" eder ve normal oyun olur.
+    /// Terfiden önce kapanırsa (ör. yeni mod düzeni çöktü) eski oyuna dokunulmaz.
+    Handoff(Arc<crate::livemods::Handoff>),
+}
+
+/// Hazır komutu çalıştırır, günlük ve çıkış olaylarını bağlar.
+pub async fn run_prepared(app: &AppHandle, id: &str, mode: LaunchMode, p: &Prepared, join: Option<&str>, extra_jvm: &[String], role: Role) -> Result<u32> {
+    let state = app.state::<AppState>();
+    let mut args: Vec<String> = extra_jvm.to_vec();
+    args.extend(p.args.iter().cloned());
+    args.extend(join_args(p.quick_play, join));
+    tracing::info!("başlatılıyor {id}: {} {}", p.java.display(), redact(&args, &p.token).join(" "));
+
+    // Spawn + olay köprüsü
     let log_app = app.clone();
     let log_id = id.to_string();
+    let token = p.token.clone();
+    let log_role = role.clone();
     let on_log = Arc::new(move |line: String, stderr: bool| {
         let safe = if token.len() > 8 { line.replace(&token, "********") } else { line };
+        if let Role::Handoff(h) = &log_role {
+            if !h.promoted() {
+                h.log(safe);
+                return;
+            }
+        }
         let st = log_app.state::<AppState>();
         if let Some(g) = st.running.lock().get_mut(&log_id) {
             if g.log_tail.len() >= LOG_TAIL {
@@ -229,16 +316,20 @@ pub async fn start_game(app: &AppHandle, id: &str, auth: AuthSession, join_serve
         let _ = log_app.emit(EV_GAME_LOG, LogLine { instance_id: &log_id, line: safe, stderr });
     });
 
-    let hook_env = hook_env(&state, &inst, &java.path);
-    let (pre, post, wrapper) = {
-        let g = &state.settings.read().game;
-        (g.pre_launch.trim().to_string(), g.post_exit.trim().to_string(), g.wrapper.trim().to_string())
-    };
     let exit_app = app.clone();
     let exit_id = id.to_string();
-    let exit_game_dir = game_dir.clone();
-    let exit_env = hook_env.clone();
+    let exit_game_dir = p.game_dir.clone();
+    let exit_env = p.hook_env.clone();
+    let post = p.post.clone();
+    let exit_role = role.clone();
     let on_exit = Arc::new(move |code: Option<i32>| {
+        if let Role::Handoff(h) = &exit_role {
+            if !h.promoted() {
+                // Yeni mod düzeni açılamadı: eski oyun açık kalır, bekleyen değişiklikler uygulanmaz
+                crate::livemods::handoff_failed(&exit_app, &exit_id, h, code);
+                return;
+            }
+        }
         let st = exit_app.state::<AppState>();
         let game = st.running.lock().remove(&exit_id);
         let secs = game.as_ref().map(|g| g.started.elapsed().as_secs()).unwrap_or(0);
@@ -249,11 +340,9 @@ pub async fn start_game(app: &AppHandle, id: &str, auth: AuthSession, join_serve
         if let Some(w) = st.watchers.lock().get(&exit_id) {
             let _ = w.send(GameSignal::Exit(code));
         }
-        // Oyun içi mod merkezinde bekleyen değişiklikleri uygula (istenmişse yeniden başlat)
-        if mode == LaunchMode::Play {
-            crate::livemods::on_game_exit(&exit_id);
-        }
-        if mode == LaunchMode::Play && !post.is_empty() {
+        // Oyun içi mod merkezi: bekleyen değişiklikleri uygula; devralma ya da yeniden başlatma varsa sürdür
+        let relaunching = mode == LaunchMode::Play && crate::livemods::on_game_exit(&exit_id);
+        if mode == LaunchMode::Play && !post.is_empty() && !relaunching {
             let (cmd, env, dir) = (post.clone(), exit_env.clone(), exit_game_dir.clone());
             tauri::async_runtime::spawn(async move {
                 if let Err(e) = run_hook(&cmd, &env, &dir, false).await {
@@ -262,7 +351,7 @@ pub async fn start_game(app: &AppHandle, id: &str, auth: AuthSession, join_serve
             });
         }
         // "Gizle" seçiliyse oyun kapanınca launcher geri gelir
-        if mode == LaunchMode::Play && st.running.lock().is_empty() && st.settings.read().launch_behavior == "hide" {
+        if mode == LaunchMode::Play && !relaunching && st.running.lock().is_empty() && st.settings.read().launch_behavior == "hide" {
             if let Some(w) = exit_app.get_webview_window("main") {
                 let _ = w.show();
                 let _ = w.unminimize();
@@ -270,7 +359,7 @@ pub async fn start_game(app: &AppHandle, id: &str, auth: AuthSession, join_serve
             }
         }
         let crashed = matches!(code, Some(c) if c != 0 && c != -1);
-        if mode == LaunchMode::Play && st.running.lock().is_empty() {
+        if mode == LaunchMode::Play && !relaunching && st.running.lock().is_empty() {
             st.discord.send(crate::discord::Presence::Idle);
         }
         let _ = exit_app.emit(
@@ -286,44 +375,38 @@ pub async fn start_game(app: &AppHandle, id: &str, auth: AuthSession, join_serve
         );
     });
 
-    // Başlatma öncesi komut (yalnızca oyna): hata dönerse oyun açılmaz
-    if mode == LaunchMode::Play && !pre.is_empty() {
-        run_hook(&pre, &hook_env, &game_dir, true).await?;
+    let normal = matches!(role, Role::Normal);
+    // Yarış durumunu önlemek için kaydı spawn'dan önce aç (devralma süreci terfi edince kaydedilir)
+    if normal {
+        state.running.lock().insert(
+            id.to_string(),
+            RunningGame { pid: 0, started: std::time::Instant::now(), kill: None, log_tail: Default::default() },
+        );
     }
-
-    // Yarış durumunu önlemek için kaydı spawn'dan önce aç
-    state.running.lock().insert(
-        id.to_string(),
-        RunningGame { pid: 0, started: std::time::Instant::now(), kill: None, log_tail: Default::default() },
-    );
-    let handle = match spawn(&java.path, args, &game_dir, if mode == LaunchMode::Play { &wrapper } else { "" }, on_log, on_exit).await {
+    let handle = match spawn(&p.java, args, &p.game_dir, &p.wrapper, on_log, on_exit).await {
         Ok(h) => h,
         Err(e) => {
-            state.running.lock().remove(id);
+            if normal {
+                state.running.lock().remove(id);
+            }
             return Err(e);
         }
     };
-    if let Some(g) = state.running.lock().get_mut(id) {
-        g.pid = handle.pid;
-        g.kill = Some(handle.kill);
-    }
-    if mode == LaunchMode::Play {
-        let loader = format!("{:?}", inst.loader.kind).replace("NeoForge", "NeoForge");
-        state.discord.send(crate::discord::Presence::Playing {
-            instance: inst.name.clone(),
-            detail: format!("{} {} · {} mod", loader, inst.mc_version, mod_count),
-            started_unix: chrono::Utc::now().timestamp(),
-        });
-    }
-    if mode == LaunchMode::Play {
-        let behavior = state.settings.read().launch_behavior.clone();
-        if let Some(w) = app.get_webview_window("main") {
-            match behavior.as_str() {
-                "minimize" => { let _ = w.minimize(); }
-                "hide" => { let _ = w.hide(); }
-                _ => {}
+    match &role {
+        Role::Normal => {
+            if let Some(g) = state.running.lock().get_mut(id) {
+                g.pid = handle.pid;
+                g.kill = Some(handle.kill);
             }
         }
+        Role::Handoff(h) => h.attach(handle.pid, handle.kill),
+    }
+    if mode == LaunchMode::Play {
+        state.discord.send(crate::discord::Presence::Playing {
+            instance: p.inst_name.clone(),
+            detail: p.presence.clone(),
+            started_unix: chrono::Utc::now().timestamp(),
+        });
     }
     Ok(handle.pid)
 }

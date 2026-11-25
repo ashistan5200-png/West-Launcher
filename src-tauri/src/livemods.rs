@@ -16,15 +16,25 @@ use crate::instance::{Instance, InstanceManager};
 use crate::state::AppState;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use std::collections::{BTreeSet, HashMap, HashSet};
+use crate::commands::launch::{Prepared, Role};
+use crate::state::RunningGame;
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque};
 use std::path::{Path, PathBuf};
-use std::sync::{Mutex, OnceLock};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+use std::sync::{Arc, Mutex, OnceLock};
+use std::time::Instant;
 use tauri::{AppHandle, Emitter, Manager};
 
 static APP: OnceLock<AppHandle> = OnceLock::new();
 /// instance → yeniden başlatma planı (Some(katılma hedefi) / None: ana menü)
 static RESTART: OnceLock<Mutex<HashMap<String, Option<String>>>> = OnceLock::new();
 static ICONS: OnceLock<Mutex<HashMap<String, String>>> = OnceLock::new();
+static LAST: OnceLock<Mutex<HashMap<String, Prepared>>> = OnceLock::new();
+static HANDOFFS: OnceLock<Mutex<HashMap<String, Arc<Handoff>>>> = OnceLock::new();
+/// Devralma oyununun mods klasörü (instance klasöründe)
+const STAGED_DIR: &str = "staged-mods";
+/// Yeni oturum hazır komutla açıldı (launcher arayüzü "çalışıyor" durumunu günceller)
+pub const EV_RELAUNCHED: &str = "live-relaunched";
 
 pub const EV_RELAUNCH: &str = "live-relaunch";
 const PENDING_FILE: &str = "west-pending.json";
@@ -47,6 +57,9 @@ pub struct Op {
     pub ids: Vec<String>,
     pub label: String,
     pub at: i64,
+    /// Yeni oturum bu değişikliklerle açılamadıysa sebebi: normal başlatmada uygulanmaz, devralmaya katılmaz
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub failed: Option<String>,
 }
 
 fn pending_path(dir: &Path) -> PathBuf {
@@ -75,6 +88,7 @@ pub async fn apply_pending(state: &AppState, id: &str) -> Vec<String> {
     if ops.is_empty() {
         return errors;
     }
+    let (failed, ops): (Vec<Op>, Vec<Op>) = ops.into_iter().partition(|o| o.failed.is_some());
     for op in &ops {
         let r = match op.kind.as_str() {
             "enable" => manage::set_enabled(&game, &op.ids, true),
@@ -91,7 +105,8 @@ pub async fn apply_pending(state: &AppState, id: &str) -> Vec<String> {
             errors.push(format!("{}: {e}", op.label));
         }
     }
-    let _ = save_pending(&dir, &[]);
+    // Açılamayan değişiklikler kullanıcı geri alana ya da tekrar deneyene dek bekler
+    let _ = save_pending(&dir, &failed);
     errors
 }
 
@@ -100,18 +115,417 @@ pub fn take_restart(id: &str) -> Option<Option<String>> {
     restarts().lock().ok()?.remove(id)
 }
 
-/// Oyun kapandıktan sonra: bekleyenleri uygula, istenmişse launcher arayüzüne yeniden başlatma olayı gönder.
-pub fn on_game_exit(id: &str) {
-    let Some(app) = APP.get().cloned() else { return };
+/// Oyun kapandıktan sonra çağrılır. Bekleyen değişiklikleri uygular ve:
+/// - arka planda açılmış bir devralma oyunu varsa onu instance'ın oyunu yapar (o da kaldığı yere girer);
+/// - yeniden başlatma istendiyse oyunu hazır komutla hemen yeniden açar (Java/dosya doğrulaması tekrarlanmaz).
+/// Oyun yeniden açılıyorsa true döner (launcher penceresi geri getirilmez, oyun sonrası komut çalışmaz).
+pub fn on_game_exit(id: &str) -> bool {
+    let Some(app) = APP.get().cloned() else { return false };
     let id = id.to_string();
     let restart = take_restart(&id);
+    let handoff = handoffs().lock().ok().and_then(|m| m.get(&id).cloned());
+    if let Some(h) = handoff.filter(|h| !h.promoted() && !h.failed()) {
+        h.old_gone.store(true, Ordering::SeqCst);
+        tauri::async_runtime::spawn(async move {
+            let st = app.state::<AppState>();
+            let errors = apply_pending(&st, &id).await;
+            if !errors.is_empty() {
+                tracing::warn!("devralma: bazı değişiklikler uygulanamadı: {errors:?}");
+            }
+            promote(&app, &id, &h);
+        });
+        return true;
+    }
+    if let Some(join) = restart {
+        tauri::async_runtime::spawn(async move {
+            let st = app.state::<AppState>();
+            let errors = apply_pending(&st, &id).await;
+            let prepared = last().lock().ok().and_then(|m| m.get(&id).cloned());
+            if let Some(p) = prepared {
+                let t0 = std::time::Instant::now();
+                match crate::commands::launch::run_prepared(&app, &id, crate::commands::launch::LaunchMode::Play, &p, join.as_deref(), &[], Role::Normal).await {
+                    Ok(pid) => {
+                        tracing::info!("hızlı yeniden başlatma: {} ms", t0.elapsed().as_millis());
+                        let _ = app.emit(EV_RELAUNCHED, json!({ "instanceId": id, "pid": pid }));
+                        return;
+                    }
+                    Err(e) => tracing::warn!("hızlı yeniden başlatma olmadı, tam başlatma deneniyor: {e}"),
+                }
+            }
+            let _ = app.emit(EV_RELAUNCH, json!({ "instanceId": id, "join": join, "errors": errors }));
+        });
+        return true;
+    }
     tauri::async_runtime::spawn(async move {
         let st = app.state::<AppState>();
-        let errors = apply_pending(&st, &id).await;
-        if let Some(join) = restart {
-            let _ = app.emit(EV_RELAUNCH, json!({ "instanceId": id, "join": join, "errors": errors }));
+        apply_pending(&st, &id).await;
+    });
+    false
+}
+
+// ───────── Hızlı yeniden başlatma ve devralma ─────────
+
+/// Son başarılı başlatmanın hazır komutu (instance başına, yalnızca bellekte)
+pub fn remember(id: &str, p: Prepared) {
+    if let Ok(mut m) = last().lock() {
+        m.insert(id.to_string(), p);
+    }
+}
+
+fn last() -> &'static Mutex<HashMap<String, Prepared>> {
+    LAST.get_or_init(Default::default)
+}
+
+fn handoffs() -> &'static Mutex<HashMap<String, Arc<Handoff>>> {
+    HANDOFFS.get_or_init(Default::default)
+}
+
+/// Eski oyun açıkken yeni mod düzeniyle arka planda açılan oyun.
+/// Durum: starting → ready (ana menüye ulaştı) → go (eski oyun kapandı, kaldığı yere girsin) | failed
+pub struct Handoff {
+    pub join: Option<String>,
+    pub staged: PathBuf,
+    state: Mutex<String>,
+    error: Mutex<Option<String>>,
+    promoted: AtomicBool,
+    old_gone: AtomicBool,
+    /// Kullanıcı iptal etti (çökme sayılmaz)
+    cancelled: AtomicBool,
+    tail: Mutex<VecDeque<String>>,
+    pid: AtomicU32,
+    kill: Mutex<Option<tokio::sync::oneshot::Sender<()>>>,
+    started: Instant,
+}
+
+impl Handoff {
+    fn new(join: Option<String>, staged: PathBuf) -> Self {
+        Self {
+            join,
+            staged,
+            state: Mutex::new("starting".into()),
+            error: Mutex::new(None),
+            promoted: AtomicBool::new(false),
+            old_gone: AtomicBool::new(false),
+            cancelled: AtomicBool::new(false),
+            tail: Mutex::new(VecDeque::new()),
+            pid: AtomicU32::new(0),
+            kill: Mutex::new(None),
+            started: Instant::now(),
+        }
+    }
+    pub fn promoted(&self) -> bool {
+        self.promoted.load(Ordering::SeqCst)
+    }
+    fn failed(&self) -> bool {
+        self.state() == "failed"
+    }
+    fn state(&self) -> String {
+        self.state.lock().map(|s| s.clone()).unwrap_or_default()
+    }
+    fn set_state(&self, v: &str) {
+        if let Ok(mut s) = self.state.lock() {
+            *s = v.to_string();
+        }
+    }
+    /// Terfiden önceki günlük satırları (çökerse sebebini göstermek için).
+    /// Fabric uyumsuz modda süreci kapatmayıp hata penceresi açar: bunu yakalayıp devralmayı hemen iptal et.
+    pub fn log(&self, line: String) {
+        let fatal = FATAL_LINES.iter().any(|k| line.contains(k));
+        if let Ok(mut t) = self.tail.lock() {
+            if t.len() >= 400 {
+                t.pop_front();
+            }
+            t.push_back(line);
+        }
+        if fatal && !self.promoted() && self.state() == "starting" {
+            let tail: Vec<String> = self.tail.lock().map(|t| t.iter().cloned().collect()).unwrap_or_default();
+            if let Ok(mut e) = self.error.lock() {
+                *e = failure_reason(&tail);
+            }
+            self.set_state("failed");
+            self.cancel();
+        }
+    }
+    pub fn attach(&self, pid: u32, kill: tokio::sync::oneshot::Sender<()>) {
+        self.pid.store(pid, Ordering::SeqCst);
+        if let Ok(mut k) = self.kill.lock() {
+            *k = Some(kill);
+        }
+    }
+    fn cancel(&self) {
+        if let Some(k) = self.kill.lock().ok().and_then(|mut k| k.take()) {
+            let _ = k.send(());
+        }
+    }
+}
+
+/// Yeni oyunun açılamadığını kesinleştiren günlük satırları (Fabric bu durumda pencere açıp bekler)
+const FATAL_LINES: [&str; 4] = ["Incompatible mods found", "Mod resolution failed", "Could not execute entrypoint stage", "---- Minecraft Crash Report ----"];
+/// Yeni oyun bu sürede ana menüye ulaşmazsa devralma iptal edilir
+const HANDOFF_TIMEOUT_SECS: u64 = 240;
+
+/// Eski oyun kapandı: devralma oyununu instance'ın çalışan oyunu yap
+fn promote(app: &AppHandle, id: &str, h: &Arc<Handoff>) {
+    if h.failed() {
+        return;
+    }
+    let st = app.state::<AppState>();
+    let tail: VecDeque<String> = h.tail.lock().map(|t| t.clone()).unwrap_or_default();
+    let kill = h.kill.lock().ok().and_then(|mut k| k.take());
+    let pid = h.pid.load(Ordering::SeqCst);
+    st.running.lock().insert(id.to_string(), RunningGame { pid, started: Instant::now(), kill, log_tail: tail });
+    h.promoted.store(true, Ordering::SeqCst);
+    if h.state() == "ready" {
+        h.set_state("go");
+    }
+    tracing::info!("devralma: yeni oturum devraldı ({} ms)", h.started.elapsed().as_millis());
+    // Önceki devralmaların klasörleri (kapanan oyunlarındı) artık serbest
+    if let Some(root) = h.staged.parent() {
+        if let Ok(rd) = std::fs::read_dir(root) {
+            for e in rd.flatten().filter(|e| e.path() != h.staged) {
+                let _ = std::fs::remove_dir_all(e.path());
+            }
+        }
+    }
+    let _ = app.emit(EV_RELAUNCHED, json!({ "instanceId": id, "pid": pid }));
+}
+
+/// Devralma oyunu terfiden önce kapandı (ör. yeni mod düzeni çöktü): eski oyun açık kalır
+pub fn handoff_failed(app: &AppHandle, id: &str, h: &Arc<Handoff>, code: Option<i32>) {
+    let tail: Vec<String> = h.tail.lock().map(|t| t.iter().cloned().collect()).unwrap_or_default();
+    let reason = failure_reason(&tail).unwrap_or_else(|| crate::i18n::tf("Oyun açılamadı (çıkış kodu {0})", &[&code.map(|c| c.to_string()).unwrap_or_else(|| "?".into())]));
+    if let Ok(mut e) = h.error.lock() {
+        if e.is_none() {
+            *e = Some(reason);
+        }
+    }
+    h.set_state("failed");
+    let st = app.state::<AppState>();
+    let dir = st.paths.instance_dir(id);
+    let _ = std::fs::write(dir.join("west-handoff-crash.log"), tail.join("\n"));
+    if !h.cancelled.load(Ordering::SeqCst) {
+        let reason = h.error.lock().ok().and_then(|e| e.clone()).unwrap_or_default();
+        mark_failed(&dir, &st.paths.instance_game_dir(id), &reason);
+    }
+    let staged = h.staged.clone();
+    std::thread::spawn(move || {
+        // Süreç yeni kapandı; Windows dosyaları bırakana dek kısa bir süre tekrar dene
+        for _ in 0..10 {
+            if std::fs::remove_dir_all(&staged).is_ok() || !staged.exists() {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(500));
         }
     });
+}
+
+/// Yeni oturum bu değişikliklerle açılamadı: değişiklikleri işaretle (normal başlatmada uygulanmasın) ve
+/// yeni kurulan jar'ları devre dışı bırak ki oyun kapatılıp açılınca da çökmesin.
+fn mark_failed(dir: &Path, game: &Path, reason: &str) {
+    let mut ops = load_pending(dir);
+    for op in ops.iter_mut().filter(|o| o.failed.is_none()) {
+        op.failed = Some(reason.to_string());
+        if op.kind == "install" {
+            for id in &op.ids {
+                let p = game.join(id);
+                if p.exists() {
+                    let _ = std::fs::rename(&p, game.join(format!("{id}{DISABLED}")));
+                }
+            }
+        }
+    }
+    let _ = save_pending(dir, &ops);
+}
+
+/// "Tekrar dene": işaretleri kaldır, kapatılan yeni jar'ları geri aç
+fn clear_failed(dir: &Path, game: &Path) -> Vec<Op> {
+    let mut ops = load_pending(dir);
+    for op in ops.iter_mut().filter(|o| o.failed.is_some()) {
+        op.failed = None;
+        if op.kind == "install" {
+            for id in &op.ids {
+                let off = game.join(format!("{id}{DISABLED}"));
+                if off.exists() && !game.join(id).exists() {
+                    let _ = std::fs::rename(&off, game.join(id));
+                }
+            }
+        }
+    }
+    let _ = save_pending(dir, &ops);
+    ops
+}
+
+/// Günlükten çökme sebebini çıkar: önce suçlu modu adıyla, sonra Fabric'in uyumsuzluk açıklamasını,
+/// sonra çökme raporundaki ilk hatayı; zararsız gürültüyü (çevrimdışı hesabın 401'i, uyarılar) atlar.
+fn failure_reason(tail: &[String]) -> Option<String> {
+    let clean = |l: &str| -> String {
+        let l = l.trim();
+        let l = l.split_once("]: ").map(|x| x.1).unwrap_or(l);
+        l.chars().take(240).collect()
+    };
+    if let Some(m) = tail.iter().find_map(|l| l.split_once("provided by '").and_then(|(_, r)| r.split_once('\'')).map(|(m, _)| m.to_string())) {
+        return Some(crate::i18n::tf("\"{0}\" modu bu oyun sürümüyle açılamıyor", &[&m]));
+    }
+    if let Some(i) = tail.iter().position(|l| l.contains("Incompatible mods found") || l.contains("Mod resolution failed")) {
+        let details: Vec<String> = tail[i + 1..].iter().map(|l| clean(l)).filter(|l| !l.is_empty()).take(2).collect();
+        let head = crate::i18n::t("Uyumsuz modlar var");
+        return Some(if details.is_empty() { head } else { format!("{head}: {}", details.join(" · ")) });
+    }
+    let noise = |l: &str| l.contains("WARN") || l.contains("authlib") || l.contains("401") || l.contains("Realms");
+    let from = tail.iter().position(|l| l.contains("---- Minecraft Crash Report ----")).unwrap_or(0);
+    tail[from..]
+        .iter()
+        .find(|l| (l.contains("Exception") || l.contains("Error:") || l.contains("Mixin apply")) && !noise(l))
+        .map(|l| clean(l))
+}
+
+/// Bekleyen değişiklikler uygulanmış olsaydı yüklenecek jar'lar: (kaynak dosya, hedef ad) ve indirilecek güncellemeler
+fn staged_plan(game: &Path, ops: &[Op]) -> (Vec<(PathBuf, String)>, Vec<String>) {
+    let mods = game.join("mods");
+    let mut state: BTreeMap<String, (PathBuf, bool)> = BTreeMap::new();
+    if let Ok(rd) = std::fs::read_dir(&mods) {
+        for e in rd.flatten() {
+            let name = e.file_name().to_string_lossy().to_string();
+            let (base, enabled) = match name.strip_suffix(DISABLED) {
+                Some(b) => (b.to_string(), false),
+                None => (name.clone(), true),
+            };
+            if !base.to_ascii_lowercase().ends_with(".jar") || !e.path().is_file() {
+                continue;
+            }
+            // Aynı adın hem açık hem kapalı kopyası varsa açık olan geçerli
+            let id = format!("mods/{base}");
+            if state.get(&id).map(|x| x.1).unwrap_or(false) {
+                continue;
+            }
+            state.insert(id, (e.path(), enabled));
+        }
+    }
+    let mut updates = Vec::new();
+    for op in ops.iter().filter(|o| o.failed.is_none()) {
+        for id in &op.ids {
+            match op.kind.as_str() {
+                "enable" => {
+                    if let Some(x) = state.get_mut(id) {
+                        x.1 = true;
+                    }
+                }
+                "disable" => {
+                    if let Some(x) = state.get_mut(id) {
+                        x.1 = false;
+                    }
+                }
+                "delete" => {
+                    state.remove(id);
+                }
+                "update" => {
+                    if state.contains_key(id) {
+                        updates.push(id.clone());
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+    let files = state
+        .into_iter()
+        .filter(|(id, (_, on))| *on && !updates.contains(id))
+        .map(|(id, (src, _))| (src, id.trim_start_matches("mods/").to_string()))
+        .collect();
+    (files, updates)
+}
+
+/// Dosyayı hedefe sabit bağlantı (yer kaplamaz, kilitli dosyada da çalışır) ya da kopya olarak koy
+fn link_or_copy(src: &Path, dest: &Path) -> std::io::Result<()> {
+    if std::fs::hard_link(src, dest).is_ok() {
+        return Ok(());
+    }
+    std::fs::copy(src, dest).map(|_| ())
+}
+
+/// Eski devralma klasörlerini temizle (kullanımdakiler silinemez, atlanır)
+pub fn clean_staged(instance_dir: &Path) {
+    let root = instance_dir.join(STAGED_DIR);
+    if let Ok(rd) = std::fs::read_dir(&root) {
+        for e in rd.flatten() {
+            let _ = std::fs::remove_dir_all(e.path());
+        }
+    }
+    let _ = std::fs::remove_dir(&root);
+}
+
+/// Yeni mod düzeniyle oyunu arka planda aç (eski oyun açık kalır)
+async fn start_handoff(state: &AppState, id: &str, p: &Prepared, join: Option<String>) -> Result<()> {
+    let app = APP.get().cloned().ok_or_else(|| AppError::msg("uygulama hazır değil"))?;
+    let dir = state.paths.instance_dir(id);
+    let game = state.paths.instance_game_dir(id);
+    let staged = dir.join(STAGED_DIR).join(chrono::Utc::now().timestamp_millis().to_string());
+    std::fs::create_dir_all(&staged)?;
+    let ops = load_pending(&dir);
+    let (files, updates) = staged_plan(&game, &ops);
+    {
+        let staged = staged.clone();
+        tokio::task::spawn_blocking(move || -> std::io::Result<()> {
+            for (src, name) in files {
+                link_or_copy(&src, &staged.join(name))?;
+            }
+            Ok(())
+        })
+        .await
+        .map_err(|e| AppError::msg(e.to_string()))??;
+    }
+    // Güncellemeler: yeni sürüm doğrudan geçici klasöre iner (eski dosya oyunda açık olsa da)
+    if !updates.is_empty() {
+        let list = manage::list(&dir, &game);
+        for uid in &updates {
+            let info = list.iter().find(|c| &c.id == uid).and_then(|c| c.update.clone());
+            match info {
+                Some(u) if !u.file_name.contains(['/', '\\']) => {
+                    state.http.download(&DownloadTask { url: u.url.clone(), path: staged.join(&u.file_name), sha1: Some(u.sha1.clone()).filter(|s| !s.is_empty()), size: Some(u.size) }).await?;
+                }
+                _ => {
+                    // Güncelleme bilgisi yoksa eski sürümle devam
+                    let cur = game.join(uid);
+                    if cur.exists() {
+                        link_or_copy(&cur, &staged.join(uid.trim_start_matches("mods/")))?;
+                    }
+                }
+            }
+        }
+    }
+    let h = Arc::new(Handoff::new(join, staged.clone()));
+    if let Ok(mut m) = handoffs().lock() {
+        m.insert(id.to_string(), h.clone());
+    }
+    // Bekçi: yeni oyun takılırsa (ör. hata penceresinde beklerse) devralmayı iptal et, eski oyun açık kalsın
+    {
+        let h = h.clone();
+        tokio::spawn(async move {
+            tokio::time::sleep(std::time::Duration::from_secs(HANDOFF_TIMEOUT_SECS)).await;
+            if h.state() == "starting" && !h.promoted() {
+                if let Ok(mut e) = h.error.lock() {
+                    *e = Some(crate::i18n::t("Yeni oturum zamanında açılamadı"));
+                }
+                h.set_state("failed");
+                h.cancel();
+            }
+        });
+    }
+    let extra = vec![format!("-Dfabric.modsFolder={}", staged.display()), "-Dwest.handoff=1".to_string()];
+    if let Err(e) = crate::commands::launch::run_prepared(&app, id, crate::commands::launch::LaunchMode::Play, p, None, &extra, Role::Handoff(h.clone())).await {
+        if let Ok(mut m) = handoffs().lock() {
+            m.remove(id);
+        }
+        let _ = std::fs::remove_dir_all(&staged);
+        return Err(e);
+    }
+    Ok(())
+}
+
+/// İkinci bir oyun için yeterli boş bellek var mı
+fn room_for_second_game(p: &Prepared) -> bool {
+    let hw = crate::java::jvm::hardware();
+    hw.available_memory_mb >= p.memory_mb + 1536
 }
 
 // ───────── Köprü uç noktaları ─────────
@@ -222,7 +636,7 @@ fn push_toggle(dir: &Path, game: &Path, ids: &[String], enabled: bool, label: &s
     ops.retain(|o| !o.ids.is_empty());
     let need: Vec<String> = ids.iter().filter(|i| on_disk_enabled(game, i) != Some(enabled)).cloned().collect();
     if !need.is_empty() {
-        ops.push(Op { kind: if enabled { "enable".into() } else { "disable".into() }, ids: need, label: label.to_string(), at: chrono::Utc::now().timestamp() });
+        ops.push(Op { kind: if enabled { "enable".into() } else { "disable".into() }, ids: need, label: label.to_string(), at: chrono::Utc::now().timestamp(), failed: None });
     }
     save_pending(dir, &ops)
 }
@@ -232,7 +646,7 @@ fn push_op(dir: &Path, kind: &str, ids: Vec<String>, label: &str) -> Result<()> 
         return Ok(());
     }
     let mut ops = load_pending(dir);
-    ops.push(Op { kind: kind.into(), ids, label: label.to_string(), at: chrono::Utc::now().timestamp() });
+    ops.push(Op { kind: kind.into(), ids, label: label.to_string(), at: chrono::Utc::now().timestamp(), failed: None });
     save_pending(dir, &ops)
 }
 
@@ -425,6 +839,7 @@ pub async fn route(method: &str, path: &str, query: &str, body: &Value) -> Resul
             push_op(&dir, "install", mods, &label)?;
             Ok(json!({ "added": added, "pending": load_pending(&dir) }))
         }
+        ("POST", "/mods/retry") => Ok(json!({ "pending": clear_failed(&dir, &game) })),
         ("GET", "/mods/pending") => Ok(json!({ "pending": load_pending(&dir) })),
         ("POST", "/mods/undo") => {
             let idx = body["index"].as_u64().unwrap_or(u64::MAX) as usize;
@@ -432,8 +847,11 @@ pub async fn route(method: &str, path: &str, query: &str, body: &Value) -> Resul
             if idx < ops.len() {
                 let op = ops.remove(idx);
                 if op.kind == "install" {
-                    // Henüz yüklenmedi: dosyaları sil
+                    // Henüz yüklenmedi: dosyaları sil (açılamadığı için kapatılmış olabilir)
                     let _ = manage::delete(&dir, &game, &op.ids);
+                    for id in &op.ids {
+                        let _ = std::fs::remove_file(game.join(format!("{id}{DISABLED}")));
+                    }
                 }
                 save_pending(&dir, &ops)?;
             }
@@ -441,8 +859,60 @@ pub async fn route(method: &str, path: &str, query: &str, body: &Value) -> Resul
         }
         ("POST", "/mods/restart") => {
             let join = body["join"].as_str().map(String::from).filter(|s| !s.is_empty() && s.len() < 300);
+            // Tercihen devralma: oyun kapanmadan yeni mod düzeni arka planda açılır
+            if body["handoff"].as_bool().unwrap_or(true) {
+                let running = handoffs().lock().ok().and_then(|m| m.get(&inst_id).cloned()).filter(|h| !h.promoted() && !h.failed());
+                if running.is_some() {
+                    return Ok(json!({ "mode": "handoff" }));
+                }
+                let prepared = last().lock().ok().and_then(|m| m.get(&inst_id).cloned());
+                if let Some(p) = prepared.filter(room_for_second_game) {
+                    match start_handoff(&state, &inst_id, &p, join.clone()).await {
+                        Ok(()) => return Ok(json!({ "mode": "handoff" })),
+                        Err(e) => tracing::warn!("devralma başlatılamadı, klasik yeniden başlatmaya geçiliyor: {e}"),
+                    }
+                }
+            }
             restarts().lock().map_err(|_| AppError::msg("kilit"))?.insert(inst_id.clone(), join);
+            Ok(json!({ "mode": "restart" }))
+        }
+        // Eski oyun: devralma ne durumda (hazırsa kapanır, çöktüyse açık kalır)
+        ("GET", "/mods/restart-status") => {
+            let h = handoffs().lock().ok().and_then(|m| m.get(&inst_id).cloned());
+            Ok(match h {
+                Some(h) => json!({ "state": h.state(), "error": h.error.lock().ok().and_then(|e| e.clone()), "secs": h.started.elapsed().as_secs() }),
+                None => json!({ "state": "none" }),
+            })
+        }
+        ("POST", "/mods/handoff/cancel") => {
+            if let Some(h) = handoffs().lock().ok().and_then(|m| m.get(&inst_id).cloned()).filter(|h| !h.promoted()) {
+                if let Ok(mut e) = h.error.lock() {
+                    *e = Some(crate::i18n::t("İptal edildi"));
+                }
+                h.cancelled.store(true, Ordering::SeqCst);
+                h.set_state("failed");
+                h.cancel();
+            }
             Ok(json!({ "ok": true }))
+        }
+        // Yeni oyun: ana menüye ulaştım (modlar sorunsuz yüklendi)
+        ("POST", "/mods/handoff/ready") => {
+            let h = handoffs().lock().ok().and_then(|m| m.get(&inst_id).cloned());
+            if let Some(h) = h {
+                if h.state() == "starting" {
+                    h.set_state(if h.promoted() { "go" } else { "ready" });
+                }
+                tracing::info!("devralma: yeni oturum hazır ({} ms)", h.started.elapsed().as_millis());
+            }
+            Ok(json!({ "ok": true }))
+        }
+        // Yeni oyun: eski oyun kapandı mı, nereye gireyim
+        ("GET", "/mods/handoff/status") => {
+            let h = handoffs().lock().ok().and_then(|m| m.get(&inst_id).cloned());
+            Ok(match h {
+                Some(h) => json!({ "state": h.state(), "join": h.join }),
+                None => json!({ "state": "none" }),
+            })
         }
         ("GET", "/mods/icon") => {
             let url = param(query, "url").unwrap_or_default();
@@ -477,6 +947,67 @@ pub async fn route(method: &str, path: &str, query: &str, body: &Value) -> Resul
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn staged_plan_applies_pending_ops() {
+        let tmp = std::env::temp_dir().join(format!("west-staged-{}", std::process::id()));
+        let mods = tmp.join("mods");
+        std::fs::create_dir_all(&mods).unwrap();
+        for f in ["sodium.jar", "lithium.jar", "modmenu.jar.disabled", "iris.jar", "old.jar", "readme.txt"] {
+            std::fs::write(mods.join(f), b"x").unwrap();
+        }
+        let op = |kind: &str, ids: &[&str]| Op { kind: kind.into(), ids: ids.iter().map(|s| s.to_string()).collect(), label: String::new(), at: 0, failed: None };
+        let ops = vec![op("enable", &["mods/modmenu.jar"]), op("disable", &["mods/iris.jar"]), op("delete", &["mods/old.jar"]), op("update", &["mods/lithium.jar"])];
+        let (files, updates) = staged_plan(&tmp, &ops);
+        let names: Vec<&str> = files.iter().map(|f| f.1.as_str()).collect();
+        assert_eq!(names, vec!["modmenu.jar", "sodium.jar"]);
+        assert!(files[0].0.ends_with("modmenu.jar.disabled"));
+        assert_eq!(updates, vec!["mods/lithium.jar".to_string()]);
+        // Kapatma geri alınırsa (op yok) dosya olduğu gibi kalır
+        let (files, _) = staged_plan(&tmp, &[]);
+        assert_eq!(files.len(), 4);
+        let _ = std::fs::remove_dir_all(&tmp);
+    }
+
+    #[test]
+    fn failed_ops_are_kept_and_skipped() {
+        let tmp = std::env::temp_dir().join(format!("west-failed-{}", std::process::id()));
+        let (dir, game) = (tmp.clone(), tmp.join("minecraft"));
+        std::fs::create_dir_all(game.join("mods")).unwrap();
+        std::fs::write(game.join("mods/bad.jar"), b"x").unwrap();
+        std::fs::write(game.join("mods/good.jar"), b"x").unwrap();
+        push_op(&dir, "install", vec!["mods/bad.jar".into()], "bad").unwrap();
+        mark_failed(&dir, &game, "\"bad\" modu bu oyun sürümüyle açılamıyor");
+        assert!(game.join("mods/bad.jar.disabled").exists() && !game.join("mods/bad.jar").exists());
+        let ops = load_pending(&dir);
+        assert_eq!(ops[0].failed.as_deref(), Some("\"bad\" modu bu oyun sürümüyle açılamıyor"));
+        // Başarısız değişiklik devralmaya katılmaz
+        let (files, _) = staged_plan(&game, &ops);
+        assert_eq!(files.iter().map(|f| f.1.as_str()).collect::<Vec<_>>(), vec!["good.jar"]);
+        // Tekrar dene: işaret kalkar, dosya geri açılır
+        let ops = clear_failed(&dir, &game);
+        assert!(ops[0].failed.is_none() && game.join("mods/bad.jar").exists());
+        let _ = std::fs::remove_dir_all(&tmp);
+    }
+
+    #[test]
+    fn failure_reason_finds_meaningful_line() {
+        let l = |s: &str| s.to_string();
+        // Suçlu mod adıyla (çevrimdışı hesabın zararsız 401'i atlanır)
+        let tail = vec![
+            l("com.mojang.authlib.exceptions.InvalidCredentialsException: Status: 401"),
+            l("---- Minecraft Crash Report ----"),
+            l("java.lang.RuntimeException: Could not execute entrypoint stage 'client' due to errors, provided by 'modmenu' at 'com.terraformersmc.modmenu.ModMenu'!"),
+        ];
+        assert_eq!(failure_reason(&tail).unwrap(), "\"modmenu\" modu bu oyun sürümüyle açılamıyor");
+        // Fabric uyumsuzluk açıklaması
+        let tail = vec![l("[12:00:03] [main/ERROR]: Incompatible mods found!"), l(" - Mod 'Mod Menu' (modmenu) 11.0.5 requires minecraft 1.21.1"), l("")];
+        assert_eq!(failure_reason(&tail).unwrap(), "Uyumsuz modlar var: - Mod 'Mod Menu' (modmenu) 11.0.5 requires minecraft 1.21.1");
+        // Çökme raporundaki ilk gerçek hata
+        let tail = vec![l("[main/WARN]: Exception in thing that is fine"), l("---- Minecraft Crash Report ----"), l("java.lang.IllegalStateException: boom")];
+        assert_eq!(failure_reason(&tail).unwrap(), "java.lang.IllegalStateException: boom");
+        assert!(failure_reason(&[l("hepsi yolunda")]).is_none());
+    }
+
     use super::*;
 
     #[test]

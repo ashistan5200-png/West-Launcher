@@ -240,5 +240,10 @@
  "güncellenecek": "wird aktualisiert",
  "Veri paketi için tek oyunculu bir dünyada olmalısın": "Für Datenpakete musst du in einer Einzelspielerwelt sein",
  "İndirilecek dosya yok": "Keine Datei zum Herunterladen",
- "eklendi (yeniden başlatınca yüklenir)": "hinzugefügt (wird nach Neustart geladen)"
+ "eklendi (yeniden başlatınca yüklenir)": "hinzugefügt (wird nach Neustart geladen)",
+ "Oyun açılamadı (çıkış kodu {0})": "Das Spiel konnte nicht starten (Exit-Code {0})",
+ "İptal edildi": "Abgebrochen",
+ "Yeni oturum zamanında açılamadı": "Die neue Sitzung ist nicht rechtzeitig gestartet",
+ "\"{0}\" modu bu oyun sürümüyle açılamıyor": "Die Mod „{0}“ funktioniert mit dieser Spielversion nicht",
+ "Uyumsuz modlar var": "Inkompatible Mods"
 }

@@ -17,7 +17,7 @@ public final class WestMusic {
     private WestMusic() {}
 
     public static boolean active() {
-        if (WestHud.config == null) return false;
+        if (WestHud.config == null || dev.west.hud.mods.Handoff.waiting()) return false;
         var d = WestHud.config.data;
         return d.music && (Minecraft.getInstance().level == null || d.musicInGame);
     }

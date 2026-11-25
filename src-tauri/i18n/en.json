@@ -240,5 +240,10 @@
  "güncellenecek": "will update",
  "Veri paketi için tek oyunculu bir dünyada olmalısın": "You need to be in a singleplayer world for data packs",
  "İndirilecek dosya yok": "No file to download",
- "eklendi (yeniden başlatınca yüklenir)": "added (loads after restart)"
+ "eklendi (yeniden başlatınca yüklenir)": "added (loads after restart)",
+ "Oyun açılamadı (çıkış kodu {0})": "The game could not start (exit code {0})",
+ "İptal edildi": "Cancelled",
+ "Yeni oturum zamanında açılamadı": "The new session did not start in time",
+ "\"{0}\" modu bu oyun sürümüyle açılamıyor": "The \"{0}\" mod does not work with this game version",
+ "Uyumsuz modlar var": "Incompatible mods"
 }

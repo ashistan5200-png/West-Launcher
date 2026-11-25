@@ -49,6 +49,8 @@ public final class WestMod implements ClientModInitializer {
                 }));
         });
         ClientTickEvents.END_CLIENT_TICK.register(WestMod::tick);
+        // Arka planda açılan devralma oturumu: pencere hemen simge durumuna
+        dev.west.hud.mods.Handoff.early(WestHud.game);
         // Dünya paylaşma: e4mc'nin verdiği herkese açık adresi sohbetten yakala
         net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents.GAME.register((msg, overlay) -> WestHud.safe("tunnel", () -> Game26.onChat(msg)));
         // Duraklatma ekranı: sol altta Essential / Flashback kartları

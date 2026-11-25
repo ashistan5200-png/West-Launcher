@@ -508,6 +508,23 @@ public final class Game26 implements Game {
     private net.minecraft.client.gui.screens.Screen hubReturn;
 
     @Override
+    public boolean minimizeWindow(boolean minimize) {
+        if (mc() == null || mc().getWindow() == null) return false;
+        long h = mc().getWindow().handle();
+        if (minimize) org.lwjgl.glfw.GLFW.glfwIconifyWindow(h);
+        else {
+            org.lwjgl.glfw.GLFW.glfwRestoreWindow(h);
+            org.lwjgl.glfw.GLFW.glfwFocusWindow(h);
+        }
+        return true;
+    }
+
+    @Override
+    public void silenceMusic() {
+        mc().getMusicManager().stopPlaying();
+    }
+
+    @Override
     public void closeModHub() {
         var r = hubReturn;
         hubReturn = null;

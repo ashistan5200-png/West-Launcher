@@ -205,6 +205,12 @@ public interface Game {
     /** Mod merkezini kapat: açılmadan önceki Minecraft ekranına (ör. duraklatma) ya da oyuna dön */
     default void closeModHub() { closeScreen(); }
 
+    /** Oyun penceresini simge durumuna küçült (true) ya da geri getirip öne al (false). Pencere henüz yoksa false. */
+    default boolean minimizeWindow(boolean minimize) { return false; }
+
+    /** Çalan menü/oyun müziğini durdur (arka planda bekleyen oturum ses çıkarmasın) */
+    default void silenceMusic() {}
+
     /** Bir web sayfasını tarayıcıda aç */
     default void openUrl(String url) {}
 
