@@ -218,6 +218,39 @@ public final class Gfx26 implements Gfx {
         return true;
     }
 
+    private static final java.util.Map<String, Identifier> PNGS = new java.util.HashMap<>();
+    private static final java.util.Set<String> BAD_PNG = new java.util.HashSet<>();
+
+    @Override
+    public boolean png(String key, byte[] png, int x, int y, int w, int h) {
+        if (png == null || png.length == 0 || BAD_PNG.contains(key)) return false;
+        Identifier id = PNGS.get(key);
+        int[] size = PNG_SIZES.get(key);
+        if (id == null) {
+            try {
+                var img = com.mojang.blaze3d.platform.NativeImage.read(png);
+                size = new int[] { img.getWidth(), img.getHeight() };
+                id = Identifier.fromNamespaceAndPath("west_companion", "png/" + Integer.toHexString(key.hashCode()) + "_" + PNGS.size());
+                Minecraft.getInstance().getTextureManager().register(id, new net.minecraft.client.renderer.texture.DynamicTexture(() -> "west png", img));
+                PNGS.put(key, id);
+                PNG_SIZES.put(key, size);
+                if (PNGS.size() > 600) { // çok fazla birikmesin
+                    for (var old : PNGS.values()) Minecraft.getInstance().getTextureManager().release(old);
+                    PNGS.clear();
+                    PNG_SIZES.clear();
+                    return false;
+                }
+            } catch (Exception e) {
+                BAD_PNG.add(key);
+                return false;
+            }
+        }
+        g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, id, x, y, 0f, 0f, w, h, size[0], size[1], size[0], size[1]);
+        return true;
+    }
+
+    private static final java.util.Map<String, int[]> PNG_SIZES = new java.util.HashMap<>();
+
     @Override
     public boolean texture(String loc, int x, int y, int w, int h, float u, float v, int uw, int vh, int texW, int texH, int color) {
         if (w <= 0 || h <= 0) return false;

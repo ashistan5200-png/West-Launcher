@@ -97,6 +97,18 @@ public final class WestHost extends Screen {
         return true;
     }
 
+    /** İçteki West ekranı */
+    public WestScreen inner() {
+        return inner;
+    }
+
+    @Override
+    public void onFilesDrop(java.util.List<java.nio.file.Path> paths) {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        for (var p : paths) out.add(p.toAbsolutePath().toString());
+        WestHud.safe("drop", () -> inner.filesDropped(out));
+    }
+
     @Override
     public void removed() {
         WestHud.safe("removed", inner::removed);

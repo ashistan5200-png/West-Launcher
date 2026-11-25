@@ -12,7 +12,7 @@ public final class Icons {
 
     public enum Icon { GLOBE, GEAR, SLIDERS, FULLSCREEN, CLOSE, PLUS, ARROW, USER, USER_PLUS, CHART, PLAY, KEYBOARD, LOGO, CHECK, CLOCK, SERVER, WORLD,
         BACK, SEARCH, SHARE, STAR, STATS, LIST, EXIT, PAUSE, MOUSE, PIN, SIGNAL, GAUGE, CHIP, SHIELD, COMPASS, SUN, TEXT, MAGNET, HUD, BOX, EDIT, FOLDER,
-        USERS, NOTE, NOTE_OFF, BELL, CHEVRON_DOWN, CHEVRON_RIGHT, GEM, CHAT, MOON, MIC, MIC_OFF, HEADPHONES, HEADPHONES_OFF, SPEAKER }
+        USERS, NOTE, NOTE_OFF, BELL, CHEVRON_DOWN, CHEVRON_RIGHT, GEM, CHAT, MOON, MIC, MIC_OFF, HEADPHONES, HEADPHONES_OFF, SPEAKER, REFRESH }
 
     @FunctionalInterface
     private interface Sdf {
@@ -156,6 +156,13 @@ public final class Icons {
                 return Math.min(outer, inner) * 0.72;
             };
             case CHECK -> (u, v) -> Math.min(seg(u, v, -0.62, 0.02, -0.18, 0.46, T * 1.1), seg(u, v, -0.18, 0.46, 0.66, -0.42, T * 1.1));
+            case REFRESH -> (u, v) -> {
+                double r = 0.62, a = Math.atan2(v, u);
+                double d = a > -Math.PI / 2 && a < -Math.PI / 6
+                        ? Math.min(Math.hypot(u, v + r), Math.hypot(u - r * Math.cos(-Math.PI / 6), v - r * Math.sin(-Math.PI / 6))) - T
+                        : Math.abs(Math.hypot(u, v) - r) - T;
+                return min(d, seg(u, v, 0.02, -r, -0.3, -0.92, T), seg(u, v, 0.02, -r, -0.3, -0.32, T));
+            };
             case CLOCK -> (u, v) -> min(ring(u, v, 0, 0, 0.8, T), seg(u, v, 0, 0, 0, -0.45, T), seg(u, v, 0, 0, 0.32, 0.2, T));
             case SERVER -> (u, v) -> min(boxRing(u, v, 0, -0.4, 0.8, 0.32, 0.12, T), boxRing(u, v, 0, 0.4, 0.8, 0.32, 0.12, T),
                     circle(u, v, -0.45, -0.4, 0.09), circle(u, v, -0.45, 0.4, 0.09));

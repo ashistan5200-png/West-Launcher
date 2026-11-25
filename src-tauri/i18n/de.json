@@ -233,5 +233,12 @@
  "Sürüm bulunamadı": "Version nicht gefunden",
  "Başlatma öncesi komut 5 dakikada bitmedi; oyun açılmadı.": "Der Befehl vor dem Start wurde nicht innerhalb von 5 Minuten beendet; das Spiel wurde nicht gestartet.",
  "Başlatma öncesi komut hata verdi (çıkış kodu {0}); oyun açılmadı.": "Der Befehl vor dem Start ist fehlgeschlagen (Exit-Code {0}); das Spiel wurde nicht gestartet.",
- "Komut çalıştırılamadı: {0}": "Befehl konnte nicht ausgeführt werden: {0}"
+ "Komut çalıştırılamadı: {0}": "Befehl konnte nicht ausgeführt werden: {0}",
+ "kapanacak": "wird deaktiviert",
+ "açılacak": "wird aktiviert",
+ "silinecek": "wird gelöscht",
+ "güncellenecek": "wird aktualisiert",
+ "Veri paketi için tek oyunculu bir dünyada olmalısın": "Für Datenpakete musst du in einer Einzelspielerwelt sein",
+ "İndirilecek dosya yok": "Keine Datei zum Herunterladen",
+ "eklendi (yeniden başlatınca yüklenir)": "hinzugefügt (wird nach Neustart geladen)"
 }

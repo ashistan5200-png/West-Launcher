@@ -46,8 +46,8 @@ pub async fn ensure(http: &Http, root: &std::path::Path) -> Result<&'static Brid
 }
 
 /// Oyuna verilecek JVM argümanları
-pub fn jvm_args(b: &Bridge) -> Vec<String> {
-    vec![format!("-Dwest.bridge=http://127.0.0.1:{}", b.port), format!("-Dwest.bridgeKey={}", b.key)]
+pub fn jvm_args(b: &Bridge, instance_id: &str) -> Vec<String> {
+    vec![format!("-Dwest.bridge=http://127.0.0.1:{}", b.port), format!("-Dwest.bridgeKey={}", b.key), format!("-Dwest.instance={instance_id}")]
 }
 
 async fn serve(mut sock: TcpStream, http: &Http, root: &PathBuf, key: &str) -> Result<()> {
@@ -80,7 +80,7 @@ async fn serve(mut sock: TcpStream, http: &Http, root: &PathBuf, key: &str) -> R
         if let Some((k, v)) = l.split_once(':') {
             let (k, v) = (k.trim().to_ascii_lowercase(), v.trim());
             if k == "content-length" {
-                len = v.parse().unwrap_or(0).min(256 * 1024);
+                len = v.parse().unwrap_or(0).min(1024 * 1024);
             }
             if k == "x-west-key" && constant_eq(v.as_bytes(), key.as_bytes()) {
                 auth_ok = true;
@@ -128,6 +128,10 @@ fn param(query: &str, name: &str) -> Option<String> {
         let (k, v) = kv.split_once('=')?;
         (k == name).then(|| urlencoding_decode(v))
     })
+}
+
+pub fn decode_query(s: &str) -> String {
+    urlencoding_decode(s)
 }
 
 fn urlencoding_decode(s: &str) -> String {
@@ -184,6 +188,10 @@ async fn profiles(http: &Http, root: &PathBuf, ids: &[String]) -> Result<Vec<Val
 }
 
 async fn route(http: &Http, root: &PathBuf, method: &str, path: &str, query: &str, body: &Value) -> Result<Value> {
+    // Oyun içi mod merkezi (West hesabı gerekmez)
+    if path.starts_with("/mods/") {
+        return crate::livemods::route(method, path, query, body).await;
+    }
     match (method, path) {
         ("GET", "/me") => {
             let id = me(http, root).await?;

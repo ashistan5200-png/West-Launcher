@@ -162,7 +162,10 @@ pub fn build_args(paths: &Paths, version: &VersionJson, libs: &ResolvedLibraries
     if opts.fullscreen && !game_args.iter().any(|a| a == "--fullscreen") {
         game_args.push("--fullscreen".into());
     }
-    if let Some(server) = &opts.join_server {
+    if let Some(world) = opts.join_server.as_deref().and_then(|s| s.strip_prefix("world:")) {
+        // Tek oyunculu dünyaya doğrudan gir (oyun içi mod merkezinin "yeniden başlat ve dön" özelliği)
+        game_args.extend(["--quickPlaySingleplayer".into(), world.to_string()]);
+    } else if let Some(server) = &opts.join_server {
         let modern = version.arguments.as_ref().map(|a| {
             a.game.iter().any(|g| matches!(g, Argument::Ruled { value: ArgValue::Many(v), .. } if v.iter().any(|s| s == "--quickPlayMultiplayer")))
         });

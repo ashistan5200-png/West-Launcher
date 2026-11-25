@@ -22,6 +22,7 @@ pub mod state;
 pub mod updater;
 pub mod util;
 pub mod i18n;
+pub mod livemods;
 
 use paths::Paths;
 use state::AppState;
@@ -49,6 +50,7 @@ pub fn run() {
             let window = app.get_webview_window("main").expect("main window");
             commands::window::apply_effect(&window, &effect);
             commands::updater::spawn_background(app.handle().clone());
+            livemods::set_app(app.handle());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

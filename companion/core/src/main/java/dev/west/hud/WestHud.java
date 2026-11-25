@@ -56,7 +56,18 @@ public final class WestHud {
         config.save(HUD);
     }
 
+    private static final java.util.concurrent.ConcurrentLinkedQueue<Runnable> LATER = new java.util.concurrent.ConcurrentLinkedQueue<>();
+
+    /** Arka plan iş parçacığından oyunun ana iş parçacığına iş aktar (bir sonraki tick'te çalışır) */
+    public static void later(Runnable r) {
+        LATER.add(r);
+    }
+
     public static void tick() {
+        for (Runnable r; (r = LATER.poll()) != null; ) {
+            Runnable job = r;
+            safe("later", job);
+        }
         // Launcher'ın yaptığı ayar değişikliklerini ~2 sn'de bir yakala
         if (++ticks % 40 == 0) safe("config", () -> config.reloadIfChanged(HUD));
         safe("stats", () -> stats.tick(game));

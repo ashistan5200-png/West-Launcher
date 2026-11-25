@@ -484,6 +484,36 @@ public final class Game121 implements Game {
         if (screen instanceof net.minecraft.client.gui.screens.Screen) mc().setScreen((net.minecraft.client.gui.screens.Screen) screen);
     }
 
+    // ───── Oyun içi mod merkezi ─────
+    @Override public String worldFolder() { return LiveContent.worldFolder(); }
+    @Override public String serverAddress() { return LiveContent.serverAddress(); }
+    @Override public void stopGame() { LiveContent.stop(); }
+    @Override public void applyResourcePacks(List<String> enable, List<String> disable, Runnable then) { LiveContent.applyResourcePacks(enable, disable, then); }
+    @Override public java.util.Set<String> activeResourcePacks() { return LiveContent.activeResourcePacks(); }
+    @Override public boolean shadersSupported() { return LiveContent.shadersSupported(); }
+    @Override public String activeShader() { return LiveContent.activeShader(); }
+    @Override public boolean applyShader(String file) { return LiveContent.applyShader(file); }
+    @Override public void enableDatapack(String file) { LiveContent.enableDatapack(file); }
+    @Override public java.util.Set<String> loadedMods() { return LiveContent.loadedMods(); }
+    @Override public void openUrl(String url) { LiveContent.openUrl(url); }
+
+    @Override
+    public void openModHub() {
+        var back = mc().screen;
+        dev.west.hud.screen.WestScreen inner = back instanceof WestHost h ? h.inner() : null;
+        hubReturn = back instanceof WestHost ? null : back;
+        mc().setScreen(new WestHost(new dev.west.hud.screen.ModHubScreen(inner)));
+    }
+
+    private net.minecraft.client.gui.screens.Screen hubReturn;
+
+    @Override
+    public void closeModHub() {
+        var r = hubReturn;
+        hubReturn = null;
+        mc().setScreen(r);
+    }
+
     @Override
     public boolean modLoaded(String id) {
         return net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded(id);

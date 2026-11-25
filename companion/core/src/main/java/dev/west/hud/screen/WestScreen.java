@@ -22,6 +22,9 @@ public interface WestScreen {
 
     default void charTyped(char c) {}
 
+    /** Pencereye dosya sürüklenip bırakıldı (mutlak yollar) */
+    default void filesDropped(java.util.List<String> paths) {}
+
     /** Ekran kapanırken (Esc ya da başka ekran) */
     default void removed() {}
 

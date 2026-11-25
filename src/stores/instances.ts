@@ -1,5 +1,7 @@
 import { create } from "zustand";
 import { api, events, isTauri } from "@/lib/ipc";
+import { listen } from "@tauri-apps/api/event";
+import { useSettings } from "./settings";
 import type { GameExit, Instance, NewInstance, Progress } from "@/lib/types";
 
 const MAX_LOG = 5000;
@@ -96,6 +98,13 @@ export const useInstances = create<InstancesState>((set, get) => ({
     };
 
     const un = await Promise.all([
+      // Oyun içi mod merkezi: "Uygula ve yeniden başlat" → değişiklikler uygulandı, aynı dünyaya/sunucuya geri aç
+      listen<{ instanceId: string; join: string | null }>("live-relaunch", (e) => {
+        const { instanceId, join } = e.payload;
+        window.setTimeout(() => {
+          void get().launch(instanceId, useSettings.getState().offlineName, join ?? undefined).catch(() => undefined);
+        }, 400);
+      }),
       events.onProgress((p) => set((s) => ({ progress: { ...s.progress, [p.task]: p } }))),
       events.onGameLog((l) => {
         // Pencere gizli/küçükken kare çizilmez (flush bekler): birikim sınırlı kalsın

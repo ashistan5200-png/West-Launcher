@@ -26,7 +26,7 @@ public final class ModCards {
 
     /** Kart var mı (hiç mod yoksa çizilecek bir şey yok) */
     public static boolean any() {
-        return !ModMenus.mods().isEmpty();
+        return !ModMenus.mods().isEmpty() || dev.west.hud.mods.ModBridge.INSTANCE.available();
     }
 
     /** Bu nokta kartlardan birinin üstünde mi (tıklamayı almadan) */
@@ -71,7 +71,35 @@ public final class ModCards {
         int popX = 0, popY = 0;
         boolean drawPop = false;
 
-        // Essential satırı (en altta)
+        // Mod Merkezi satırı (en altta; oyun West Client'tan açıldıysa)
+        var hub = dev.west.hud.mods.ModBridge.INSTANCE;
+        if (hub.available()) {
+            hub.ensureLoaded();
+            int h = 22;
+            y -= h;
+            boolean hv = in(mx, my, x, y, w, h);
+            float a = ease("hub", hv, dt);
+            Ui.round(g, x, y, w, h, 7, mix(0xB80D0E13, 0xE01A1C24, a));
+            Ui.outline(g, x, y, w, h, 7, mix(0x1EFFFFFF, (0x99 << 24) | (accent & 0xFFFFFF), a));
+            Icons.draw(g, Icon.BOX, x + 8, y + 6, 10, 0xFF000000 | accent);
+            g.textBold(fit(g, Tr.t("Mod Merkezi"), w - 60), x + 24, y + 7, 0xFFFFFFFF, false);
+            int n = hub.pending.size();
+            if (n > 0) {
+                String c = String.valueOf(n);
+                int bw = Math.max(14, g.textWidth(c) + 8);
+                Ui.round(g, x + w - 18 - bw, y + 5, bw, 12, 6, 0xFFE8A33D);
+                g.text(c, x + w - 18 - bw + (bw - g.textWidth(c)) / 2, y + 7, 0xFF1A140C, false);
+            }
+            Icons.draw(g, Icon.CHEVRON_RIGHT, x + w - 14, y + 7, 8, 0xAAFFFFFF);
+            hits.add(new int[] { x, y, w, h });
+            if (consume(x, y, w, h)) {
+                WestHud.game.click();
+                WestHud.game.openModHub();
+            }
+            y -= gap;
+        }
+
+        // Essential satırı
         if (essential != null) {
             int h = 22;
             y -= h;

@@ -18,6 +18,8 @@ public final class WestMod implements ClientModInitializer {
     /** West menüsü: varsayılan Sağ Shift (Kontroller'den değiştirilebilir) */
     public static final KeyMapping MENU = new KeyMapping("key.west_companion.menu", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_RIGHT_SHIFT, CATEGORY);
     /** HUD düzenleyici: varsayılan atanmamış */
+    /** Mod Merkezi: varsayılan H */
+    public static final KeyMapping MODS = new KeyMapping("key.west_companion.mods", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_H, CATEGORY);
     public static final KeyMapping EDITOR = new KeyMapping("key.west_companion.editor", InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), CATEGORY);
 
     @Override
@@ -37,6 +39,15 @@ public final class WestMod implements ClientModInitializer {
         });
         KeyBindingHelper.registerKeyBinding(MENU);
         KeyBindingHelper.registerKeyBinding(EDITOR);
+        KeyBindingHelper.registerKeyBinding(MODS);
+        // /westmods (ve /modmerkezi): sohbetten Mod Merkezi'ni aç (sohbet kapandıktan sonra, bir sonraki tick'te)
+        net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback.EVENT.register((dispatcher, ctx) -> {
+            for (String name : new String[] { "westmods", "modmerkezi" })
+                dispatcher.register(net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal(name).executes(c -> {
+                    WestHud.later(() -> WestHud.later(WestHud.game::openModHub));
+                    return 1;
+                }));
+        });
         ClientTickEvents.END_CLIENT_TICK.register(WestMod::tick);
         // Dünya paylaşma: e4mc'nin verdiği herkese açık adresi sohbetten yakala
         net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents.GAME.register((msg, overlay) -> WestHud.safe("tunnel", () -> Game121.onChat(msg)));
@@ -112,6 +123,9 @@ public final class WestMod implements ClientModInitializer {
         }
         while (MENU.consumeClick()) {
             if (mc.screen == null) WestHud.game.openWestScreen(false);
+        }
+        while (MODS.consumeClick()) {
+            if (mc.screen == null) WestHud.game.openModHub();
         }
         while (EDITOR.consumeClick()) {
             if (mc.screen == null && mc.player != null) WestHud.game.openWestScreen(true);

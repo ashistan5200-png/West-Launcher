@@ -164,6 +164,50 @@ public interface Game {
     /** Bir Minecraft Screen nesnesini aç */
     default void setScreenObject(Object screen) {}
 
+    // ───────── Oyun içi mod merkezi ─────────
+
+    /** Tek oyunculu dünyadaysa dünyanın klasör adı, değilse null */
+    default String worldFolder() { return null; }
+
+    /** Bir sunucudaysa adresi, değilse null */
+    default String serverAddress() { return null; }
+
+    /** Oyunu düzgünce kapat (dünya kaydedilir) */
+    default void stopGame() {}
+
+    /**
+     * Kaynak paketlerini canlı uygula. Dosya kimlikleri "resourcepacks/x.zip" biçiminde.
+     * then: yeniden yükleme bitince (dosyalar serbest kalınca) çağrılır.
+     */
+    default void applyResourcePacks(java.util.List<String> enable, java.util.List<String> disable, Runnable then) { if (then != null) then.run(); }
+
+    /** Seçili kaynak paketleri ("resourcepacks/x.zip" biçiminde) */
+    default java.util.Set<String> activeResourcePacks() { return java.util.Set.of(); }
+
+    /** Iris yüklü mü (shader canlı değiştirilebilir mi) */
+    default boolean shadersSupported() { return false; }
+
+    /** Etkin shader paketinin dosya adı (kapalıysa null) */
+    default String activeShader() { return null; }
+
+    /** Shader'ı canlı değiştir (null: kapat); başarılıysa true */
+    default boolean applyShader(String file) { return false; }
+
+    /** Tek oyunculu dünyada veri paketini etkinleştir (dünyanın datapacks klasöründeki dosya) */
+    default void enableDatapack(String file) {}
+
+    /** Bu oturumda yüklü mod kimlikleri */
+    default java.util.Set<String> loadedMods() { return java.util.Set.of(); }
+
+    /** Mod merkezini aç */
+    default void openModHub() {}
+
+    /** Mod merkezini kapat: açılmadan önceki Minecraft ekranına (ör. duraklatma) ya da oyuna dön */
+    default void closeModHub() { closeScreen(); }
+
+    /** Bir web sayfasını tarayıcıda aç */
+    default void openUrl(String url) {}
+
     /** Bir mod yüklü mü (ör. "voicechat") */
     default boolean modLoaded(String id) { return false; }
 }

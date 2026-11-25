@@ -66,6 +66,10 @@ pub async fn start_game(app: &AppHandle, id: &str, auth: AuthSession, join_serve
     if state.running.lock().contains_key(id) {
         return Err(AppError::msg(crate::i18n::t("Bu instance zaten çalışıyor")));
     }
+    // Önceki oturum çöktüyse oyun içi mod merkezinde kalan bekleyen değişiklikleri şimdi uygula
+    if mode == LaunchMode::Play {
+        let _ = crate::livemods::apply_pending(&state, id).await;
+    }
     let mgr = InstanceManager::new(&state.paths);
     let mut inst = mgr.get(id)?;
     let progress = progress_emitter(app);
@@ -188,10 +192,10 @@ pub async fn start_game(app: &AppHandle, id: &str, auth: AuthSession, join_serve
             // Genel varsayılan JVM argümanları önce, instance'ınkiler sonra (aynı ayar varsa instance'ınki geçerli)
             let mut a = state.settings.read().game.jvm_args.iter().filter(|x| !x.trim().is_empty()).cloned().collect::<Vec<_>>();
             a.extend(inst.extra_jvm_args.iter().cloned());
-            // Oyun içi Sosyal için launcher köprüsü (yalnızca West hesabı açıksa)
-            if mode == LaunchMode::Play && crate::cloud::current_user(&state.http, &state.paths.root).await.is_some() {
+            // Launcher köprüsü: oyun içi mod merkezi ve (West hesabı açıksa) Sosyal
+            if mode == LaunchMode::Play {
                 if let Ok(b) = crate::bridge::ensure(&state.http, &state.paths.root).await {
-                    a.extend(crate::bridge::jvm_args(b));
+                    a.extend(crate::bridge::jvm_args(b, id));
                 }
             }
             a
@@ -244,6 +248,10 @@ pub async fn start_game(app: &AppHandle, id: &str, auth: AuthSession, join_serve
         }
         if let Some(w) = st.watchers.lock().get(&exit_id) {
             let _ = w.send(GameSignal::Exit(code));
+        }
+        // Oyun içi mod merkezinde bekleyen değişiklikleri uygula (istenmişse yeniden başlat)
+        if mode == LaunchMode::Play {
+            crate::livemods::on_game_exit(&exit_id);
         }
         if mode == LaunchMode::Play && !post.is_empty() {
             let (cmd, env, dir) = (post.clone(), exit_env.clone(), exit_game_dir.clone());

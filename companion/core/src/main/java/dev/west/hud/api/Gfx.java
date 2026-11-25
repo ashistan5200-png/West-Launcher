@@ -91,6 +91,9 @@ public interface Gfx {
      */
     default boolean texture(String loc, int x, int y, int w, int h, float u, float v, int uw, int vh, int texW, int texH, int color) { return false; }
 
+    /** PNG baytlarından (önbellekli) görsel; anahtar aynı kaldıkça doku bir kez oluşturulur. Desteklenmiyorsa false. */
+    default boolean png(String key, byte[] png, int x, int y, int w, int h) { return false; }
+
     /** Dünyanın küçük resmi; yoksa false */
     default boolean worldIcon(String id, String iconPath, int x, int y, int size) { return false; }
 }
