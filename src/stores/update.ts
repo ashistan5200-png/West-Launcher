@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { api, events, isTauri } from "@/lib/ipc";
 import type { UpdateStatus } from "@/lib/types";
+import { errorText } from "@/lib/format";
 
 interface UpdateState {
   status: UpdateStatus | null;
@@ -28,7 +29,7 @@ export const useUpdate = create<UpdateState>((set) => ({
     try {
       set({ status: await api.checkUpdate() });
     } catch (e) {
-      set({ error: String(e) });
+      set({ error: errorText(e) });
     } finally {
       set({ checking: false });
     }
@@ -39,7 +40,7 @@ export const useUpdate = create<UpdateState>((set) => ({
     try {
       await api.installUpdate(); // başarılıysa launcher kapanır, kurulum açılır
     } catch (e) {
-      set({ installing: false, error: String(e) });
+      set({ installing: false, error: errorText(e) });
     }
   },
 

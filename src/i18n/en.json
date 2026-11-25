@@ -1919,5 +1919,12 @@
  "WestPhoto rehberi": "WestPhoto guide",
  "WestPhoto'ya hoş geldin!": "Welcome to WestPhoto!",
  "Yalnızca arşive kaydet": "Save to archive only",
- "tekrar tıkla: diğer araçlar": "click again: more tools"
+ "tekrar tıkla: diğer araçlar": "click again: more tools",
+ "{0} ile uyumlu": "compatible with {0}",
+ "Beklenmeyen bir sorun oldu. Tekrar dene; sürerse launcher'ı yeniden başlat.": "Something unexpected went wrong. Try again; if it keeps happening, restart the launcher.",
+ "Bağlantı kurulamadı. İnternet bağlantını kontrol edip tekrar dene.": "Could not connect. Check your internet connection and try again.",
+ "Bu filtrede sürüm notu yok.": "No patch notes for this filter.",
+ "Sürüm notları şu an alınamadı. Biraz sonra tekrar bak.": "Patch notes could not be loaded right now. Check back in a bit.",
+ "Şu an gösterilecek mod güncellemesi yok.": "No mod updates to show right now.",
+ "{0} indirme": "{0} downloads"
 }

@@ -6,11 +6,12 @@ import { api } from "@/lib/ipc";
 import { useInstances } from "@/stores/instances";
 import { askConfirm } from "@/components/ConfirmDialog";
 import { tx } from "@/lib/i18n";
+import { errorText } from "@/lib/format";
 
 /** Uygulama içinde düzenlenebilen metin dosyaları */
 export const EDITABLE = /\.(txt|json|json5|toml|cfg|conf|properties|ini|ya?ml|snbt|md|js|mcmeta)$/i;
 
-const err = (e: unknown) => String(e).replace(/^Error: /, "");
+const err = (e: unknown) => errorText(e);
 
 /** options.txt satırları "anahtar:değer" biçimindedir. Değerde de ":" olabilir, ilkinden bölünür. */
 type Line = { key: string; value: string } | { raw: string };

@@ -8,7 +8,7 @@ import {
 import clsx from "clsx";
 import { Menu } from "@/components/instance/Menu";
 import { isTauri } from "@/lib/ipc";
-import { formatCount } from "@/lib/format";
+import { formatCount, errorText } from "@/lib/format";
 import * as S from "@/lib/social";
 import type { Post } from "@/lib/social";
 import { useSocial } from "@/stores/social";
@@ -137,7 +137,7 @@ export function PostCard({ post: initial, onChanged, onDeleted, onOpenMedia, det
       else await S.setRepost(me!.userId, post.id, on);
     } catch (e) {
       update(post);
-      setMsg(String(e).replace(/^Error: /, ""));
+      setMsg(errorText(e));
     }
   };
 
@@ -190,7 +190,7 @@ export function PostCard({ post: initial, onChanged, onDeleted, onOpenMedia, det
                 <span className="muted tiny grow">{500 - editing.length}</span>
                 <button className="btn btn-ghost btn-sm" onClick={() => setEditing(null)}>{tx("Vazgeç")}</button>
                 <button className="btn btn-primary btn-sm" disabled={!editing.trim() && !post.media.length} onClick={async () => {
-                  try { await S.editPost(post.id, editing.trim()); const f = await S.postById(post.id); if (f) update(f); setEditing(null); } catch (e) { setMsg(String(e).replace(/^Error: /, "")); }
+                  try { await S.editPost(post.id, editing.trim()); const f = await S.postById(post.id); if (f) update(f); setEditing(null); } catch (e) { setMsg(errorText(e)); }
                 }}>{tx("Kaydet")}</button>
               </div>
             </div>

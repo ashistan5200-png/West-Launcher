@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { api } from "@/lib/ipc";
 import type { Pick } from "@/lib/types";
+import { errorText } from "@/lib/format";
 
 export interface ChatMessage {
   id: number;
@@ -53,7 +54,7 @@ export const useChat = create<ChatState>((set, get) => ({
         messages: [...s.messages, { id: ++mid, role: "ashi", text: out.reply, picks: out.picks, keywords: out.mode === "keyword" ? out.searches.flatMap((q) => q.split(" ")).filter(Boolean) : undefined }],
       }));
     } catch (e) {
-      set((s) => ({ messages: [...s.messages, { id: ++mid, role: "ashi", text: String(e), error: true }] }));
+      set((s) => ({ messages: [...s.messages, { id: ++mid, role: "ashi", text: errorText(e), error: true }] }));
     } finally {
       set({ busy: false });
     }

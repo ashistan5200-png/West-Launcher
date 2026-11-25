@@ -88,7 +88,7 @@ export default function App() {
         <div className="shell-body">
           <Sidebar />
           <main className="content">
-            <AmbientSky />
+            <AmbientSky quiet={location.pathname !== "/"} />
             <AnimatePresence mode="wait">
               <motion.div
                 key={location.pathname}

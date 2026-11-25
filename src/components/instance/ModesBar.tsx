@@ -7,9 +7,10 @@ import { Modal } from "@/components/Modal";
 import { Menu } from "./Menu";
 import { askConfirm } from "@/components/ConfirmDialog";
 import { tx } from "@/lib/i18n";
+import { errorText } from "@/lib/format";
 
 const ICONS = ["🏗️", "⚔️", "⛏️", "🌲", "🎥", "🏹", "🧪", "🌙", "🏆", "🎮"];
-const err = (e: unknown) => String(e).replace(/^Error: /, "");
+const err = (e: unknown) => errorText(e);
 
 /**
  * Oyun modları: "Build modu", "PvP modu" gibi. Her mod hangi modların açık olacağını ve

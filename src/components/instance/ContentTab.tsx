@@ -18,6 +18,7 @@ import { ModesBar } from "./ModesBar";
 import type { ContentFile } from "@/lib/types";
 import { askConfirm } from "@/components/ConfirmDialog";
 import { tx } from "@/lib/i18n";
+import { errorText } from "@/lib/format";
 
 type KindFilter = "all" | "mod" | "resourcepack" | "shader";
 type Extra = "updates" | "disabled" | "deps";
@@ -89,7 +90,7 @@ export function ContentTab({ instanceId, locked }: { instanceId: string; locked:
   const allSelected = view.length > 0 && selectedItems.length === view.length;
 
   const mark = (ids: string[], on: boolean) => setBusy((b) => { const n = new Set(b); ids.forEach((id) => (on ? n.add(id) : n.delete(id))); return n; });
-  const fail = (e: unknown) => setNotice({ ok: false, text: String(e).replace(/^Error: /, "") });
+  const fail = (e: unknown) => setNotice({ ok: false, text: errorText(e) });
 
   const toggle = async (ids: string[], enabled: boolean) => {
     setItems((list) => list?.map((i) => (ids.includes(i.id) ? { ...i, enabled } : i)) ?? null);

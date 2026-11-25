@@ -10,7 +10,7 @@ import clsx from "clsx";
 import { api } from "@/lib/ipc";
 import { markdownToHtml } from "@/lib/markdown";
 import { catLabel } from "@/lib/categories";
-import { LOADER_LABEL, formatCount, formatRelative } from "@/lib/format";
+import { LOADER_LABEL, formatCount, formatRelative, errorText } from "@/lib/format";
 import type { ContentHit, Instance, ProjectDetail, ProjectVersion } from "@/lib/types";
 import { ContentIcon } from "./ContentIcon";
 import { InstallMenu } from "./InstallMenu";
@@ -57,7 +57,7 @@ export function ModDetail({ hit, instances, preferred, onClose }: { hit: Content
   const [lightbox, setLightbox] = useState<number | null>(null);
 
   useEffect(() => {
-    api.contentProject(hit.id).then(setP).catch((e) => setError(String(e)));
+    api.contentProject(hit.id).then(setP).catch((e) => setError(errorText(e)));
     api.contentVersions(hit.id).then(setVersions).catch(() => setVersions([]));
   }, [hit.id]);
   useEffect(() => {

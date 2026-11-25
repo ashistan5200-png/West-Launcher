@@ -10,6 +10,7 @@ import { api } from "@/lib/ipc";
 import { useInstances } from "@/stores/instances";
 import type { Instance } from "@/lib/types";
 import { tx } from "@/lib/i18n";
+import { errorText } from "@/lib/format";
 
 /** Instance'ın görünümü: ad, profil fotoğrafı (simge) ve banner. */
 export function AppearanceModal({ instance, open, onClose }: { instance: Instance; open: boolean; onClose: () => void }) {
@@ -36,7 +37,7 @@ export function AppearanceModal({ instance, open, onClose }: { instance: Instanc
       if (next) setCur(next);
       await refresh();
     } catch (e) {
-      setError(String(e).replace(/^Error: /, ""));
+      setError(errorText(e));
     } finally {
       setBusy(null);
     }

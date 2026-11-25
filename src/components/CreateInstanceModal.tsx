@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
 import { Modal } from "./Modal";
 import { api, isTauri } from "@/lib/ipc";
-import { LOADER_LABEL } from "@/lib/format";
+import { LOADER_LABEL, errorText } from "@/lib/format";
 import type { LoaderKind, LoaderVersion, ManifestEntry } from "@/lib/types";
 import { useInstances } from "@/stores/instances";
 import { tx } from "@/lib/i18n";
@@ -26,7 +26,7 @@ export function CreateInstanceModal({ open, onClose, onCreated }: { open: boolea
     api.listMcVersions(snapshots).then((v) => {
       setVersions(v);
       setMc((cur) => cur || v[0]?.id || "");
-    }).catch((e) => setErr(String(e)));
+    }).catch((e) => setErr(errorText(e)));
   }, [open, snapshots]);
 
   useEffect(() => {
@@ -56,7 +56,7 @@ export function CreateInstanceModal({ open, onClose, onCreated }: { open: boolea
       onClose();
       setName("");
     } catch (e) {
-      setErr(String(e));
+      setErr(errorText(e));
     } finally {
       setBusy(false);
     }

@@ -16,7 +16,7 @@ import { InstallMenu } from "@/components/InstallMenu";
 import { Pagination } from "@/components/Pagination";
 import { ModDetail } from "@/components/ModDetail";
 import { AnimatePresence } from "framer-motion";
-import { LOADER_LABEL, formatCount, formatRelative } from "@/lib/format";
+import { LOADER_LABEL, formatCount, formatRelative, errorText } from "@/lib/format";
 import { catLabel } from "@/lib/categories";
 import { locale, tx } from "@/lib/i18n";
 
@@ -89,6 +89,7 @@ export function BrowsePage() {
   const topRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [retry, setRetry] = useState(0);
   const reqId = useRef(0);
   const [detail, setDetail] = useState<ContentHit | null>(null);
 
@@ -105,7 +106,7 @@ export function BrowsePage() {
         url: `https://modrinth.com/${p.project_type}/${p.slug}`, alsoOn: null, versions: p.game_versions, loaders: p.loaders,
         updated: p.updated, clientSide: p.client_side as ContentHit["clientSide"], serverSide: p.server_side as ContentHit["serverSide"],
       });
-    }).catch((e) => setError(String(e)));
+    }).catch((e) => setError(errorText(e)));
     return () => { alive = false; };
   }, [projectParam]);
   const closeDetail = () => {
@@ -165,13 +166,13 @@ export function BrowsePage() {
         setTotal(r.total);
         setError(null);
       } catch (e) {
-        if (id === reqId.current) setError(String(e));
+        if (id === reqId.current) setError(errorText(e));
       } finally {
         if (id === reqId.current) setLoading(false);
       }
     }, page === 1 ? 300 : 0);
     return () => window.clearTimeout(t);
-  }, [baseQuery, page]);
+  }, [baseQuery, page, retry]);
 
   const pages = Math.max(1, Math.ceil(Math.min(total, MAX_OFFSET) / PAGE));
   const changePage = (p: number) => {
@@ -277,11 +278,16 @@ export function BrowsePage() {
 
         <div className="bmeta muted small">
           {loading && hits.length === 0 ? tx("Aranıyor…") : tx("{0} sonuç · sayfa {1} / {2}", formatCount(total), page, pages.toLocaleString(locale()))}
-          {fromInstance && <span> · <strong>{fromInstance.name}</strong> ile uyumlu</span>}
+          {fromInstance && <span> · {tx("{0} ile uyumlu", fromInstance.name)}</span>}
           {kind === "modpack" && <span> {tx("· Modpack'ler kendi sürümüyle yeni bir instance olarak kurulur")}</span>}
         </div>
 
-        {error && <div className="banner banner-error">{error}</div>}
+        {error && (
+          <div className="banner banner-error row between">
+            <span>{error}</span>
+            <button className="btn btn-sm" onClick={() => { setError(null); setPage((p) => p); setRetry((r) => r + 1); }}>{tx("Tekrar dene")}</button>
+          </div>
+        )}
 
         <div className={`bresults ${loading && hits.length ? "dim" : ""}`}>
           {hits.map((h) => <ResultCard key={h.id} hit={h} instances={instances} preferred={fromInstance} direct={!!fromInstance} onOpen={() => setDetail(h)} />)}

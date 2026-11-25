@@ -8,7 +8,7 @@ import { useOnboarding } from "@/stores/onboarding";
 import { useInstances } from "@/stores/instances";
 import { api } from "@/lib/ipc";
 import type { FoundInstance, LauncherId, ManifestEntry } from "@/lib/types";
-import { LOADER_LABEL } from "@/lib/format";
+import { LOADER_LABEL, errorText } from "@/lib/format";
 import { tx } from "@/lib/i18n";
 
 export const LAUNCHER_LABEL: Record<LauncherId, string> = {
@@ -60,7 +60,7 @@ export function ImportWizard() {
         await api.importInstance(f, versions[k] ?? null, worlds);
         setState((s) => ({ ...s, [k]: "done" }));
       } catch (e) {
-        setState((s) => ({ ...s, [k]: String(e) }));
+        setState((s) => ({ ...s, [k]: errorText(e) }));
       }
     }
     await refresh();

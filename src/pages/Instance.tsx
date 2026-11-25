@@ -14,7 +14,7 @@ import { FilesTab, LogsTab, ShareTab, WorldsTab } from "@/components/instance/Ot
 import { Menu } from "@/components/instance/Menu";
 import { AshiPorter } from "@/components/instance/AshiPorter";
 import { api } from "@/lib/ipc";
-import { LOADER_LABEL, formatDuration, formatRelative } from "@/lib/format";
+import { LOADER_LABEL, formatDuration, formatRelative, errorText } from "@/lib/format";
 import type { CompanionConfig, CompanionInfo, Instance, JvmProfile, LoaderKind, LoaderVersion, ManifestEntry } from "@/lib/types";
 import { askConfirm } from "@/components/ConfirmDialog";
 import { tx } from "@/lib/i18n";
@@ -298,7 +298,7 @@ function VersionCard({ instance }: { instance: Instance }) {
       await api.updateInstance({ ...instance, mcVersion: mc, loader: { kind, version: kind === "vanilla" ? null : lv } });
       await refresh();
       setMsg({ ok: true, text: mcChanged ? tx("Sürüm değişti. İçerik sekmesinde \"Tümünü güncelle\" ile modları yeni sürüme uygun hale getir; oyun ilk açılışta yeni sürümü indirir.") : tx("Yükleyici sürümü değişti; ilk açılışta indirilecek.") });
-    } catch (e) { setMsg({ ok: false, text: String(e).replace(/^Error: /, "") }); } finally { setBusy(false); }
+    } catch (e) { setMsg({ ok: false, text: errorText(e) }); } finally { setBusy(false); }
   };
 
   const releases = mcList.filter((v) => snapshots || v.type === "release");

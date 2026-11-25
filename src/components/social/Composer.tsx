@@ -9,6 +9,7 @@ import * as S from "@/lib/social";
 import { useSocial } from "@/stores/social";
 import { Avatar, QuoteEmbed } from "./PostCard";
 import { tx } from "@/lib/i18n";
+import { errorText } from "@/lib/format";
 
 const MAX = 500;
 const HOURS = [{ h: 1, l: tx("1 saat") }, { h: 24, l: tx("1 gün") }, { h: 72, l: tx("3 gün") }, { h: 168, l: tx("7 gün") }];
@@ -50,7 +51,7 @@ export function Composer({ replyTo, quoteOf, onPosted, autoFocus, compact }: { r
       setText(""); setFiles([]); setPoll(null);
       if (post) onPosted?.(post);
     } catch (e) {
-      setError(String(e).replace(/^Error: /, ""));
+      setError(errorText(e));
     } finally {
       setBusy(false);
     }

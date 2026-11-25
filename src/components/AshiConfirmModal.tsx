@@ -5,6 +5,7 @@ import { AshiAvatar } from "./AshiAvatar";
 import { useAshi } from "@/stores/ashi";
 import { useSettings } from "@/stores/settings";
 import { tx } from "@/lib/i18n";
+import { errorText } from "@/lib/format";
 
 /** Bir test turunun kabaca süresi: modlu paket açılışı ≈ 1–3 dk. */
 const MIN_PER_ROUND = 1;
@@ -33,7 +34,7 @@ export function AshiConfirmModal() {
             disabled={busy}
             onClick={async () => {
               setErr(null);
-              try { await start(confirm!.instanceId, offlineName); } catch (e) { setErr(String(e)); }
+              try { await start(confirm!.instanceId, offlineName); } catch (e) { setErr(errorText(e)); }
             }}
           >
             <Swords size={15} /> {busy ? tx("Başlatılıyor…") : tx("Avı başlat")}

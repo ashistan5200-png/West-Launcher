@@ -3,6 +3,7 @@ import { api, events, isTauri } from "@/lib/ipc";
 import { listen } from "@tauri-apps/api/event";
 import { useSettings } from "./settings";
 import type { GameExit, Instance, NewInstance, Progress } from "@/lib/types";
+import { errorText } from "@/lib/format";
 
 const MAX_LOG = 5000;
 
@@ -52,7 +53,7 @@ export const useInstances = create<InstancesState>((set, get) => ({
       const pid = await api.launch(id, { offlineName, joinServer });
       set((s) => ({ running: { ...s.running, [id]: pid } }));
     } catch (e) {
-      set({ error: String(e) });
+      set({ error: errorText(e) });
     } finally {
       set((s) => {
         const { [id]: _l, ...launching } = s.launching;

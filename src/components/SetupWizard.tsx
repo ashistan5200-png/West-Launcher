@@ -11,6 +11,7 @@ import { api, isTauri } from "@/lib/ipc";
 import type { AshiMood } from "@/lib/ashi";
 import { LAUNCHER_LABEL } from "./ImportWizard";
 import { tx } from "@/lib/i18n";
+import { errorText } from "@/lib/format";
 
 const STEPS = ["welcome", "login", "import", "done"] as const;
 type Step = (typeof STEPS)[number];
@@ -149,7 +150,7 @@ export function SetupWizard() {
         if (accErr) throw new Error(accErr);
         if (pw) await api.setLauncherPassword(pw);
       } catch (e) {
-        setError(String(e).replace(/^Error: /, ""));
+        setError(errorText(e));
         setBusy(false);
         return;
       }

@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Check, CircleHelp, Loader2, PackageX, Power, Sparkles, Trash2, X } from "lucide-react";
 import clsx from "clsx";
 import { api } from "@/lib/ipc";
-import { LOADER_LABEL } from "@/lib/format";
+import { LOADER_LABEL, errorText } from "@/lib/format";
 import { useInstances } from "@/stores/instances";
 import type { Instance, LoaderKind, ManifestEntry, PortItem, PortResult } from "@/lib/types";
 import { AshiHead } from "@/components/AshiHead";
@@ -55,7 +55,7 @@ export function AshiPorter({ instance, open, onClose }: { instance: Instance; op
       const p = await api.portPlan(instance.id, mc, loader);
       setPlan(p);
       setStep("review");
-    } catch (e) { setError(String(e).replace(/^Error: /, "")); setStep("target"); }
+    } catch (e) { setError(errorText(e)); setStep("target"); }
   };
 
   const run = async () => {
@@ -66,7 +66,7 @@ export function AshiPorter({ instance, open, onClose }: { instance: Instance; op
       setResult(r);
       await refresh();
       setStep("done");
-    } catch (e) { setError(String(e).replace(/^Error: /, "")); setStep("review"); }
+    } catch (e) { setError(errorText(e)); setStep("review"); }
   };
 
   const bubble =

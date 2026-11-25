@@ -3,6 +3,7 @@ import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { api, events, isTauri } from "@/lib/ipc";
 import type { AccountView, Skin } from "@/lib/types";
 import { tx } from "@/lib/i18n";
+import { errorText } from "@/lib/format";
 
 /** Klasik skinlerde sağ kolun 4. sütunu (x=54..55, y=20..31) doludur; slim'de saydamdır. */
 async function detectSlim(dataUrl: string): Promise<boolean> {
@@ -67,7 +68,7 @@ export const useAccounts = create<AccountsState>((set, get) => {
     try {
       await fn();
     } catch (e) {
-      set({ error: String(e) });
+      set({ error: errorText(e) });
     } finally {
       set({ busy: null });
     }
@@ -107,7 +108,7 @@ export const useAccounts = create<AccountsState>((set, get) => {
       try {
         await api.msLoginWindow();
       } catch (e) {
-        set({ loginError: String(e), loginOpen: false });
+        set({ loginError: errorText(e), loginOpen: false });
       }
     },
     /** Her durumda pencereyi kapatır ve modal'ı temizler (eskiden hata kalınca kapanmıyordu). */

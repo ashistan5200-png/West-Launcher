@@ -7,10 +7,11 @@ import { useWest } from "@/stores/west";
 import { PasswordField } from "./SetupWizard";
 import { Logo } from "./Logo";
 import { tx } from "@/lib/i18n";
+import { errorText } from "@/lib/format";
 
 const USERNAME = /^[A-Za-z0-9_]{3,16}$/;
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-const errText = (e: unknown) => String(e).replace(/^Error: /, "");
+const errText = (e: unknown) => errorText(e);
 
 /** 0–4 arası şifre gücü */
 function strength(pw: string) {

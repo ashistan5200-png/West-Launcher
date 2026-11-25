@@ -4,6 +4,7 @@ import type { AiSetupProgress, AiStatus } from "@/lib/types";
 import { useSettings } from "@/stores/settings";
 import { useChat } from "@/stores/chat";
 import { tx } from "@/lib/i18n";
+import { errorText } from "@/lib/format";
 
 interface AiState {
   status: AiStatus | null;
@@ -58,7 +59,7 @@ export const useAi = create<AiState>((set, get) => ({
     try {
       await api.ollamaSetup(m);
     } catch (e) {
-      set({ progress: null, error: String(e).replace(/^Error: /, "") });
+      set({ progress: null, error: errorText(e) });
     }
     await get().refresh();
   },

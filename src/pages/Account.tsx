@@ -12,7 +12,7 @@ import { WestAccountCard } from "@/components/WestAccountCard";
 import { EditProfileModal } from "@/pages/Social";
 import { askConfirm } from "@/components/ConfirmDialog";
 import { api, isTauri } from "@/lib/ipc";
-import { formatCount } from "@/lib/format";
+import { formatCount, errorText } from "@/lib/format";
 import { locale, tx } from "@/lib/i18n";
 
 /**
@@ -55,7 +55,7 @@ export function AccountPage() {
       await api.westResetPassword(account.email);
       setResetMsg(tx("Şifre sıfırlama bağlantısı {0} adresine gönderildi.", account.email));
     } catch (e) {
-      setResetMsg(String(e).replace(/^Error: /, ""));
+      setResetMsg(errorText(e));
     } finally {
       setBusy(false);
     }

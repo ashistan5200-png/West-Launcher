@@ -68,7 +68,8 @@ async function paletteFromImage(src: string): Promise<Pal | null> {
  * dağ katmanları. Özel banner varsa görsel bulanıklaştırılıp arkaya konur ve gökyüzü
  * onun renk paletiyle çizilir.
  */
-export function AmbientSky() {
+/** quiet: içerik sayfalarında (ana sayfa dışında) sahne geri planda soluk kalır, formlarla yarışmaz */
+export function AmbientSky({ quiet = false }: { quiet?: boolean }) {
   const inst = useFeaturedInstance();
   // Oyun açıkken sahne durağan çizilir (tek kare), döngü çalışmaz
   const gameRunning = useInstances((s) => Object.keys(s.running).length > 0);
@@ -217,7 +218,7 @@ export function AmbientSky() {
   const motes = useMemo(() => Array.from({ length: 22 }, (_, i) => ({ left: (i * 37 + 11) % 100, delay: -((i * 3.3) % 20), dur: 14 + ((i * 7) % 12), size: 3 + (i % 3) * 2, top: 35 + ((i * 53) % 60) })), []);
 
   return (
-    <div className="ambient-holder" ref={holder} aria-hidden>
+    <div className={quiet ? "ambient-holder quiet" : "ambient-holder"} ref={holder} aria-hidden>
       <div className="ambient" style={{ height: height || "100vh" }}>
         {useBanner && <img className="ambient-img" src={banner!} alt="" draggable={false} />}
         <canvas ref={canvas} className={useBanner ? "ambient-sky over-image" : "ambient-sky"} />

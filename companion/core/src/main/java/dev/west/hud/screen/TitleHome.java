@@ -96,7 +96,6 @@ public final class TitleHome implements WestScreen {
             { Icon.GLOBE, Tr.t("Dil"), (Runnable) () -> game.open(Game.Target.LANGUAGE) },
             { Icon.USER, Tr.t("Skin ayarları"), (Runnable) () -> game.open(Game.Target.WARDROBE) },
             { Icon.HUD, Tr.t("West menüsü"), (Runnable) () -> game.openWestScreenPage(0) },
-            { Icon.BOX, Tr.t("Mod Merkezi (H)"), (Runnable) game::openModHub },
             { Icon.FULLSCREEN, Tr.t("Tam ekran"), (Runnable) game::toggleFullscreen },
             { Icon.BACK, Tr.t("Klasik Minecraft menüsü"), (Runnable) game::openVanillaTitle },
         };

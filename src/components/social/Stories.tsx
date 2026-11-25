@@ -13,6 +13,7 @@ import { Modal } from "@/components/Modal";
 import { Avatar, ago } from "./PostCard";
 import { askConfirm } from "@/components/ConfirmDialog";
 import { tx } from "@/lib/i18n";
+import { errorText } from "@/lib/format";
 
 const DURATION = 6000;
 
@@ -185,7 +186,7 @@ function StoryComposer({ open, onClose, onPosted }: { open: boolean; onClose: ()
     <Modal open={open} onClose={onClose} title={tx("Hikâye paylaş")} width={420}
       footer={<><button className="btn btn-ghost" onClick={onClose}>{tx("Vazgeç")}</button><button className="btn btn-primary" disabled={!file || busy} onClick={async () => {
         setBusy(true); setError(null);
-        try { await S.createStory(await api.westUpload(file!, "stories"), caption); onPosted(); } catch (e) { setError(String(e).replace(/^Error: /, "")); } finally { setBusy(false); }
+        try { await S.createStory(await api.westUpload(file!, "stories"), caption); onPosted(); } catch (e) { setError(errorText(e)); } finally { setBusy(false); }
       }}>{busy && <Loader2 size={15} className="spin" />} {tx("Paylaş")}</button></>}>
       <div className="story-new" onClick={() => void pick()}>
         {file ? <img src={isTauri() ? convertFileSrc(file) : file} alt="" /> : <span className="muted"><Plus size={22} /><br />{tx("Fotoğraf seç")}</span>}

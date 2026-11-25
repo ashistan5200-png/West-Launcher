@@ -1520,6 +1520,9 @@ body:has(.modal-backdrop, .mdetail-backdrop, .story-view, .lightbox, .editor-bac
 @keyframes ambient-drift { from { transform: scale(1) translate(0, 0); } to { transform: scale(1.12) translate(-3%, 2%); } }
 .ambient-fade { position: absolute; inset: 0; background: linear-gradient(180deg, rgb(var(--surface) / 0.12) 0%, rgb(var(--surface) / 0.5) 38%, rgb(var(--surface) / 0.86) 78%, rgb(var(--surface) / 0.94) 100%); }
 .ambient .mote { position: absolute; }
+/* Ana sayfa dışındaki sayfalarda sahne yalnızca renk verir */
+.ambient-holder.quiet .ambient { opacity: .28; transition: opacity .3s; }
+.ambient-holder .ambient { transition: opacity .3s; }
 .content > .page { position: relative; z-index: 1; }
 @media (prefers-reduced-motion: reduce) { .ambient-img { animation: none; } }
 

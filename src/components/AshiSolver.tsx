@@ -11,6 +11,7 @@ import { useInstances } from "@/stores/instances";
 import { useSettings } from "@/stores/settings";
 import { useAshi } from "@/stores/ashi";
 import { tx } from "@/lib/i18n";
+import { errorText } from "@/lib/format";
 
 /** Her neden için başlık, açıklama ve öneri */
 function causeText(c: CrashCause): { title: string; why: string; fix: string } {
@@ -93,7 +94,7 @@ export function AshiSolver() {
       await api.disableMods(instanceId, [c.file]);
       setDone(tx("{0} kapatıldı. Oyunu yeniden başlatabilirsin; istediğin zaman İçerik sekmesinden geri açarsın.", c.name));
     } catch (e) {
-      setErr(String(e));
+      setErr(errorText(e));
     }
   };
   // Ashi'nin onarabildiği hatalar: şimdilik geçersiz dosya adı
@@ -105,7 +106,7 @@ export function AshiSolver() {
     try {
       setFixed(await api.fixMod(instanceId, c.file, a?.detail ?? null));
     } catch (e) {
-      setErr(String(e));
+      setErr(errorText(e));
     } finally {
       setFixing(false);
     }
@@ -117,7 +118,7 @@ export function AshiSolver() {
       setFixed(null);
       setDone(tx("Geri aldım; mod eski haline döndü."));
     } catch (e) {
-      setErr(String(e));
+      setErr(errorText(e));
     }
   };
   const play = () => {

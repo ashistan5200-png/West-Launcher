@@ -5,7 +5,7 @@ import { Download, ExternalLink, Loader2, Pause, Play, Search, X } from "lucide-
 import { AnimatePresence, motion } from "framer-motion";
 import clsx from "clsx";
 import { api, isTauri } from "@/lib/ipc";
-import { formatCount } from "@/lib/format";
+import { formatCount, errorText } from "@/lib/format";
 import type { AssetDiff, ManifestEntry, ModUpdate, NewSound, NewTexture, PatchNote } from "@/lib/types";
 import { ContentIcon } from "@/components/ContentIcon";
 import { locale, tx } from "@/lib/i18n";
@@ -56,7 +56,7 @@ function PatchNotes() {
   const [reading, setReading] = useState<PatchNote | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
-    if (isTauri()) api.newsPatchNotes().then(setNotes).catch((e) => setError(String(e)));
+    if (isTauri()) api.newsPatchNotes().then(setNotes).catch((e) => setError(errorText(e)));
   }, []);
   const list = useMemo(() => (notes ?? []).filter((n) => filter === "all" || n.kind === filter), [notes, filter]);
 
@@ -71,6 +71,7 @@ function PatchNotes() {
       </div>
       {error && <div className="banner banner-error">{error}</div>}
       {!notes && !error && <div className="center pad muted"><Loader2 className="spin" size={18} /></div>}
+      {notes && !error && list.length === 0 && <p className="muted center pad">{notes.length ? tx("Bu filtrede sürüm notu yok.") : tx("Sürüm notları şu an alınamadı. Biraz sonra tekrar bak.")}</p>}
       <div className="note-grid">
         {list.map((n) => (
           <button key={n.id} className="note-card" onClick={() => setReading(n)}>
@@ -92,7 +93,7 @@ function PatchNotes() {
 function NoteReader({ note, onClose }: { note: PatchNote; onClose: () => void }) {
   const [html, setHtml] = useState<string | null>(null);
   useEffect(() => {
-    api.newsPatchBody(note.contentPath).then((b) => setHtml(sanitize(b))).catch((e) => setHtml(`<p>${String(e)}</p>`));
+    api.newsPatchBody(note.contentPath).then((b) => setHtml(sanitize(b))).catch((e) => setHtml(`<p>${errorText(e).replace(/[<>&]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" })[c]!)}</p>`));
     const k = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", k);
     return () => window.removeEventListener("keydown", k);
@@ -136,13 +137,14 @@ function ModUpdates() {
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   useEffect(() => {
-    if (isTauri()) api.newsModUpdates().then(setMods).catch((e) => setError(String(e)));
+    if (isTauri()) api.newsModUpdates().then(setMods).catch((e) => setError(errorText(e)));
   }, []);
   return (
     <>
       <p className="muted tiny">{tx("Modrinth'te en çok indirilen 40 modun en son yayınlanan sürümleri, yeniden eskiye.")}</p>
       {error && <div className="banner banner-error">{error}</div>}
       {!mods && !error && <div className="center pad muted"><Loader2 className="spin" size={18} /></div>}
+      {mods && !error && mods.length === 0 && <p className="muted center pad">{tx("Şu an gösterilecek mod güncellemesi yok.")}</p>}
       <div className="content-list">
         {(mods ?? []).map((m) => (
           <div key={m.projectId} className="content-row mod-update">
@@ -153,7 +155,7 @@ function ModUpdates() {
                 <span className="chip">{m.versionNumber}</span>
               </div>
               <span className="muted tiny">
-                {dateTR(m.date)} {tx("· Minecraft")} {m.gameVersions.join(", ")} · {m.loaders.join(", ")} · {formatCount(m.downloads)} indirme
+                {dateTR(m.date)} {tx("· Minecraft")} {m.gameVersions.join(", ")} · {m.loaders.join(", ")} · {tx("{0} indirme", formatCount(m.downloads))}
               </span>
               {m.changelog && (
                 <button className="link tiny" style={{ alignSelf: "flex-start" }} onClick={() => setOpen(open === m.projectId ? null : m.projectId)}>
@@ -198,7 +200,7 @@ function AssetExplorer() {
       setDiff(d);
       if (!base) setBase(d.base);
     } catch (e) {
-      setError(String(e));
+      setError(errorText(e));
     } finally {
       setBusy(false);
     }
@@ -215,7 +217,7 @@ function AssetExplorer() {
       await api.newsExport(dest, file);
       setFlash(tx("{0}.{1} kaydedildi", name, ext));
     } catch (e) {
-      setFlash(String(e));
+      setFlash(errorText(e));
     }
     window.setTimeout(() => setFlash(null), 3000);
   };

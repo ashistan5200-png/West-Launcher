@@ -8,7 +8,7 @@ import { startInvitePolling, useInvites, type WorldInvite } from "@/stores/invit
 import { useInstances } from "@/stores/instances";
 import { useAccounts } from "@/stores/accounts";
 import { useSettings } from "@/stores/settings";
-import { formatRelative, LOADER_LABEL } from "@/lib/format";
+import { formatRelative, LOADER_LABEL, errorText } from "@/lib/format";
 import type { Instance } from "@/lib/types";
 import { tx } from "@/lib/i18n";
 
@@ -127,7 +127,7 @@ function JoinModal() {
       if (e) throw new Error(e);
       dismiss(inv.id);
     } catch (e) {
-      setErr(String(e instanceof Error ? e.message : e));
+      setErr(errorText(e));
       setBusy(false);
     }
   };
@@ -141,7 +141,7 @@ function JoinModal() {
       const inst = await create({ name: `${inv.world} · ${who(inv)}`.slice(0, 40), mcVersion: inv.version, loader: { kind, version: null } });
       await join(inst.id);
     } catch (e) {
-      setErr(String(e instanceof Error ? e.message : e));
+      setErr(errorText(e));
       setBusy(false);
     }
   };

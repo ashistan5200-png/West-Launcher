@@ -3,6 +3,7 @@ import { api } from "@/lib/ipc";
 import type { ContentHit, InstallReport } from "@/lib/types";
 import { useInstances } from "./instances";
 import { tx } from "@/lib/i18n";
+import { errorText } from "@/lib/format";
 
 const key = (h: Pick<ContentHit, "source" | "id">) => `${h.source}:${h.id}`;
 
@@ -65,7 +66,7 @@ export const useContent = create<ContentState>((set, get) => ({
         await get().loadInstalled(instanceId);
       }
     } catch (e) {
-      push({ id: ++toastId, text: String(e), tone: "error" });
+      push({ id: ++toastId, text: errorText(e), tone: "error" });
     } finally {
       set((s) => {
         const { [k]: _, ...installing } = s.installing;

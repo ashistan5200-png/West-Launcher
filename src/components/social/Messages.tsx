@@ -12,8 +12,9 @@ import { Avatar, RichText, ago } from "./PostCard";
 import { askConfirm } from "@/components/ConfirmDialog";
 import { locale, tx } from "@/lib/i18n";
 import { parseInvite, useInvites } from "@/stores/invites";
+import { errorText } from "@/lib/format";
 
-const err = (e: unknown) => String(e).replace(/^Error: /, "");
+const err = (e: unknown) => errorText(e);
 const dayLabel = (iso: string) => {
   const d = new Date(iso), t = new Date();
   const y = new Date(t); y.setDate(t.getDate() - 1);

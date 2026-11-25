@@ -4,7 +4,7 @@ import clsx from "clsx";
 import { Modal } from "@/components/Modal";
 import { markdownToHtml } from "@/lib/markdown";
 import { api } from "@/lib/ipc";
-import { LOADER_LABEL, formatCount, formatRelative } from "@/lib/format";
+import { LOADER_LABEL, formatCount, formatRelative, errorText } from "@/lib/format";
 import type { ContentFile, Instance, ProjectVersion } from "@/lib/types";
 import { tx } from "@/lib/i18n";
 
@@ -26,7 +26,7 @@ export function VersionPicker({ instance, item, onClose, onChanged }: {
   useEffect(() => {
     if (!item?.projectId) return;
     setVersions(null); setError(null); setAll(false); setOpen(null);
-    api.contentVersions(item.projectId).then(setVersions).catch((e) => setError(String(e).replace(/^Error: /, "")));
+    api.contentVersions(item.projectId).then(setVersions).catch((e) => setError(errorText(e)));
   }, [item?.projectId]);
 
   const fits = (v: ProjectVersion) => {
@@ -46,7 +46,7 @@ export function VersionPicker({ instance, item, onClose, onChanged }: {
       await api.setContentVersion(instance.id, item.id, v.id);
       onChanged(tx("{0} → {1}. Eski dosya yedeklendi.", item.title, v.version_number));
       onClose();
-    } catch (e) { setError(String(e).replace(/^Error: /, "")); } finally { setBusy(null); }
+    } catch (e) { setError(errorText(e)); } finally { setBusy(null); }
   };
 
   return (

@@ -20,11 +20,11 @@ import { StoriesBar } from "@/components/social/Stories";
 import { MessagesView } from "@/components/social/Messages";
 import { Modal } from "@/components/Modal";
 import { Menu } from "@/components/instance/Menu";
-import { formatCount } from "@/lib/format";
+import { formatCount, errorText } from "@/lib/format";
 import { askConfirm } from "@/components/ConfirmDialog";
 import { locale, tx } from "@/lib/i18n";
 
-const err = (e: unknown) => String(e).replace(/^Error: /, "");
+const err = (e: unknown) => errorText(e);
 
 // ───────── Ortak düzen ─────────
 export function SocialLayout({ children, wide }: { children: ReactNode; wide?: boolean }) {

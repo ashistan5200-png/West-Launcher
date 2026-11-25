@@ -12,6 +12,7 @@ import type { Skin } from "@/lib/types";
 import { api } from "@/lib/ipc";
 import { tx } from "@/lib/i18n";
 import { boxes, editable, faces, locate, mirror, PARTS, type Layer, type PartId } from "./layout";
+import { errorText } from "@/lib/format";
 
 type Tool = "pencil" | "eraser" | "fill" | "picker" | "shade" | "noise";
 type Rgba = [number, number, number, number];
@@ -440,7 +441,7 @@ export default function SkinEditor({ initial, onClose, onSaved }: Props) {
       const skin = await api.saveSkinPng(tex.toDataURL("image/png"), name, slim);
       onSaved(skin, andApply);
     } catch (e) {
-      setErr(String(e));
+      setErr(errorText(e));
     } finally {
       setSaving(null);
     }
