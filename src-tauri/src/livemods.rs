@@ -355,6 +355,51 @@ fn clear_failed(dir: &Path, game: &Path) -> Vec<Op> {
     ops
 }
 
+/// Bekleyen bir değişikliği geri al; kurulmuş ama henüz yüklenmemiş dosyalar silinir
+fn undo_op(dir: &Path, game: &Path, index: usize) -> Result<Vec<Op>> {
+    let mut ops = load_pending(dir);
+    if index < ops.len() {
+        let op = ops.remove(index);
+        if op.kind == "install" {
+            // Henüz yüklenmedi: dosyaları sil (açılamadığı için kapatılmış olabilir)
+            let _ = manage::delete(dir, game, &op.ids);
+            for id in &op.ids {
+                let _ = std::fs::remove_file(game.join(format!("{id}{DISABLED}")));
+            }
+        }
+        save_pending(dir, &ops)?;
+    }
+    Ok(ops)
+}
+
+// ───────── Launcher arayüzü için komutlar (oyun kapalıyken de) ─────────
+
+/// Oyun içinde bekleyen / açılamayan değişiklikler
+#[tauri::command]
+pub fn livemods_pending(state: tauri::State<'_, AppState>, id: String) -> Vec<Op> {
+    load_pending(&state.paths.instance_dir(&id))
+}
+
+#[tauri::command]
+pub fn livemods_undo(state: tauri::State<'_, AppState>, id: String, index: usize) -> Result<Vec<Op>> {
+    undo_op(&state.paths.instance_dir(&id), &state.paths.instance_game_dir(&id), index)
+}
+
+/// Açılamadı işaretlerini kaldır (kapatılan jar'lar geri açılır); bir sonraki açılışta uygulanırlar
+#[tauri::command]
+pub fn livemods_retry(state: tauri::State<'_, AppState>, id: String) -> Vec<Op> {
+    clear_failed(&state.paths.instance_dir(&id), &state.paths.instance_game_dir(&id))
+}
+
+/// Oyun kapalıyken bekleyenleri hemen uygula; uygulanamayanların açıklamalarını döner
+#[tauri::command]
+pub async fn livemods_apply(state: tauri::State<'_, AppState>, id: String) -> Result<Vec<String>> {
+    if state.running.lock().contains_key(&id) {
+        return Err(AppError::msg(crate::i18n::t("Oyun açıkken değişiklikler oyunun içinden uygulanır (Mod Merkezi → Uygula).")));
+    }
+    Ok(apply_pending(&state, &id).await)
+}
+
 /// Günlükten çökme sebebini çıkar: önce suçlu modu adıyla, sonra Fabric'in uyumsuzluk açıklamasını,
 /// sonra çökme raporundaki ilk hatayı; zararsız gürültüyü (çevrimdışı hesabın 401'i, uyarılar) atlar.
 fn failure_reason(tail: &[String]) -> Option<String> {
@@ -843,19 +888,7 @@ pub async fn route(method: &str, path: &str, query: &str, body: &Value) -> Resul
         ("GET", "/mods/pending") => Ok(json!({ "pending": load_pending(&dir) })),
         ("POST", "/mods/undo") => {
             let idx = body["index"].as_u64().unwrap_or(u64::MAX) as usize;
-            let mut ops = load_pending(&dir);
-            if idx < ops.len() {
-                let op = ops.remove(idx);
-                if op.kind == "install" {
-                    // Henüz yüklenmedi: dosyaları sil (açılamadığı için kapatılmış olabilir)
-                    let _ = manage::delete(&dir, &game, &op.ids);
-                    for id in &op.ids {
-                        let _ = std::fs::remove_file(game.join(format!("{id}{DISABLED}")));
-                    }
-                }
-                save_pending(&dir, &ops)?;
-            }
-            Ok(json!({ "pending": ops }))
+            Ok(json!({ "pending": undo_op(&dir, &game, idx)? }))
         }
         ("POST", "/mods/restart") => {
             let join = body["join"].as_str().map(String::from).filter(|s| !s.is_empty() && s.len() < 300);

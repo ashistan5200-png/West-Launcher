@@ -86,6 +86,10 @@ pub fn run() {
             // başlatma
             commands::launch::launch_instance,
             commands::launch::kill_instance,
+            livemods::livemods_pending,
+            livemods::livemods_undo,
+            livemods::livemods_retry,
+            livemods::livemods_apply,
             commands::launch::running_instances,
             commands::launch::get_companion,
             commands::launch::set_companion_config,

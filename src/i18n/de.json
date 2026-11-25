@@ -1931,5 +1931,12 @@
  "Bu filtrede sürüm notu yok.": "Keine Patchnotes für diesen Filter.",
  "Sürüm notları şu an alınamadı. Biraz sonra tekrar bak.": "Patchnotes konnten gerade nicht geladen werden. Schau gleich noch mal vorbei.",
  "Şu an gösterilecek mod güncellemesi yok.": "Gerade keine Mod-Updates.",
- "{0} indirme": "{0} Downloads"
+ "{0} indirme": "{0} Downloads",
+ "Oyun bu değişikliklerle açılamadı": "Das Spiel konnte mit diesen Änderungen nicht starten",
+ "{0} değişiklik bekliyor": "{0} Änderungen ausstehend",
+ "Sebep: {0}. Sorunlu olanı geri al, sonra tekrar dene.": "Grund: {0}. Mach die fehlerhafte rückgängig und versuch es dann erneut.",
+ "Oyunun içinden uygula: Mod Merkezi (H) → Uygula. Oyun kapanmadan geçilir.": "Im Spiel anwenden: Mod-Zentrale (H) → Anwenden. Das Spiel wechselt, ohne sich zu schließen.",
+ "Oyun içi Mod Merkezi'nde yapıldı. Bir sonraki açılışta ya da şimdi uygulanır.": "In der Mod-Zentrale im Spiel vorgenommen. Wird beim nächsten Start oder jetzt angewendet.",
+ "Şimdi uygula": "Jetzt anwenden",
+ "açılamadı": "fehlgeschlagen"
 }

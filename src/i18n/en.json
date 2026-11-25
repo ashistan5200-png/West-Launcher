@@ -1926,5 +1926,12 @@
  "Bu filtrede sürüm notu yok.": "No patch notes for this filter.",
  "Sürüm notları şu an alınamadı. Biraz sonra tekrar bak.": "Patch notes could not be loaded right now. Check back in a bit.",
  "Şu an gösterilecek mod güncellemesi yok.": "No mod updates to show right now.",
- "{0} indirme": "{0} downloads"
+ "{0} indirme": "{0} downloads",
+ "Oyun bu değişikliklerle açılamadı": "The game could not start with these changes",
+ "{0} değişiklik bekliyor": "{0} changes pending",
+ "Sebep: {0}. Sorunlu olanı geri al, sonra tekrar dene.": "Reason: {0}. Undo the faulty one, then try again.",
+ "Oyunun içinden uygula: Mod Merkezi (H) → Uygula. Oyun kapanmadan geçilir.": "Apply from inside the game: Mod Hub (H) → Apply. The game switches without closing.",
+ "Oyun içi Mod Merkezi'nde yapıldı. Bir sonraki açılışta ya da şimdi uygulanır.": "Made in the in-game Mod Hub. Applied on next launch, or now.",
+ "Şimdi uygula": "Apply now",
+ "açılamadı": "failed"
 }

@@ -245,5 +245,6 @@
  "İptal edildi": "Cancelled",
  "Yeni oturum zamanında açılamadı": "The new session did not start in time",
  "\"{0}\" modu bu oyun sürümüyle açılamıyor": "The \"{0}\" mod does not work with this game version",
- "Uyumsuz modlar var": "Incompatible mods"
+ "Uyumsuz modlar var": "Incompatible mods",
+ "Oyun açıkken değişiklikler oyunun içinden uygulanır (Mod Merkezi → Uygula).": "While the game is running, apply changes from inside the game (Mod Hub → Apply)."
 }

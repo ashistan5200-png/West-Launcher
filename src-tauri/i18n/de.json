@@ -245,5 +245,6 @@
  "İptal edildi": "Abgebrochen",
  "Yeni oturum zamanında açılamadı": "Die neue Sitzung ist nicht rechtzeitig gestartet",
  "\"{0}\" modu bu oyun sürümüyle açılamıyor": "Die Mod „{0}“ funktioniert mit dieser Spielversion nicht",
- "Uyumsuz modlar var": "Inkompatible Mods"
+ "Uyumsuz modlar var": "Inkompatible Mods",
+ "Oyun açıkken değişiklikler oyunun içinden uygulanır (Mod Merkezi → Uygula).": "Während das Spiel läuft, wende Änderungen im Spiel an (Mod-Zentrale → Anwenden)."
 }

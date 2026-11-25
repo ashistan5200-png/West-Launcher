@@ -15,6 +15,7 @@ import { useInstances } from "@/stores/instances";
 import { api, isTauri } from "@/lib/ipc";
 import { Modal } from "@/components/Modal";
 import { ModesBar } from "./ModesBar";
+import { PendingChanges } from "./PendingChanges";
 import type { ContentFile } from "@/lib/types";
 import { askConfirm } from "@/components/ConfirmDialog";
 import { tx } from "@/lib/i18n";
@@ -189,6 +190,8 @@ export function ContentTab({ instanceId, locked }: { instanceId: string; locked:
         <button className="btn btn-ghost lg" disabled={locked} onClick={() => void upload()}><FolderUp size={16} /> {tx("Dosya yükle")}</button>
         <button className="btn btn-primary lg" onClick={() => navigate(`/browse?instance=${encodeURIComponent(instanceId)}`)}><Compass size={16} /> {tx("İçerik keşfet")}</button>
       </div>
+
+      <PendingChanges instanceId={instanceId} onApplied={() => void refresh()} />
 
       <ModesBar instanceId={instanceId} locked={locked} onApplied={() => void refresh()} onNotice={setNotice} />
 

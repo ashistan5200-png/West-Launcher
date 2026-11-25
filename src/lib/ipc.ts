@@ -114,6 +114,11 @@ export const api = {
   installModpack: (hit: ContentHit) => invoke<Instance>("install_modpack", { source: hit.source, projectId: hit.id }),
   installedContent: (instanceId: string) => invoke<InstalledContent[]>("installed_content", { instanceId }),
   listContent: (instanceId: string) => invoke<ContentFile[]>("list_content", { instanceId }),
+  // Oyun içi Mod Merkezi'nin bekleyen değişiklikleri
+  livemodsPending: (id: string) => invoke<LiveOp[]>("livemods_pending", { id }),
+  livemodsUndo: (id: string, index: number) => invoke<LiveOp[]>("livemods_undo", { id, index }),
+  livemodsRetry: (id: string) => invoke<LiveOp[]>("livemods_retry", { id }),
+  livemodsApply: (id: string) => invoke<string[]>("livemods_apply", { id }),
   refreshContent: (instanceId: string) => invoke<ContentFile[]>("refresh_content", { instanceId }),
   setContentEnabled: (instanceId: string, ids: string[], enabled: boolean) => invoke<void>("set_content_enabled", { instanceId, ids, enabled }),
   deleteContent: (instanceId: string, ids: string[]) => invoke<void>("delete_content", { instanceId, ids }),
@@ -201,3 +206,13 @@ export const events = {
 
 /** Tarayıcıda (vite dev, Tauri dışı) UI geliştirmeyi kırmamak için. */
 export const isTauri = () => typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+
+/** Oyun içi Mod Merkezi'nde bekleyen değişiklik */
+export interface LiveOp {
+  kind: "enable" | "disable" | "delete" | "update" | "install";
+  ids: string[];
+  label: string;
+  at: number;
+  /** Yeni oturum bu değişiklikle açılamadıysa sebebi */
+  failed?: string;
+}
