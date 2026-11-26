@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ChevronDown, Clock, Import, LayoutGrid, List, Loader2, Play, Plus, Search, Square, Timer } from "lucide-react";
+import { ChevronDown, Clock, Import, LayoutGrid, List, Loader2, Play, Plus, Search, Square, } from "lucide-react";
 import { useOnboarding } from "@/stores/onboarding";
 import clsx from "clsx";
 import { useInstances } from "@/stores/instances";
 import { useSettings } from "@/stores/settings";
 import { InstanceIcon } from "@/components/InstanceIcon";
+import { InstanceBanner } from "@/components/InstanceBanner";
 import { CreateInstanceModal } from "@/components/CreateInstanceModal";
 import type { Instance, LoaderKind } from "@/lib/types";
 import { LOADER_LABEL, formatDuration, formatRelative } from "@/lib/format";
@@ -122,7 +123,7 @@ export function LibraryPage() {
               </button>
             )}
             {!closed.has(g) && (view === "grid"
-              ? <div className="lib-grid">{list.map((i) => <Tile key={i.id} i={i} />)}</div>
+              ? <div className="rota-grid">{list.map((i) => <Tile key={i.id} i={i} />)}</div>
               : (
                 <div className="lib-table">
                   <div className="lib-tr lib-th"><span /><span>{tx("Ad")}</span><span>{tx("Yükleyici")}</span><span>{tx("Sürüm")}</span><span>{tx("Oyun süresi")}</span><span>{tx("Son oynama")}</span><span /></div>
@@ -159,14 +160,19 @@ function Tile({ i }: { i: Instance }) {
   const navigate = useNavigate();
   const { r } = usePlay(i);
   return (
-    <div className={clsx("lib-tile", r && "running")} onClick={() => navigate(`/instance/${i.id}`)}>
-      <InstanceIcon instance={i} size={46} />
-      <div className="lib-tile-body">
-        <strong className="truncate">{i.name}</strong>
-        <span className="lib-tile-meta"><span className={`loader-dot ${i.loader.kind}`} /> {LOADER_LABEL[i.loader.kind]} {i.mcVersion}</span>
-        <span className="muted tiny">{r ? tx("Oynanıyor") : i.totalPlaySecs > 0 ? <><Timer size={11} /> {formatDuration(i.totalPlaySecs)}</> : formatRelative(i.lastPlayed)}</span>
+    <div className={clsx("rota-card", r && "running")}>
+      <button className="rota-card-cover" onClick={() => navigate(`/instance/${i.id}`)} aria-label={tx("{0} instance'ını aç", i.name)}>
+        <InstanceBanner instance={i} className="rota-cover-img" />
+      </button>
+      <div className="rota-card-body">
+        <div className="grow">
+          <strong className="truncate">{i.name}</strong>
+          <span className="muted small truncate">
+            {LOADER_LABEL[i.loader.kind]} {i.mcVersion} · {r ? tx("Oynanıyor") : i.totalPlaySecs > 0 ? formatDuration(i.totalPlaySecs) : formatRelative(i.lastPlayed)}
+          </span>
+        </div>
+        <PlayBtn i={i} cls="rota-mini" />
       </div>
-      <PlayBtn i={i} cls="lib-play" />
     </div>
   );
 }

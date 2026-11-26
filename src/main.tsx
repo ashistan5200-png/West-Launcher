@@ -5,6 +5,7 @@ import App from "./App";
 import "@fontsource-variable/plus-jakarta-sans";
 import "@fontsource-variable/jetbrains-mono";
 import "./styles/globals.css";
+import "./styles/rota.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

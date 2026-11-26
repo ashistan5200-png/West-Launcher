@@ -18,7 +18,7 @@ export function PendingChanges({ instanceId, onApplied }: { instanceId: string; 
   const running = useInstances((s) => instanceId in s.running);
 
   const load = useCallback(() => {
-    if (isTauri()) api.livemodsPending(instanceId).then(setOps).catch(() => setOps([]));
+    if (isTauri()) api.livemodsPending(instanceId).then((o) => setOps(Array.isArray(o) ? o : [])).catch(() => setOps([]));
   }, [instanceId]);
 
   // Oyun kapanınca/açılınca bekleyenler değişir
@@ -105,7 +105,7 @@ export function RestorePoints({ instanceId, onRestored }: { instanceId: string; 
   const [error, setError] = useState<string | null>(null);
   const running = useInstances((s) => instanceId in s.running);
   const load = useCallback(() => {
-    if (isTauri()) api.livemodsPoints(instanceId).then((p) => setPoints(p as RestorePointBrief[])).catch(() => setPoints([]));
+    if (isTauri()) api.livemodsPoints(instanceId).then((p) => setPoints(Array.isArray(p) ? (p as RestorePointBrief[]) : [])).catch(() => setPoints([]));
   }, [instanceId]);
   useEffect(load, [load, running]);
 

@@ -29,7 +29,6 @@ import { useAccounts } from "@/stores/accounts";
 import { AshiChat } from "@/components/AshiChat";
 import { AiSetupModal } from "@/components/AiSetup";
 import { ImageCropperHost } from "@/components/ImageCropper";
-import { AmbientSky } from "@/components/AmbientSky";
 import { ConfirmHost } from "@/components/ConfirmDialog";
 import { CursorTrail } from "@/components/CursorTrail";
 import { BackgroundMusic } from "@/components/BackgroundMusic";
@@ -85,7 +84,6 @@ export default function App() {
         <div className="shell-body">
           <Sidebar />
           <main className="content">
-            <AmbientSky quiet={location.pathname !== "/"} />
             <AnimatePresence mode="wait">
               <motion.div
                 key={location.pathname}
