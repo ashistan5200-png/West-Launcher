@@ -320,7 +320,7 @@ main, footer { position: relative; z-index: 1; }
 /* ═══════════ "Rota" tasarım dili (launcher ve oyun içiyle aynı) ═══════════
    Düz yüzeyler, 1px çizgiler, amber yalnızca birincil eylem ve vurgu için. Süs animasyonları yok. */
 :root { --radius: 10px; }
-.motes, .glow-ring, .scroll-hint { display: none !important; }
+.glow-ring, .scroll-hint { display: none !important; }
 .grad { background: none; -webkit-background-clip: initial; background-clip: initial; color: var(--amber); animation: none; }
 .btn-primary, .btn-primary:hover { background: var(--amber); box-shadow: none; }
 .btn-primary:hover { background: var(--amber2); }

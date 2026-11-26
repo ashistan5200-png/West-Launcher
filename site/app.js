@@ -86,6 +86,18 @@
   };
   requestAnimationFrame(draw);
 
+  // ───────── Yükselen parçacıklar ─────────
+  if (!reduce) {
+    const m = $("#motes");
+    for (let i = 0; i < 26; i++) {
+      const el = document.createElement("i");
+      el.style.left = `${(i * 37 + 7) % 100}%`;
+      el.style.animationDuration = `${14 + ((i * 7) % 14)}s`;
+      el.style.animationDelay = `${-((i * 3.3) % 20)}s`;
+      m.appendChild(el);
+    }
+  }
+
   // ───────── Kaydırınca beliren öğeler + sayaçlar ─────────
   const io = new IntersectionObserver((entries) => {
     for (const e of entries) {

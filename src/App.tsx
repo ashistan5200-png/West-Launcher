@@ -36,6 +36,7 @@ import { ContentToasts } from "@/components/ContentToasts";
 import { AshiSolver } from "@/components/AshiSolver";
 import { useSettings } from "@/stores/settings";
 import { useInstances } from "@/stores/instances";
+import { AmbientSky } from "@/components/AmbientSky";
 
 export default function App() {
   const location = useLocation();
@@ -84,6 +85,7 @@ export default function App() {
         <div className="shell-body">
           <Sidebar />
           <main className="content">
+            <AmbientSky quiet={location.pathname !== "/"} />
             <AnimatePresence mode="wait">
               <motion.div
                 key={location.pathname}
