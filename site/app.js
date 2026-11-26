@@ -161,6 +161,60 @@
   lb.onclick = () => lb.classList.remove("on");
   addEventListener("keydown", (e) => { if (e.key === "Escape") lb.classList.remove("on"); });
 
+  // ───────── Ashi sohbeti (canlandırma) ─────────
+  const chatBody = $("#chatBody");
+  const SCRIPT = [
+    ["me", "Bana arkadaşlarla oynayacağımız korku temalı bir modpack kur."],
+    ["ai", "Fabric 1.21.1'de 12 modluk bir paket öneriyorum: canavarlar, karanlık mağaralar, ses efektleri ve performans için FPS paketi. Kurayım mı?"],
+    ["me", "Kur!"],
+    ["acts", ["Instance oluşturuldu: Karanlık Orman (Fabric 1.21.1)", "The Graveyard, Cave Dweller, Sound Physics Remastered kuruldu", "9 mod ve 3 kütüphane daha kuruldu", "FPS paketi: Sodium, Lithium, FerriteCore"]],
+    ["ai", "Hazır! \"Karanlık Orman\" paketini kütüphanende bulabilirsin. Arkadaşlarınla paylaşmak için Paylaş sekmesinden bir senkron kodu alabilirsin."],
+  ];
+  let chatStarted = false;
+  async function playChat() {
+    if (chatStarted) return;
+    chatStarted = true;
+    for (const [who, what] of SCRIPT) {
+      if (who !== "me") {
+        const t = document.createElement("div");
+        t.className = "msg ai typing";
+        t.innerHTML = "<i></i><i></i><i></i>";
+        chatBody.appendChild(t);
+        await sleep(who === "acts" ? 1400 : 1100);
+        chatBody.removeChild(t);
+      }
+      if (who === "acts") {
+        const ul = document.createElement("ul");
+        ul.className = "acts";
+        what.forEach((x, i) => { const li = document.createElement("li"); li.textContent = x; li.style.animationDelay = `${i * 0.35}s`; ul.appendChild(li); });
+        chatBody.appendChild(ul);
+        await sleep(what.length * 350 + 500);
+      } else {
+        const m = document.createElement("div");
+        m.className = `msg ${who}`;
+        m.textContent = what;
+        chatBody.appendChild(m);
+        await sleep(who === "me" ? 700 : 1300);
+      }
+    }
+  }
+  new IntersectionObserver(([e]) => { if (e.isIntersecting) playChat(); }, { threshold: 0.35 }).observe($("#chat"));
+
+  // ───────── Launcher turu ─────────
+  const CAPS = {
+    instance: "Modlar, dünyalar, loglar ve paylaşım tek sayfada; son oturumun performansı en üstte.",
+    browse: "Modrinth ve CurseForge'da ara; paketine uyan sürüm ve gerekli kütüphaneler kendiliğinden gelir.",
+    skins: "Büyük 3D önizleme, arşiv ve hesap değiştirme aynı sayfada.",
+    library: "Bütün paketlerin kapaklarıyla; kodla arkadaşının paketini ekle, şablondan yenisini aç.",
+  };
+  $$(".tour-tabs button").forEach((b) => b.addEventListener("click", () => {
+    $$(".tour-tabs button").forEach((x) => { x.classList.toggle("on", x === b); x.setAttribute("aria-selected", String(x === b)); });
+    const img = $("#tourImg");
+    img.src = `assets/shots/${b.dataset.shot}.webp`;
+    img.alt = b.textContent;
+    $("#tourCap").textContent = CAPS[b.dataset.shot];
+  }));
+
   // ───────── İşletim sistemini tanı ─────────
   const ua = navigator.userAgent;
   const os = /Windows/i.test(ua) ? "win" : /Mac OS X|Macintosh/i.test(ua) ? "mac" : /Linux|X11/i.test(ua) && !/Android/i.test(ua) ? "linux" : null;

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>West Client — Minecraft'ı kendi rotanda oyna</title>
-<meta name="description" content="West Client: ücretsiz ve açık kaynak Minecraft launcher. Fabric, NeoForge, Forge ve Quilt; Modrinth'ten tek tıkla mod; çöken paketin suçlusunu bulan Ashi; oyunu kapatmadan mod değiştiren Mod Merkezi, skinler ve galeri.">
+<meta name="description" content="West Client: ücretsiz ve açık kaynak Minecraft launcher. Fabric, NeoForge, Forge ve Quilt; Modrinth'ten tek tıkla mod; modpack kuran, sunucuya göre paket hazırlayan ve kasmanın sebebini bulan Ashi; oyunu kapatmadan mod değiştiren Mod Merkezi.">
 <meta property="og:title" content="West Client — Minecraft'ı kendi rotanda oyna">
 <meta property="og:description" content="Ücretsiz, açık kaynak, modern Minecraft launcher. Windows, macOS ve Linux.">
 <meta property="og:image" content="assets/shots/home.webp">
@@ -28,18 +28,16 @@
   <symbol id="i-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></symbol>
 </svg>
 
-
 <div class="motes" id="motes"></div>
 
 <header class="nav" id="nav">
   <div class="wrap">
     <a class="brand" href="#top"><img src="assets/icon-256.png" alt=""> West <b>Client</b></a>
     <nav class="nav-links" id="navLinks">
-      <a href="#mod-merkezi">Mod Merkezi</a>
-      <a href="#kesfet">Keşfet</a>
-      <a href="#skinler">Skinler</a>
       <a href="#ashi">Ashi</a>
-      <a href="#ozellikler">Özellikler</a>
+      <a href="#kolaylik">Kolaylıklar</a>
+      <a href="#oyun">Oyunun içi</a>
+      <a href="#launcher">Launcher</a>
       <a href="#sss">SSS</a>
       <a href="https://github.com/ashistan5200-png/West-Launcher" target="_blank" rel="noopener">GitHub</a>
     </nav>
@@ -49,7 +47,7 @@
 </header>
 
 <main id="top">
-  <!-- ───────── Hero ───────── -->
+  <!-- ───────── Karşılama: piksel gökyüzü (dokunulmaz) ───────── -->
   <section class="hero">
     <canvas id="sky"></canvas>
     <div class="wrap hero-inner">
@@ -58,171 +56,149 @@
         <g class="needle"><path d="M12 4.6 14.6 12H9.4L12 4.6Z" fill="#e8a25c"/><path d="M12 19.4 9.4 12h5.2L12 19.4Z" fill="#eef0f2" fill-opacity=".55"/></g>
         <circle cx="12" cy="12" r="1.35" fill="#0a0b0e" stroke="#eef0f2" stroke-width="1"/>
       </svg>
-      <a class="pill" href="#indir"><span class="tag" id="verTag">YENİ</span> <span id="verText">Skinler ve yenilenen oyun içi menüler</span> <svg width="14" height="14"><use href="#i-arrow"/></svg></a>
+      <a class="pill" href="#ashi"><span class="tag" id="verTag">YENİ</span> <span id="verText">Ashi artık modpack'ini kendisi kuruyor</span> <svg width="14" height="14"><use href="#i-arrow"/></svg></a>
       <h1>Minecraft'ı <span class="grad">kendi rotanda</span> oyna.</h1>
-      <p class="lead">West Client; modlarını, paketlerini, dünyalarını ve arkadaşlarını tek, hızlı ve güzel bir yerde toplayan ücretsiz Minecraft launcher'ı. Çöken bir paketin suçlusunu bile senin yerine bulur.</p>
+      <p class="lead">Modlarını, paketlerini ve dünyalarını tek yerde toplayan ücretsiz launcher. Ne istediğini söyle; paketi Ashi kursun, sunucuya göre hazırlasın, kasmanın sebebini bulsun.</p>
       <div class="hero-cta">
         <a class="btn btn-primary" id="heroDl" href="#indir"><svg width="20" height="20"><use href="#i-dl"/></svg> <span id="heroDlText">Ücretsiz indir</span></a>
-        <a class="btn btn-ghost" href="#mod-merkezi">Neler yapabilir? <svg width="18" height="18"><use href="#i-arrow"/></svg></a>
+        <a class="btn btn-ghost" href="#ashi">Neler yapabilir? <svg width="18" height="18"><use href="#i-arrow"/></svg></a>
       </div>
-      <div class="hero-meta">
-        <span>Ücretsiz ve reklamsız</span><span>Açık kaynak</span><span>Windows · macOS · Linux</span><span>Türkçe, English, Deutsch</span>
-      </div>
+      <div class="hero-meta"><span>Ücretsiz ve reklamsız</span><span>Açık kaynak</span><span>Windows · macOS · Linux</span><span>Türkçe · English · Deutsch</span></div>
     </div>
   </section>
 
-  <!-- Eğik uygulama penceresi -->
-  <div class="wrap showcase">
-    <div class="window" id="tiltWindow">
-      <img src="assets/shots/home.webp" alt="West Client ana sayfası" fetchpriority="high">
-    </div>
+  <div class="wrap showcase reveal zoom">
+    <div class="window"><img src="assets/shots/home.webp" alt="West Client ana sayfası: son oynanan paket, hızlı işler ve paketler" fetchpriority="high"></div>
   </div>
 
-  <!-- ───────── Mod Merkezi (oyun içi) ───────── -->
-  <section class="wrap spot" id="mod-merkezi">
-    <div class="spot-text reveal left">
-      <span class="eyebrow">Oyun içi Mod Merkezi · H</span>
-      <h2 class="title">Modları oyundan çıkmadan değiştir.</h2>
-      <p class="sub">Oyundayken H'ye bas: kurulu modları, kaynak paketlerini ve shader'ları aç-kapat, sil, güncelle; Modrinth'ten yenisini kur. Kaynak paketi, shader ve veri paketi anında uygulanır.</p>
-      <ul class="spot-list">
-        <li>Mod değişince oyun kapanmaz: yeni düzen arka planda açılır, hazır olunca aynı dünyaya ya da sunucuya geçersin</li>
-        <li>Yeni düzen çökerse oyunun açık kalır; değişiklik "açılamadı" diye işaretlenir ve suçlu mod adıyla gösterilir</li>
-        <li>Bir modu kapatınca ona bağlı olanları, açınca gerekenleri sorar</li>
-        <li>Her değişiklik geri alınabilir; .jar ve .zip dosyalarını pencereye sürükleyip bırakabilirsin</li>
-      </ul>
-    </div>
-    <div class="spot-img reveal right">
-      <div class="frame"><img src="assets/shots/hub.webp" alt="Mod Merkezi: kurulu içerik" loading="lazy"></div>
-      <div class="frame small"><img src="assets/shots/handoff.webp" alt="Değişiklikleri oyunu kapatmadan uygulama" loading="lazy"></div>
-    </div>
-  </section>
-
-  <section class="wrap spot flip blue">
-    <div class="spot-text reveal right">
-      <span class="eyebrow">Çökme koruması</span>
-      <h2 class="title">Bozuk bir mod oyununu bozmaz.</h2>
-      <p class="sub">Yeni mod düzeni açılamazsa West Client hangi modun sorun çıkardığını söyler, o modu kendiliğinden kapatır ve oyununu olduğu gibi bırakır. Oyunu kapatıp açsan da çökmez; karar senindir: geri al ya da tekrar dene.</p>
-    </div>
-    <div class="spot-img reveal left">
-      <div class="frame"><img src="assets/shots/protect.webp" alt="Açılamayan değişiklik ve sebebi" loading="lazy"></div>
-    </div>
-  </section>
-
-  <!-- ───────── Keşfet ───────── -->
-  <section class="wrap spot" id="kesfet">
-    <div class="spot-text reveal left">
-      <span class="eyebrow">Keşfet</span>
-      <h2 class="title">Aradığın mod bir tık uzakta.</h2>
-      <p class="sub">Modrinth'teki içeriğin tamamı West Client'ın içinde; launcher'da da, oyunun içinde de. Bir moda tıkla; ne işe yaradığını, ekran görüntülerini ve her sürümde neyin değiştiğini oku.</p>
-      <ul class="spot-list">
-        <li>Minecraft sürümü, yükleyici ve kategoriye göre süzme</li>
-        <li>"Yalnız istemci", "Yalnız sunucu", "İkisinde de" ayrımı</li>
-        <li>Galeri, tam açıklama ve sürüm sürüm değişiklik notları</li>
-        <li>"Ekle ▾" ile istediğin instance'a kur; uyumsuz olanlar nedeniyle birlikte gösterilir</li>
-        <li>Gereken bağımlılıklar kendiliğinden kurulur</li>
-      </ul>
-    </div>
-    <div class="spot-img reveal right">
-      <div class="frame"><img src="assets/shots/browse.webp" alt="Keşfet sayfası" loading="lazy"></div>
-      <div class="frame small"><img src="assets/shots/hub-browse.webp" alt="Oyun içinden Modrinth araması" loading="lazy"></div>
-    </div>
-  </section>
-
-  <!-- ───────── Instance yönetimi ───────── -->
-  <section class="wrap spot flip blue">
-    <div class="spot-text reveal right">
-      <span class="eyebrow">Instance yönetimi</span>
-      <h2 class="title">Her paket, kendi dünyası.</h2>
-      <p class="sub">Modlarını, resource pack'lerini ve shader'larını tek tabloda yönet. Aç-kapat, güncelle, sil; hepsi bir dokunuş.</p>
-      <ul class="spot-list">
-        <li>Mod simgesi, yazarı ve sürümü otomatik tanınır</li>
-        <li>Dünyaları tek tıkla zip olarak yedekle</li>
-        <li>Canlı konsol, eski loglar ve çökme raporları</li>
-        <li>Paketini .mrpack olarak arkadaşınla paylaş</li>
-        <li>Kendi banner'ın ve simgen, ya da hazır piksel manzaralar</li>
-      </ul>
-    </div>
-    <div class="spot-img reveal left">
-      <div class="frame"><img src="assets/shots/instance.webp" alt="Instance sayfası" loading="lazy"></div>
-    </div>
-  </section>
-
-  <!-- ───────── Skinler ───────── -->
-  <section class="wrap spot" id="skinler">
-    <div class="spot-text reveal left">
-      <span class="eyebrow">Skinler</span>
-      <h2 class="title">Skinin, hesabın, tek ekranda.</h2>
-      <p class="sub">Skinlerini büyük 3D önizlemede dene, tek tıkla istediğin hesaba uygula. Hesap değiştirmek için sayfadan çıkman bile gerekmez.</p>
-      <ul class="spot-list">
-        <li>Dosyadan yükle, bir oyuncunun skinini al ya da kendin çiz</li>
-        <li>Arşivde ara; favoriler ve kullanılanlar ayrı</li>
-        <li>Hangi skin hangi hesapta, kartın üstünde yazar</li>
-        <li>Microsoft hesabında pelerinini de buradan seç</li>
-      </ul>
-    </div>
-    <div class="spot-img reveal right">
-      <div class="frame"><img src="assets/shots/skins.webp" alt="Skinler sayfası: 3D önizleme, hesap seçici ve arşiv" loading="lazy"></div>
-    </div>
-  </section>
-
-  <!-- ───────── Oyun içi ───────── -->
-  <section class="wrap spot flip blue" id="oyun-ici">
-    <div class="spot-text reveal right">
-      <span class="eyebrow">Oyunun içi</span>
-      <h2 class="title">Launcher'dan oyuna aynı his.</h2>
-      <p class="sub">Minecraft'ın ana menüsü, West menüsü, HUD düzenleyici ve Mod Merkezi launcher'la aynı sade tasarımda. Kaldığın dünyaya tek tıkla gir.</p>
-      <ul class="spot-list">
-        <li>FPS, CPS, koordinat, tuş göstergesi gibi HUD öğelerini aç-kapat</li>
-        <li>HUD'u sürükle, boyutlandır; kenarlara ve birbirine kendiliğinden hizalanır</li>
-        <li>Shader'la çekilmiş yeni ana menü manzarası</li>
-        <li>Türkçe, English ve Deutsch</li>
-      </ul>
-    </div>
-    <div class="spot-img reveal left">
-      <div class="frame"><img src="assets/shots/ingame.webp" alt="Oyun içi West ana menüsü" loading="lazy"></div>
-    </div>
-  </section>
-
-  <!-- ───────── Ashi ───────── -->
+  <!-- ───────── Ashi: ajan ───────── -->
   <section class="section" id="ashi">
-    <div class="wrap spot" style="padding:0">
-      <div class="spot-text reveal left">
-        <span class="eyebrow">Ashi · Otomatik Suçlu Avcısı</span>
-        <h2 class="title">“Hangi mod oyunu çökertiyor?”<br><span class="grad">Ashi bulur.</span></h2>
-        <p class="sub">200 modlu bir paketi elle tek tek denemek saatler sürer. Ashi, modları akıllıca ikiye bölerek yalnızca birkaç turda suçluyu yakalar; sen kahveni içerken.</p>
-        <ul class="spot-list">
-          <li>Her çökmenin “parmak izini” alır; başka bir hatayı asıl hatayla karıştırmaz</li>
-          <li>Fabric API, Kotlin, Cloth Config gibi kütüphaneleri asla tek başına kapatmaz</li>
-          <li>Gizli bağımlılıkları hatadan çıkarıp otomatik açık tutar</li>
-          <li>Bitince bütün modlarını eski haline getirir; hiçbir şey silinmez</li>
+    <div class="wrap split">
+      <div class="split-text reveal left">
+        <span class="eyebrow">Ashi</span>
+        <h2 class="title">Söyle, <span class="grad">o yapsın.</span></h2>
+        <p class="sub">Ashi yalnızca önermiyor, işi kendisi yapıyor. "Korku temalı bir paket kur" dediğinde uyumlu modları seçer, doğru sürümde yeni bir paket açar, hepsini kurar ve sana ne yaptığını söyler.</p>
+        <ul class="ticks">
+          <li>Modpack kurar, mod ekler, açıp kapatır</li>
+          <li>FPS paketini kurar, sunucuya göre paket hazırlar</li>
+          <li>Çökme raporunu okuyup suçlu modu bulur</li>
+          <li>Büyük değişiklikten önce planı anlatır ve onay ister</li>
         </ul>
+        <p class="note">Claude ile (kendi Anthropic anahtarınla) ya da bilgisayarında çalışan ücretsiz bir modelle çalışır.</p>
+      </div>
+      <div class="reveal right">
+        <div class="chat" id="chat" aria-label="Ashi ile örnek konuşma">
+          <div class="chat-head"><img src="assets/ashi.png" alt=""><div><strong>Ashi</strong><span>Claude ile</span></div></div>
+          <div class="chat-body" id="chatBody"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────── Kolaylıklar ───────── -->
+  <section class="section" id="kolaylik">
+    <div class="wrap">
+      <div class="center head reveal"><span class="eyebrow">Kolaylıklar</span><h2 class="title">Uğraştıran işler tek tıkta.</h2></div>
+      <div class="bento">
+        <article class="tile wide reveal">
+          <span class="ico">◎</span>
+          <h3>Sunucuya göre hazırla</h3>
+          <p>Sunucunun adresini yaz. Sürümünü ve (Forge/NeoForge sunucularında) mod listesini bulur, doğru sürümde hazır bir paket kurar ve sunucuyu listene ekler. "Oyna ve bağlan" ile doğrudan girersin.</p>
+          <div class="mini-server"><span class="dot"></span><b>play.ornek.com</b><i>NeoForge 1.21.1 · 42 mod · 128/500</i></div>
+        </article>
+        <article class="tile reveal" style="--d:.05s">
+          <span class="ico">⚡</span>
+          <h3>FPS paketi</h3>
+          <p>Paketinin yükleyicisine uygun Sodium, Lithium, FerriteCore, Entity Culling ve dostlarını tek seferde kurar. Çakışanları atlar.</p>
+        </article>
+        <article class="tile reveal" style="--d:.1s">
+          <span class="ico">⌁</span>
+          <h3>"Neden kasıyor?"</h3>
+          <p>Oyun FPS'i, donmaları ve belleği ölçer. Sonra sebebini söyler: bellek yetmiyor mu, performans modu mu eksik, görüş mesafesi mi yüksek. Çözümü tek tıkla.</p>
+          <div class="mini-bars"><i style="height:40%"></i><i style="height:55%"></i><i style="height:35%"></i><i style="height:70%"></i><i style="height:85%"></i><i class="hl" style="height:95%"></i></div>
+        </article>
+        <article class="tile reveal" style="--d:.15s">
+          <span class="ico">⇄</span>
+          <h3>Arkadaşla senkron</h3>
+          <p>Paketini 7 harfli bir kodla paylaş. Sen mod ekleyip çıkardıkça arkadaşının launcher'ı "Güncelleme var" der.</p>
+          <div class="mini-code">K7QM2PX</div>
+        </article>
+        <article class="tile reveal" style="--d:.2s">
+          <span class="ico">⛨</span>
+          <h3>Kurmadan önce uyumluluk</h3>
+          <p>Çakışan bir mod (ör. Sodium ile OptiFine) ya da uyumsuz bir sürüm eklemeden önce seni uyarır.</p>
+        </article>
+        <article class="tile reveal" style="--d:.25s">
+          <span class="ico">↺</span>
+          <h3>Otomatik yedek</h3>
+          <p>Oyun kapanınca o oturumda değişen dünyalar yedeklenir. Mod düzenin de her değişiklikten önce kaydedilir; tek tıkla geri dönersin.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────── Oyunun içi ───────── -->
+  <section class="section" id="oyun">
+    <div class="wrap">
+      <div class="center head reveal"><span class="eyebrow">Oyunun içi</span><h2 class="title">Launcher'dan oyuna aynı his.</h2><p class="sub">Minecraft'ın içinde de West Client var: ana menü, Mod Merkezi ve West menüsü launcher'la aynı tasarımda, her ekran ölçeğinde ferah.</p></div>
+      <div class="gallery">
+        <figure class="reveal"><div class="frame"><img src="assets/shots/ingame.webp" alt="Oyun içi ana menü: West Client logosu ve shader'lı manzara" loading="lazy"></div><figcaption><b>Ana menü</b> Kaldığın dünyaya tek tıkla gir; shader'la çekilmiş manzara.</figcaption></figure>
+        <figure class="reveal" style="--d:.08s"><div class="frame"><img src="assets/shots/hub-browse.webp" alt="Mod Merkezi: galeri görselli Keşfet kartları" loading="lazy"></div><figcaption><b>Mod Merkezi</b> Oyundan çıkmadan mod ara, kur, aç-kapat. Değişiklikler oyun kapanmadan uygulanır.</figcaption></figure>
+        <figure class="reveal" style="--d:.16s"><div class="frame"><img src="assets/shots/menu.webp" alt="West menüsü: HUD özelliklerinin canlı önizlemeleri" loading="lazy"></div><figcaption><b>West menüsü</b> FPS, CPS, koordinat, tuş göstergesi… her kartta canlı önizleme.</figcaption></figure>
+        <figure class="reveal" style="--d:.24s"><div class="frame"><img src="assets/shots/hub.webp" alt="Mod Merkezi: kurulu içerik ve bekleyen değişiklikler" loading="lazy"></div><figcaption><b>Güvenli değişiklik</b> Yeni mod düzeni arka planda açılır; çökerse oyunun açık kalır.</figcaption></figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────── Launcher ───────── -->
+  <section class="section" id="launcher">
+    <div class="wrap">
+      <div class="center head reveal"><span class="eyebrow">Launcher</span><h2 class="title">Her paket, kendi dünyası.</h2></div>
+      <div class="tour">
+        <div class="tour-tabs reveal" role="tablist">
+          <button class="on" data-shot="instance" role="tab" aria-selected="true">Paket</button>
+          <button data-shot="browse" role="tab" aria-selected="false">Keşfet</button>
+          <button data-shot="skins" role="tab" aria-selected="false">Skinler</button>
+          <button data-shot="library" role="tab" aria-selected="false">Kütüphane</button>
+        </div>
+        <div class="window reveal zoom"><img id="tourImg" src="assets/shots/instance.webp" alt="Paket sayfası" loading="lazy"></div>
+        <p class="tour-cap reveal" id="tourCap">Modlar, dünyalar, loglar ve paylaşım tek sayfada; son oturumun performansı en üstte.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────── Ashi'nin avı ───────── -->
+  <section class="section" id="av">
+    <div class="wrap split">
+      <div class="split-text reveal left">
+        <span class="eyebrow">Suçlu avı</span>
+        <h2 class="title">"Hangi mod çökertiyor?" <span class="grad">Ashi bulur.</span></h2>
+        <p class="sub">200 modlu bir paketi elle tek tek denemek saatler sürer. Ashi modları akıllıca ikiye bölerek birkaç turda suçluyu yakalar; kütüphaneleri asla tek başına kapatmaz, bitince her şeyi eski hâline getirir.</p>
       </div>
       <div class="reveal right">
         <div class="hunt" id="hunt">
           <div class="hunt-head"><img src="assets/ashi.png" alt="Ashi"><div class="hunt-bubble" id="huntText">Önce çökmeyi kendi gözümle göreyim…</div></div>
           <div class="mods" id="mods"></div>
           <div class="hunt-progress"><i id="huntBar"></i></div>
-          <div class="hunt-legend"><span><i style="background:#3a4a62"></i>Kütüphane (hep açık)</span><span><i style="background:#e8a25c"></i>Bu turda açık</span><span><i style="background:#2a2c36;opacity:.4"></i>Masum</span><span><i style="background:#ec5a82"></i>Suçlu</span></div>
+          <div class="hunt-legend"><span><i style="background:#3a4a62"></i>Kütüphane</span><span><i style="background:#e8a25c"></i>Bu turda açık</span><span><i style="background:#2a2c36;opacity:.4"></i>Masum</span><span><i style="background:#ec5a82"></i>Suçlu</span></div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ───────── Diğer özellikler ───────── -->
-  <section class="section" id="ozellikler" style="padding-top:40px">
+  <!-- ───────── Geri kalan ───────── -->
+  <section class="section" id="ozellikler">
     <div class="wrap">
-      <div class="center"><span class="eyebrow reveal">Ve geri kalan her şey</span><h2 class="title reveal">Bir launcher'dan beklediklerin.</h2></div>
+      <div class="center head reveal"><span class="eyebrow">Ve geri kalan her şey</span><h2 class="title">Bir launcher'dan beklediklerin.</h2></div>
       <dl class="facts reveal">
-        <div><dt>İzole instance'lar</dt><dd>Vanilla, Fabric, Quilt, Forge ve NeoForge; her paket kendi klasöründe. Klonla, şablon yap, kapak ve simge koy.</dd></div>
+        <div><dt>İzole paketler</dt><dd>Vanilla, Fabric, Quilt, Forge, NeoForge; her paket kendi klasöründe. Klonla, şablon yap, şablondan yenisini aç.</dd></div>
         <div><dt>Her yerden aktar</dt><dd>Modrinth App, CurseForge, Prism, MultiMC ve resmi launcher'daki paketleri orijinaline dokunmadan taşır.</dd></div>
-        <div><dt>Java ve bellek kendiliğinden</dt><dd>Doğru Java'yı indirir; belleği ve JVM ayarlarını donanımına ve mod sayına göre seçer.</dd></div>
-        <div><dt>Mod setleri ve paylaşım</dt><dd>"PvP", "Hafif", "Shader" gibi düzenleri kaydet, oyundayken tek tıkla geç. Bir seti kodla arkadaşına gönder; eksik modlar onun sürümüne uygun kurulur.</dd></div>
-        <div><dt>Geri dönüş noktaları</dt><dd>Her değişiklikten önce mod düzenin kaydedilir. Bir şey ters giderse tek tıkla önceki hâline dön; hiçbir dosya silinmez.</dd></div>
-        <div><dt>Hızlı yeniden başlatma</dt><dd>Mod değişikliğinden sonra oyun, doğrulama ve indirmeyi tekrarlamadan saniyeler içinde yeniden açılır.</dd></div>
-        <div><dt>Galeri</dt><dd>Oyunda F2 ile çektiğin görüntüler kendiliğinden gelir; kırp, düzenle, panoya kopyala.</dd></div>
+        <div><dt>Java ve bellek kendiliğinden</dt><dd>Doğru Java'yı indirir; belleği donanımına ve mod sayına göre seçer.</dd></div>
+        <div><dt>Mod setleri</dt><dd>"PvP", "Hafif", "Shader" gibi düzenleri kaydet, oyundayken tek tıkla geç; kodla paylaş.</dd></div>
+        <div><dt>Skinler</dt><dd>3D önizleme, skin düzenleyici, arşiv; hesap değiştirmek için sayfadan çıkmazsın.</dd></div>
+        <div><dt>Galeri</dt><dd>F2 ile çektiğin görüntüler kendiliğinden gelir; kırp, düzenle, paylaş.</dd></div>
         <div><dt>Güvenli giriş</dt><dd>Microsoft şifren yalnızca Microsoft'un sayfasına girilir. İstersen launcher'ı şifreyle kilitle.</dd></div>
-        <div><dt>Discord ve haberler</dt><dd>Ne oynadığın Discord profilinde görünür; Minecraft ve mod güncellemeleri tek sayfada.</dd></div>
-        <div><dt>Kendini günceller</dt><dd>Yeni sürümü haber verir, indirir, SHA-256 ile doğrular ve tek tıkla kurar.</dd></div>
+        <div><dt>Kendini günceller</dt><dd>Yeni sürümü haber verir, indirir, doğrular ve tek tıkla kurar.</dd></div>
       </dl>
     </div>
   </section>
@@ -232,7 +208,7 @@
     <div class="wrap center">
       <span class="eyebrow reveal">İndir</span>
       <h2 class="title reveal">Hazırsan, yola çıkalım.</h2>
-      <p class="sub reveal">Ücretsiz. Kurulumu bir dakika sürer; ilk açılışta Ashi seni karşılar ve kalan her şeyi birlikte ayarlarsınız.</p>
+      <p class="sub reveal">Ücretsiz. Kurulumu bir dakika sürer; ilk açılışta Ashi seni karşılar.</p>
       <div class="downloads">
         <div class="dl reveal" data-os="win">
           <div class="os"><svg width="28" height="28"><use href="#i-win"/></svg></div>
@@ -259,20 +235,18 @@
   </section>
 
   <!-- ───────── SSS ───────── -->
-  <section class="section" id="sss" style="padding-top:20px">
-    <div class="wrap center">
-      <span class="eyebrow reveal">Sık sorulanlar</span>
-      <h2 class="title reveal">Aklına takılanlar</h2>
-    </div>
+  <section class="section" id="sss">
+    <div class="wrap center head reveal"><span class="eyebrow">Sık sorulanlar</span><h2 class="title">Aklına takılanlar</h2></div>
     <div class="wrap faq">
       <details class="q reveal"><summary>West Client ücretsiz mi?</summary><div class="a"><p>Evet, tamamen. Reklam, ücretli sürüm ya da abonelik yok. Kaynak kodu da GitHub'da açık.</p></div></details>
       <details class="q reveal"><summary>Minecraft'ı satın almam gerekiyor mu?</summary><div class="a"><p>Microsoft hesabınla giriş yaparak satın aldığın Minecraft: Java Edition'ı oynarsın. West Client, Minecraft'ı ücretsiz yapan bir program değildir; resmi oyun dosyalarını Mojang'ın sunucularından indirir.</p></div></details>
       <details class="q reveal"><summary>Microsoft hesabımla giriş yapmak güvenli mi?</summary><div class="a"><p>Şifren yalnızca Microsoft'un kendi giriş penceresine girilir; West Client şifreni görmez ve saklamaz. Bilgisayarında yalnızca Microsoft'un verdiği oturum anahtarı tutulur.</p></div></details>
       <details class="q reveal"><summary>Antivirüsüm uyarı veriyor, virüs mü?</summary><div class="a"><p>Hayır. West Client henüz dijital imzalı olmadığı için Windows SmartScreen ve bazı antivirüsler “tanınmayan uygulama” uyarısı gösterebilir. Ayrıca launcher'lar internetten oyun dosyaları indirip başka programlar çalıştırdığı için bazı antivirüsler tahmine dayalı alarm verebilir.</p><p>Kodun tamamı GitHub'da açıktır ve her sürüm GitHub'ın sunucularında otomatik derlenir. Dosyayı yalnızca bu siteden ya da GitHub Releases'tan indir.</p></div></details>
       <details class="q reveal"><summary>Diğer launcher'lardaki paketlerimi taşıyabilir miyim?</summary><div class="a"><p>Evet. İlk açılışta West Client; Modrinth App, CurseForge, Prism Launcher, MultiMC ve resmi launcher'daki paketlerini bulur ve orijinallerine dokunmadan kopyalar.</p></div></details>
-      <details class="q reveal"><summary>Hangi Minecraft sürümlerini destekliyor?</summary><div class="a"><p>Mojang'ın yayınladığı bütün Java Edition sürümlerini; Fabric, NeoForge, Forge ve Quilt yükleyicileriyle. Oyun içi West Paneli (FullBright, FPS göstergesi) şimdilik 1.21.1 Fabric ve NeoForge'da çalışıyor.</p></div></details>
+      <details class="q reveal"><summary>Hangi Minecraft sürümlerini destekliyor?</summary><div class="a"><p>Mojang'ın yayınladığı bütün Java Edition sürümlerini; Fabric, NeoForge, Forge ve Quilt yükleyicileriyle. Oyun içi West menüsü, HUD ve Mod Merkezi Fabric 26.2 ve 1.21.11'de çalışıyor.</p></div></details>
       <details class="q reveal"><summary>West hesabı ne işe yarıyor?</summary><div class="a"><p>Profilini (ad, fotoğraf, biyografi) ve ayarlarını her bilgisayarda aynı tutmak için. Oyunu oynamak için gerekmez; istersen hiç açmadan da West Client'ı kullanabilirsin.</p></div></details>
-      <details class="q reveal"><summary>Ashi'nin yapay zekâsı ücretli mi?</summary><div class="a"><p>Hayır. Ashi bilgisayarında çalışan ücretsiz bir model (Ollama) kullanır; hesap, anahtar ya da şifre istemez. "Ashi'yi akıllandır" düğmesine bastığında Ollama ve model birlikte, tek seferde kurulur. Kurmak istemezsen Ashi basit modda, mesajındaki anahtar kelimelerle arar.</p></div></details>
+      <details class="q reveal"><summary>Ashi'nin yapay zekâsı ücretli mi?</summary><div class="a"><p>İki seçenek var. Ücretsiz yol: Ashi bilgisayarında çalışan bir model (Ollama) kullanır; tek tıkla kurulur, hesap ya da anahtar istemez. En akıllı yol: Ayarlar → Ashi'ye kendi Anthropic API anahtarını girersin; Ashi Claude ile çalışır ve modpack kurmak gibi çok adımlı işleri kendi başına yapar. Kullanım ücretini kendi Anthropic hesabından ödersin; anahtar yalnızca senin bilgisayarında durur.</p></div></details>
+      <details class="q reveal"><summary>Arkadaşımla aynı modları nasıl kullanırım?</summary><div class="a"><p>Paketinin Paylaş sekmesinden bir senkron kodu oluştur ve arkadaşına ver. O, Kütüphane → Kodla ekle ile aynı paketi kurar. Sen mod ekleyip çıkardıkça onun launcher'ı "Güncelleme var" der; tek tıkla aynı hâle gelir.</p></div></details>
       <details class="q reveal"><summary>Bir hata buldum ya da önerim var.</summary><div class="a"><p>Harika! GitHub'daki <a class="amber" href="https://github.com/ashistan5200-png/West-Launcher/issues" target="_blank" rel="noopener">Issues</a> sayfasından bildirebilirsin.</p></div></details>
     </div>
   </section>
@@ -280,7 +254,7 @@
   <div class="wrap">
     <div class="cta-final reveal zoom">
       <h2>Rotanı belirle. <span class="grad">Oynamaya başla.</span></h2>
-      <p>Bir dakikada kur, Ashi gerisini halleder.</p>
+      <p>Bir dakikada kur, gerisini Ashi halleder.</p>
       <div class="hero-cta"><a class="btn btn-primary" href="#indir"><svg width="20" height="20"><use href="#i-dl"/></svg> West Client'ı indir</a><a class="btn btn-ghost" href="https://github.com/ashistan5200-png/West-Launcher" target="_blank" rel="noopener"><svg width="18" height="18"><use href="#i-gh"/></svg> GitHub</a></div>
     </div>
   </div>
@@ -290,7 +264,7 @@
   <div class="wrap">
     <div class="foot">
       <div><a class="brand" href="#top" style="margin-bottom:12px"><img src="assets/icon-256.png" alt=""> West <b>Client</b></a><p>Ücretsiz ve açık kaynak Minecraft launcher'ı. Rotanı belirle.</p></div>
-      <div><h4>Ürün</h4><a href="#ozellikler">Özellikler</a><a href="#ashi">Ashi</a><a href="#mod-merkezi">Mod Merkezi</a></div>
+      <div><h4>Ürün</h4><a href="#ozellikler">Özellikler</a><a href="#ashi">Ashi</a><a href="#oyun">Mod Merkezi</a></div>
       <div><h4>İndir</h4><a href="https://github.com/ashistan5200-png/West-Launcher/releases/latest/download/West-Client-Setup.exe">Windows</a><a href="https://github.com/ashistan5200-png/West-Launcher/releases/latest/download/West-Client-macOS.dmg">macOS</a><a href="https://github.com/ashistan5200-png/West-Launcher/releases/latest/download/West-Client-Linux.AppImage">Linux</a></div>
       <div><h4>Topluluk</h4><a href="https://github.com/ashistan5200-png/West-Launcher" target="_blank" rel="noopener">GitHub</a><a href="https://github.com/ashistan5200-png/West-Launcher/issues" target="_blank" rel="noopener">Hata bildir</a><a href="https://github.com/ashistan5200-png/West-Launcher/releases" target="_blank" rel="noopener">Tüm sürümler</a></div>
     </div>

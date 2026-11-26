@@ -1030,7 +1030,7 @@ public final class ModHubScreen implements WestScreen {
         String lbl = installed ? Tr.t("Kurulu") : Tr.t("Kur");
         // Kur düğmesi görselin sağ üst köşesinde; ad ve yazar simgenin yanında
         int bw = Math.max(40, g.textWidth(lbl) + 22), bx = x + w - bw - 6, by = y + 6;
-        int tx = x + 10, ty = iy + is + 6, maxT = w - 20, nx = ix + is + 8;
+        int tx = x + 10, ty = y + bh + 28, maxT = w - 20, nx = ix + is + 8;
         g.text(ui.fit(ModBridge.str(h, "title"), x + w - 8 - nx), nx, y + bh + 4, Rota.TEXT, false);
         smallText(g, ui.fit(Tr.t("{0} · {1} indirme", ModBridge.str(h, "author"), fmt(h.get("downloads"))), Math.round((x + w - 8 - nx) / 0.8f)), nx, y + bh + 15, Rota.FAINT);
         List<String> desc = wrap(g, ModBridge.str(h, "description"), Math.round(maxT / 0.8f));
