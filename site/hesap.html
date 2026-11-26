@@ -12,21 +12,20 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body class="acct-page">
-<div class="motes" id="motes"></div>
 <main class="acct">
   <a class="brand" href="./"><img src="assets/icon-256.png" alt=""> West <b>Client</b></a>
   <section class="acct-card" id="card">
     <div class="acct-state" id="loading"><span class="spinner"></span><p class="muted">Bağlantı kontrol ediliyor…</p></div>
 
     <div class="acct-state" id="confirmed" hidden>
-      <div class="acct-ico ok">✓</div>
+      <div class="acct-ico ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
       <h1>E-postan doğrulandı!</h1>
-      <p class="muted">West hesabın hazır. Şimdi West Client'a dön ve <b>Skin ve hesaplar → West hesabı → Giriş yap</b> ile e-postan ve şifrenle giriş yap.</p>
+      <p class="muted">West hesabın hazır. Şimdi West Client'a dön ve <b>Skinler → West hesabı → Giriş yap</b> ile e-postan ve şifrenle giriş yap.</p>
       <a class="btn btn-ghost" href="./">West Client'ın sitesine git</a>
     </div>
 
     <form class="acct-state" id="reset" hidden novalidate>
-      <div class="acct-ico">🔑</div>
+      <div class="acct-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg></div>
       <h1>Yeni şifre belirle</h1>
       <p class="muted" id="resetFor">West hesabın için yeni bir şifre seç.</p>
       <label class="acct-field"><span>Yeni şifre</span><input id="pw1" type="password" autocomplete="new-password" minlength="8" required></label>
@@ -38,23 +37,23 @@
     </form>
 
     <div class="acct-state" id="resetDone" hidden>
-      <div class="acct-ico ok">✓</div>
+      <div class="acct-ico ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
       <h1>Şifren değişti</h1>
       <p class="muted">West Client'a dön ve yeni şifrenle giriş yap. Güvenliğin için bu sayfadaki oturum kapatıldı.</p>
       <a class="btn btn-ghost" href="./">West Client'ın sitesine git</a>
     </div>
 
     <div class="acct-state" id="failed" hidden>
-      <div class="acct-ico bad">!</div>
+      <div class="acct-ico bad"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 7v6"/><path d="M12 17h.01"/></svg></div>
       <h1 id="failTitle">Bağlantı geçersiz</h1>
       <p class="muted" id="failText">Bu bağlantı kullanılmış ya da süresi dolmuş olabilir.</p>
       <a class="btn btn-ghost" href="./">West Client'ın sitesine git</a>
     </div>
 
     <div class="acct-state" id="nothing" hidden>
-      <div class="acct-ico">🧭</div>
+      <div class="acct-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg></div>
       <h1>West hesabı</h1>
-      <p class="muted">Bu sayfa, West hesabı e-postalarındaki bağlantılar içindir. Hesap oluşturmak ya da giriş yapmak için West Client'ı aç: <b>Skin ve hesaplar → West hesabı</b>.</p>
+      <p class="muted">Bu sayfa, West hesabı e-postalarındaki bağlantılar içindir. Hesap oluşturmak ya da giriş yapmak için West Client'ı aç: <b>Skinler → West hesabı</b>.</p>
       <a class="btn btn-primary" href="./#indir">West Client'ı indir</a>
     </div>
   </section>
