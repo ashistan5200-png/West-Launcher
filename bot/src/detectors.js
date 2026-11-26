@@ -104,7 +104,7 @@ const TRUSTED = [
   "discord.com", "discord.gg", "discordapp.com", "discordapp.net", "discord.media", "discordstatus.com",
   "steampowered.com", "steamcommunity.com", "steamstatic.com",
   "minecraft.net", "mojang.com", "xbox.com", "microsoft.com", "live.com",
-  "modrinth.com", "curseforge.com", "github.com", "githubusercontent.com", "netlify.app",
+  "modrinth.com", "curseforge.com", "github.com", "githubusercontent.com", "westclient.app",
   "epicgames.com", "youtube.com", "youtu.be", "twitch.tv", "imgur.com", "tenor.com", "giphy.com",
 ];
 /** Dolandırıcıların taklit ettiği markalar */

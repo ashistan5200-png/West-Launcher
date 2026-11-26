@@ -59,7 +59,7 @@ export const CONFIG = {
 
   // ───────── Güncellemeler ─────────
   github: { repo: "ashistan5200-png/West-Launcher", pollMs: 5 * 60_000 },
-  site: "https://westlauncher.netlify.app",
+  site: "https://westclient.app",
   supabase: {
     url: "https://sicijptcjixnwgnrsibs.supabase.co",
     // Herkese açık (publishable) anahtar; yalnızca RLS'nin izin verdiği sayımlar için

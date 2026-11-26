@@ -15,7 +15,7 @@ if (!TOKEN) {
   process.exit(1);
 }
 
-const SITE = "https://westlauncher.netlify.app";
+const SITE = "https://westclient.app";
 const REPO = "https://github.com/ashistan5200-png/West-Launcher";
 
 // ───────── Discord REST ─────────
