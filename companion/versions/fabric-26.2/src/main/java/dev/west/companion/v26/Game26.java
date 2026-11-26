@@ -520,6 +520,17 @@ public final class Game26 implements Game {
     }
 
     @Override
+    public String clipboard() {
+        String s = mc().keyboardHandler.getClipboard();
+        return s == null ? "" : s;
+    }
+
+    @Override
+    public void setClipboard(String text) {
+        mc().keyboardHandler.setClipboard(text);
+    }
+
+    @Override
     public void silenceMusic() {
         mc().getMusicManager().stopPlaying();
     }

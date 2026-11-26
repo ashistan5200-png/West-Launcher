@@ -208,6 +208,11 @@ public interface Game {
     /** Oyun penceresini simge durumuna küçült (true) ya da geri getirip öne al (false). Pencere henüz yoksa false. */
     default boolean minimizeWindow(boolean minimize) { return false; }
 
+    /** Panodaki metin (yoksa "") */
+    default String clipboard() { return ""; }
+
+    default void setClipboard(String text) {}
+
     /** Çalan menü/oyun müziğini durdur (arka planda bekleyen oturum ses çıkarmasın) */
     default void silenceMusic() {}
 

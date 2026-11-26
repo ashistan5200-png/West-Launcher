@@ -1939,5 +1939,14 @@
  "Geri dön": "Go back",
  "{0} mod · sonra: {1}": "{0} mods · then: {1}",
  "{0} tarihindeki mod düzenine dönülsün mü? Sonradan eklenen modlar silinmez, kapatılır.": "Go back to the mod setup from {0}? Mods added later are not deleted, they are turned off.",
- "Oyun açıkken oyunun içinden dön: Mod Merkezi → Bekleyenler": "While the game runs, go back from inside the game: Mod Hub → Pending"
+ "Oyun açıkken oyunun içinden dön: Mod Merkezi → Bekleyenler": "While the game runs, go back from inside the game: Mod Hub → Pending",
+ "Kod kopyalandı. {0} dosya Modrinth'te olmadığı için dışarıda kaldı.": "Code copied. {0} files are not on Modrinth and were left out.",
+ "Set kodu kopyalandı; arkadaşına yapıştır.": "Set code copied; paste it to your friend.",
+ "Panoda set kodu yok. Önce \"WEST-SET:…\" kodunu kopyala.": "No set code in the clipboard. Copy the \"WEST-SET:…\" code first.",
+ "{0} tanesi bu sürüm için yok": "{0} not available for this version",
+ "set {0} için hazırlanmış": "set was made for {0}",
+ "\"{0}\" eklendi, {1} içerik kuruldu.": "Added \"{0}\", {1} items installed.",
+ "Paylaşım kodunu kopyala": "Copy share code",
+ "Kodla ekle": "Add from code",
+ "Arkadaşının set kodunu kopyala, sonra buna bas": "Copy your friend's set code, then press this"
 }

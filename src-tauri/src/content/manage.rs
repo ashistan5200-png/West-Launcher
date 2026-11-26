@@ -67,7 +67,7 @@ fn save_cache(instance_dir: &Path, c: &Cache) {
     let _ = write_json_atomic(&cache_path(instance_dir), c);
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ContentFile {
     /// "mods/sodium.jar" — .disabled eki olmadan; işlemlerde kimlik olarak kullanılır

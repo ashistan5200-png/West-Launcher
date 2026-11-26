@@ -860,6 +860,13 @@ public final class ModHubScreen implements WestScreen {
             smallText(g, Tr.t("{0} açık · {1} kapalı", on, off), x + 32, y + 18, 0x88FFFFFF);
             if (active) badge(g, lbl, x + w - bw - 8, y + 10, Theme.alpha(t.accent, 0x50), 0xFFFFFFFF);
             else if (pill(lbl, x + w - bw - 8, y + 8, bw, 14, true)) switchSet(id, name);
+            if (smallIcon("share" + id, Icon.SHARE, x + w - bw - 30, y + 7, 16, t.accent | 0xFF000000, Tr.t("Paylaş"))) {
+                game.click();
+                api.exportSet(id, (code, skipped) -> WestHud.later(() -> {
+                    game.setClipboard(code);
+                    api.say(skipped > 0 ? Tr.t("Kod kopyalandı · {0} dosya Modrinth'te olmadığı için dışarıda kaldı", skipped) : Tr.t("Set kodu kopyalandı; arkadaşına yapıştır"));
+                }));
+            }
             y += h + 4;
         }
         // Yeni set: şu anki düzeni kaydet
@@ -879,7 +886,29 @@ public final class ModHubScreen implements WestScreen {
         } else if (!hv && ui.pressedAt(0, 0, 99999, 99999)) setNameFocus = false;
         if (pill(saveLbl, x + fw + 6, y + 2, sbw, 14, !setName.isBlank())) saveSet();
         smallText(g, Tr.t("Bekleyen değişiklikler kayda girmez; önce uygula."), x, y + 24, 0x77FFFFFF);
-        return y + 38;
+        y += 38;
+        String imp = api.importing ? Tr.t("Kuruluyor…") : Tr.t("Panodaki set kodunu ekle");
+        int iw = g.textWidth(imp) + 16;
+        if (api.importing) spinner(g, x + 8, y + 7, 0xCCFFFFFF);
+        else if (pill(imp, x, y, iw, 14, false)) importFromClipboard();
+        smallText(g, Tr.t("Arkadaşının \"WEST-SET:…\" kodunu kopyala, sonra buna bas. Eksik modlar Modrinth'ten kurulur."), x, y + 18, 0x77FFFFFF);
+        return y + 32;
+    }
+
+    private void importFromClipboard() {
+        String code = game.clipboard().trim();
+        if (!code.startsWith("WEST-SET:")) {
+            api.say(Tr.t("Panoda set kodu yok. Önce \"WEST-SET:…\" kodunu kopyala."));
+            return;
+        }
+        api.importSet(code, o -> {
+            String name = ModBridge.str(o, "name");
+            int installed = o.has("installed") ? o.get("installed").getAsInt() : 0;
+            int missing = o.has("missing") ? o.getAsJsonArray("missing").size() : 0;
+            String msg = Tr.t("\"{0}\" seti eklendi · {1} içerik kuruldu", name, installed);
+            if (missing > 0) msg += " · " + Tr.t("{0} tanesi bu sürüm için yok", missing);
+            api.say(msg);
+        });
     }
 
     private void saveSet() {

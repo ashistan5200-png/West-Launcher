@@ -322,6 +322,30 @@ public final class ModBridge {
         }, null);
     }
 
+    /** Setin paylaşım kodunu üret; done(kod, atlanan) */
+    public void exportSet(String id, java.util.function.BiConsumer<String, Integer> done) {
+        JsonObject b = new JsonObject();
+        b.addProperty("modeId", id);
+        post("/mods/sets/export", b, v -> done.accept(str(v.getAsJsonObject(), "code"), v.getAsJsonObject().get("skipped").getAsInt()), null);
+    }
+
+    public volatile boolean importing;
+
+    /** Paylaşılan seti kur; done(sonuç) */
+    public void importSet(String code, Consumer<JsonObject> done) {
+        importing = true;
+        JsonObject b = new JsonObject();
+        b.addProperty("code", code);
+        post("/mods/sets/import", b, v -> {
+            importing = false;
+            JsonObject o = v.getAsJsonObject();
+            pending = list(o.getAsJsonArray("pending"));
+            loadSets();
+            reload();
+            done.accept(o);
+        }, e -> importing = false);
+    }
+
     @FunctionalInterface
     public interface SetSwitched {
         void accept(List<String> liveOn, List<String> liveOff, int modChanges);

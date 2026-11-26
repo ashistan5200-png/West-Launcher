@@ -452,6 +452,105 @@ pub fn livemods_restore(state: tauri::State<'_, AppState>, id: String, point: St
     save_pending(&dir, &[])
 }
 
+// ───────── Set paylaşımı ─────────
+
+fn export_set(dir: &Path, game: &Path, inst: &Instance, mode_id: &str) -> Result<(String, usize)> {
+    let mode = crate::instance::modes::load(dir).modes.into_iter().find(|m| m.id == mode_id).ok_or_else(|| AppError::msg(crate::i18n::t("Mod bulunamadı")))?;
+    let files = manage::list(dir, game);
+    crate::setshare::encode(&mode.name, &inst.mc_version, &loader_of(inst).unwrap_or_default(), &mode.enabled, &files)
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportReport {
+    pub name: String,
+    /// Yeni kurulan içerik sayısı
+    pub installed: usize,
+    /// Bu sürüm için bulunamayan projeler
+    pub missing: Vec<String>,
+    /// Set başka bir Minecraft sürümü/yükleyici için hazırlanmışsa onun adı
+    pub other_version: Option<String>,
+}
+
+/// Kodu çöz, eksikleri Modrinth'ten kur, set olarak kaydet. in_game: yeni modlar "yeniden başlatınca yüklenir"
+/// bekleyen değişikliği olarak kaydedilir (Uygula ile oyun kapanmadan geçilir).
+async fn import_set(state: &AppState, inst_id: &str, code: &str, in_game: bool) -> Result<ImportReport> {
+    let set = crate::setshare::decode(code)?;
+    let inst = InstanceManager::new(&state.paths).get(inst_id)?;
+    let (dir, game) = (state.paths.instance_dir(inst_id), state.paths.instance_game_dir(inst_id));
+    let loader = loader_of(&inst);
+    let other_version = (set.mc != inst.mc_version || Some(set.l.as_str()) != loader.as_deref()).then(|| format!("{} {}", set.l, set.mc));
+    let ctx = InstallCtx {
+        http: &state.http,
+        cf_key: None,
+        instance_id: inst_id,
+        instance_dir: dir.clone(),
+        game_dir: game.clone(),
+        mc_version: inst.mc_version.clone(),
+        loader: loader.clone(),
+        progress: std::sync::Arc::new(|_| {}),
+    };
+    let mut wanted: Vec<String> = vec![];
+    let (mut installed, mut new_mods, mut missing) = (0, vec![], vec![]);
+    for (pids, kind, folder) in [(&set.m, Kind::Mod, "mods"), (&set.r, Kind::Resourcepack, "resourcepacks"), (&set.s, Kind::Shader, "shaderpacks")] {
+        for pid in pids {
+            let have: Vec<String> = manage::list(&dir, &game).into_iter().filter(|c| c.project_id.as_deref() == Some(pid.as_str())).map(|c| c.id).collect();
+            if !have.is_empty() {
+                wanted.extend(have);
+                continue;
+            }
+            match install(&ctx, Source::Modrinth, pid, kind).await {
+                Ok(rep) => {
+                    for i in rep.installed {
+                        let id = format!("{folder}/{}", i.file);
+                        installed += 1;
+                        if kind == Kind::Mod {
+                            new_mods.push(id.clone());
+                        }
+                        wanted.push(id);
+                    }
+                }
+                Err(e) => {
+                    tracing::info!("paylaşılan setten kurulamadı ({pid}): {e}");
+                    missing.push(pid.clone());
+                }
+            }
+        }
+    }
+    // Setteki modların bağımlılıkları da açık kalmalı; West Companion her zaman açık
+    let deps: Vec<String> = plan(&game, &wanted, true).into_iter().map(|x| x.0).collect();
+    wanted.extend(deps);
+    let all = manage::list(&dir, &game);
+    let mut enabled: Vec<String> = vec![];
+    let mut disabled: Vec<String> = vec![];
+    for c in &all {
+        if c.managed || c.id.starts_with("mods/west-companion") || wanted.contains(&c.id) {
+            enabled.push(c.id.clone());
+        } else {
+            disabled.push(c.id.clone());
+        }
+    }
+    let mode = crate::instance::modes::add(&dir, &set.n, "🎮", enabled, disabled)?;
+    if in_game && !new_mods.is_empty() {
+        let label = format!("{} {}", titles(&all, &new_mods), crate::i18n::t("eklendi (yeniden başlatınca yüklenir)"));
+        push_op(&dir, "install", new_mods, &label)?;
+    }
+    Ok(ImportReport { name: mode.name, installed, missing, other_version })
+}
+
+#[tauri::command]
+pub fn sets_export(state: tauri::State<'_, AppState>, id: String, mode_id: String) -> Result<Value> {
+    let inst = InstanceManager::new(&state.paths).get(&id)?;
+    let (code, skipped) = export_set(&state.paths.instance_dir(&id), &state.paths.instance_game_dir(&id), &inst, &mode_id)?;
+    Ok(json!({ "code": code, "skipped": skipped }))
+}
+
+#[tauri::command]
+pub async fn sets_import(state: tauri::State<'_, AppState>, id: String, code: String) -> Result<ImportReport> {
+    let running = state.running.lock().contains_key(&id);
+    import_set(&state, &id, &code, running).await
+}
+
 /// Günlükten çökme sebebini çıkar: önce suçlu modu adıyla, sonra Fabric'in uyumsuzluk açıklamasını,
 /// sonra çökme raporundaki ilk hatayı; zararsız gürültüyü (çevrimdışı hesabın 401'i, uyarılar) atlar.
 fn failure_reason(tail: &[String]) -> Option<String> {
@@ -989,6 +1088,15 @@ pub async fn route(method: &str, path: &str, query: &str, body: &Value) -> Resul
         ("POST", "/mods/points/restore") => {
             let point = body["id"].as_str().unwrap_or_default().to_string();
             Ok(json!({ "pending": queue_restore(&dir, &game, &point)? }))
+        }
+        // Set paylaşımı (kodla)
+        ("POST", "/mods/sets/export") => {
+            let (code, skipped) = export_set(&dir, &game, &inst, body["modeId"].as_str().unwrap_or_default())?;
+            Ok(json!({ "code": code, "skipped": skipped }))
+        }
+        ("POST", "/mods/sets/import") => {
+            let r = import_set(&state, &inst_id, body["code"].as_str().unwrap_or_default(), true).await?;
+            Ok(json!({ "name": r.name, "installed": r.installed, "missing": r.missing, "otherVersion": r.other_version, "pending": load_pending(&dir) }))
         }
         ("POST", "/mods/retry") => Ok(json!({ "pending": clear_failed(&dir, &game) })),
         ("GET", "/mods/pending") => Ok(json!({ "pending": load_pending(&dir) })),

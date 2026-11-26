@@ -24,6 +24,7 @@ pub mod util;
 pub mod i18n;
 pub mod livemods;
 pub mod restorepoints;
+pub mod setshare;
 
 use paths::Paths;
 use state::AppState;
@@ -93,6 +94,8 @@ pub fn run() {
             livemods::livemods_apply,
             livemods::livemods_points,
             livemods::livemods_restore,
+            livemods::sets_export,
+            livemods::sets_import,
             commands::launch::running_instances,
             commands::launch::get_companion,
             commands::launch::set_companion_config,

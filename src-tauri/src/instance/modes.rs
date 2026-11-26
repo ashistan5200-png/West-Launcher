@@ -188,6 +188,29 @@ pub fn delete(instance_dir: &Path, id: &str) -> Result<()> {
     save(instance_dir, &m)
 }
 
+/// Hazır listelerle yeni mod oluştur (paylaşılan setin içe aktarılması)
+pub fn add(instance_dir: &Path, name: &str, icon: &str, enabled: Vec<String>, disabled: Vec<String>) -> Result<GameMode> {
+    let name = name.trim();
+    if name.is_empty() || name.chars().count() > 32 {
+        return Err(AppError::msg(crate::i18n::t("Mod adı 1–32 karakter olmalı")));
+    }
+    let mut m = load(instance_dir);
+    if m.modes.len() >= 12 {
+        return Err(AppError::msg(crate::i18n::t("En fazla 12 mod oluşturulabilir")));
+    }
+    // Aynı adda varsa sonuna sayı ekle
+    let mut final_name = name.to_string();
+    let mut k = 2;
+    while m.modes.iter().any(|x| x.name == final_name) {
+        final_name = format!("{name} {k}");
+        k += 1;
+    }
+    let mode = GameMode { id: uuid::Uuid::new_v4().simple().to_string()[..12].to_string(), name: final_name, icon: icon.chars().take(4).collect(), enabled, disabled, has_options: false };
+    m.modes.push(mode.clone());
+    save(instance_dir, &m)?;
+    Ok(mode)
+}
+
 pub fn rename(instance_dir: &Path, id: &str, name: &str, icon: &str) -> Result<()> {
     let mut m = load(instance_dir);
     let x = m.modes.iter_mut().find(|x| x.id == id).ok_or_else(|| AppError::msg(crate::i18n::t("Mod bulunamadı")))?;

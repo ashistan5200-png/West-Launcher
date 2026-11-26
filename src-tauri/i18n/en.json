@@ -252,5 +252,7 @@
  "{0} düzenine dönülecek": "will go back to the setup from {0}",
  "Geri dönüş noktası bulunamadı": "Restore point not found",
  "Oyun açıkken geri dönüş oyunun içinden yapılır (Mod Merkezi → Bekleyenler).": "While the game runs, go back from inside the game (Mod Hub → Pending).",
- "Geri dönmeden önceki düzen": "Setup before going back"
+ "Geri dönmeden önceki düzen": "Setup before going back",
+ "Bu sette Modrinth'te bulunan içerik yok; paylaşılacak bir şey kalmadı.": "This set has no content found on Modrinth; there is nothing to share.",
+ "Bu bir West set kodu değil ya da eksik kopyalanmış.": "This is not a West set code, or it was copied incompletely."
 }

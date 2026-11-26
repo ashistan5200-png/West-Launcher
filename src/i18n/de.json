@@ -1944,5 +1944,14 @@
  "Geri dön": "Zurück",
  "{0} mod · sonra: {1}": "{0} Mods · danach: {1}",
  "{0} tarihindeki mod düzenine dönülsün mü? Sonradan eklenen modlar silinmez, kapatılır.": "Zum Mod-Setup vom {0} zurück? Später hinzugefügte Mods werden nicht gelöscht, sondern deaktiviert.",
- "Oyun açıkken oyunun içinden dön: Mod Merkezi → Bekleyenler": "Während das Spiel läuft, im Spiel zurückgehen: Mod-Zentrale → Ausstehend"
+ "Oyun açıkken oyunun içinden dön: Mod Merkezi → Bekleyenler": "Während das Spiel läuft, im Spiel zurückgehen: Mod-Zentrale → Ausstehend",
+ "Kod kopyalandı. {0} dosya Modrinth'te olmadığı için dışarıda kaldı.": "Code kopiert. {0} Dateien sind nicht auf Modrinth und fehlen.",
+ "Set kodu kopyalandı; arkadaşına yapıştır.": "Set-Code kopiert; füge ihn bei deinem Freund ein.",
+ "Panoda set kodu yok. Önce \"WEST-SET:…\" kodunu kopyala.": "Kein Set-Code in der Zwischenablage. Kopiere zuerst den „WEST-SET:…“-Code.",
+ "{0} tanesi bu sürüm için yok": "{0} für diese Version nicht verfügbar",
+ "set {0} için hazırlanmış": "Set wurde für {0} erstellt",
+ "\"{0}\" eklendi, {1} içerik kuruldu.": "„{0}“ hinzugefügt, {1} Inhalte installiert.",
+ "Paylaşım kodunu kopyala": "Teilen-Code kopieren",
+ "Kodla ekle": "Per Code hinzufügen",
+ "Arkadaşının set kodunu kopyala, sonra buna bas": "Kopiere den Set-Code deines Freundes und drück dann hier"
 }

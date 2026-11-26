@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Check, Keyboard, Layers, Loader2, MoreHorizontal, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { Check, ClipboardPaste, Keyboard, Layers, Loader2, MoreHorizontal, Pencil, Plus, RefreshCw, Share2, Trash2 } from "lucide-react";
 import clsx from "clsx";
 import { api } from "@/lib/ipc";
 import type { GameModes } from "@/lib/types";
@@ -53,6 +53,30 @@ export function ModesBar({ instanceId, locked, onApplied, onNotice }: {
     } catch (e) { onNotice({ ok: false, text: err(e) }); }
   };
 
+  /** Setin paylaşım kodunu panoya kopyala */
+  const share = async (id: string) => {
+    try {
+      const r = await api.setsExport(instanceId, id);
+      await navigator.clipboard.writeText(r.code);
+      onNotice({ ok: true, text: r.skipped ? tx("Kod kopyalandı. {0} dosya Modrinth'te olmadığı için dışarıda kaldı.", r.skipped) : tx("Set kodu kopyalandı; arkadaşına yapıştır.") });
+    } catch (e) { onNotice({ ok: false, text: err(e) }); }
+  };
+
+  /** Arkadaşın paylaştığı "WEST-SET:…" kodunu ekle: eksik modlar Modrinth'ten kurulur */
+  const importCode = async () => {
+    let code = "";
+    try { code = (await navigator.clipboard.readText()).trim(); } catch { /* izin yoksa aşağıdaki uyarı */ }
+    if (!code.startsWith("WEST-SET:")) return onNotice({ ok: false, text: tx("Panoda set kodu yok. Önce \"WEST-SET:…\" kodunu kopyala.") });
+    setBusy("import");
+    try {
+      const r = await api.setsImport(instanceId, code);
+      const extra = [r.missing.length ? tx("{0} tanesi bu sürüm için yok", r.missing.length) : "", r.otherVersion ? tx("set {0} için hazırlanmış", r.otherVersion) : ""].filter(Boolean).join(" · ");
+      onNotice({ ok: !r.missing.length, text: tx("\"{0}\" eklendi, {1} içerik kuruldu.", r.name, r.installed) + (extra ? " " + extra + "." : "") });
+      await load();
+      onApplied();
+    } catch (e) { onNotice({ ok: false, text: err(e) }); } finally { setBusy(null); }
+  };
+
   const remove = async (id: string) => {
     const m = data?.modes.find((x) => x.id === id);
     if (!m || !await askConfirm(tx("\"{0}\" silinsin mi? Modların ve dosyaların silinmez; yalnızca bu kayıt kaldırılır.", m.name))) return;
@@ -89,6 +113,7 @@ export function ModesBar({ instanceId, locked, onApplied, onNotice }: {
             items={[
               { label: tx("Şu anki düzenle güncelle"), icon: <RefreshCw size={14} />, onClick: () => void recapture(m.id) },
               { label: tx("Adını / simgesini değiştir"), icon: <Pencil size={14} />, onClick: () => setEditor({ id: m.id, name: m.name, icon: m.icon, options: m.hasOptions }) },
+              { label: tx("Paylaşım kodunu kopyala"), icon: <Share2 size={14} />, onClick: () => void share(m.id) },
               { label: tx("Sil"), icon: <Trash2 size={14} />, danger: true, onClick: () => void remove(m.id) },
             ]}
           />
@@ -96,6 +121,9 @@ export function ModesBar({ instanceId, locked, onApplied, onNotice }: {
       ))}
       <button className="mode-add" onClick={() => setEditor({ id: null, name: data.modes.length ? "" : tx("Build Modu"), icon: data.modes.length ? "⚔️" : "🏗️", options: true })}>
         <Plus size={14} /> {tx("Mod oluştur")}
+      </button>
+      <button className="mode-add" disabled={busy === "import" || locked} title={tx("Arkadaşının set kodunu kopyala, sonra buna bas")} onClick={() => void importCode()}>
+        {busy === "import" ? <Loader2 size={14} className="spin" /> : <ClipboardPaste size={14} />} {tx("Kodla ekle")}
       </button>
 
       <Modal open={!!editor} onClose={() => setEditor(null)} title={editor?.id ? tx("Modu düzenle") : tx("Yeni oyun modu")} width={440}

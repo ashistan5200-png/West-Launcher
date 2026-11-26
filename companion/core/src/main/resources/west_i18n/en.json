@@ -658,5 +658,13 @@
  "{0} mod · sonra: {1}": "{0} mods · then: {1}",
  "Bu düzene dönülsün mü?": "Go back to this setup?",
  "{0} tarihindeki mod düzenine dönülür. Diğer bekleyen değişiklikler iptal olur; sonradan eklenen modlar silinmez, kapatılır.": "Returns to the mod setup from {0}. Other pending changes are cancelled; mods added later are not deleted, they are turned off.",
- "Devam": "Continue"
+ "Devam": "Continue",
+ "Kod kopyalandı · {0} dosya Modrinth'te olmadığı için dışarıda kaldı": "Code copied · {0} files are not on Modrinth and were left out",
+ "Set kodu kopyalandı; arkadaşına yapıştır": "Set code copied; paste it to your friend",
+ "Kuruluyor…": "Installing…",
+ "Panodaki set kodunu ekle": "Add set code from clipboard",
+ "Arkadaşının \"WEST-SET:…\" kodunu kopyala, sonra buna bas. Eksik modlar Modrinth'ten kurulur.": "Copy your friend's \"WEST-SET:…\" code, then press this. Missing mods install from Modrinth.",
+ "Panoda set kodu yok. Önce \"WEST-SET:…\" kodunu kopyala.": "No set code in the clipboard. Copy the \"WEST-SET:…\" code first.",
+ "\"{0}\" seti eklendi · {1} içerik kuruldu": "Added set \"{0}\" · {1} items installed",
+ "{0} tanesi bu sürüm için yok": "{0} not available for this version"
 }
