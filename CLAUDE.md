@@ -4,7 +4,8 @@
 
 1. Sürümü yükselt: `package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml` ve `src-tauri/Cargo.lock` (west-launcher paketi).
 2. Companion değiştiyse iki jar'ı da derleyip `src-tauri/resources/companion/` altına kopyala (`companion/build-all.sh`).
-3. `git restore companion/versions/fabric-26.2/logs` ve `rm -f companion/versions/fabric-26.2/logs/2026-*.log.gz`.
+3. Geliştirme logları: `git restore companion/versions/fabric-26.2/logs` ve `git clean -fq companion/versions/fabric-26.2/logs` (yalnızca izlenmeyen yeni loglar silinir; izlenenlere dokunma).
+   Sürüm commit'ine kök dizindeki `package.json` da girmeli (`git add package.json`); `release.yml` sürümü oradan okur.
 4. Commit mesajı kullanıcıya yönelik sürüm notu olsun (iç jargon değil), sonra `git push -u origin main`. `release.yml` kurulum dosyalarını derleyip GitHub Releases'e yükler.
 5. **Siteyi aynı sürümde güncelle (`site/`), atlanmaz:**
    - Yeni ya da değişen özellikleri `site/index.html`'e yansıt: hero'daki `#verText` satırı, ilgili bölüm metinleri, "Ve geri kalan her şey" listesi, gerekirse menü bağlantısı.
