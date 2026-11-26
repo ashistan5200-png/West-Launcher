@@ -83,6 +83,7 @@ public final class ModHubScreen implements WestScreen {
         this.back = back;
         this.tab = Tab.values()[Math.min(lastTab, Tab.values().length - 1)];
         if (tab == Tab.SETS) api.loadSets();
+        if (tab == Tab.PENDING) api.loadPoints();
         if (api.available()) {
             api.reload();
             if (!api.loaded) api.checkUpdates();
@@ -677,7 +678,7 @@ public final class ModHubScreen implements WestScreen {
             Icons.draw(g, Icon.CHECK, x, y + 4, 12, 0xFF4ADE80);
             g.text(Tr.t("Bekleyen değişiklik yok."), x + 18, y + 6, 0xFFB9BDC7, false);
             smallText(g, Tr.t("Mod açma, kapama, silme ve kurma işlemleri burada toplanır; tek tıkla uygulanır."), x, y + 22, 0x77FFFFFF);
-            return y + 36;
+            return points(x, y + 40, w);
         }
         String failed = api.failedReason();
         if (failed != null) {
@@ -718,7 +719,44 @@ public final class ModHubScreen implements WestScreen {
             }
         } else if (!api.handoffRunning() && ui.button(Tr.t("Uygula"), x, y, 160, 20, true)) askRestart();
         if (failed == null) smallText(g, Tr.t("Ya da oyunu kapattığında otomatik uygulanır."), x, y + 26, 0x88FFFFFF);
-        return y + 40;
+        return points(x, y + 44, w);
+    }
+
+    /** Önceki düzenler: her uygulamadan önce kaydedilen geri dönüş noktaları */
+    private int points(int x, int y, int w) {
+        Gfx g = ui.g;
+        List<JsonObject> pts = api.points;
+        if (!api.pointsLoaded || pts.isEmpty()) return y;
+        g.fill(x, y, x + w, y + 1, 0x14FFFFFF);
+        y += 8;
+        g.textBold(Tr.t("Önceki düzenler"), x, y, 0xFFFFFFFF, false);
+        y += 12;
+        for (String l : wrap(g, Tr.t("Her uygulamadan önce kaydedilir. Geri dönünce sonradan eklenenler silinmez, kapatılır."), (int) (w / 0.8f))) {
+            smallText(g, l, x, y, 0x88FFFFFF);
+            y += 9;
+        }
+        y += 6;
+        java.time.format.DateTimeFormatter fmt = java.time.format.DateTimeFormatter.ofPattern("dd.MM HH:mm");
+        for (JsonObject p : pts) {
+            int h = 28;
+            Ui.round(g, x, y, w, h, 8, 0xFF15161E);
+            Ui.outline(g, x, y, w, h, 8, 0x14FFFFFF);
+            long at = p.has("at") ? p.get("at").getAsLong() : 0;
+            String when = java.time.Instant.ofEpochSecond(at).atZone(java.time.ZoneId.systemDefault()).format(fmt);
+            Icons.draw(g, Icon.CLOCK, x + 9, y + 9, 10, 0xFF9A9DA6);
+            String lbl = Tr.t("Bu düzene dön");
+            int bw = g.textWidth(lbl) + 14;
+            g.text(when, x + 26, y + 6, 0xFFE6E7EA, false);
+            int counts = p.has("mods") ? p.get("mods").getAsInt() : 0;
+            smallText(g, ui.fit(Tr.t("{0} mod · sonra: {1}", counts, ModBridge.str(p, "label")), (int) ((w - 40 - bw) / 0.8f)), x + 26, y + 17, 0x88FFFFFF);
+            if (pill(lbl, x + w - bw - 8, y + 7, bw, 14, false)) {
+                String id = ModBridge.str(p, "id");
+                dialog = new Dialog(Tr.t("Bu düzene dönülsün mü?"), Tr.t("{0} tarihindeki mod düzenine dönülür. Diğer bekleyen değişiklikler iptal olur; sonradan eklenen modlar silinmez, kapatılır.", when), List.of(), Tr.t("Devam"), false,
+                        () -> api.restorePoint(id, () -> WestHud.later(this::askRestart)));
+            }
+            y += h + 4;
+        }
+        return y;
     }
 
     private void pendingBar(int x, int y, int w, int h) {
@@ -1324,6 +1362,7 @@ public final class ModHubScreen implements WestScreen {
 
     private void setTab(Tab p) {
         if (p == Tab.SETS) api.loadSets();
+        if (p == Tab.PENDING) api.loadPoints();
         if (tab == p) return;
         tab = p;
         lastTab = p.ordinal();

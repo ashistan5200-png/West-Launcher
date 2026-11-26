@@ -327,6 +327,28 @@ public final class ModBridge {
         void accept(List<String> liveOn, List<String> liveOff, int modChanges);
     }
 
+    // ───── Geri dönüş noktaları ─────
+
+    public volatile List<JsonObject> points = List.of();
+    public volatile boolean pointsLoaded;
+
+    public void loadPoints() {
+        get("/mods/points", v -> {
+            points = list(v.getAsJsonObject().getAsJsonArray("points"));
+            pointsLoaded = true;
+        }, e -> pointsLoaded = true);
+    }
+
+    /** Bu noktaya dönmeyi bekleyen değişiklik yap (Uygula ile oyun kapanmadan geçilir) */
+    public void restorePoint(String id, Runnable then) {
+        JsonObject b = new JsonObject();
+        b.addProperty("id", id);
+        post("/mods/points/restore", b, v -> {
+            pending = list(v.getAsJsonObject().getAsJsonArray("pending"));
+            if (then != null) then.run();
+        }, null);
+    }
+
     // ───── Mağaza ─────
 
     public void search(String q, String kind, String sort, String cat, int offset) {

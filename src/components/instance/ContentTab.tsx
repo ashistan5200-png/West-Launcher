@@ -15,7 +15,7 @@ import { useInstances } from "@/stores/instances";
 import { api, isTauri } from "@/lib/ipc";
 import { Modal } from "@/components/Modal";
 import { ModesBar } from "./ModesBar";
-import { PendingChanges } from "./PendingChanges";
+import { PendingChanges, RestorePoints } from "./PendingChanges";
 import type { ContentFile } from "@/lib/types";
 import { askConfirm } from "@/components/ConfirmDialog";
 import { tx } from "@/lib/i18n";
@@ -192,6 +192,7 @@ export function ContentTab({ instanceId, locked }: { instanceId: string; locked:
       </div>
 
       <PendingChanges instanceId={instanceId} onApplied={() => void refresh()} />
+      <RestorePoints instanceId={instanceId} onRestored={() => void refresh()} />
 
       <ModesBar instanceId={instanceId} locked={locked} onApplied={() => void refresh()} onNotice={setNotice} />
 

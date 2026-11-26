@@ -1933,5 +1933,11 @@
  "Oyunun içinden uygula: Mod Merkezi (H) → Uygula. Oyun kapanmadan geçilir.": "Apply from inside the game: Mod Hub (H) → Apply. The game switches without closing.",
  "Oyun içi Mod Merkezi'nde yapıldı. Bir sonraki açılışta ya da şimdi uygulanır.": "Made in the in-game Mod Hub. Applied on next launch, or now.",
  "Şimdi uygula": "Apply now",
- "açılamadı": "failed"
+ "açılamadı": "failed",
+ "Önceki düzenler": "Earlier setups",
+ "Bu düzene dön": "Go back to this",
+ "Geri dön": "Go back",
+ "{0} mod · sonra: {1}": "{0} mods · then: {1}",
+ "{0} tarihindeki mod düzenine dönülsün mü? Sonradan eklenen modlar silinmez, kapatılır.": "Go back to the mod setup from {0}? Mods added later are not deleted, they are turned off.",
+ "Oyun açıkken oyunun içinden dön: Mod Merkezi → Bekleyenler": "While the game runs, go back from inside the game: Mod Hub → Pending"
 }

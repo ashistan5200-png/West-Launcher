@@ -650,5 +650,12 @@
  "\"{0}\" seti kaydedildi": "Set „{0}“ gespeichert",
  "\"{0}\" setine geçildi": "Zu Set „{0}“ gewechselt",
  "{0} içerik için güncelleme var": "Updates für {0} Inhalte verfügbar",
- "H → Güncellemeler · oyun kapanmadan uygulanır": "H → Updates · ohne Spiel zu schließen"
+ "H → Güncellemeler · oyun kapanmadan uygulanır": "H → Updates · ohne Spiel zu schließen",
+ "Önceki düzenler": "Frühere Setups",
+ "Her uygulamadan önce kaydedilir. Geri dönünce sonradan eklenenler silinmez, kapatılır.": "Wird vor jedem Anwenden gespeichert. Beim Zurückgehen wird nichts gelöscht; spätere Ergänzungen werden deaktiviert.",
+ "Bu düzene dön": "Hierzu zurück",
+ "{0} mod · sonra: {1}": "{0} Mods · danach: {1}",
+ "Bu düzene dönülsün mü?": "Zu diesem Setup zurück?",
+ "{0} tarihindeki mod düzenine dönülür. Diğer bekleyen değişiklikler iptal olur; sonradan eklenen modlar silinmez, kapatılır.": "Kehrt zum Mod-Setup vom {0} zurück. Andere ausstehende Änderungen entfallen; später hinzugefügte Mods werden nicht gelöscht, sondern deaktiviert.",
+ "Devam": "Weiter"
 }

@@ -651,5 +651,12 @@
  "\"{0}\" seti kaydedildi": "Saved set \"{0}\"",
  "\"{0}\" setine geçildi": "Switched to set \"{0}\"",
  "{0} içerik için güncelleme var": "Updates available for {0} items",
- "H → Güncellemeler · oyun kapanmadan uygulanır": "H → Updates · applied without closing the game"
+ "H → Güncellemeler · oyun kapanmadan uygulanır": "H → Updates · applied without closing the game",
+ "Önceki düzenler": "Earlier setups",
+ "Her uygulamadan önce kaydedilir. Geri dönünce sonradan eklenenler silinmez, kapatılır.": "Saved before every apply. Going back never deletes later additions; they are turned off.",
+ "Bu düzene dön": "Go back to this",
+ "{0} mod · sonra: {1}": "{0} mods · then: {1}",
+ "Bu düzene dönülsün mü?": "Go back to this setup?",
+ "{0} tarihindeki mod düzenine dönülür. Diğer bekleyen değişiklikler iptal olur; sonradan eklenen modlar silinmez, kapatılır.": "Returns to the mod setup from {0}. Other pending changes are cancelled; mods added later are not deleted, they are turned off.",
+ "Devam": "Continue"
 }

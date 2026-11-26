@@ -89,8 +89,19 @@ pub async fn apply_pending(state: &AppState, id: &str) -> Vec<String> {
         return errors;
     }
     let (failed, ops): (Vec<Op>, Vec<Op>) = ops.into_iter().partition(|o| o.failed.is_some());
+    // Uygulamadan önce şu anki düzeni kaydet: istenirse tek tıkla geri dönülür
+    if !ops.is_empty() {
+        let label = ops.iter().map(|o| o.label.as_str()).collect::<Vec<_>>().join(", ");
+        if let Err(e) = crate::restorepoints::create(&dir, &game, &label) {
+            tracing::warn!("geri dönüş noktası oluşturulamadı: {e}");
+        }
+    }
     for op in &ops {
         let r = match op.kind.as_str() {
+            "restore" => match op.ids.first() {
+                Some(p) => crate::restorepoints::restore(&dir, &game, p),
+                None => Ok(()),
+            },
             "enable" => manage::set_enabled(&game, &op.ids, true),
             "disable" => manage::set_enabled(&game, &op.ids, false),
             "delete" => manage::delete(&dir, &game, &op.ids),
@@ -400,6 +411,47 @@ pub async fn livemods_apply(state: tauri::State<'_, AppState>, id: String) -> Re
     Ok(apply_pending(&state, &id).await)
 }
 
+/// Arayüz için noktaların özeti (dosya listesi olmadan)
+fn points_brief(dir: &Path) -> Vec<Value> {
+    crate::restorepoints::list(dir)
+        .into_iter()
+        .map(|p| {
+            let mods = p.entries.iter().filter(|e| e.enabled && e.id.starts_with("mods/")).count();
+            let packs = p.entries.iter().filter(|e| e.enabled && !e.id.starts_with("mods/")).count();
+            json!({ "id": p.id, "at": p.at, "label": p.label, "mods": mods, "packs": packs })
+        })
+        .collect()
+}
+
+/// Oyun açıkken geri dönüş: diğer bekleyenlerin yerine tek bir "geri dön" işlemi (devralmayla uygulanır)
+fn queue_restore(dir: &Path, game: &Path, point: &str) -> Result<Vec<Op>> {
+    let p = crate::restorepoints::get(dir, point)?;
+    // Henüz yüklenmemiş kurulumlar zaten noktada yok; geri dönüş onları kapatır
+    let _ = game;
+    let when = chrono::DateTime::from_timestamp(p.at, 0).map(|d| d.with_timezone(&chrono::Local).format("%d.%m %H:%M").to_string()).unwrap_or_default();
+    let ops = vec![Op { kind: "restore".into(), ids: vec![p.id], label: crate::i18n::tf("{0} düzenine dönülecek", &[&when]), at: chrono::Utc::now().timestamp(), failed: None }];
+    save_pending(dir, &ops)?;
+    Ok(ops)
+}
+
+#[tauri::command]
+pub fn livemods_points(state: tauri::State<'_, AppState>, id: String) -> Vec<Value> {
+    points_brief(&state.paths.instance_dir(&id))
+}
+
+/// Oyun kapalıyken hemen geri dön (önce şu anki düzen de kaydedilir)
+#[tauri::command]
+pub fn livemods_restore(state: tauri::State<'_, AppState>, id: String, point: String) -> Result<()> {
+    if state.running.lock().contains_key(&id) {
+        return Err(AppError::msg(crate::i18n::t("Oyun açıkken geri dönüş oyunun içinden yapılır (Mod Merkezi → Bekleyenler).")));
+    }
+    let (dir, game) = (state.paths.instance_dir(&id), state.paths.instance_game_dir(&id));
+    crate::restorepoints::get(&dir, &point)?;
+    crate::restorepoints::create(&dir, &game, &crate::i18n::t("Geri dönmeden önceki düzen"))?;
+    crate::restorepoints::restore(&dir, &game, &point)?;
+    save_pending(&dir, &[])
+}
+
 /// Günlükten çökme sebebini çıkar: önce suçlu modu adıyla, sonra Fabric'in uyumsuzluk açıklamasını,
 /// sonra çökme raporundaki ilk hatayı; zararsız gürültüyü (çevrimdışı hesabın 401'i, uyarılar) atlar.
 fn failure_reason(tail: &[String]) -> Option<String> {
@@ -425,7 +477,22 @@ fn failure_reason(tail: &[String]) -> Option<String> {
 }
 
 /// Bekleyen değişiklikler uygulanmış olsaydı yüklenecek jar'lar: (kaynak dosya, hedef ad) ve indirilecek güncellemeler
-fn staged_plan(game: &Path, ops: &[Op]) -> (Vec<(PathBuf, String)>, Vec<String>) {
+fn staged_plan(dir: &Path, game: &Path, ops: &[Op]) -> (Vec<(PathBuf, String)>, Vec<String>) {
+    if let Some(point) = ops.iter().filter(|o| o.failed.is_none() && o.kind == "restore").find_map(|o| o.ids.first()) {
+        if let Ok(p) = crate::restorepoints::get(dir, point) {
+            let mut files = crate::restorepoints::enabled_mods(dir, &p);
+            // West Companion her zaman güncel olandan
+            if let Ok(rd) = std::fs::read_dir(game.join("mods")) {
+                for e in rd.flatten() {
+                    let n = e.file_name().to_string_lossy().to_string();
+                    if n.starts_with("west-companion") && n.ends_with(".jar") {
+                        files.push((e.path(), n));
+                    }
+                }
+            }
+            return (files, vec![]);
+        }
+    }
     let mods = game.join("mods");
     let mut state: BTreeMap<String, (PathBuf, bool)> = BTreeMap::new();
     if let Ok(rd) = std::fs::read_dir(&mods) {
@@ -507,7 +574,7 @@ async fn start_handoff(state: &AppState, id: &str, p: &Prepared, join: Option<St
     let staged = dir.join(STAGED_DIR).join(chrono::Utc::now().timestamp_millis().to_string());
     std::fs::create_dir_all(&staged)?;
     let ops = load_pending(&dir);
-    let (files, updates) = staged_plan(&game, &ops);
+    let (files, updates) = staged_plan(&dir, &game, &ops);
     {
         let staged = staged.clone();
         tokio::task::spawn_blocking(move || -> std::io::Result<()> {
@@ -917,6 +984,12 @@ pub async fn route(method: &str, path: &str, query: &str, body: &Value) -> Resul
             crate::instance::modes::set_active(&dir, &mode_id)?;
             Ok(json!({ "liveOn": live_on, "liveOff": live_off, "mods": mods_on.len() + mods_off.len(), "pending": load_pending(&dir) }))
         }
+        // Geri dönüş noktaları
+        ("GET", "/mods/points") => Ok(json!({ "points": points_brief(&dir) })),
+        ("POST", "/mods/points/restore") => {
+            let point = body["id"].as_str().unwrap_or_default().to_string();
+            Ok(json!({ "pending": queue_restore(&dir, &game, &point)? }))
+        }
         ("POST", "/mods/retry") => Ok(json!({ "pending": clear_failed(&dir, &game) })),
         ("GET", "/mods/pending") => Ok(json!({ "pending": load_pending(&dir) })),
         ("POST", "/mods/undo") => {
@@ -1023,13 +1096,13 @@ mod tests {
         }
         let op = |kind: &str, ids: &[&str]| Op { kind: kind.into(), ids: ids.iter().map(|s| s.to_string()).collect(), label: String::new(), at: 0, failed: None };
         let ops = vec![op("enable", &["mods/modmenu.jar"]), op("disable", &["mods/iris.jar"]), op("delete", &["mods/old.jar"]), op("update", &["mods/lithium.jar"])];
-        let (files, updates) = staged_plan(&tmp, &ops);
+        let (files, updates) = staged_plan(&tmp, &tmp, &ops);
         let names: Vec<&str> = files.iter().map(|f| f.1.as_str()).collect();
         assert_eq!(names, vec!["modmenu.jar", "sodium.jar"]);
         assert!(files[0].0.ends_with("modmenu.jar.disabled"));
         assert_eq!(updates, vec!["mods/lithium.jar".to_string()]);
         // Kapatma geri alınırsa (op yok) dosya olduğu gibi kalır
-        let (files, _) = staged_plan(&tmp, &[]);
+        let (files, _) = staged_plan(&tmp, &tmp, &[]);
         assert_eq!(files.len(), 4);
         let _ = std::fs::remove_dir_all(&tmp);
     }
@@ -1047,7 +1120,7 @@ mod tests {
         let ops = load_pending(&dir);
         assert_eq!(ops[0].failed.as_deref(), Some("\"bad\" modu bu oyun sürümüyle açılamıyor"));
         // Başarısız değişiklik devralmaya katılmaz
-        let (files, _) = staged_plan(&game, &ops);
+        let (files, _) = staged_plan(&dir, &game, &ops);
         assert_eq!(files.iter().map(|f| f.1.as_str()).collect::<Vec<_>>(), vec!["good.jar"]);
         // Tekrar dene: işaret kalkar, dosya geri açılır
         let ops = clear_failed(&dir, &game);

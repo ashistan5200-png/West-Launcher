@@ -1938,5 +1938,11 @@
  "Oyunun içinden uygula: Mod Merkezi (H) → Uygula. Oyun kapanmadan geçilir.": "Im Spiel anwenden: Mod-Zentrale (H) → Anwenden. Das Spiel wechselt, ohne sich zu schließen.",
  "Oyun içi Mod Merkezi'nde yapıldı. Bir sonraki açılışta ya da şimdi uygulanır.": "In der Mod-Zentrale im Spiel vorgenommen. Wird beim nächsten Start oder jetzt angewendet.",
  "Şimdi uygula": "Jetzt anwenden",
- "açılamadı": "fehlgeschlagen"
+ "açılamadı": "fehlgeschlagen",
+ "Önceki düzenler": "Frühere Setups",
+ "Bu düzene dön": "Hierzu zurück",
+ "Geri dön": "Zurück",
+ "{0} mod · sonra: {1}": "{0} Mods · danach: {1}",
+ "{0} tarihindeki mod düzenine dönülsün mü? Sonradan eklenen modlar silinmez, kapatılır.": "Zum Mod-Setup vom {0} zurück? Später hinzugefügte Mods werden nicht gelöscht, sondern deaktiviert.",
+ "Oyun açıkken oyunun içinden dön: Mod Merkezi → Bekleyenler": "Während das Spiel läuft, im Spiel zurückgehen: Mod-Zentrale → Ausstehend"
 }

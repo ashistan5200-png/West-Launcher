@@ -248,5 +248,9 @@
  "Uyumsuz modlar var": "Incompatible mods",
  "Oyun açıkken değişiklikler oyunun içinden uygulanır (Mod Merkezi → Uygula).": "While the game is running, apply changes from inside the game (Mod Hub → Apply).",
  "{0}: {1} açılacak": "{0}: {1} will turn on",
- "{0}: {1} kapanacak": "{0}: {1} will turn off"
+ "{0}: {1} kapanacak": "{0}: {1} will turn off",
+ "{0} düzenine dönülecek": "will go back to the setup from {0}",
+ "Geri dönüş noktası bulunamadı": "Restore point not found",
+ "Oyun açıkken geri dönüş oyunun içinden yapılır (Mod Merkezi → Bekleyenler).": "While the game runs, go back from inside the game (Mod Hub → Pending).",
+ "Geri dönmeden önceki düzen": "Setup before going back"
 }

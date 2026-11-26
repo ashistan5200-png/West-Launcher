@@ -248,5 +248,9 @@
  "Uyumsuz modlar var": "Inkompatible Mods",
  "Oyun açıkken değişiklikler oyunun içinden uygulanır (Mod Merkezi → Uygula).": "Während das Spiel läuft, wende Änderungen im Spiel an (Mod-Zentrale → Anwenden).",
  "{0}: {1} açılacak": "{0}: {1} wird aktiviert",
- "{0}: {1} kapanacak": "{0}: {1} wird deaktiviert"
+ "{0}: {1} kapanacak": "{0}: {1} wird deaktiviert",
+ "{0} düzenine dönülecek": "zurück zum Setup vom {0}",
+ "Geri dönüş noktası bulunamadı": "Wiederherstellungspunkt nicht gefunden",
+ "Oyun açıkken geri dönüş oyunun içinden yapılır (Mod Merkezi → Bekleyenler).": "Während das Spiel läuft, geht das Zurückgehen im Spiel (Mod-Zentrale → Ausstehend).",
+ "Geri dönmeden önceki düzen": "Setup vor dem Zurückgehen"
 }

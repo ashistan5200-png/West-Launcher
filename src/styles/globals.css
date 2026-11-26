@@ -2283,3 +2283,10 @@ img.tb-avatar { object-fit: cover; }
 .pending-list li .truncate { flex: 1; min-width: 0; }
 .pending-list li.bad { background: rgb(var(--danger) / 0.08); }
 .chip-danger { background: rgb(var(--danger) / 0.16); color: rgb(240 150 160); }
+
+/* Önceki düzenler (geri dönüş noktaları) */
+.restore-box { display: flex; flex-direction: column; gap: 6px; }
+.restore-toggle { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; font-size: var(--fs-sm); color: rgb(var(--text-muted)); padding: 4px 0; }
+.restore-toggle:hover { color: rgb(var(--text)); }
+.restore-toggle .rot { transform: rotate(180deg); }
+.restore-when { flex: none; font-variant-numeric: tabular-nums; min-width: 110px; }

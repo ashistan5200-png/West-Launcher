@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
-import { CircleAlert, Clock, Loader2, Undo2 } from "lucide-react";
+import { ChevronDown, CircleAlert, Clock, History, Loader2, Undo2 } from "lucide-react";
 import { api, isTauri, type LiveOp } from "@/lib/ipc";
 import { useInstances } from "@/stores/instances";
-import { tx } from "@/lib/i18n";
+import { locale, tx } from "@/lib/i18n";
+import { askConfirm } from "@/components/ConfirmDialog";
 import { errorText } from "@/lib/format";
 
 /**
@@ -86,6 +87,64 @@ export function PendingChanges({ instanceId, onApplied }: { instanceId: string; 
           </li>
         ))}
       </ul>
+      {error && <div className="banner banner-error">{error}</div>}
+    </div>
+  );
+}
+
+interface RestorePointBrief { id: string; at: number; label: string; mods: number; packs: number }
+
+/**
+ * Önceki düzenler: her uygulamadan önce kaydedilen geri dönüş noktaları. Oyun kapalıyken buradan,
+ * açıkken oyunun içinden (Mod Merkezi → Bekleyenler) dönülür. Hiçbir dosya silinmez.
+ */
+export function RestorePoints({ instanceId, onRestored }: { instanceId: string; onRestored: () => void }) {
+  const [points, setPoints] = useState<RestorePointBrief[]>([]);
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const running = useInstances((s) => instanceId in s.running);
+  const load = useCallback(() => {
+    if (isTauri()) api.livemodsPoints(instanceId).then((p) => setPoints(p as RestorePointBrief[])).catch(() => setPoints([]));
+  }, [instanceId]);
+  useEffect(load, [load, running]);
+
+  if (!points.length) return null;
+  const fmt = (at: number) => new Date(at * 1000).toLocaleString(locale(), { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  const restore = async (p: RestorePointBrief) => {
+    if (!(await askConfirm(tx("{0} tarihindeki mod düzenine dönülsün mü? Sonradan eklenen modlar silinmez, kapatılır.", fmt(p.at)), { danger: false, confirmLabel: tx("Geri dön") }))) return;
+    setBusy(p.id);
+    setError(null);
+    try {
+      await api.livemodsRestore(instanceId, p.id);
+      onRestored();
+      load();
+    } catch (e) {
+      setError(errorText(e));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <div className="restore-box">
+      <button className="restore-toggle" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+        <History size={15} /> {tx("Önceki düzenler")} <span className="muted small">{points.length}</span>
+        <ChevronDown size={14} className={open ? "rot" : undefined} />
+      </button>
+      {open && (
+        <ul className="pending-list">
+          {points.map((p) => (
+            <li key={p.id}>
+              <span className="restore-when">{fmt(p.at)}</span>
+              <span className="truncate muted">{tx("{0} mod · sonra: {1}", p.mods, p.label)}</span>
+              <button className="btn-link small" disabled={!!busy || running} title={running ? tx("Oyun açıkken oyunun içinden dön: Mod Merkezi → Bekleyenler") : undefined} onClick={() => void restore(p)}>
+                {busy === p.id ? <Loader2 size={13} className="spin" /> : <Undo2 size={13} />} {tx("Bu düzene dön")}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
       {error && <div className="banner banner-error">{error}</div>}
     </div>
   );

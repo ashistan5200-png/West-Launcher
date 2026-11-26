@@ -23,6 +23,7 @@ pub mod updater;
 pub mod util;
 pub mod i18n;
 pub mod livemods;
+pub mod restorepoints;
 
 use paths::Paths;
 use state::AppState;
@@ -90,6 +91,8 @@ pub fn run() {
             livemods::livemods_undo,
             livemods::livemods_retry,
             livemods::livemods_apply,
+            livemods::livemods_points,
+            livemods::livemods_restore,
             commands::launch::running_instances,
             commands::launch::get_companion,
             commands::launch::set_companion_config,
