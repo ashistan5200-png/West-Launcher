@@ -62,7 +62,9 @@ public final class ModHubScreen implements WestScreen {
     private final long opened = System.nanoTime();
     private long last = System.nanoTime();
     private float dt;
-    private final Map<String, Float> anim = new HashMap<>();
+    private final Rota.Anim ra = new Rota.Anim();
+    /** Bu karenin ipucu: { yazı, orta x, üst y } */
+    private Object[] tipAt;
     private Dialog dialog;
     /** Keşfet ayrıntısı açık mı (proje kimliği) */
     private String detailId;
@@ -96,6 +98,8 @@ public final class ModHubScreen implements WestScreen {
     @Override
     public void render(Gfx g, int mx, int my, float delta) {
         Theme t = WestHud.theme();
+        ra.frame();
+        tipAt = null;
         float time = (System.nanoTime() - opened) / 1e9f;
         long now = System.nanoTime();
         dt = Math.min(0.1f, (now - last) / 1e9f);
@@ -120,26 +124,27 @@ public final class ModHubScreen implements WestScreen {
             return;
         }
 
-        int side = clamp(pw * 31 / 100, 124, 170);
+        int side = clamp(pw * 30 / 100, 132, 170);
         sidebar(px, py, side, ph);
-        int cx = px + side + 12, cy = py + 10, cw = pw - side - 24;
+        int cx = px + side + 16, cy = py + 14, cw = pw - side - 32;
 
-        // Başlık: sayfa adı, arama, yenile, kapat
-        bigText(g, ui.fit(TAB_NAMES[tab.ordinal()], Math.round((cw / 2.4f) / 1.3f)), cx, cy + 5, 0xFFFFFFFF, 1.3f);
-        if (iconButton("close", Icon.CLOSE, px + pw - 26, cy, 18, 0xFFE5566E)) {
+        // Başlık: sayfa adı + özet, arama, yenile, kapat
+        if (iconButton("close", Icon.CLOSE, px + pw - 26, py + 8, 18, Rota.DANGER)) {
             close();
             ui.end();
             return;
         }
         int rx = px + pw - 48;
         boolean spinning = api.refreshing || api.loading || api.searching;
-        if (iconButton("refresh", Icon.REFRESH, rx, cy, 18, 0)) refresh();
-        if (spinning) spinner(g, rx + 9, cy + 9, 0xAAFFFFFF);
-        if (tab == Tab.INSTALLED || tab == Tab.BROWSE) {
-            int sbw = clamp(cw / 3, 80, 180);
-            searchBox(rx - 6 - sbw, cy + 1, sbw, 16);
-        }
-        int top = cy + 24;
+        if (spinning) Rota.spinner(ui, rx + 9, py + 17, Rota.MUTED);
+        else if (iconButton("refresh", Icon.REFRESH, rx, py + 8, 18, 0)) refresh();
+        boolean searchable = tab == Tab.INSTALLED || tab == Tab.BROWSE;
+        int sbw = searchable ? clamp(cw * 36 / 100, 90, 180) : 0;
+        if (searchable) searchBox(rx - 6 - sbw, cy - 2, sbw, 18);
+        int titleW = rx - 10 - sbw - cx;
+        Rota.title(g, ui.fit(TAB_NAMES[tab.ordinal()], Math.round(titleW / 1.3f)), cx, cy);
+        Rota.smallFit(ui, subtitle(), cx, cy + 14, titleW, Rota.MUTED);
+        int top = cy + 30;
         top = toolbar(cx, top, cw);
 
         // Alt şerit (bekleyen değişiklikler) ve bildirim
@@ -167,11 +172,8 @@ public final class ModHubScreen implements WestScreen {
         int contentH = end - top;
         float max = Math.max(0, contentH - viewH);
         scrollTarget = Math.max(0, Math.min(max, scrollTarget));
-        if (max > 0) {
-            int barH = Math.max(16, (int) (viewH * viewH / (float) contentH));
-            int barY = top + (int) ((viewH - barH) * (scroll / max));
-            Ui.round(g, cx + cw + 5, barY, 3, barH, 1, 0x55FFFFFF);
-        }
+        Rota.scrollbar(g, cx + cw + 6, top, viewH, contentH, scroll);
+        if (scroll > 1) Rota.rule(g, cx - 4, top - 1, cw + 8);
         if (footH > 0) pendingBar(cx, py + ph - 10 - footH + 4, cw, footH - 4);
 
         // Üst katmanlar
@@ -186,61 +188,85 @@ public final class ModHubScreen implements WestScreen {
             dialog(sw, sh);
         }
         toast(g, sw, py + ph - footH);
+        if (tipAt != null && dialog == null && detailId == null) {
+            g.nextLayer();
+            String tip = (String) tipAt[0];
+            int w = g.textWidth(tip) + 10, x = clamp((int) tipAt[1] - w / 2, 2, sw - w - 2), y = (int) tipAt[2];
+            Ui.round(g, x, y, w, 14, 5, 0xF0000000);
+            g.text(tip, x + 5, y + 3, Rota.TEXT, false);
+        }
         ui.end();
     }
 
+    /** Başlığın altındaki tek satırlık özet */
+    private String subtitle() {
+        return switch (tab) {
+            case INSTALLED -> {
+                int mods = 0, packs = 0, shaders = 0;
+                for (JsonObject it : api.items) {
+                    switch (ModBridge.str(it, "kind")) {
+                        case "mod" -> mods++;
+                        case "resourcepack" -> packs++;
+                        case "shader" -> shaders++;
+                        default -> {}
+                    }
+                }
+                yield Tr.t("{0} mod · {1} paket · {2} shader", mods, packs, shaders);
+            }
+            case BROWSE -> Tr.t("Modrinth · {0} {1} ile uyumlu olanlar", game.loaderName(), game.minecraftVersion());
+            case SETS -> Tr.t("Mod düzenlerini kaydet, aralarında geçiş yap, paylaş");
+            case UPDATES -> {
+                int n = updatable().size();
+                yield n == 0 ? Tr.t("Her şey güncel") : Tr.t("{0} güncelleme var", n);
+            }
+            case PENDING -> api.pending.isEmpty() ? Tr.t("Oyun kapanmadan uygulanır") : Tr.t("{0} bekleyen değişiklik", api.pending.size());
+        };
+    }
+
     private void unavailable(int px, int py, int pw, int ph) {
-        Gfx g = ui.g;
-        int cx = px + pw / 2;
-        Icons.draw(g, Icon.BOX, cx - 12, py + ph / 2 - 46, 24, Theme.alpha(ui.t.accent, 0xDD));
-        String a = Tr.t("Mod Merkezi kullanılamıyor");
-        g.textBold(a, cx - g.textBoldWidth(a) / 2, py + ph / 2 - 12, 0xFFFFFFFF, false);
-        String b = Tr.t("Mod Merkezi, oyun West Client launcher'ından açıldığında çalışır.");
-        g.text(b, cx - g.textWidth(b) / 2, py + ph / 2 + 2, 0xFF9A9DA6, false);
-        String c = Tr.t("Launcher'ı açık tutup oyunu oradan başlat.");
-        g.text(c, cx - g.textWidth(c) / 2, py + ph / 2 + 14, 0xFF9A9DA6, false);
-        if (ui.button(Tr.t("Geri"), cx - 40, py + ph / 2 + 34, 80, 18, true)) close();
+        int w = Math.min(320, pw - 40), x = px + (pw - w) / 2;
+        int h = Rota.empty(ui, Icon.BOX, Tr.t("Mod Merkezi kullanılamıyor"),
+                Tr.t("Mod Merkezi, oyun West Client launcher'ından açıldığında çalışır.") + " " + Tr.t("Launcher'ı açık tutup oyunu oradan başlat."), x, py + ph / 2 - 60, w);
+        String b = Tr.t("Geri");
+        int bw = Rota.buttonWidth(ui.g, b, null);
+        if (Rota.button(ui, ra, "uback", b, null, Rota.Kind.GHOST, px + (pw - bw) / 2, py + ph / 2 - 60 + h + 4, bw, 20, true)) close();
+        if (iconButton("close", Icon.CLOSE, px + pw - 26, py + 8, 18, Rota.DANGER)) close();
     }
 
     private void sidebar(int x, int y, int w, int h) {
-        Theme t = ui.t;
         Gfx g = ui.g;
         Rota.side(g, x, y, w, h);
-        Icons.draw(g, Icon.BOX, x + 11, y + 12, 12, t.accent | 0xFF000000);
-        g.textBold(ui.fit(Tr.t("Mod Merkezi"), w - 36), x + 28, y + 14, 0xFFFFFFFF, false);
+        Icons.draw(g, Icon.BOX, x + 12, y + 12, 12, ui.t.accent | 0xFF000000);
+        g.textBold(ui.fit(Tr.t("Mod Merkezi"), w - 40), x + 29, y + 14, Rota.TEXT, false);
 
-        int by = y + 36;
-        for (Tab p : Tab.values()) {
-            int count = switch (p) {
-                case UPDATES -> updatable().size();
-                case PENDING -> api.pending.size();
-                default -> 0;
-            };
-            boolean active = tab == p;
-            float hv = hov("nav" + p, ui.hover(x + 8, by, w - 16, 18));
-            if (Rota.nav(ui, TAB_ICONS[p.ordinal()], TAB_NAMES[p.ordinal()], x + 8, by, w - 16, active, hv, count, p == Tab.PENDING)) setTab(p);
-            by += 20;
-        }
+        int nx = x + 10, nw = w - 20, ny = y + 38;
+        Rota.section(g, Tr.t("Bu oyun"), nx + 2, ny);
+        ny = navItem(Tab.INSTALLED, nx, ny + 10, nw);
+        ny = navItem(Tab.SETS, nx, ny, nw);
+        ny = navItem(Tab.PENDING, nx, ny, nw) + 8;
+        Rota.section(g, Tr.t("Yeni içerik"), nx + 2, ny);
+        ny = navItem(Tab.BROWSE, nx, ny + 10, nw);
+        navItem(Tab.UPDATES, nx, ny, nw);
 
-        // Alt: durum + sürükle-bırak ipucu
-        int fy = y + h - 64;
-        g.fill(x + 8, fy - 4, x + w - 8, fy - 3, 0x14FFFFFF);
-        int mods = 0, packs = 0, shaders = 0;
-        for (JsonObject it : api.items) {
-            switch (ModBridge.str(it, "kind")) {
-                case "mod" -> mods++;
-                case "resourcepack" -> packs++;
-                case "shader" -> shaders++;
-                default -> {}
-            }
-        }
-        smallText(g, ui.fit(Tr.t("{0} mod · {1} paket · {2} shader", mods, packs, shaders), (int) ((w - 20) / 0.8f)), x + 10, fy, 0x99FFFFFF);
-        int dy = fy + 12;
-        float pulse = dropHover ? 1 : 0.5f + 0.5f * (float) Math.sin(ui.time * 2);
-        Ui.outline(g, x + 8, dy, w - 16, 38, 7, Theme.alpha(t.accent, (int) (0x40 + 0x50 * pulse)));
-        Icons.draw(g, Icon.PLUS, x + 14, dy + 7, 9, Theme.alpha(t.accent, 0xEE));
-        g.text(ui.fit(Tr.t("Dosya sürükle"), w - 44), x + 28, dy + 8, 0xFFE6E7EA, false);
-        smallText(g, ui.fit(Tr.t(".jar · .zip"), (int) ((w - 30) / 0.8f)), x + 14, dy + 22, 0x88FFFFFF);
+        // Alt: dosya bırakma alanı
+        int dh = 34, dy = y + h - 10 - dh;
+        float a = hov("drop", dropHover || ui.hover(nx, dy, nw, dh));
+        Ui.round(g, nx, dy, nw, dh, Rota.RADIUS, Theme.alpha(0xFFFFFFFF, (int) (0x06 + 0x08 * a)));
+        Ui.outline(g, nx, dy, nw, dh, Rota.RADIUS, dropHover ? Theme.alpha(ui.t.accent, 0xC0) : Theme.mix(Rota.LINE, Rota.LINE_STRONG, a));
+        Icons.draw(g, Icon.PLUS, nx + 8, dy + 7, 9, dropHover ? ui.t.accent | 0xFF000000 : Rota.MUTED);
+        g.text(ui.fit(Tr.t("Dosya sürükle"), nw - 30), nx + 22, dy + 8, Rota.TEXT, false);
+        Rota.smallFit(ui, ".jar · .zip", nx + 22, dy + 20, nw - 30, Rota.FAINT);
+    }
+
+    private int navItem(Tab p, int x, int y, int w) {
+        int count = switch (p) {
+            case UPDATES -> updatable().size();
+            case PENDING -> api.pending.size();
+            default -> 0;
+        };
+        float hv = hov("nav" + p, ui.hover(x, y, w, 18));
+        if (Rota.nav(ui, TAB_ICONS[p.ordinal()], TAB_NAMES[p.ordinal()], x, y, w, tab == p, hv, count, p == Tab.PENDING)) setTab(p);
+        return y + 20;
     }
 
     /** Sekmeye göre süzgeç / tür seçimi satırı; içeriğin başladığı y'yi döner */
@@ -260,7 +286,8 @@ public final class ModHubScreen implements WestScreen {
                 // Sıralama: tıkladıkça sıradakine geçer
                 String sl = Tr.t("Sırala: {0}", SORT_NAMES[sort]);
                 int sw = g.textWidth(sl) + 16;
-                if (pill(sl, x + w - sw, y, sw, 16, false)) {
+                if (Rota.button(ui, ra, "sort", sl, null, Rota.Kind.QUIET, x + w - sw, y, sw, 16, true)) {
+                    game.click();
                     sort = (sort + 1) % SORTS.length;
                     newSearch();
                 }
@@ -278,11 +305,18 @@ public final class ModHubScreen implements WestScreen {
             case UPDATES -> {
                 List<JsonObject> up = updatable();
                 Gfx g = ui.g;
-                String s = up.isEmpty() ? Tr.t("Her şey güncel.") : Tr.t("{0} güncelleme var", up.size());
-                g.text(s, x, y + 4, 0xFFB9BDC7, false);
-                if (!up.isEmpty() && ui.button(Tr.t("Tümünü güncelle"), x + w - 110, y, 110, 16, true)) updateItems(up);
-                if (ui.button(api.refreshing ? Tr.t("Denetleniyor…") : Tr.t("Denetle"), x + w - (up.isEmpty() ? 80 : 196), y, 80, 16, false) && !api.refreshing) api.checkUpdates();
-                return y + 24;
+                String chk = api.refreshing ? Tr.t("Denetleniyor…") : Tr.t("Yeniden denetle");
+                int cw = Rota.buttonWidth(g, chk, Icon.REFRESH);
+                if (Rota.button(ui, ra, "chk", chk, Icon.REFRESH, Rota.Kind.GHOST, x, y, cw, 18, !api.refreshing)) {
+                    game.click();
+                    api.checkUpdates();
+                }
+                if (!up.isEmpty()) {
+                    String all = Tr.t("Tümünü güncelle");
+                    int aw = Rota.buttonWidth(g, all, null);
+                    if (Rota.button(ui, ra, "upall", all, null, Rota.Kind.PRIMARY, x + cw + 6, y, aw, 18, true)) updateItems(up);
+                }
+                return y + 26;
             }
             default -> {
                 return y + 2;
@@ -297,19 +331,14 @@ public final class ModHubScreen implements WestScreen {
 
     private int chips(int x, int y, int w) {
         Gfx g = ui.g;
-        Theme t = ui.t;
         String[][] cats = cats();
         if (cats.length == 0) return y;
         int cx = x;
         for (int i = 0; i < cats.length; i++) {
             String label = cats[i][1];
-            int cw = g.textWidth(label) + 14;
+            int cw = Rota.chipWidth(g, label);
             if (cx + cw > x + w) break;
-            boolean on = i == cat;
-            boolean hv = ui.hover(cx, y, cw, 14);
-            Ui.round(g, cx, y, cw, 14, 7, on ? t.accent | 0xFF000000 : hv ? 0x30FFFFFF : 0x18FFFFFF);
-            g.text(label, cx + 7, y + 3, on ? t.onAccent : 0xFFD0D2D8, false);
-            if (ui.clicked(cx, y, cw, 14) && !on) {
+            if (Rota.chip(ui, label, cx, y, i == cat) && i != cat) {
                 cat = i;
                 newSearch();
                 game.click();
@@ -343,12 +372,17 @@ public final class ModHubScreen implements WestScreen {
         }
         list.sort((a, b) -> ModBridge.str(a, "title").compareToIgnoreCase(ModBridge.str(b, "title")));
         if (list.isEmpty()) {
-            g.text(q.isEmpty() ? Tr.t("Burada henüz bir şey yok. Keşfet'ten kurabilir ya da dosya sürükleyebilirsin.") : Tr.t("Eşleşen içerik yok."), x, y + 4, 0x99FFFFFF, false);
-            if (!q.isEmpty() && ui.button(Tr.t("Keşfet'te ara"), x, y + 18, 100, 16, true)) {
+            y += Rota.empty(ui, q.isEmpty() ? Icon.BOX : Icon.SEARCH, q.isEmpty() ? Tr.t("Burada henüz bir şey yok") : Tr.t("Eşleşen içerik yok"),
+                    q.isEmpty() ? Tr.t("Keşfet'ten kurabilir ya da dosya sürükleyebilirsin.") : Tr.t("Modrinth'te aramak ister misin?"), x, y + 6, w);
+            String b = Tr.t("Keşfet'te ara");
+            int bw = Rota.buttonWidth(ui.g, b, Icon.SEARCH);
+            if (!q.isEmpty() && Rota.button(ui, ra, "gobrowse", b, Icon.SEARCH, Rota.Kind.PRIMARY, x + (w - bw) / 2, y, bw, 20, true)) {
+                String keep = search;
                 setTab(Tab.BROWSE);
+                search = keep;
                 newSearch();
             }
-            return y + 40;
+            return y + 28;
         }
         y = handoffCard(x, y, w);
         if (filter == 3 && !game.shadersSupported()) {
@@ -367,8 +401,7 @@ public final class ModHubScreen implements WestScreen {
         int h = 34;
         boolean hv = ui.hover(x, y, w, h);
         float a = hov("row" + id, hv);
-        Ui.round(g, x, y, w, h, 8, Theme.mix(0xFF15161E, 0xFF1C1E28, a));
-        Ui.outline(g, x, y, w, h, 8, Theme.alpha(0xFFFFFFFF, (int) (0x12 + 0x18 * a)));
+        Rota.card(g, x, y, w, h, a);
         icon(g, it, x + 6, y + 6, 22);
 
         // Durum
@@ -377,7 +410,7 @@ public final class ModHubScreen implements WestScreen {
         int right = x + w - 8;
         // Eylemler: sil, güncelle, aç/kapa
         if (!managed) {
-            if (smallIcon("del" + id, Icon.CLOSE, right - 16, y + 9, 16, 0xFFE5566E, Tr.t("Sil"))) askDelete(it);
+            if (smallIcon("del" + id, Icon.CLOSE, right - 16, y + 9, 16, Rota.DANGER, Tr.t("Sil"))) askDelete(it);
             right -= 20;
         }
         JsonElement up = it.get("update");
@@ -404,7 +437,7 @@ public final class ModHubScreen implements WestScreen {
         String title = ModBridge.str(it, "title");
         if (title.isEmpty()) title = ModBridge.str(it, "file");
         int tw = Math.min(g.textBoldWidth(title), maxT);
-        g.textBold(ui.fit(title, maxT), tx, y + 7, on ? 0xFFFFFFFF : 0xFF8D909A, false);
+        g.text(ui.fit(title, maxT), tx, y + 7, on ? Rota.TEXT : Rota.FAINT, false);
         // Rozetler: tür + bekleyen işlem + yeni
         int bx = tx + tw + 6;
         String kindLabel = switch (k) {
@@ -434,7 +467,7 @@ public final class ModHubScreen implements WestScreen {
         String sub = (ver.isEmpty() ? ModBridge.str(it, "file") : ver) + (author.isEmpty() ? "" : " · " + author);
         String dep = ModBridge.str(it, "dependencyOf");
         if (!dep.isEmpty()) sub += " · " + Tr.t("{0} için", dep);
-        smallText(g, ui.fit(sub, (int) (maxT / 0.8f)), tx, y + 20, 0x88FFFFFF);
+        smallText(g, ui.fit(sub, (int) (maxT / 0.8f)), tx, y + 20, Rota.FAINT);
         return y + h;
     }
 
@@ -579,28 +612,25 @@ public final class ModHubScreen implements WestScreen {
         if (!api.loaded) return loadingText(x, y, Tr.t("Yükleniyor…"));
         List<JsonObject> up = updatable();
         if (up.isEmpty()) {
-            Icons.draw(g, Icon.CHECK, x, y + 4, 12, 0xFF4ADE80);
-            g.text(api.refreshing ? Tr.t("Modrinth'te yeni sürümler aranıyor…") : Tr.t("Kurulu her şey en son sürümde."), x + 18, y + 6, 0xFFB9BDC7, false);
-            return y + 24;
+            if (api.refreshing) return loadingText(x, y, Tr.t("Modrinth'te yeni sürümler aranıyor…"));
+            return y + Rota.empty(ui, Icon.CHECK, Tr.t("Her şey güncel"), Tr.t("Kurulu her şey en son sürümde."), x, y + 6, w);
         }
         for (JsonObject it : up) {
             int h = 34;
             String id = ModBridge.str(it, "id");
-            Ui.round(g, x, y, w, h, 8, 0xFF15161E);
-            Ui.outline(g, x, y, w, h, 8, 0x14FFFFFF);
+            Rota.card(g, x, y, w, h, 0);
             icon(g, it, x + 6, y + 6, 22);
             JsonObject u = it.getAsJsonObject("update");
             String lbl = Tr.t("Güncelle");
             int bw = g.textWidth(lbl) + 14;
             int maxT = w - 34 - bw - 20;
-            g.textBold(ui.fit(ModBridge.str(it, "title"), maxT), x + 34, y + 7, 0xFFFFFFFF, false);
+            g.text(ui.fit(ModBridge.str(it, "title"), maxT), x + 34, y + 7, Rota.TEXT, false);
             smallText(g, ui.fit(ModBridge.str(it, "version") + "  →  " + ModBridge.str(u, "versionNumber"), (int) (maxT / 0.8f)), x + 34, y + 20, 0xFF8BE3B0);
             if (busy.contains(id)) spinner(g, x + w - 20, y + 17, 0xCCFFFFFF);
             else if (pill(lbl, x + w - bw - 8, y + 10, bw, 14, true)) updateItems(List.of(it));
             y += h + 4;
         }
-        smallText(g, Tr.t("Mod güncellemeleri yeniden başlatınca, paket ve shader güncellemeleri hemen uygulanır."), x, y + 2, 0x77FFFFFF);
-        return y + 14;
+        return smallWrap(g, Tr.t("Mod güncellemeleri yeniden başlatınca, paket ve shader güncellemeleri hemen uygulanır."), x, y + 2, w, Rota.FAINT) + 4;
     }
 
     private void updateItems(List<JsonObject> list) {
@@ -643,10 +673,8 @@ public final class ModHubScreen implements WestScreen {
         y = handoffCard(x, y, w);
         List<JsonObject> ops = api.pending;
         if (ops.isEmpty()) {
-            Icons.draw(g, Icon.CHECK, x, y + 4, 12, 0xFF4ADE80);
-            g.text(Tr.t("Bekleyen değişiklik yok."), x + 18, y + 6, 0xFFB9BDC7, false);
-            smallText(g, Tr.t("Mod açma, kapama, silme ve kurma işlemleri burada toplanır; tek tıkla uygulanır."), x, y + 22, 0x77FFFFFF);
-            return points(x, y + 40, w);
+            y += Rota.empty(ui, Icon.CHECK, Tr.t("Bekleyen değişiklik yok"), Tr.t("Mod açma, kapama, silme ve kurma işlemleri burada toplanır; tek tıkla uygulanır."), x, y + 6, w);
+            return points(x, y + 4, w);
         }
         String failed = api.failedReason();
         if (failed != null) {
@@ -655,8 +683,7 @@ public final class ModHubScreen implements WestScreen {
         for (int i = 0; i < ops.size(); i++) {
             JsonObject op = ops.get(i);
             int h = 28;
-            Ui.round(g, x, y, w, h, 8, 0xFF15161E);
-            Ui.outline(g, x, y, w, h, 8, 0x14FFFFFF);
+            Rota.card(g, x, y, w, h, 0);
             String k = ModBridge.str(op, "kind");
             Icon ic = switch (k) {
                 case "delete" -> Icon.CLOSE;
@@ -667,12 +694,12 @@ public final class ModHubScreen implements WestScreen {
             };
             boolean bad = op.has("failed") && !op.get("failed").isJsonNull();
             if (bad) Ui.outline(g, x, y, w, h, 8, 0x80E5566E);
-            int col = bad || k.equals("delete") ? 0xFFE5566E : k.equals("disable") ? 0xFF9A9DA6 : t.accent | 0xFF000000;
+            int col = bad || k.equals("delete") ? Rota.DANGER : k.equals("disable") ? Rota.MUTED : t.accent | 0xFF000000;
             Ui.round(g, x + 6, y + 5, 18, 18, 5, Theme.alpha(col, 0x30));
             Icons.draw(g, ic, x + 10, y + 9, 10, col);
             String lbl = Tr.t("Geri al");
             int bw = g.textWidth(lbl) + 12;
-            g.text(ui.fit(ModBridge.str(op, "label"), w - 40 - bw - 10), x + 30, y + 10, 0xFFE6E7EA, false);
+            g.text(ui.fit(ModBridge.str(op, "label"), w - 40 - bw - 10), x + 30, y + 10, Rota.TEXT, false);
             if (pill(lbl, x + w - bw - 8, y + 7, bw, 14, false)) {
                 game.click();
                 api.undo(i);
@@ -681,12 +708,12 @@ public final class ModHubScreen implements WestScreen {
         }
         y += 4;
         if (!api.handoffRunning() && failed != null) {
-            if (ui.button(Tr.t("Tekrar dene"), x, y, 160, 20, true)) {
+            if (Rota.button(ui, ra, "retry", Tr.t("Tekrar dene"), Icon.REFRESH, Rota.Kind.PRIMARY, x, y, 140, 20, true)) {
                 game.click();
                 api.retry(() -> WestHud.later(this::askRestart));
             }
-        } else if (!api.handoffRunning() && ui.button(Tr.t("Uygula"), x, y, 160, 20, true)) askRestart();
-        if (failed == null) smallText(g, Tr.t("Ya da oyunu kapattığında otomatik uygulanır."), x, y + 26, 0x88FFFFFF);
+        } else if (!api.handoffRunning() && Rota.button(ui, ra, "apply", Tr.t("Uygula"), Icon.CHECK, Rota.Kind.PRIMARY, x, y, 140, 20, true)) askRestart();
+        if (failed == null) smallText(g, Tr.t("Ya da oyunu kapattığında otomatik uygulanır."), x, y + 26, Rota.FAINT);
         return points(x, y + 44, w);
     }
 
@@ -695,28 +722,27 @@ public final class ModHubScreen implements WestScreen {
         Gfx g = ui.g;
         List<JsonObject> pts = api.points;
         if (!api.pointsLoaded || pts.isEmpty()) return y;
-        g.fill(x, y, x + w, y + 1, 0x14FFFFFF);
-        y += 8;
-        g.textBold(Tr.t("Önceki düzenler"), x, y, 0xFFFFFFFF, false);
-        y += 12;
+        Rota.rule(g, x, y, w);
+        y += 10;
+        Rota.section(g, Tr.t("Önceki düzenler"), x + 2, y);
+        y += 11;
         for (String l : wrap(g, Tr.t("Her uygulamadan önce kaydedilir. Geri dönünce sonradan eklenenler silinmez, kapatılır."), (int) (w / 0.8f))) {
-            smallText(g, l, x, y, 0x88FFFFFF);
+            smallText(g, l, x, y, Rota.FAINT);
             y += 9;
         }
         y += 6;
         java.time.format.DateTimeFormatter fmt = java.time.format.DateTimeFormatter.ofPattern("dd.MM HH:mm");
         for (JsonObject p : pts) {
             int h = 28;
-            Ui.round(g, x, y, w, h, 8, 0xFF15161E);
-            Ui.outline(g, x, y, w, h, 8, 0x14FFFFFF);
+            Rota.card(g, x, y, w, h, 0);
             long at = p.has("at") ? p.get("at").getAsLong() : 0;
             String when = java.time.Instant.ofEpochSecond(at).atZone(java.time.ZoneId.systemDefault()).format(fmt);
-            Icons.draw(g, Icon.CLOCK, x + 9, y + 9, 10, 0xFF9A9DA6);
+            Icons.draw(g, Icon.CLOCK, x + 9, y + 9, 10, Rota.MUTED);
             String lbl = Tr.t("Bu düzene dön");
             int bw = g.textWidth(lbl) + 14;
-            g.text(when, x + 26, y + 6, 0xFFE6E7EA, false);
+            g.text(when, x + 26, y + 6, Rota.TEXT, false);
             int counts = p.has("mods") ? p.get("mods").getAsInt() : 0;
-            smallText(g, ui.fit(Tr.t("{0} mod · sonra: {1}", counts, ModBridge.str(p, "label")), (int) ((w - 40 - bw) / 0.8f)), x + 26, y + 17, 0x88FFFFFF);
+            smallText(g, ui.fit(Tr.t("{0} mod · sonra: {1}", counts, ModBridge.str(p, "label")), (int) ((w - 40 - bw) / 0.8f)), x + 26, y + 17, Rota.FAINT);
             if (pill(lbl, x + w - bw - 8, y + 7, bw, 14, false)) {
                 String id = ModBridge.str(p, "id");
                 dialog = new Dialog(Tr.t("Bu düzene dönülsün mü?"), Tr.t("{0} tarihindeki mod düzenine dönülür. Diğer bekleyen değişiklikler iptal olur; sonradan eklenen modlar silinmez, kapatılır.", when), List.of(), Tr.t("Devam"), false,
@@ -729,19 +755,24 @@ public final class ModHubScreen implements WestScreen {
 
     private void pendingBar(int x, int y, int w, int h) {
         Gfx g = ui.g;
-        Theme t = ui.t;
-        Ui.round(g, x, y, w, h, 8, Theme.alpha(t.accent, 0x28));
-        Ui.outline(g, x, y, w, h, 8, Theme.alpha(t.accent, 0x70));
-        Icons.draw(g, Icon.CLOCK, x + 8, y + (h - 10) / 2, 10, t.accent | 0xFF000000);
-        String lbl = api.handoffRunning() ? Tr.t("Yükleniyor… {0} sn", api.handoffSecs) : api.failedReason() != null ? Tr.t("İncele") : Tr.t("Uygula");
-        int bw = g.textWidth(lbl) + 14;
+        boolean failed = api.failedReason() != null;
+        int tone = failed ? Rota.DANGER : ui.t.accent | 0xFF000000;
+        Rota.card(g, x, y, w, h, 0);
+        g.fill(x, y + 6, x + 2, y + h - 6, tone);
+        Icons.draw(g, failed ? Icon.CLOSE : Icon.CLOCK, x + 10, y + (h - 10) / 2, 10, tone);
+        String lbl = api.handoffRunning() ? Tr.t("Yükleniyor… {0} sn", api.handoffSecs) : failed ? Tr.t("İncele") : Tr.t("Uygula");
+        int bw = Rota.buttonWidth(g, lbl, null);
         String see = Tr.t("Gör");
-        int sw = g.textWidth(see) + 12;
-        String s = api.failedReason() != null ? Tr.t("Bazı değişikliklerle oyun açılamadı") : Tr.t("{0} bekleyen değişiklik", api.pending.size());
-        g.text(ui.fit(s, w - 30 - bw - sw - 16), x + 24, y + (h - 8) / 2, 0xFFFFFFFF, false);
-        if (pill(see, x + w - bw - sw - 12, y + (h - 14) / 2, sw, 14, false)) setTab(Tab.PENDING);
-        if (pill(lbl, x + w - bw - 6, y + (h - 14) / 2, bw, 14, true)) {
-            if (api.handoffRunning() || api.failedReason() != null) setTab(Tab.PENDING);
+        int sw = Rota.buttonWidth(g, see, null);
+        String s = failed ? Tr.t("Bazı değişikliklerle oyun açılamadı") : Tr.t("{0} bekleyen değişiklik", api.pending.size());
+        g.text(ui.fit(s, w - 34 - bw - sw - 16), x + 26, y + (h - 8) / 2, Rota.TEXT, false);
+        int by = y + (h - 18) / 2;
+        if (Rota.button(ui, ra, "pbsee", see, null, Rota.Kind.QUIET, x + w - bw - sw - 10, by, sw, 18, true)) {
+            game.click();
+            setTab(Tab.PENDING);
+        }
+        if (Rota.button(ui, ra, "pbgo", lbl, null, failed ? Rota.Kind.GHOST : Rota.Kind.PRIMARY, x + w - bw - 5, by, bw, 18, !api.handoffRunning())) {
+            if (failed) setTab(Tab.PENDING);
             else askRestart();
         }
     }
@@ -784,13 +815,14 @@ public final class ModHubScreen implements WestScreen {
         List<String> lines = wrap(g, msg, w - 100);
         if (failed && api.handoffError != null) lines.addAll(wrap(g, api.handoffError, w - 100));
         int h = 12 + lines.size() * 11;
-        Ui.round(g, x, y, w, h, 8, failed ? 0x30E5566E : Theme.alpha(t.accent, 0x26));
-        Ui.outline(g, x, y, w, h, 8, failed ? 0x80E5566E : Theme.alpha(t.accent, 0x80));
-        if (failed) Icons.draw(g, Icon.CLOSE, x + 8, y + 7, 9, 0xFFE5566E);
+        int tone = failed ? Rota.DANGER : t.accent | 0xFF000000;
+        Ui.round(g, x, y, w, h, Rota.RADIUS, Theme.alpha(tone, 0x18));
+        Ui.outline(g, x, y, w, h, Rota.RADIUS, Theme.alpha(tone, 0x50));
+        if (failed) Icons.draw(g, Icon.CLOSE, x + 8, y + 7, 9, Rota.DANGER);
         else spinner(g, x + 12, y + 11, t.accent | 0xFF000000);
         int ly = y + 7;
         for (int i = 0; i < lines.size(); i++) {
-            g.text(lines.get(i), x + 24, ly, i == 0 ? 0xFFFFFFFF : 0xFFF08A9A, false);
+            g.text(lines.get(i), x + 24, ly, i == 0 ? Rota.TEXT : 0xFFF5A3B1, false);
             ly += 11;
         }
         String b = failed ? Tr.t("Tamam") : Tr.t("İptal");
@@ -811,22 +843,24 @@ public final class ModHubScreen implements WestScreen {
         if (!api.setsLoaded) return loadingText(x, y, Tr.t("Yükleniyor…"));
         List<JsonObject> sets = api.sets;
         if (sets.isEmpty()) {
-            g.text(Tr.t("Henüz set yok. Modlarını istediğin gibi aç-kapat, sonra aşağıdan kaydet."), x, y + 2, 0x99FFFFFF, false);
-            y += 18;
+            y = smallWrap(g, Tr.t("Henüz set yok. Modlarını istediğin gibi aç-kapat, sonra aşağıdan kaydet."), x, y + 2, w, Rota.MUTED) + 6;
         }
         for (JsonObject m : sets) {
             String id = ModBridge.str(m, "id"), name = ModBridge.str(m, "name");
             boolean active = id.equals(api.activeSet);
             int h = 30;
-            Ui.round(g, x, y, w, h, 8, active ? Theme.alpha(t.accent, 0x22) : 0xFF15161E);
-            Ui.outline(g, x, y, w, h, 8, active ? Theme.alpha(t.accent, 0x80) : 0x14FFFFFF);
+            Rota.card(g, x, y, w, h, hov("set" + id, ui.hover(x, y, w, h)));
+            if (active) Ui.outline(g, x, y, w, h, Rota.RADIUS, t.accent | 0xFF000000);
             letter(g, name, "mod", x + 6, y + 5, 20);
             int on = m.get("enabled") instanceof JsonArray a ? a.size() : 0, off = m.get("disabled") instanceof JsonArray b ? b.size() : 0;
             String lbl = active ? Tr.t("Etkin") : Tr.t("Geç");
             int bw = g.textWidth(lbl) + 16;
-            g.textBold(ui.fit(name, w - 40 - bw - 16), x + 32, y + 6, 0xFFFFFFFF, false);
-            smallText(g, Tr.t("{0} açık · {1} kapalı", on, off), x + 32, y + 18, 0x88FFFFFF);
-            if (active) badge(g, lbl, x + w - bw - 8, y + 10, Theme.alpha(t.accent, 0x50), 0xFFFFFFFF);
+            g.text(ui.fit(name, w - 40 - bw - 16), x + 32, y + 6, Rota.TEXT, false);
+            smallText(g, Tr.t("{0} açık · {1} kapalı", on, off), x + 32, y + 18, Rota.FAINT);
+            if (active) {
+                Icons.draw(g, Icon.CHECK, x + w - bw - 2, y + 11, 8, t.accent | 0xFF000000);
+                g.text(lbl, x + w - bw + 9, y + 11, Rota.TEXT, false);
+            }
             else if (pill(lbl, x + w - bw - 8, y + 8, bw, 14, true)) switchSet(id, name);
             if (smallIcon("share" + id, Icon.SHARE, x + w - bw - 30, y + 7, 16, t.accent | 0xFF000000, Tr.t("Paylaş"))) {
                 game.click();
@@ -843,24 +877,20 @@ public final class ModHubScreen implements WestScreen {
         int sbw = g.textWidth(saveLbl) + 16;
         int fw = Math.min(220, w - sbw - 6);
         boolean hv = ui.hover(x, y, fw, 18);
-        Ui.round(g, x, y, fw, 18, 6, setNameFocus ? 0x99000000 : hv ? 0x80000000 : 0x66000000);
-        Ui.outline(g, x, y, fw, 18, 6, setNameFocus ? Theme.alpha(t.accent, 0xCC) : 0x26FFFFFF);
-        boolean blink = ((int) (ui.time * 2)) % 2 == 0;
-        String shown = setName.isEmpty() && !setNameFocus ? Tr.t("Yeni set adı (ör. PvP)") : setName + (setNameFocus && blink ? "|" : "");
-        g.text(ui.fit(shown, fw - 12), x + 6, y + 5, setName.isEmpty() && !setNameFocus ? 0x77FFFFFF : 0xFFFFFFFF, false);
-        if (ui.clicked(x, y, fw, 18)) {
+        if (Rota.field(ui, setName, Tr.t("Yeni set adı (ör. PvP)"), null, setNameFocus, x, y, fw, 18)) {
             setNameFocus = true;
             searchFocus = false;
         } else if (!hv && ui.pressedAt(0, 0, 99999, 99999)) setNameFocus = false;
-        if (pill(saveLbl, x + fw + 6, y + 2, sbw, 14, !setName.isBlank())) saveSet();
-        smallText(g, Tr.t("Bekleyen değişiklikler kayda girmez; önce uygula."), x, y + 24, 0x77FFFFFF);
-        y += 38;
+        if (Rota.button(ui, ra, "saveset", saveLbl, null, Rota.Kind.PRIMARY, x + fw + 6, y, sbw, 18, !setName.isBlank())) {
+            game.click();
+            saveSet();
+        }
+        y = smallWrap(g, Tr.t("Bekleyen değişiklikler kayda girmez; önce uygula."), x, y + 24, w, Rota.FAINT) + 8;
         String imp = api.importing ? Tr.t("Kuruluyor…") : Tr.t("Panodaki set kodunu ekle");
         int iw = g.textWidth(imp) + 16;
         if (api.importing) spinner(g, x + 8, y + 7, 0xCCFFFFFF);
         else if (pill(imp, x, y, iw, 14, false)) importFromClipboard();
-        smallText(g, Tr.t("Arkadaşının \"WEST-SET:…\" kodunu kopyala, sonra buna bas. Eksik modlar Modrinth'ten kurulur."), x, y + 18, 0x77FFFFFF);
-        return y + 32;
+        return smallWrap(g, Tr.t("Arkadaşının \"WEST-SET:…\" kodunu kopyala, sonra buna bas. Eksik modlar Modrinth'ten kurulur."), x, y + 18, w, Rota.FAINT) + 4;
     }
 
     private void importFromClipboard() {
@@ -927,8 +957,8 @@ public final class ModHubScreen implements WestScreen {
         List<JsonObject> hits = api.hits;
         if (hits.isEmpty()) {
             if (api.searching) return loadingText(x, y, Tr.t("Modrinth'te aranıyor…"));
-            g.text(api.error != null ? api.error : Tr.t("Sonuç yok. Başka bir şey dene."), x, y + 4, 0x99FFFFFF, false);
-            return y + 20;
+            if (api.error != null) return y + Rota.note(ui, Icon.CLOSE, api.error, x, y, w, Rota.DANGER) + 6;
+            return y + Rota.empty(ui, Icon.SEARCH, Tr.t("Sonuç yok"), Tr.t("Başka bir sözcük ya da kategori dene."), x, y + 6, w);
         }
         int gap = 6, cols = w >= 420 ? 2 : 1;
         int cw = (w - gap * (cols - 1)) / cols, ch = 52;
@@ -941,13 +971,12 @@ public final class ModHubScreen implements WestScreen {
         y += rows * (ch + gap);
         if (hits.size() < api.total) {
             if (api.searching) loadingText(x + w / 2 - 30, y + 2, Tr.t("Yükleniyor…"));
-            else if (ui.button(Tr.t("Daha fazla göster"), x + w / 2 - 60, y, 120, 18, false)) {
+            else if (Rota.button(ui, ra, "more", Tr.t("Daha fazla göster"), null, Rota.Kind.GHOST, x + w / 2 - 60, y, 120, 18, true)) {
                 api.search(search.trim(), k, SORTS[sort], cats().length > 0 ? cats()[cat][0] : "", hits.size());
             }
             y += 24;
         }
-        smallText(g, Tr.t("Yalnızca {0} {1} ile uyumlu içerik gösterilir. Kaynak: Modrinth", game.loaderName(), game.minecraftVersion()), x, y + 2, 0x66FFFFFF);
-        return y + 14;
+        return smallWrap(g, Tr.t("Yalnızca {0} {1} ile uyumlu içerik gösterilir. Kaynak: Modrinth", game.loaderName(), game.minecraftVersion()), x, y + 2, w, Rota.FAINT) + 4;
     }
 
     private void hitCard(JsonObject h, int x, int y, int w, int hh) {
@@ -956,8 +985,7 @@ public final class ModHubScreen implements WestScreen {
         String id = ModBridge.str(h, "id");
         boolean hv = ui.hover(x, y, w, hh);
         float a = hov("hit" + id, hv);
-        Ui.round(g, x, y, w, hh, 8, Theme.mix(0xFF15161E, 0xFF1C1E28, a));
-        Ui.outline(g, x, y, w, hh, 8, Theme.alpha(0xFFFFFFFF, (int) (0x12 + 0x20 * a)));
+        Rota.card(g, x, y, w, hh, a);
         remoteIcon(g, ModBridge.str(h, "icon"), x + 7, y + 7, 30);
         boolean installed = ModBridge.bool(h, "installed");
         boolean inst = api.installing.containsKey(id);
@@ -965,12 +993,12 @@ public final class ModHubScreen implements WestScreen {
         int bw = Math.max(36, g.textWidth(lbl) + 14);
         int bx = x + w - bw - 8, by = y + 8;
         int tx = x + 44, maxT = bx - tx - 6;
-        g.textBold(ui.fit(ModBridge.str(h, "title"), maxT), tx, y + 8, 0xFFFFFFFF, false);
-        smallText(g, ui.fit(Tr.t("{0} · {1} indirme", ModBridge.str(h, "author"), fmt(h.get("downloads"))), (int) (maxT / 0.8f)), tx, y + 19, 0x88FFFFFF);
-        smallText(g, ui.fit(ModBridge.str(h, "description"), (int) ((w - 52) / 0.8f)), tx, y + 32, 0xFFB0B3BC);
+        g.text(ui.fit(ModBridge.str(h, "title"), maxT), tx, y + 8, Rota.TEXT, false);
+        smallText(g, ui.fit(Tr.t("{0} · {1} indirme", ModBridge.str(h, "author"), fmt(h.get("downloads"))), (int) (maxT / 0.8f)), tx, y + 19, Rota.FAINT);
+        smallText(g, ui.fit(ModBridge.str(h, "description"), (int) ((w - 52) / 0.8f)), tx, y + 32, Rota.MUTED);
         boolean clickedBtn = false;
         if (inst) spinner(g, bx + bw / 2, by + 7, 0xCCFFFFFF);
-        else if (installed) badge(g, lbl, bx, by + 1, 0x3049C27A, 0xFF8BE3B0);
+        else if (installed) badge(g, lbl, bx + bw - Rota.smallWidth(g, lbl) - 8, by + 2, 0x244ADE80, 0xFF8BE3B0);
         else clickedBtn = pill(lbl, bx, by, bw, 14, true);
         if (clickedBtn) install(id, ModBridge.str(h, "title"));
         else if (ui.clicked(x, y, w, hh)) {
@@ -1027,13 +1055,12 @@ public final class ModHubScreen implements WestScreen {
     private void detail(int px, int py, int pw, int ph) {
         Gfx g = ui.g;
         Theme t = ui.t;
-        g.fill(px, py, px + pw, py + ph, 0x99000000);
+        g.fill(px, py, px + pw, py + ph, 0xA0000000);
         int w = Math.min(460, pw - 40), h = ph - 30;
         int x = px + (pw - w) / 2, y = py + 15;
-        Ui.round(g, x, y + 2, w, h, 11, 0x60000000);
-        Ui.round(g, x, y, w, h, 10, 0xFA101118);
-        Ui.outline(g, x, y, w, h, 10, 0x26FFFFFF);
-        if (iconButton("dclose", Icon.CLOSE, x + w - 24, y + 6, 18, 0xFFE5566E)) {
+        Rota.window(g, x, y, w, h);
+        Ui.round(g, x, y, w, h, Rota.RADIUS, 0x0AFFFFFF);
+        if (iconButton("dclose", Icon.CLOSE, x + w - 24, y + 6, 18, Rota.DANGER)) {
             detailId = null;
             return;
         }
@@ -1043,13 +1070,13 @@ public final class ModHubScreen implements WestScreen {
         String title = d != null ? ModBridge.str(d, "title") : hit != null ? ModBridge.str(hit, "title") : "";
         String iconUrl = d != null ? ModBridge.str(d, "icon_url") : hit != null ? ModBridge.str(hit, "icon") : "";
         remoteIcon(g, iconUrl, x + 12, y + 12, 40);
-        bigText(g, ui.fit(title, (int) ((w - 100) / 1.2f)), x + 60, y + 14, 0xFFFFFFFF, 1.2f);
+        Rota.title(g, ui.fit(title, (int) ((w - 100) / 1.3f)), x + 60, y + 14);
         String owner = d != null ? ModBridge.str(d, "ownerName") : hit != null ? ModBridge.str(hit, "author") : "";
         long dl = d != null && d.has("downloads") ? d.get("downloads").getAsLong() : hit != null && hit.has("downloads") ? hit.get("downloads").getAsLong() : 0;
-        smallText(g, ui.fit(Tr.t("{0} · {1} indirme", owner, fmt(dl)), (int) ((w - 80) / 0.8f)), x + 60, y + 30, 0x99FFFFFF);
+        smallText(g, ui.fit(Tr.t("{0} · {1} indirme", owner, fmt(dl)), (int) ((w - 80) / 0.8f)), x + 60, y + 30, Rota.MUTED);
         if (d == null) {
             if (api.detailLoading) loadingText(x + 12, y + 64, Tr.t("Yükleniyor…"));
-            else g.text(api.error != null ? api.error : Tr.t("Ayrıntılar alınamadı."), x + 12, y + 64, 0x99FFFFFF, false);
+            else g.text(api.error != null ? api.error : Tr.t("Ayrıntılar alınamadı."), x + 12, y + 64, Rota.MUTED, false);
             return;
         }
         // Kur düğmesi + uyumluluk
@@ -1064,14 +1091,16 @@ public final class ModHubScreen implements WestScreen {
         if (inst) spinner(g, x + 12 + bw / 2, by + 9, 0xCCFFFFFF);
         else if (installed) badge(g, lbl, x + 12, by + 3, 0x3049C27A, 0xFF8BE3B0);
         else if (!compatible) badge(g, lbl, x + 12, by + 3, 0x30E5566E, 0xFFF08A9A);
-        else if (ui.button(lbl, x + 12, by, bw, 18, true)) install(pid, title);
+        else if (Rota.button(ui, ra, "dinst", lbl, null, Rota.Kind.PRIMARY, x + 12, by, bw, 20, true)) install(pid, title);
         int ix = x + 12 + bw + 8;
         if (compatible) {
             JsonObject c = comp.getAsJsonObject();
             smallText(g, ui.fit(Tr.t("Sürüm {0} · {1} {2}", ModBridge.str(c, "number"), game.loaderName(), game.minecraftVersion()), (int) ((w - bw - 120) / 0.8f)), ix, by + 6, 0xFF8BE3B0);
         }
         String slug = ModBridge.str(d, "slug");
-        if (ui.button(Tr.t("Modrinth'te aç"), x + w - 104, by, 92, 18, false)) {
+        String mr = Tr.t("Modrinth'te aç");
+        int mw = Rota.buttonWidth(g, mr, null);
+        if (Rota.button(ui, ra, "dmr", mr, null, Rota.Kind.GHOST, x + w - mw - 12, by, mw, 20, true)) {
             game.click();
             game.openUrl("https://modrinth.com/project/" + (slug.isEmpty() ? pid : slug));
         }
@@ -1086,8 +1115,9 @@ public final class ModHubScreen implements WestScreen {
         for (String c : chips) {
             int cw = g.textWidth(c) + 12;
             if (cx + cw > x + w - 12) break;
-            Ui.round(g, cx, cy, cw, 13, 6, 0x22FFFFFF);
-            g.text(c, cx + 6, cy + 3, 0xFFD0D2D8, false);
+            Ui.round(g, cx, cy, cw, 13, 6, 0x12FFFFFF);
+            Ui.outline(g, cx, cy, cw, 13, 6, Rota.LINE);
+            g.text(c, cx + 6, cy + 3, Rota.MUTED, false);
             cx += cw + 4;
         }
         if (ss.equals("required") && game.serverAddress() != null && KINDS[kind].equals("mod")) {
@@ -1096,7 +1126,7 @@ public final class ModHubScreen implements WestScreen {
         }
         // Açıklama (kaydırılabilir)
         int ty = cy + 20, th = y + h - 10 - ty;
-        g.fill(x + 12, ty - 4, x + w - 12, ty - 3, 0x14FFFFFF);
+        Rota.rule(g, x + 12, ty - 4, w - 24);
         detailScroll += (detailScrollTarget - detailScroll) * Math.min(1, dt * 18);
         g.scissor(x + 8, ty, x + w - 8, ty + th);
         int ly = ty - Math.round(detailScroll);
@@ -1159,47 +1189,42 @@ public final class ModHubScreen implements WestScreen {
         Gfx g = ui.g;
         Theme t = ui.t;
         Dialog d = dialog;
-        g.fill(0, 0, sw, sh, 0x88000000);
+        g.fill(0, 0, sw, sh, 0x99000000);
         int w = Math.min(320, sw - 40);
         List<String> body = wrap(g, d.body(), w - 28);
         int listN = Math.min(d.list().size(), 6);
-        int h = 40 + body.size() * 11 + (listN > 0 ? listN * 12 + 8 : 0) + (d.list().size() > 6 ? 12 : 0) + 26;
+        int h = 38 + body.size() * 11 + (listN > 0 ? listN * 12 + 8 : 0) + (d.list().size() > 6 ? 12 : 0) + 36;
         int x = (sw - w) / 2, y = (sh - h) / 2;
-        Ui.round(g, x, y + 3, w, h, 11, 0x70000000);
-        Ui.round(g, x, y, w, h, 10, 0xFC12131A);
-        Ui.outline(g, x, y, w, h, 10, d.danger() ? 0x66E5566E : Theme.alpha(t.accent, 0x66));
-        g.textBold(ui.fit(d.title(), w - 28), x + 14, y + 14, 0xFFFFFFFF, false);
-        int ly = y + 32;
+        Rota.window(g, x, y, w, h);
+        Ui.round(g, x, y, w, h, Rota.RADIUS, 0x0AFFFFFF);
+        g.textBold(ui.fit(d.title(), w - 28), x + 14, y + 14, Rota.TEXT, false);
+        int ly = y + 30;
         for (String l : body) {
-            g.text(l, x + 14, ly, 0xFFC4C7CF, false);
+            g.text(l, x + 14, ly, Rota.MUTED, false);
             ly += 11;
         }
         if (listN > 0) {
             ly += 4;
+            Ui.round(g, x + 14, ly - 3, w - 28, listN * 12 + 4 + (d.list().size() > 6 ? 12 : 0), Rota.RADIUS_SM, 0x10FFFFFF);
             for (int i = 0; i < listN; i++) {
-                Ui.round(g, x + 16, ly + 3, 3, 3, 1, d.danger() ? 0xFFE5566E : t.accent | 0xFF000000);
-                g.text(ui.fit(d.list().get(i), w - 40), x + 24, ly, 0xFFE6E7EA, false);
+                Ui.round(g, x + 21, ly + 3, 3, 3, 1, d.danger() ? Rota.DANGER : t.accent | 0xFF000000);
+                g.text(ui.fit(d.list().get(i), w - 46), x + 29, ly, Rota.TEXT, false);
                 ly += 12;
             }
-            if (d.list().size() > 6) {
-                smallText(g, Tr.t("ve {0} tane daha", d.list().size() - 6), x + 24, ly, 0x88FFFFFF);
-                ly += 12;
-            }
+            if (d.list().size() > 6) smallText(g, Tr.t("ve {0} tane daha", d.list().size() - 6), x + 29, ly + 1, Rota.FAINT);
         }
-        int byy = y + h - 26;
-        int bw = (w - 34) / 2;
-        if (ui.button(Tr.t("Vazgeç"), x + 14, byy, bw, 18, false)) {
-            game.click();
-            dialog = null;
+        // Düğmeler sağa yaslı: Vazgeç, sonra asıl eylem
+        Rota.rule(g, x + 1, y + h - 31, w - 2);
+        int byy = y + h - 25;
+        int yw = Math.max(64, Rota.buttonWidth(g, d.yes(), null)), nw = Math.max(64, Rota.buttonWidth(g, Tr.t("Vazgeç"), null));
+        if (Rota.button(ui, ra, "dyes", d.yes(), null, d.danger() ? Rota.Kind.DANGER : Rota.Kind.PRIMARY, x + w - 12 - yw, byy, yw, 20, true)) {
+            confirm(d);
             return;
         }
-        boolean hv = ui.hover(x + 20 + bw, byy, bw, 18);
-        if (d.danger()) {
-            Ui.round(g, x + 20 + bw, byy, bw, 18, 6, hv ? 0xFFF06A80 : 0xFFE5566E);
-            String s = d.yes();
-            g.textBold(s, x + 20 + bw + (bw - g.textBoldWidth(s)) / 2, byy + 5, 0xFFFFFFFF, false);
-            if (ui.clicked(x + 20 + bw, byy, bw, 18)) confirm(d);
-        } else if (ui.button(d.yes(), x + 20 + bw, byy, bw, 18, true)) confirm(d);
+        if (Rota.button(ui, ra, "dno", Tr.t("Vazgeç"), null, Rota.Kind.GHOST, x + w - 18 - yw - nw, byy, nw, 20, true)) {
+            game.click();
+            dialog = null;
+        }
     }
 
     private void confirm(Dialog d) {
@@ -1209,17 +1234,8 @@ public final class ModHubScreen implements WestScreen {
     }
 
     private void toast(Gfx g, int sw, int bottom) {
-        String msg = api.toast;
-        if (msg == null) return;
-        long age = System.currentTimeMillis() - api.toastAt;
-        if (age > 3500) return;
-        float a = age < 150 ? age / 150f : age > 3000 ? 1 - (age - 3000) / 500f : 1;
-        g.nextLayer();
-        int w = Math.min(g.textWidth(msg) + 28, sw - 40);
-        int x = (sw - w) / 2, y = bottom - 34 + Math.round((1 - a) * 8);
-        Ui.round(g, x, y, w, 20, 10, Theme.alpha(0xFF1C1E28, (int) (0xF5 * a)));
-        Ui.outline(g, x, y, w, 20, 10, Theme.alpha(ui.t.accent, (int) (0x90 * a)));
-        g.text(ui.fit(msg, w - 24), x + 14, y + 6, Theme.alpha(0xFFFFFFFF, Math.max(8, (int) (255 * a))), false);
+        if (api.toast == null) return;
+        Rota.toast(g, api.toast, System.currentTimeMillis() - api.toastAt, sw, bottom, ui.t.accent);
     }
 
     // ───────── Yardımcı çizimler ─────────
@@ -1236,7 +1252,7 @@ public final class ModHubScreen implements WestScreen {
                     return new byte[0];
                 }
             });
-            Ui.round(g, x, y, s, s, 5, 0xFF1A1C24);
+            Ui.round(g, x, y, s, s, Rota.RADIUS_SM, 0x12FFFFFF);
             if (png.length > 0 && g.png("ic_" + id, png, x, y, s, s)) return;
         } else if (url.startsWith("https://")) {
             remoteIcon(g, url, x, y, s);
@@ -1246,7 +1262,7 @@ public final class ModHubScreen implements WestScreen {
     }
 
     private void remoteIcon(Gfx g, String url, int x, int y, int s) {
-        Ui.round(g, x, y, s, s, 6, 0xFF1A1C24);
+        Ui.round(g, x, y, s, s, Rota.RADIUS_SM, 0x12FFFFFF);
         byte[] png = url.isEmpty() ? null : api.icon(url);
         if (png != null && g.png("rc_" + Integer.toHexString(url.hashCode()), png, x, y, s, s)) return;
         Icons.draw(g, Icon.BOX, x + s / 4, y + s / 4, s / 2, 0x55FFFFFF);
@@ -1254,27 +1270,19 @@ public final class ModHubScreen implements WestScreen {
 
     private void letter(Gfx g, String title, String kind, int x, int y, int s) {
         Theme t = ui.t;
-        int c = kind.equals("shader") ? 0xFF7F9CF5 : kind.equals("resourcepack") ? 0xFF70C48E : t.accent | 0xFF000000;
-        Ui.round(g, x, y, s, s, 6, Theme.alpha(c, 0x50));
+        int c = kind.equals("shader") ? 0xFF8FA6E8 : kind.equals("resourcepack") ? 0xFF7CC79A : Rota.MUTED;
+        Ui.round(g, x, y, s, s, Rota.RADIUS_SM, 0x12FFFFFF);
         String ch = title.isEmpty() ? "?" : title.substring(0, 1).toUpperCase(Locale.ROOT);
-        g.textBold(ch, x + (s - g.textBoldWidth(ch)) / 2, y + (s - 8) / 2, 0xFFFFFFFF, false);
+        g.textBold(ch, x + (s - g.textBoldWidth(ch)) / 2, y + (s - 8) / 2, c, false);
     }
 
     private int badge(Gfx g, String s, int x, int y, int bg, int fg) {
-        int w = Math.round(g.textWidth(s) * 0.8f) + 8;
-        Ui.round(g, x, y, w, 11, 5, bg);
-        smallText(g, s, x + 4, y + 2, fg);
-        return x + w;
+        return Rota.badge(g, s, x, y, bg, fg);
     }
 
+    /** Küçük düğme (satır içi): birincil amber, değilse hayalet */
     private boolean pill(String label, int x, int y, int w, int h, boolean primary) {
-        Gfx g = ui.g;
-        Theme t = ui.t;
-        boolean hv = ui.hover(x, y, w, h);
-        int bg = primary ? (hv ? Theme.mix(t.accent | 0xFF000000, 0xFFFFFFFF, 0.15f) : t.accent | 0xFF000000) : hv ? 0x40FFFFFF : 0x22FFFFFF;
-        Ui.round(g, x, y, w, h, h / 2, bg);
-        g.text(label, x + (w - g.textWidth(label)) / 2, y + (h - 8) / 2, primary ? t.onAccent : 0xFFFFFFFF, false);
-        if (ui.clicked(x, y, w, h)) {
+        if (Rota.button(ui, ra, "pill" + label + x + "_" + y, label, null, Rota.Kind.GHOST, x, y, w, h, true)) {
             game.click();
             return true;
         }
@@ -1282,67 +1290,37 @@ public final class ModHubScreen implements WestScreen {
     }
 
     private boolean smallIcon(String id, Icon icon, int x, int y, int s, int hoverColor, String tip) {
-        Gfx g = ui.g;
-        boolean on = ui.hover(x, y, s, s);
-        float h = hov(id, on);
-        if (h > 0.01f) Ui.round(g, x, y, s, s, 5, Theme.alpha(hoverColor, (int) (0x40 * h)));
-        Icons.draw(g, icon, x + 4, y + 4, s - 8, Theme.mix(0x88FFFFFF, hoverColor, h));
-        return ui.clicked(x, y, s, s);
+        boolean hit = Rota.iconButton(ui, ra, id, icon, x, y, s, hoverColor == Rota.DANGER ? Rota.DANGER : 0);
+        if (ui.hover(x, y, s, s) && tip != null) tipAt = new Object[] { tip, x + s / 2, y + s + 3 };
+        return hit;
     }
 
     private int note(int x, int y, int w, Icon icon, String text) {
-        Gfx g = ui.g;
-        List<String> lines = wrap(g, text, w - 34);
-        int h = 10 + lines.size() * 11;
-        Ui.round(g, x, y, w, h, 7, 0x14FFFFFF);
-        Icons.draw(g, icon, x + 8, y + 6, 10, Theme.alpha(ui.t.accent, 0xDD));
-        int ly = y + 6;
-        for (String l : lines) {
-            g.text(l, x + 24, ly, 0xFFC4C7CF, false);
-            ly += 11;
-        }
-        return y + h + 6;
+        boolean bad = icon == Icon.CLOSE;
+        return y + Rota.note(ui, icon, text, x, y, w, bad ? Rota.DANGER : ui.t.accent) + 6;
     }
 
     private int loadingText(int x, int y, String s) {
         Gfx g = ui.g;
-        spinner(g, x + 5, y + 8, 0xAAFFFFFF);
-        g.text(s, x + 14, y + 4, 0x99FFFFFF, false);
+        Rota.spinner(ui, x + 5, y + 8, Rota.MUTED);
+        g.text(s, x + 14, y + 4, Rota.MUTED, false);
         return y + 20;
     }
 
-    /** Dönen nokta göstergesi */
     private void spinner(Gfx g, int cx, int cy, int color) {
-        float t = ui.time * 6;
-        for (int i = 0; i < 6; i++) {
-            double a = t + i * Math.PI / 3;
-            int px = cx + (int) Math.round(Math.cos(a) * 4), py = cy + (int) Math.round(Math.sin(a) * 4);
-            Ui.round(g, px - 1, py - 1, 2, 2, 1, Theme.alpha(color, 40 + i * 35));
-        }
+        Rota.spinner(ui, cx, cy, color);
     }
 
     private void searchBox(int x, int y, int w, int h) {
-        Theme t = ui.t;
-        Gfx g = ui.g;
-        boolean on = ui.hover(x, y, w, h);
-        Ui.round(g, x, y, w, h, 6, searchFocus ? 0x99000000 : on ? 0x80000000 : 0x66000000);
-        Ui.outline(g, x, y, w, h, 6, searchFocus ? Theme.alpha(t.accent, 0xCC) : 0x26FFFFFF);
-        Icons.draw(g, Icon.SEARCH, x + 5, y + (h - 9) / 2, 9, 0x99FFFFFF);
-        boolean blink = ((int) (ui.time * 2)) % 2 == 0;
         String hint = tab == Tab.BROWSE ? Tr.t("Modrinth'te ara") : Tr.t("Ara");
-        String shown = search.isEmpty() && !searchFocus ? hint : search + (searchFocus && blink ? "|" : "");
-        g.text(ui.fit(shown, w - 24), x + 18, y + (h - 8) / 2, search.isEmpty() && !searchFocus ? 0x77FFFFFF : 0xFFFFFFFF, false);
-        if (ui.clicked(x, y, w, h)) searchFocus = true;
-        else if (!on && ui.pressedAt(0, 0, 99999, 99999)) searchFocus = false;
+        if (Rota.field(ui, search, hint, Icon.SEARCH, searchFocus, x, y, w, h)) {
+            searchFocus = true;
+            setNameFocus = false;
+        } else if (!ui.hover(x, y, w, h) && ui.pressedAt(0, 0, 99999, 99999)) searchFocus = false;
     }
 
     private boolean iconButton(String id, Icon icon, int x, int y, int s, int hoverColor) {
-        Gfx g = ui.g;
-        boolean on = ui.hover(x, y, s, s);
-        float h = hov(id, on);
-        if (h > 0.01f) Ui.round(g, x, y, s, s, 6, Theme.mix(0x00000000, hoverColor != 0 ? Theme.alpha(hoverColor, 0xE0) : 0x33FFFFFF, h));
-        Icons.draw(g, icon, x + 4, y + 4, s - 8, Theme.mix(0xCCFFFFFF, 0xFFFFFFFF, h));
-        if (ui.clicked(x, y, s, s)) {
+        if (Rota.iconButton(ui, ra, id, icon, x, y, s, hoverColor)) {
             game.click();
             return true;
         }
@@ -1391,10 +1369,7 @@ public final class ModHubScreen implements WestScreen {
     }
 
     private float hov(String id, boolean on) {
-        float v = anim.getOrDefault(id, on ? 1f : 0f);
-        v += ((on ? 1 : 0) - v) * Math.min(1, dt * 14);
-        anim.put(id, v);
-        return v;
+        return ra.get(id, on);
     }
 
     private static String fmt(JsonElement e) {
@@ -1411,12 +1386,17 @@ public final class ModHubScreen implements WestScreen {
         return Math.max(lo, Math.min(hi, v));
     }
 
+    /** Sarılmış 0.8x yazı; bittiği y'yi döner */
+    private static int smallWrap(Gfx g, String s, int x, int y, int w, int color) {
+        for (String l : wrap(g, s, Math.round(w / 0.8f))) {
+            Rota.small(g, l, x, y, color);
+            y += 9;
+        }
+        return y;
+    }
+
     private static void smallText(Gfx g, String s, int x, int y, int color) {
-        g.push();
-        g.translate(x, y);
-        g.scale(0.8f);
-        g.text(s, 0, 0, color, false);
-        g.pop();
+        Rota.small(g, s, x, y, color);
     }
 
     private static void bigText(Gfx g, String s, int x, int y, int color, float scale) {

@@ -103,7 +103,7 @@ pub struct Settings {
     pub close_on_launch: bool,
     /// Oyun açılınca launcher: "keep" (açık kalsın) | "minimize" (küçült) | "hide" (gizle, oyun kapanınca geri gelsin)
     pub launch_behavior: String,
-    /// Açılışta gösterilen sayfa: "/" | "/library" | "/browse" | "/social"
+    /// Açılışta gösterilen sayfa: "/" | "/library" | "/browse" (eski "/social" ana sayfaya düşer)
     pub start_page: String,
     pub game: GameDefaults,
     /// Mojang onaylı Azure uygulama kimliği (Microsoft girişi için)

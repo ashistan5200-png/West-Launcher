@@ -1,9 +1,8 @@
-//! Oyun ↔ launcher sosyal köprüsü.
+//! Oyun ↔ launcher köprüsü.
 //!
-//! West Companion (oyundaki mod) sosyal özelliklere (mesajlar, arkadaşlar, davetler, durum)
-//! bu köprü üzerinden ulaşır. Köprü yalnızca 127.0.0.1'de dinler ve her açılışta üretilen
-//! gizli bir anahtar ister; West hesabının oturum anahtarı launcher'da kalır, oyuna verilmez.
-//! İstekler `cloud::api` kapısından geçtiği için Supabase satır güvenliği kuralları aynen geçerlidir.
+//! West Companion (oyundaki mod) Mod Merkezi'ni (canlı mod aç/kapa, kurma, setler, geri dönüş
+//! noktaları, oyun kapanmadan yeniden başlatma) bu köprü üzerinden çalıştırır. Köprü yalnızca
+//! 127.0.0.1'de dinler ve her açılışta üretilen gizli bir anahtar ister.
 
 
 use crate::core::http::Http;

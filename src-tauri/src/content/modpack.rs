@@ -153,7 +153,7 @@ pub async fn install(ctx: &PackCtx<'_>, source: Source, project_id: &str) -> Res
         }
     };
 
-    install_archive(ctx, &archive, &title, &task, false).await
+    install_archive(ctx, &archive, &title, &task).await
 }
 
 /// Modrinth'in .mrpack biçiminde izin verdiği indirme adresleri (topluluk paketleri yalnızca bunlardan dosya çekebilir)
@@ -165,9 +165,9 @@ fn allowed_url(url: &str) -> bool {
     MR_ALLOWED_HOSTS.iter().any(|h| host == *h)
 }
 
-/// Bilgisayardaki bir paket dosyasından (.mrpack ya da CurseForge zip) yeni instance kurar.
-/// strict: dosyalar yalnızca Modrinth'in izin verdiği adreslerden indirilir (West Depo paketleri için).
-pub async fn install_archive(ctx: &PackCtx<'_>, archive: &Path, title: &str, task: &str, strict: bool) -> Result<Instance> {
+/// İndirilen paket dosyasından (.mrpack ya da CurseForge zip) yeni instance kurar; paket dosyası sonra silinir.
+/// .mrpack içindeki dosyalar yalnızca Modrinth'in izin verdiği adreslerden indirilir.
+pub async fn install_archive(ctx: &PackCtx<'_>, archive: &Path, title: &str, task: &str) -> Result<Instance> {
     let mut zip = zip::ZipArchive::new(std::fs::File::open(archive)?)?;
     let mgr = InstanceManager::new(ctx.paths);
     let result = if let Some(bytes) = read_zip_entry(&mut zip, "modrinth.index.json") {
@@ -178,7 +178,7 @@ pub async fn install_archive(ctx: &PackCtx<'_>, archive: &Path, title: &str, tas
         let game = ctx.paths.instance_game_dir(&inst.id);
         let mut tasks = Vec::new();
         for f in idx.files {
-            if strict && !f.downloads.first().is_some_and(|u| allowed_url(u)) {
+            if !f.downloads.first().is_some_and(|u| allowed_url(u)) {
                 tracing::warn!("Modpack: izin verilmeyen adresten dosya atlandı: {}", f.path);
                 continue;
             }
@@ -237,9 +237,7 @@ pub async fn install_archive(ctx: &PackCtx<'_>, archive: &Path, title: &str, tas
         return Err(AppError::msg(crate::i18n::t("Tanınmayan modpack biçimi")));
     };
 
-    if !strict {
-        let _ = std::fs::remove_file(archive);
-    }
+    let _ = std::fs::remove_file(archive);
     let inst = result;
     mgr.save(&inst)?;
     report(&ctx.progress, task, "done", 1, 1);
@@ -303,7 +301,7 @@ mod tests {
         }
         let http = Http::new();
         let ctx = PackCtx { http: &http, paths: &paths, cf_key: None, concurrency: 2, progress: crate::core::noop_progress() };
-        let inst = install_archive(&ctx, &pack, "Yedek ad", "t", true).await.unwrap();
+        let inst = install_archive(&ctx, &pack, "Yedek ad", "t").await.unwrap();
         assert_eq!(inst.name, "Macera");
         assert_eq!(inst.mc_version, "1.21.11");
         assert_eq!(inst.loader.kind, LoaderKind::Fabric);
@@ -311,7 +309,7 @@ mod tests {
         assert_eq!(std::fs::read_to_string(game.join("config/ayar.txt")).unwrap(), "merhaba");
         assert!(!game.join("mods/kotu.jar").exists(), "izin verilmeyen adresten dosya indirilmemeli");
         assert!(!root.join("kacak.txt").exists() && !paths.instances().join("kacak.txt").exists());
-        assert!(pack.exists(), "Depo paketi kurulumdan sonra çağıran tarafından silinir");
+        assert!(!pack.exists(), "paket dosyası kurulumdan sonra silinir");
         let _ = std::fs::remove_dir_all(&root);
     }
 }

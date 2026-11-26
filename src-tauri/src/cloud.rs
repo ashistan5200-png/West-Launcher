@@ -299,7 +299,7 @@ pub async fn reset_password(http: &Http, email: &str) -> Result<()> {
     Ok(())
 }
 
-// ───────── Sosyal ağ: kısıtlı veri kapısı ─────────
+// ───────── West profili: kısıtlı veri kapısı ─────────
 
 /// Geçerli (gerekirse yenilenmiş) oturum anahtarı; giriş yoksa None.
 async fn token(http: &Http, root: &Path) -> Option<(String, String)> {
@@ -359,7 +359,7 @@ pub async fn api(http: &Http, root: &Path, method: &str, path: &str, query: &[(S
         let msg = v["message"].as_str().or(v["msg"].as_str()).unwrap_or(&text).to_string();
         // Yalnızca tablo/fonksiyonun kendisi yoksa "SQL çalıştırılmamış" de; başka hatalar olduğu gibi görünsün
         if msg.contains("schema cache") || (msg.contains("does not exist") && msg.contains("\"public.")) {
-            return Err(AppError::msg(crate::i18n::t("Sosyal özellikler için Supabase'te supabase/social.sql dosyası henüz çalıştırılmamış.")));
+            return Err(AppError::msg(crate::i18n::t("West profili için Supabase'te supabase/social.sql dosyası henüz çalıştırılmamış.")));
         }
         return Err(AppError::msg(msg));
     }

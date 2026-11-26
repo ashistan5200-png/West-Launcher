@@ -193,7 +193,7 @@ pub async fn start_game(app: &AppHandle, id: &str, auth: AuthSession, join_serve
             // Genel varsayılan JVM argümanları önce, instance'ınkiler sonra (aynı ayar varsa instance'ınki geçerli)
             let mut a = state.settings.read().game.jvm_args.iter().filter(|x| !x.trim().is_empty()).cloned().collect::<Vec<_>>();
             a.extend(inst.extra_jvm_args.iter().cloned());
-            // Launcher köprüsü: oyun içi mod merkezi ve (West hesabı açıksa) Sosyal
+            // Launcher köprüsü: oyun içi Mod Merkezi
             if mode == LaunchMode::Play {
                 if let Ok(b) = crate::bridge::ensure(&state.http, &state.paths.root).await {
                     a.extend(crate::bridge::jvm_args(b, id));

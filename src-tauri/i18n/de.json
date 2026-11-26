@@ -125,7 +125,7 @@
  "Skin dosyası çok büyük": "Die Skin-Datei ist zu groß",
  "Skin yüklenemedi: {0}": "Skin konnte nicht hochgeladen werden: {0}",
  "Son sürüm": "Neueste Version",
- "Sosyal özellikler için Supabase'te supabase/social.sql dosyası henüz çalıştırılmamış.": "supabase/social.sql wurde in Supabase noch nicht ausgeführt, daher sind Social-Funktionen nicht verfügbar.",
+ "West profili için Supabase'te supabase/social.sql dosyası henüz çalıştırılmamış.": "supabase/social.sql wurde in Supabase noch nicht ausgeführt, daher sind ist das West-Profil nicht verfügbar.",
  "Supabase'te \"{0}\" fonksiyonu henüz yayınlanmamış.": "Die Funktion „{0}“ wurde in Supabase noch nicht bereitgestellt.",
  "Sürümde dosya yok": "Die Version hat keine Dateien",
  "Sürümde mainClass tanımlı değil": "Die Version definiert keine mainClass",
