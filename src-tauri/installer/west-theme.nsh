@@ -209,6 +209,9 @@ FunctionEnd
 Function ${PFX}westHideNative
   Push $0
   Push $1
+  ; Tam pencere boyutu ($WW/$WH başka işlevlerce de kullanılır, burada yeniden hesaplanır)
+  !insertmacro WEST_PX $WW ${WEST_W}
+  !insertmacro WEST_PX $WH ${WEST_H}
   StrCpy $0 0
   loop:
     FindWindow $0 "" "" $HWNDPARENT $0
