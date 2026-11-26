@@ -233,10 +233,11 @@ Function ${PFX}westHideNative
 FunctionEnd
 
 ; nsDialogs sayfasının ortak iskeleti: zemin, sol görsel, küçült/kapat
+; $WestTmp: nsDialogs::Create'in verdiği sayfa (önceki sayfa o an hâlâ duruyor olabilir)
 Function ${PFX}westPageBase
   Push $0
   Call ${PFX}westHideNative
-  FindWindow $0 "#32770" "" $HWNDPARENT
+  StrCpy $0 $WestTmp
   SetCtlColors $0 "${WEST_TEXT}" "${WEST_BG}"
   !insertmacro WEST_CTL STATIC ${WS_CHILD}|${WS_VISIBLE}|0xE 0 0 0 ${WEST_ART} ${WEST_H} ""
   SendMessage $WestLast 0x172 0 $WestArtBmp

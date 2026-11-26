@@ -60,6 +60,7 @@ assert m
 REINST = r"""    nsDialogs::Create 1018
     Pop $R4
     !define __WEST_PFX ""
+    StrCpy $WestTmp $R4
     Call westPageBase
     !insertmacro WEST_TEXT 320 80 360 36 "$(alreadyInstalled)" $WestF_H1 "${WEST_TEXT}" "${WEST_BG}"
     !insertmacro WEST_TEXT 320 120 340 60 "$R1" $WestF_Body "${WEST_MUTED}" "${WEST_BG}"

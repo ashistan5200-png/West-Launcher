@@ -402,10 +402,11 @@ Function ${PFX}westHideNative
 FunctionEnd
 
 ; nsDialogs sayfasının ortak iskeleti: zemin, sol görsel, küçült/kapat
+; $WestTmp: nsDialogs::Create'in verdiği sayfa (önceki sayfa o an hâlâ duruyor olabilir)
 Function ${PFX}westPageBase
   Push $0
   Call ${PFX}westHideNative
-  FindWindow $0 "#32770" "" $HWNDPARENT
+  StrCpy $0 $WestTmp
   SetCtlColors $0 "${WEST_TEXT}" "${WEST_BG}"
   !insertmacro WEST_CTL STATIC ${WS_CHILD}|${WS_VISIBLE}|0xE 0 0 0 ${WEST_ART} ${WEST_H} ""
   SendMessage $WestLast 0x172 0 $WestArtBmp
@@ -666,6 +667,7 @@ Function PageReinstall
     nsDialogs::Create 1018
     Pop $R4
     !define __WEST_PFX ""
+    StrCpy $WestTmp $R4
     Call westPageBase
     !insertmacro WEST_TEXT 320 80 360 36 "$(alreadyInstalled)" $WestF_H1 "${WEST_TEXT}" "${WEST_BG}"
     !insertmacro WEST_TEXT 320 120 340 60 "$R1" $WestF_Body "${WEST_MUTED}" "${WEST_BG}"
@@ -826,16 +828,20 @@ Function WestMainPage
   !insertmacro WEST_TEXT 320 110 340 44 "$(westSub)" $WestF_Body "${WEST_MUTED}" "${WEST_BG}"
 
   !insertmacro WEST_TEXT 320 178 360 18 "$(westDirLabel)" $WestF_Small "${WEST_MUTED}" "${WEST_BG}"
-  !insertmacro WEST_CTL STATIC ${DEFAULT_STYLES} 0 320 200 264 38 ""
-  SetCtlColors $WestLast "${WEST_TEXT}" "${WEST_FIELD}"
-  Push $WestLast
-  Call westRoundSmall
-  ; Alan zemini yazı kutusunun altında kalsın
-  System::Call 'user32::SetWindowPos(p $WestLast, p 1, i 0, i 0, i 0, i 0, i 0x13)'
-  !insertmacro WEST_CTL EDIT ${DEFAULT_STYLES}|${WS_TABSTOP}|${ES_AUTOHSCROLL} 0 333 210 240 20 "$INSTDIR"
+  ; Yol kutusu: çok satırlı denetim, yazı alanı içeriden boşluklu (tek satırda kalır)
+  !insertmacro WEST_CTL EDIT ${DEFAULT_STYLES}|${WS_TABSTOP}|${ES_AUTOHSCROLL}|${ES_MULTILINE} 0 320 200 264 38 "$INSTDIR"
   StrCpy $WestDirEdit $WestLast
   SendMessage $WestDirEdit ${WM_SETFONT} $WestF_Body 1
   SetCtlColors $WestDirEdit "${WEST_TEXT}" "${WEST_FIELD}"
+  Push $WestDirEdit
+  Call westRoundSmall
+  !insertmacro WEST_PX $WX 12
+  !insertmacro WEST_PX $WY 10
+  !insertmacro WEST_PX $WW 252
+  !insertmacro WEST_PX $WH 32
+  System::Call '*(i $WX, i $WY, i $WW, i $WH) p.r9'
+  SendMessage $WestDirEdit 0x00B3 0 $9   ; EM_SETRECT
+  System::Free $9
   !insertmacro WEST_BUTTON 592 200 88 38 "$(westChange)" "${WEST_TEXT}" "${WEST_FIELD2}" westPickDir
 
   !insertmacro WEST_CHECK 320 260 348 330 "$(westDesktop)" $WestDesktop westToggleDesktop
