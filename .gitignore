@@ -6,3 +6,6 @@ companion/*/build
 companion/*/.gradle
 releases/
 site-onizleme.jpg
+
+# Geliştirme çalıştırmalarında modların oluşturduğu ayarlar
+companion/versions/*/config/
