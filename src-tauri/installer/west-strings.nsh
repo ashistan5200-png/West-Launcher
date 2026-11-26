@@ -1,0 +1,28 @@
+; West Client kurulum sihirbazı metinleri (Türkçe, İngilizce, Almanca)
+!macro WEST_STR NAME TR EN DE
+  LangString ${NAME} ${LANG_TURKISH} "${TR}"
+  LangString ${NAME} ${LANG_ENGLISH} "${EN}"
+  LangString ${NAME} ${LANG_GERMAN} "${DE}"
+!macroend
+
+!insertmacro WEST_STR westTitle "West Client'ı kur" "Install West Client" "West Client installieren"
+!insertmacro WEST_STR westSub "Bir dakikadan kısa sürer. Sonrasında West Client kendini kendisi günceller." "Takes less than a minute. After that, West Client keeps itself up to date." "Dauert weniger als eine Minute. Danach hält sich West Client selbst aktuell."
+!insertmacro WEST_STR westDirLabel "Kurulum yeri" "Install location" "Installationsort"
+!insertmacro WEST_STR westChange "Değiştir" "Change" "Ändern"
+!insertmacro WEST_STR westDesktop "Masaüstüne kısayol ekle" "Add a desktop shortcut" "Desktop-Verknüpfung erstellen"
+!insertmacro WEST_STR westInstall "Kur" "Install" "Installieren"
+!insertmacro WEST_STR westPickDir "West Client'ın kurulacağı klasörü seç" "Choose where to install West Client" "Wähle den Installationsordner für West Client"
+!insertmacro WEST_STR westContinue "Devam" "Continue" "Weiter"
+!insertmacro WEST_STR westWorking "Kuruluyor…" "Installing…" "Wird installiert…"
+!insertmacro WEST_STR westWorkingSub "West Client hazırlanıyor, birazdan biter." "Getting West Client ready, almost there." "West Client wird vorbereitet, gleich fertig."
+!insertmacro WEST_STR westDoneTitle "Hazır!" "All set!" "Fertig!"
+!insertmacro WEST_STR westDoneSub "West Client kuruldu. İyi oyunlar." "West Client is installed. Have fun." "West Client ist installiert. Viel Spaß."
+!insertmacro WEST_STR westLaunch "West Client'ı aç" "Open West Client" "West Client öffnen"
+!insertmacro WEST_STR westClose "Kapat" "Close" "Schließen"
+!insertmacro WEST_STR westFailed "Kurulum tamamlanamadı. İnternet bağlantını kontrol edip tekrar dene." "The installation couldn't finish. Check your connection and try again." "Die Installation konnte nicht abgeschlossen werden. Prüfe deine Verbindung und versuche es erneut."
+!insertmacro WEST_STR westUnTitle "West Client kaldırılsın mı?" "Uninstall West Client?" "West Client deinstallieren?"
+!insertmacro WEST_STR westUnSub "Uygulama bu bilgisayardan silinir. Instance'ların, dünyaların ve skinlerin yerinde kalır." "The app will be removed from this computer. Your instances, worlds and skins stay where they are." "Die App wird von diesem Computer entfernt. Deine Instanzen, Welten und Skins bleiben erhalten."
+!insertmacro WEST_STR westUnRemove "Kaldır" "Uninstall" "Deinstallieren"
+!insertmacro WEST_STR westUnCancel "Vazgeç" "Cancel" "Abbrechen"
+!insertmacro WEST_STR westUnWorking "Kaldırılıyor…" "Uninstalling…" "Wird deinstalliert…"
+!insertmacro WEST_STR westUnWorkingSub "Birazdan biter." "Almost done." "Gleich fertig."

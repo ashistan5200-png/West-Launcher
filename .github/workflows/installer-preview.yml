@@ -1,0 +1,47 @@
+# Kurulum sihirbazını gerçek Windows'ta derler, çalıştırır ve her sayfasının ekran
+# görüntüsünü alır. Sürüm çıkarmaz; yalnızca installer-* dallarında ya da elle çalışır.
+name: Kurulum sihirbazı önizleme
+
+on:
+  push:
+    branches: ["installer-*"]
+    paths: ["src-tauri/installer/**", ".github/workflows/installer-preview.yml"]
+  workflow_dispatch:
+
+jobs:
+  preview:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tauri'nin NSIS yardımcıları (CLI 2.12.4 ile aynı)
+        shell: bash
+        run: |
+          set -e
+          D=$RUNNER_TEMP/deps; mkdir -p $D/lang
+          B=https://raw.githubusercontent.com/tauri-apps/tauri/tauri-cli-v2.12.4/crates/tauri-bundler/src/bundle/windows/nsis
+          curl -sfL $B/utils.nsh -o $D/utils.nsh
+          curl -sfL $B/FileAssociation.nsh -o $D/FileAssociation.nsh
+          for l in Turkish English German; do curl -sfL $B/languages/$l.nsh -o $D/lang/$l.nsh; done
+          curl -sfL https://github.com/tauri-apps/nsis-tauri-utils/releases/download/nsis_tauri_utils-v0.5.3/nsis_tauri_utils.dll -o $D/nsis_tauri_utils.dll
+          cp "C:/Windows/System32/whoami.exe" $D/dummy.exe
+
+      - name: Şablonu doldur ve derle
+        shell: bash
+        run: |
+          set -e
+          python src-tauri/installer/build-template.py
+          python src-tauri/installer/preview/render.py "$RUNNER_TEMP/deps" --slow
+          MAKENSIS="/c/Program Files (x86)/NSIS/makensis.exe"
+          [ -f "$MAKENSIS" ] || { choco install nsis -y --no-progress; }
+          "$MAKENSIS" -V3 "$RUNNER_TEMP/deps/test.nsi"
+
+      - name: Çalıştır ve ekran görüntüsü al
+        shell: pwsh
+        run: ./src-tauri/installer/preview/preview.ps1 -Setup "$env:RUNNER_TEMP\deps\preview-setup.exe" -Out "$env:RUNNER_TEMP\shots"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: installer-shots
+          path: ${{ runner.temp }}/shots

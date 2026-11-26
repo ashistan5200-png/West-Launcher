@@ -1,67 +1,111 @@
 #!/usr/bin/env python3
-"""Tauri'nin NSIS şablonundan (upstream-installer.nsi) West temalı installer.nsi üretir.
-Tauri CLI güncellenince upstream-installer.nsi'yi yenile ve bu betiği yeniden çalıştır."""
-import pathlib, re
-here = pathlib.Path(__file__).parent
-src = (here / "upstream-installer.nsi").read_text()
-theme = (here / "west-theme.nsh").read_text()
-out = src.replace("!include MUI2.nsh\n", "!include MUI2.nsh\n\n; ───── West Client teması (west-theme.nsh) ─────\n" + theme + "\n", 1)
-show = "!define MUI_PAGE_CUSTOMFUNCTION_SHOW westShow\n"
-# Kurulum sayfası: ilerleme çubuğunun altına West görseli (install-art.bmp, kenar görseliyle aynı klasörde)
-INST_ART = r"""
-!searchreplace WEST_INSTALL_ART "${SIDEBARIMAGE}" "sidebar.bmp" "install-art.bmp"
-Function westInstShow
-  Call westShow
-  Push $0
-  Push $1
-  Push $2
-  Push $3
-  Push $4
-  Push $5
-  InitPluginsDir
-  File "/oname=$PLUGINSDIR\west-install.bmp" "${WEST_INSTALL_ART}"
-  FindWindow $0 "#32770" "" $HWNDPARENT
-  ; Sayfanın genişliği ($2) ve yüksekliği ($3)
-  System::Call '*(i,i,i,i) p.r1'
-  System::Call 'user32::GetClientRect(p r0, p r1)'
-  System::Call '*$1(i,i,i.r2,i.r3)'
-  ; İlerleme çubuğunun alt kenarı ($5)
-  GetDlgItem $4 $0 1004
-  System::Call 'user32::GetWindowRect(p r4, p r1)'
-  System::Call 'user32::MapWindowPoints(p 0, p r0, p r1, i 2)'
-  System::Call '*$1(i,i,i,i.r5)'
-  System::Free $1
-  IntOp $5 $5 + 14
-  ; Görsel 3:1; sayfa genişliğine sığdır, kalan yüksekliği aşmasın
-  IntOp $4 $2 / 3
-  IntOp $1 $3 - $5
-  IntCmp $4 $1 +2 +2 0
-  StrCpy $4 $1
-  IntOp $2 $4 * 3
-  System::Call 'user32::CreateWindowExW(i 0, w "STATIC", w "", i 0x5000000E, i 0, i r5, i r2, i r4, p r0, p 1300, p 0, p 0) p.r3'
-  System::Call 'user32::LoadImageW(p 0, w "$PLUGINSDIR\west-install.bmp", i 0, i r2, i r4, i 0x10) p.r1'
-  SendMessage $3 0x172 0 $1
-  Pop $5
-  Pop $4
-  Pop $3
-  Pop $2
-  Pop $1
-  Pop $0
-FunctionEnd
-"""
-out = out.replace("!insertmacro MUI_PAGE_INSTFILES", INST_ART + "!define MUI_PAGE_CUSTOMFUNCTION_SHOW westInstShow\n!insertmacro MUI_PAGE_INSTFILES", 1)
+"""Tauri'nin NSIS şablonundan (upstream-installer.nsi) West Client'ın kendi kurulum
+penceresini kullanan installer.nsi'yi üretir.
 
-for page in ["MUI_PAGE_WELCOME", "MUI_PAGE_LICENSE", "MUI_PAGE_DIRECTORY", "MUI_PAGE_STARTMENU", "MUI_PAGE_FINISH"]:
-    out, n = re.subn(r"^(\s*)(!insertmacro " + page + r"\b)", lambda m: m.group(1) + show + m.group(1) + m.group(2), out, count=1, flags=re.M)
-    assert n == 1, page
-out, n = re.subn(r"^(!insertmacro MUI_UNPAGE_INSTFILES)", "!define MUI_PAGE_CUSTOMFUNCTION_SHOW un.westShow\n\\1", out, count=1, flags=re.M)
-assert n == 1
-# Silme onayı sayfası kendi SHOW işlevini kullanıyor: sonunda temayı da uygula
-out = out.replace("  SendMessage $DeleteAppDataCheckbox ${WM_SETFONT} $1 1\nFunctionEnd", "  SendMessage $DeleteAppDataCheckbox ${WM_SETFONT} $1 1\n  Call un.westShow\nFunctionEnd", 1)
-assert "Call un.westShow" in out
-# Yeniden kurulum (nsDialogs) sayfası
-out = out.replace("    nsDialogs::Show", "    Call westShow\n    nsDialogs::Show", 1)
-# Alttaki marka yazısı
-out = out.replace('BrandingText "${COPYRIGHT}"', 'BrandingText "West Client ${VERSION}"', 1)
-(here / "installer.nsi").write_text(out)
+  west-theme.nsh   pencere, yazı tipleri, düğmeler, ilerleme sayfası (ortak)
+  west-pages.nsh   Kur / Hazır / Kaldır sayfaları
+  west-strings.nsh sayfa metinleri (tr, en, de)
+
+Tauri CLI güncellenince upstream-installer.nsi'yi yenile ve bu betiği yeniden çalıştır.
+Tauri, ürettiği dosyayı UTF-16 (BOM'lu) yazar; Türkçe karakterler bu yüzden sorunsuzdur."""
+import pathlib, re
+
+here = pathlib.Path(__file__).parent
+read = lambda n: (here / n).read_text(encoding="utf-8").replace("\r\n", "\n")
+src = read("upstream-installer.nsi")
+theme = read("west-theme.nsh")
+pages = read("west-pages.nsh")
+strings = read("west-strings.nsh")
+out = src
+
+
+def sub(old, new, count=1):
+    global out
+    assert old in out, old[:80]
+    out = out.replace(old, new, count)
+
+
+# Onay kutusu değişkenleri temada tanımlı (sayfa işlevleri daha önce geliyor)
+sub("Var DeleteAppDataCheckbox\nVar DeleteAppDataCheckboxState\n", "")
+
+# Tema: sayfalardan önce, görsel klasörü (sidebar.bmp'nin klasörü) tanımlandıktan sonra
+sub("; Installer pages, must be ordered as they appear\n",
+    '!searchreplace WEST_ART_DIR "${SIDEBARIMAGE}" "sidebar.bmp" ""\n'
+    "; ───── West Client kurulum penceresi (west-theme.nsh) ─────\n" + theme +
+    "\n; Installer pages, must be ordered as they appear\n")
+
+# 1. Hoş geldin + 5. klasör sayfası yerine tek "Kur" sayfası
+sub("; 1. Welcome Page\n!define MUI_PAGE_CUSTOMFUNCTION_PRE SkipIfPassive\n!insertmacro MUI_PAGE_WELCOME\n",
+    "; 1. West: Kur sayfası (kurulum yeri + masaüstü kısayolu)\nPage custom WestMainPage WestMainLeave\n")
+sub("; 5. Choose install directory page\n!define MUI_PAGE_CUSTOMFUNCTION_PRE SkipIfPassive\n!insertmacro MUI_PAGE_DIRECTORY\n",
+    "; 5. Klasör seçimi Kur sayfasında\n")
+
+# 6. Başlat menüsü klasörü sorulmaz
+sub('  !define MUI_PAGE_CUSTOMFUNCTION_PRE SkipIfPassive\n  !define MUI_STARTMENUPAGE_DEFAULTFOLDER "${STARTMENUFOLDER}"\n!else\n  !define MUI_PAGE_CUSTOMFUNCTION_PRE Skip\n',
+    '  !define MUI_PAGE_CUSTOMFUNCTION_PRE WestStartMenuPre\n  !define MUI_STARTMENUPAGE_DEFAULTFOLDER "${STARTMENUFOLDER}"\n!else\n  !define MUI_PAGE_CUSTOMFUNCTION_PRE Skip\n')
+
+# 7. Kurulum sayfası: West düzeni; sayfa işlevleri burada (AppStartMenuFolder tanımlı)
+sub("; 7. Installation page\n!insertmacro MUI_PAGE_INSTFILES\n",
+    "; ───── West Client sayfaları (west-pages.nsh) ─────\n" + pages +
+    "\n; 7. Installation page\n!define MUI_PAGE_CUSTOMFUNCTION_SHOW westProgressShow\n!insertmacro MUI_PAGE_INSTFILES\n")
+
+# 8. Bitiş sayfası yerine "Hazır"
+m = re.search(r"; 8\. Finish page\n.*?!insertmacro MUI_PAGE_FINISH\n", out, re.S)
+assert m
+out = out[:m.start()] + "; 8. West: Hazır sayfası (aç / kapat)\nPage custom WestFinishPage\n" + out[m.end():]
+
+# Önceden kurulu sürüm sayfası: West düzeninde iki seçenek kartı
+m = re.search(r"    nsDialogs::Create 1018\n    Pop \$R4\n.*?    nsDialogs::Show\n", out, re.S)
+assert m
+REINST = r"""    nsDialogs::Create 1018
+    Pop $R4
+    !define __WEST_PFX ""
+    Call westPageBase
+    !insertmacro WEST_TEXT 320 80 360 36 "$(alreadyInstalled)" $WestF_H1 "${WEST_TEXT}" "${WEST_BG}"
+    !insertmacro WEST_TEXT 320 120 340 60 "$R1" $WestF_Body "${WEST_MUTED}" "${WEST_BG}"
+    !insertmacro WEST_CTL STATIC ${DEFAULT_STYLES}|${SS_NOTIFY}|${SS_CENTERIMAGE} 0 320 196 360 44 "     $R2"
+    StrCpy $WestOpt1 $WestLast
+    SendMessage $WestOpt1 ${WM_SETFONT} $WestF_Body 1
+    Push $WestOpt1
+    Call westRoundSmall
+    ${NSD_OnClick} $WestOpt1 westOpt1Click
+    !insertmacro WEST_CTL STATIC ${DEFAULT_STYLES}|${SS_NOTIFY}|${SS_CENTERIMAGE} 0 320 248 360 44 "     $R3"
+    StrCpy $WestOpt2 $WestLast
+    SendMessage $WestOpt2 ${WM_SETFONT} $WestF_Body 1
+    Push $WestOpt2
+    Call westRoundSmall
+    ${NSD_OnClick} $WestOpt2 westOpt2Click
+    ; Sürüm düşürmeye izin yoksa ikinci seçenek kapalı
+    !if "${ALLOWDOWNGRADES}" == "false"
+      ${IfThen} $R0 = -1 ${|} EnableWindow $WestOpt2 0 ${|}
+    !endif
+    ${If} $ReinstallPageCheck <> 2
+      StrCpy $WestReinstFirst 1
+    ${Else}
+      StrCpy $WestReinstFirst 0
+    ${EndIf}
+    Call westPaintOptions
+    !insertmacro WEST_BUTTON 320 352 360 46 "$(westContinue)" "${WEST_ONACCENT}" "${WEST_ACCENT}" westNextClick
+    !undef __WEST_PFX
+    nsDialogs::Show
+"""
+out = out[:m.start()] + REINST + out[m.end():]
+sub("Function PageLeaveReinstall\n  ${NSD_GetState} $R2 $R1\n",
+    "Function PageLeaveReinstall\n  ${NSD_GetState} $R2 $R1\n  ; West sayfasında seçim kartlarla yapılır\n  ${If} $PassiveMode <> 1\n    StrCpy $R1 $WestReinstFirst\n  ${EndIf}\n")
+
+# Kaldırıcı: onay sayfası West düzeninde; bitince kendiliğinden kapanır
+m = re.search(r"!define /ifndef WS_EX_LAYOUTRTL.*?!insertmacro MUI_UNPAGE_CONFIRM\n", out, re.S)
+assert m
+out = out[:m.start()] + "UninstPage custom un.WestConfirmPage un.WestConfirmLeave\n" + out[m.end():]
+sub("!insertmacro MUI_UNPAGE_INSTFILES\n", "!define MUI_PAGE_CUSTOMFUNCTION_SHOW un.westProgressShow\n!insertmacro MUI_UNPAGE_INSTFILES\n")
+sub("Section Uninstall\n", "Section Uninstall\n  SetAutoClose true\n")
+
+# Metinler: diller eklendikten sonra
+sub("!insertmacro MUI_RESERVEFILE_LANGDLL\n", "!insertmacro MUI_RESERVEFILE_LANGDLL\n; ───── West Client metinleri (west-strings.nsh) ─────\n" + strings)
+
+# Alttaki marka yazısı (pencerede gizli; görev yöneticisi vb. için)
+sub('BrandingText "${COPYRIGHT}"', 'BrandingText "West Client ${VERSION}"')
+
+with open(here / "installer.nsi", "w", encoding="utf-8", newline="\n") as f:
+    f.write(out)
 print("installer.nsi yazıldı")

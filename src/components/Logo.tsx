@@ -1,23 +1,22 @@
 /**
- * West Client pusula logosu. Düz vektör: dış halka, ana yön çentikleri ve
- * iki renkli iğne. Kuzey ucu vurgu rengini, güney ucu nötr tonu kullanır;
- * böylece logo kullanıcının seçtiği temaya uyar.
+ * West Client logosu ("Batı" pusulası). İğne kuzeyi değil batıyı gösterir;
+ * halka batı noktasında açılır ve amber uç oradan dışarı taşar. Batıyı gösteren
+ * uç kullanıcının vurgu rengini, karşı uç nötr tonu alır.
  */
 export function Logo({ size = 18, mono = false }: { size?: number; mono?: boolean }) {
-  const north = mono ? "currentColor" : "rgb(var(--accent))";
+  const tip = mono ? "currentColor" : "rgb(var(--accent))";
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      {/* Opaklık grup düzeyinde: halka ve çentik kesişimleri çift boyanmaz */}
-      <g opacity="0.55" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-        <circle cx="12" cy="12" r="10.25" />
-        <path d="M12 1.75v2.1M12 20.15v2.1M1.75 12h2.1M20.15 12h2.1" />
+      <g opacity="0.55">
+        <path d="M5.2 6.4A9.25 9.25 0 1 1 5.2 17.6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+        <g fill="currentColor">
+          <circle cx="12" cy="3.9" r="0.9" />
+          <circle cx="12" cy="20.1" r="0.9" />
+          <circle cx="20.1" cy="12" r="0.9" />
+        </g>
       </g>
-      {/* İğne: kuzey-güney ekseni hafifçe batıya (West) eğik */}
-      <g transform="rotate(-35 12 12)">
-        <path d="M12 4.6 14.6 12H9.4L12 4.6Z" fill={north} />
-        <path d="M12 19.4 9.4 12h5.2L12 19.4Z" fill="currentColor" fillOpacity="0.38" />
-      </g>
-      <circle cx="12" cy="12" r="1.35" fill="rgb(var(--bg))" stroke="currentColor" strokeOpacity="0.7" strokeWidth="1" />
+      <path d="M1.6 12 12.4 8.7 11 12 12.4 15.3Z" fill={tip} />
+      <path d="M12.4 8.7 17.6 12 12.4 15.3 13.8 12Z" fill="currentColor" fillOpacity="0.45" />
     </svg>
   );
 }

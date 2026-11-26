@@ -57,7 +57,7 @@
           "English",
           "German"
         ],
-        "displayLanguageSelector": true,
+        "displayLanguageSelector": false,
         "installMode": "currentUser",
         "startMenuFolder": "West Client",
         "compression": "lzma",

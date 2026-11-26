@@ -1,16 +1,27 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
-  <!-- West Launcher uygulama ikonu: antrasit karo + mat buz mavisi pusula -->
-  <rect x="64" y="64" width="896" height="896" rx="200" fill="#1c1d20"/>
-  <rect x="64.5" y="64.5" width="895" height="895" rx="199.5" fill="none" stroke="#ffffff" stroke-opacity="0.06"/>
-  <g transform="translate(512 512)">
-    <g fill="none" stroke="#7d8188" stroke-width="36" stroke-linecap="round">
-      <circle r="300"/>
-      <path d="M0 -300v62M0 238v62M-300 0h62M238 0h62"/>
+  <!-- West Client uygulama ikonu ("Batı"): iğne kuzeyi değil batıyı gösterir;
+       halka batı noktasında açılır, amber uç oradan dışarı taşar.
+       İşaret 24'lük ızgarada çizildi (src/components/Logo.tsx ile aynı yollar). -->
+  <defs>
+    <radialGradient id="glow" cx="28%" cy="20%" r="90%">
+      <stop offset="0" stop-color="#e8a25c" stop-opacity="0.32"/>
+      <stop offset="0.6" stop-color="#e8a25c" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="92%" cy="96%" r="65%">
+      <stop offset="0" stop-color="#6ea8d6" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#6ea8d6" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="230" fill="#101116"/>
+  <rect width="1024" height="1024" rx="230" fill="url(#glow)"/>
+  <rect width="1024" height="1024" rx="230" fill="url(#glow2)"/>
+  <rect x="6" y="6" width="1012" height="1012" rx="224" fill="none" stroke="#ffffff" stroke-opacity="0.08" stroke-width="12"/>
+  <g transform="translate(182 182) scale(27.5)">
+    <path d="M5.2 6.4A9.25 9.25 0 1 1 5.2 17.6" fill="none" stroke="#eef0f3" stroke-opacity="0.55" stroke-width="1.6" stroke-linecap="round"/>
+    <g fill="#eef0f3" fill-opacity="0.55">
+      <circle cx="12" cy="3.9" r="0.9"/><circle cx="12" cy="20.1" r="0.9"/><circle cx="20.1" cy="12" r="0.9"/>
     </g>
-    <g transform="rotate(-35)">
-      <path d="M0 -215 76 0H-76Z" fill="#7fa7c9"/>
-      <path d="M0 215 -76 0H76Z" fill="#55595f"/>
-    </g>
-    <circle r="36" fill="#1c1d20" stroke="#9a9ea5" stroke-width="22"/>
+    <path d="M1.6 12 12.4 8.7 11 12 12.4 15.3Z" fill="#e8a25c"/>
+    <path d="M12.4 8.7 17.6 12 12.4 15.3 13.8 12Z" fill="#eef0f3" fill-opacity="0.45"/>
   </g>
 </svg>
