@@ -1,6 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { Home, Library, Settings, Plus, Play, Compass, Shirt, Images, Newspaper, MessagesSquare } from "lucide-react";
-import { useSocial } from "@/stores/social";
+import { Home, Library, Settings, Plus, Play, Compass, Shirt, Images, Newspaper } from "lucide-react";
 import { useChat } from "@/stores/chat";
 import { AshiHead } from "./AshiHead";
 import clsx from "clsx";
@@ -12,7 +11,6 @@ const NAV = [
   { to: "/", icon: Home, label: tx("Ana Sayfa"), short: tx("Ana") },
   { to: "/library", icon: Library, label: tx("Kütüphane"), short: tx("Kütüphane") },
   { to: "/browse", icon: Compass, label: tx("Keşfet"), short: tx("Keşfet") },
-  { to: "/social", icon: MessagesSquare, label: tx("West sosyal"), short: tx("Sosyal") },
   { to: "/skins", icon: Shirt, label: tx("Skin ve hesaplar"), short: tx("Skin") },
   { to: "/gallery", icon: Images, label: tx("Ekran görüntüleri"), short: tx("Galeri") },
   { to: "/news", icon: Newspaper, label: tx("Haberler ve güncellemeler"), short: tx("Haberler") },
@@ -23,13 +21,12 @@ export function Sidebar() {
   const { instances, running } = useInstances();
   const recent = instances.filter((i) => !i.isTemplate).slice(0, 6);
   const { open: chatOpen, toggle: toggleChat } = useChat();
-  const unread = useSocial((s) => s.unread.notifications + s.unread.messages);
 
   return (
     <nav className="sidebar">
       {NAV.map(({ to, icon: Icon, label, short }) => (
         <NavLink key={to} to={to} end={to === "/"} data-tour={to} className={({ isActive }) => clsx("nav-item labeled", isActive && "active")} title={label}>
-          <span className="nav-ico"><Icon size={19} />{to === "/social" && unread > 0 && <em className="nav-badge">{unread > 9 ? "9+" : unread}</em>}</span>
+          <span className="nav-ico"><Icon size={19} /></span>
           <span className="nav-label">{short}</span>
         </NavLink>
       ))}

@@ -1,4 +1,3 @@
-import { BookmarksPage, MessagesPage, PrivacyPage, NotificationsPage, PostPage, ProfilePage, SocialFeedPage, SocialSearchPage, TagPage } from "@/pages/Social";
 import { useEffect, useRef } from "react";
 import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, MotionConfig, motion } from "framer-motion";
@@ -34,9 +33,7 @@ import { AmbientSky } from "@/components/AmbientSky";
 import { ConfirmHost } from "@/components/ConfirmDialog";
 import { CursorTrail } from "@/components/CursorTrail";
 import { BackgroundMusic } from "@/components/BackgroundMusic";
-import { startPresence } from "@/stores/west";
 import { ContentToasts } from "@/components/ContentToasts";
-import { InviteCenter } from "@/components/InviteCenter";
 import { AshiSolver } from "@/components/AshiSolver";
 import { useSettings } from "@/stores/settings";
 import { useInstances } from "@/stores/instances";
@@ -50,7 +47,8 @@ export default function App() {
   useEffect(() => {
     if (!startPage || startDone.current) return;
     startDone.current = true;
-    if (startPage !== "/" && location.pathname === "/") navigate(startPage, { replace: true });
+    // Kaldırılan sayfalar (ör. eski Sosyal) açılış sayfası olarak kalmışsa ana sayfada kal
+    if (startPage !== "/" && !startPage.startsWith("/social") && location.pathname === "/") navigate(startPage, { replace: true });
   }, [startPage]); // eslint-disable-line react-hooks/exhaustive-deps
   const loadSettings = useSettings((s) => s.load);
   const reduceMotion = useSettings((s) => s.settings.theme.reduceMotion);
@@ -68,7 +66,6 @@ export default function App() {
     void refresh();
     void loadSkin();
     void useAccounts.getState().load();
-    startPresence();
     const un = bindEvents();
     const nameOf = (id: string) => useInstances.getState().instances.find((i) => i.id === id)?.name ?? id;
     const unAshi = bindAshi(nameOf);
@@ -106,16 +103,6 @@ export default function App() {
                   <Route path="/skins" element={<SkinsPage />} />
                   <Route path="/gallery" element={<GalleryPage />} />
                   <Route path="/news" element={<NewsPage />} />
-                  <Route path="/social" element={<SocialFeedPage />} />
-                  <Route path="/social/notifications" element={<NotificationsPage />} />
-                  <Route path="/social/bookmarks" element={<BookmarksPage />} />
-                  <Route path="/social/messages" element={<MessagesPage />} />
-                  <Route path="/social/messages/:id" element={<MessagesPage />} />
-                  <Route path="/social/settings" element={<PrivacyPage />} />
-                  <Route path="/social/search" element={<SocialSearchPage />} />
-                  <Route path="/social/tag/:tag" element={<TagPage />} />
-                  <Route path="/u/:username" element={<ProfilePage />} />
-                  <Route path="/post/:id" element={<PostPage />} />
                   <Route path="/account" element={<AccountPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                 </Routes>
@@ -126,7 +113,6 @@ export default function App() {
         </div>
         <div className="dock">
           <AshiDock />
-          <InviteCenter />
           <ContentToasts />
           <ProgressDock />
         </div>

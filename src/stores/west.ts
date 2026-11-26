@@ -27,18 +27,3 @@ export const useWest = create<WestState>((set) => ({
     set({ account: null });
   },
 }));
-
-/** Arkadaşların seni "Çevrimiçi" görmesi için dakikada bir durum bildirimi (supabase/presence.sql gerekir; yoksa sessizce atlanır). */
-let presenceTimer: number | undefined;
-export function startPresence() {
-  if (!isTauri() || presenceTimer) return;
-  const beat = () => {
-    const a = useWest.getState().account;
-    if (!a) return;
-    void api
-      .westApi("POST", "/rest/v1/presence", { body: { user_id: a.userId, status: "online", updated_at: new Date().toISOString() }, prefer: "resolution=merge-duplicates" })
-      .catch(() => {});
-  };
-  beat();
-  presenceTimer = window.setInterval(beat, 60_000);
-}

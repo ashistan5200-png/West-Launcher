@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>West Client — Minecraft'ı kendi rotanda oyna</title>
-<meta name="description" content="West Client: ücretsiz ve açık kaynak Minecraft launcher. Fabric, NeoForge, Forge ve Quilt; Modrinth'ten tek tıkla mod; çöken paketin suçlusunu bulan Ashi; skinler, galeri ve West sosyal ağı.">
+<meta name="description" content="West Client: ücretsiz ve açık kaynak Minecraft launcher. Fabric, NeoForge, Forge ve Quilt; Modrinth'ten tek tıkla mod; çöken paketin suçlusunu bulan Ashi; oyunu kapatmadan mod değiştiren Mod Merkezi, skinler ve galeri.">
 <meta property="og:title" content="West Client — Minecraft'ı kendi rotanda oyna">
 <meta property="og:description" content="Ücretsiz, açık kaynak, modern Minecraft launcher. Windows, macOS ve Linux.">
 <meta property="og:image" content="assets/shots/home.webp">
@@ -38,7 +38,6 @@
       <a href="#kesfet">Keşfet</a>
       <a href="#ashi">Ashi</a>
       <a href="#ozellikler">Özellikler</a>
-      <a href="#guncellemeler">Güncellemeler</a>
       <a href="#sss">SSS</a>
       <a href="https://github.com/ashistan5200-png/West-Launcher" target="_blank" rel="noopener">GitHub</a>
     </nav>
@@ -57,7 +56,7 @@
         <g class="needle"><path d="M12 4.6 14.6 12H9.4L12 4.6Z" fill="#e8a25c"/><path d="M12 19.4 9.4 12h5.2L12 19.4Z" fill="#eef0f2" fill-opacity=".55"/></g>
         <circle cx="12" cy="12" r="1.35" fill="#0a0b0e" stroke="#eef0f2" stroke-width="1"/>
       </svg>
-      <a class="pill" href="#guncellemeler"><span class="tag" id="verTag">YENİ</span> <span id="verText">Son sürüm yayında</span> <svg width="14" height="14"><use href="#i-arrow"/></svg></a>
+      <a class="pill" href="#indir"><span class="tag" id="verTag">YENİ</span> <span id="verText">Oyunu kapatmadan mod değiştir</span> <svg width="14" height="14"><use href="#i-arrow"/></svg></a>
       <h1>Minecraft'ı <span class="grad">kendi rotanda</span> oyna.</h1>
       <p class="lead">West Client; modlarını, paketlerini, dünyalarını ve arkadaşlarını tek, hızlı ve güzel bir yerde toplayan ücretsiz Minecraft launcher'ı. Çöken bir paketin suçlusunu bile senin yerine bulur.</p>
       <div class="hero-cta">
@@ -173,22 +172,6 @@
     </div>
   </section>
 
-  <!-- ───────── Sosyal ───────── -->
-  <section class="wrap spot solo" id="sosyal">
-    <div class="spot-text reveal">
-      <span class="eyebrow">West sosyal</span>
-      <h2 class="title">Arkadaşların da burada.</h2>
-      <p class="sub">West hesabınla bir profil oluştur, gönderi paylaş, hikâye at, mesajlaş. Launcher'dan çıkmadan Minecraft topluluğuyla bağlantıda kal.</p>
-      <ul class="spot-list">
-        <li>Gönderiler: metin, 4 fotoğrafa kadar, anket, #etiket ve @bahsetme</li>
-        <li>Beğeni, yanıt, yeniden paylaşma, alıntı ve yer imleri</li>
-        <li>24 saatlik hikâyeler ve birebir mesajlar</li>
-        <li>Profil: biyografi, avatar, banner, bağlantılar</li>
-        <li>Gizli hesap, engelleme, sessize alma ve şikâyet</li>
-      </ul>
-    </div>
-  </section>
-
   <!-- ───────── Diğer özellikler ───────── -->
   <section class="section" id="ozellikler" style="padding-top:40px">
     <div class="wrap">
@@ -203,19 +186,6 @@
         <div><dt>Discord ve haberler</dt><dd>Ne oynadığın Discord profilinde görünür; Minecraft ve mod güncellemeleri tek sayfada.</dd></div>
         <div><dt>Kendini günceller</dt><dd>Yeni sürümü haber verir, indirir, SHA-256 ile doğrular ve tek tıkla kurar.</dd></div>
       </dl>
-    </div>
-  </section>
-
-  <!-- ───────── Güncellemeler ───────── -->
-  <section class="section" id="guncellemeler" style="padding-top:40px">
-    <div class="wrap center">
-      <span class="eyebrow reveal">Güncelleme notları</span>
-      <h2 class="title reveal">Hızla gelişiyor.</h2>
-      <p class="sub reveal">Her sürümde neyin geldiğini buradan takip et. Uygulama da yeni sürümü kendiliğinden bulur ve haber verir.</p>
-    </div>
-    <div class="wrap">
-      <div class="timeline" id="timeline"><p class="muted center">Güncellemeler yükleniyor…</p></div>
-      <div class="rel-more"><a class="btn btn-ghost" href="https://github.com/ashistan5200-png/West-Launcher/releases" target="_blank" rel="noopener"><svg width="18" height="18"><use href="#i-gh"/></svg> Tüm sürümler GitHub'da</a></div>
     </div>
   </section>
 
@@ -263,7 +233,7 @@
       <details class="q reveal"><summary>Antivirüsüm uyarı veriyor, virüs mü?</summary><div class="a"><p>Hayır. West Client henüz dijital imzalı olmadığı için Windows SmartScreen ve bazı antivirüsler “tanınmayan uygulama” uyarısı gösterebilir. Ayrıca launcher'lar internetten oyun dosyaları indirip başka programlar çalıştırdığı için bazı antivirüsler tahmine dayalı alarm verebilir.</p><p>Kodun tamamı GitHub'da açıktır ve her sürüm GitHub'ın sunucularında otomatik derlenir. Dosyayı yalnızca bu siteden ya da GitHub Releases'tan indir.</p></div></details>
       <details class="q reveal"><summary>Diğer launcher'lardaki paketlerimi taşıyabilir miyim?</summary><div class="a"><p>Evet. İlk açılışta West Client; Modrinth App, CurseForge, Prism Launcher, MultiMC ve resmi launcher'daki paketlerini bulur ve orijinallerine dokunmadan kopyalar.</p></div></details>
       <details class="q reveal"><summary>Hangi Minecraft sürümlerini destekliyor?</summary><div class="a"><p>Mojang'ın yayınladığı bütün Java Edition sürümlerini; Fabric, NeoForge, Forge ve Quilt yükleyicileriyle. Oyun içi West Paneli (FullBright, FPS göstergesi) şimdilik 1.21.1 Fabric ve NeoForge'da çalışıyor.</p></div></details>
-      <details class="q reveal"><summary>West hesabı ne işe yarıyor?</summary><div class="a"><p>West sosyal ağında profil açmak, gönderi ve hikâye paylaşmak ve arkadaşlarınla mesajlaşmak için. Oyunu oynamak için gerekmez; istersen hiç açmadan da West Client'ı kullanabilirsin.</p></div></details>
+      <details class="q reveal"><summary>West hesabı ne işe yarıyor?</summary><div class="a"><p>Profilini (ad, fotoğraf, biyografi) ve ayarlarını her bilgisayarda aynı tutmak için. Oyunu oynamak için gerekmez; istersen hiç açmadan da West Client'ı kullanabilirsin.</p></div></details>
       <details class="q reveal"><summary>Ashi'nin yapay zekâsı ücretli mi?</summary><div class="a"><p>Hayır. Ashi bilgisayarında çalışan ücretsiz bir model (Ollama) kullanır; hesap, anahtar ya da şifre istemez. "Ashi'yi akıllandır" düğmesine bastığında Ollama ve model birlikte, tek seferde kurulur. Kurmak istemezsen Ashi basit modda, mesajındaki anahtar kelimelerle arar.</p></div></details>
       <details class="q reveal"><summary>Bir hata buldum ya da önerim var.</summary><div class="a"><p>Harika! GitHub'daki <a class="amber" href="https://github.com/ashistan5200-png/West-Launcher/issues" target="_blank" rel="noopener">Issues</a> sayfasından bildirebilirsin.</p></div></details>
     </div>
@@ -282,7 +252,7 @@
   <div class="wrap">
     <div class="foot">
       <div><a class="brand" href="#top" style="margin-bottom:12px"><img src="assets/icon-256.png" alt=""> West <b>Client</b></a><p>Ücretsiz ve açık kaynak Minecraft launcher'ı. Rotanı belirle.</p></div>
-      <div><h4>Ürün</h4><a href="#ozellikler">Özellikler</a><a href="#ashi">Ashi</a><a href="#sosyal">West sosyal</a><a href="#guncellemeler">Güncellemeler</a></div>
+      <div><h4>Ürün</h4><a href="#ozellikler">Özellikler</a><a href="#ashi">Ashi</a><a href="#mod-merkezi">Mod Merkezi</a></div>
       <div><h4>İndir</h4><a href="https://github.com/ashistan5200-png/West-Launcher/releases/latest/download/West-Client-Setup.exe">Windows</a><a href="https://github.com/ashistan5200-png/West-Launcher/releases/latest/download/West-Client-macOS.dmg">macOS</a><a href="https://github.com/ashistan5200-png/West-Launcher/releases/latest/download/West-Client-Linux.AppImage">Linux</a></div>
       <div><h4>Topluluk</h4><a href="https://github.com/ashistan5200-png/West-Launcher" target="_blank" rel="noopener">GitHub</a><a href="https://github.com/ashistan5200-png/West-Launcher/issues" target="_blank" rel="noopener">Hata bildir</a><a href="https://github.com/ashistan5200-png/West-Launcher/releases" target="_blank" rel="noopener">Tüm sürümler</a></div>
     </div>

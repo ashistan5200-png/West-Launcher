@@ -4,7 +4,7 @@ import { Minus, Square, X } from "lucide-react";
 import { isTauri } from "@/lib/ipc";
 import { useAccounts } from "@/stores/accounts";
 import { useWest } from "@/stores/west";
-import { useSocial } from "@/stores/social";
+import { useProfile } from "@/stores/profile";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/ipc";
 import { useInstances } from "@/stores/instances";
@@ -20,9 +20,9 @@ export function TitleBar() {
   const west = useWest((s) => s.account);
   const loadWest = useWest((s) => s.load);
   useEffect(() => void loadWest(), [loadWest]);
-  const me = useSocial((s) => s.me);
+  const me = useProfile((s) => s.me);
   const name = west ? me?.display_name || west.username : account?.username;
-  const loadMe = useSocial((s) => s.loadMe);
+  const loadMe = useProfile((s) => s.loadMe);
   useEffect(() => { if (west) void loadMe(); }, [west, loadMe]);
   return (
     <header className="titlebar" data-tauri-drag-region>

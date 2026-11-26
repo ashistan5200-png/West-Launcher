@@ -192,7 +192,6 @@ function GeneralTab() {
             <option value="/">{tx("Ana Sayfa")}</option>
             <option value="/library">{tx("Kütüphane")}</option>
             <option value="/browse">{tx("Keşfet")}</option>
-            <option value="/social">{tx("Sosyal")}</option>
           </select>
         </Row>
         <Row title={tx("Oyun açılınca launcher")} desc={tx("Gizle seçilirse oyun kapanınca West Client kendiliğinden geri gelir.")}>

@@ -1,28 +1,28 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  BadgeCheck, Bell, Bookmark, CalendarDays, ExternalLink, Globe2, KeyRound, Loader2, LogOut, Mail, MailCheck, MapPin, MessageCircle,
-  Pencil, Shield, Shirt, UserRound,
+  BadgeCheck, CalendarDays, Globe2, KeyRound, Loader2, LogOut, Mail, MailCheck, MapPin, 
+  Pencil, Shirt, UserRound,
 } from "lucide-react";
 import clsx from "clsx";
 import { useWest } from "@/stores/west";
-import { useSocial } from "@/stores/social";
+import { useProfile } from "@/stores/profile";
 import { useAccounts } from "@/stores/accounts";
 import { WestAccountCard } from "@/components/WestAccountCard";
-import { EditProfileModal } from "@/pages/Social";
+import { EditProfileModal } from "@/components/EditProfileModal";
 import { askConfirm } from "@/components/ConfirmDialog";
 import { api, isTauri } from "@/lib/ipc";
-import { formatCount, errorText } from "@/lib/format";
+import { errorText } from "@/lib/format";
 import { locale, tx } from "@/lib/i18n";
 
 /**
- * West hesabı: başlık çubuğundaki hesap adından açılır. Sosyal profille aynı veriyi (fotoğraf, banner,
- * biyografi, takipçiler) gösterir ve düzenler; e-posta, şifre, oturum ve Minecraft hesapları da burada.
+ * West hesabı: başlık çubuğundaki hesap adından açılır. Profili (fotoğraf, banner, biyografi) gösterir ve
+ * düzenler; e-posta, şifre, oturum ve Minecraft hesapları da burada.
  */
 export function AccountPage() {
   const navigate = useNavigate();
   const { account, loaded, load, logout } = useWest();
-  const { me, loadMe, setMe, unread, refreshUnread } = useSocial();
+  const { me, loadMe, setMe } = useProfile();
   const mcAccounts = useAccounts((s) => s.accounts);
   const [editing, setEditing] = useState(false);
   const [resetMsg, setResetMsg] = useState<string | null>(null);
@@ -30,8 +30,8 @@ export function AccountPage() {
 
   useEffect(() => { if (!loaded) void load(); }, [loaded, load]);
   useEffect(() => {
-    if (account) { void loadMe(); void refreshUnread(); }
-  }, [account, loadMe, refreshUnread]);
+    if (account) void loadMe();
+  }, [account, loadMe]);
   useEffect(() => { if (isTauri()) void useAccounts.getState().load(); }, []);
 
   if (loaded && !account) {
@@ -39,7 +39,7 @@ export function AccountPage() {
       <div className="page acc-page">
         <div className="acc-gate">
           <h1>{tx("West hesabı")}</h1>
-          <p className="muted">{tx("Profilin, sosyal ağ, arkadaşların ve ayarların tek hesapta; her bilgisayarda aynı.")}</p>
+          <p className="muted">{tx("Profilin ve ayarların tek hesapta; her bilgisayarda aynı.")}</p>
           <div style={{ width: "min(460px, 100%)" }}><WestAccountCard /></div>
         </div>
       </div>
@@ -82,17 +82,9 @@ export function AccountPage() {
               {me?.website && <span><Globe2 size={13} /> {me.website.replace(/^https?:\/\//, "")}</span>}
               {me?.created_at && <span><CalendarDays size={13} /> {tx("{0} tarihinde katıldı", new Date(me.created_at).toLocaleDateString(locale(), { month: "long", year: "numeric" }))}</span>}
             </div>
-            {me && (
-              <div className="acc-counts">
-                <button onClick={() => navigate(`/u/${account.username}`)}><strong>{formatCount(me.posts_count)}</strong> {tx("gönderi")}</button>
-                <button onClick={() => navigate(`/u/${account.username}`)}><strong>{formatCount(me.followers_count)}</strong> {tx("takipçi")}</button>
-                <button onClick={() => navigate(`/u/${account.username}`)}><strong>{formatCount(me.following_count)}</strong> {tx("takip")}</button>
-              </div>
-            )}
           </div>
           <div className="acc-actions">
             {me && <button className="btn btn-primary" onClick={() => setEditing(true)}><Pencil size={15} /> {tx("Profili düzenle")}</button>}
-            <button className="btn btn-ghost" onClick={() => navigate(`/u/${account.username}`)}><ExternalLink size={15} /> {tx("Sosyal profilini gör")}</button>
           </div>
         </div>
       </section>
@@ -111,16 +103,6 @@ export function AccountPage() {
             <button className="btn btn-ghost btn-sm" onClick={() => void doLogout()}><LogOut size={14} /> {tx("Çıkış yap")}</button>
           </div>
           {resetMsg && <p className="muted small">{resetMsg}</p>}
-        </section>
-
-        <section className="card acc-card">
-          <h3><MessageCircle size={16} /> {tx("Sosyal")}</h3>
-          <div className="acc-links">
-            <button onClick={() => navigate("/social/notifications")}><Bell size={16} /> {tx("Bildirimler")} {unread.notifications > 0 && <em className="nav-badge static">{unread.notifications}</em>}</button>
-            <button onClick={() => navigate("/social/messages")}><Mail size={16} /> {tx("Mesajlar")} {unread.messages > 0 && <em className="nav-badge static">{unread.messages}</em>}</button>
-            <button onClick={() => navigate("/social/bookmarks")}><Bookmark size={16} /> {tx("Yer imleri")}</button>
-            <button onClick={() => navigate("/social/settings")}><Shield size={16} /> {tx("Gizlilik")}</button>
-          </div>
         </section>
 
         <section className="card acc-card">

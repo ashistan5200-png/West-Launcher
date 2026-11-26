@@ -73,7 +73,6 @@ public final class WestHud {
         // Launcher'ın yaptığı ayar değişikliklerini ~2 sn'de bir yakala
         if (++ticks % 40 == 0) safe("config", () -> config.reloadIfChanged(HUD));
         safe("stats", () -> stats.tick(game));
-        if (ticks % 20 == 0) safe("presence", () -> dev.west.hud.social.SocialClient.INSTANCE.heartbeat(game.inWorld() ? "Oynuyor · " + game.session().title() : "Menüde"));
     }
 
     public static void renderHud(Gfx g) {

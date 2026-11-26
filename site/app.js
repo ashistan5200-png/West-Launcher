@@ -182,57 +182,10 @@
     if (href) { $("#heroDl").href = href; $("#heroDlText").textContent = `${os === "win" ? "Windows" : os === "mac" ? "macOS" : "Linux"} için indir`; }
   }
 
-  // ───────── Güncelleme notları (GitHub) ─────────
-  const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
-  const fmtDate = (iso) => new Date(iso).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" });
-  // Sürüm notunu (commit mesajı) sade HTML'e çevir; imza satırlarını at
-  function notes(body) {
-    const lines = (body || "").split(/\r?\n/).filter((l) => !/^(Co-Authored-By|Claude-Session|https:\/\/claude\.ai)/i.test(l.trim()));
-    let html = "", inList = false;
-    for (const raw of lines) {
-      const l = raw.trimEnd();
-      const li = l.match(/^\s*[-*•]\s+(.*)$/);
-      if (li) { if (!inList) { html += "<ul>"; inList = true; } html += `<li>${esc(li[1])}</li>`; continue; }
-      if (inList && /^\s{2,}\S/.test(l) && html.endsWith("</li>")) { html = html.slice(0, -5) + " " + esc(l.trim()) + "</li>"; continue; }
-      if (inList) { html += "</ul>"; inList = false; }
-      if (!l.trim()) continue;
-      if (/:$/.test(l.trim()) || (l.length < 60 && !/[.!?]$/.test(l))) html += `<h4>${esc(l.trim().replace(/:$/, ""))}</h4>`;
-      else html += `<p>${esc(l)}</p>`;
-    }
-    if (inList) html += "</ul>";
-    return html;
-  }
-  // GitHub'daki not yanlış commit mesajından oluştuysa sitede gösterilecek doğru metin
-  const OVERRIDES = {
-    "v0.2.6": "0.2.6: Discord'da \"West Client oynuyor\" ayarsız çalışır\n\n- West Client'ın resmi Discord uygulaması varsayılan olarak kullanılır; Discord Developer Portal'da kimlik oluşturmaya gerek kalmaz.\n- Ayarlar'daki Discord uygulama kimliği alanı isteğe bağlı oldu (boş bırakılırsa resmi uygulama kullanılır).\n- Sosyal akışta hikâyesi olmayan kullanıcılarda hikâye şeridinin akışı kaplaması düzeltildi.",
-  };
-  const titleOf = (rel) => {
-    const first = (rel.body || "").split(/\r?\n/)[0].trim();
-    const t = first.replace(/^\d+\.\d+\.\d+:\s*/, "");
-    return t && t.length < 120 ? t : rel.name || rel.tag_name;
-  };
-  fetch(`https://api.github.com/repos/${REPO}/releases?per_page=30`, { headers: { Accept: "application/vnd.github+json" } })
+  // ───────── Son sürüm etiketi (yalnızca numara) ─────────
+  fetch(`https://api.github.com/repos/${REPO}/releases/latest`, { headers: { Accept: "application/vnd.github+json" } })
     .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
-    .then((list) => {
-      list = list.filter((r) => !r.draft && !r.prerelease).map((r) => (OVERRIDES[r.tag_name] ? { ...r, body: OVERRIDES[r.tag_name] } : r));
-      if (!list.length) throw new Error("boş");
-      const latest = list[0];
-      $("#verTag").textContent = latest.tag_name;
-      $("#verText").textContent = titleOf(latest).slice(0, 60);
-      const tl = $("#timeline");
-      tl.innerHTML = "";
-      list.slice(0, 15).forEach((rel, i) => {
-        const body = (rel.body || "").split(/\r?\n/).slice(1).join("\n");
-        const el = document.createElement("div");
-        el.className = "rel reveal" + (i === 0 ? " latest open" : "");
-        el.innerHTML = `<div class="rel-card"><button class="rel-head"><span class="rel-ver">${esc(rel.tag_name)}</span><h3>${esc(titleOf(rel))}</h3>${i === 0 ? '<span class="rel-badge">SON</span>' : ""}<span class="rel-date">${fmtDate(rel.published_at)}</span><svg class="rel-chev" width="18" height="18"><use href="#i-chev"/></svg></button><div class="rel-body"><div><div class="inner">${notes(body) || '<p class="muted">Ayrıntı yok.</p>'}</div></div></div></div>`;
-        $(".rel-head", el).onclick = () => el.classList.toggle("open");
-        tl.appendChild(el);
-        io.observe(el);
-      });
-    })
-    .catch(() => {
-      $("#timeline").innerHTML = `<p class="muted center">Güncelleme notları şu an yüklenemedi. <a class="amber" href="https://github.com/${REPO}/releases" target="_blank" rel="noopener">GitHub'da gör →</a></p>`;
-    });
+    .then((rel) => { if (rel && rel.tag_name) $("#verTag").textContent = rel.tag_name; })
+    .catch(() => {});
 
 })();
