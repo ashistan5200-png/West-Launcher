@@ -88,10 +88,12 @@ if (-not $p.HasExited) { Shot "4b-kapanmadi"; throw "Kapat sihirbazı kapatmadı
 if (-not (Test-Path (Join-Path $dir "west-launcher.exe"))) { throw "Kurulum dosyaları yok: $dir" }
 if (-not (Test-Path ([Environment]::GetFolderPath("Desktop") + "\West Client.lnk"))) { Write-Host "UYARI: masaüstü kısayolu yok" }
 
-# 2) Yeniden çalıştır: önceden kurulu sayfası, ✕ ile çık
+# 2) Yeniden çalıştır: Kur → "zaten kurulu" seçenekleri → ✕ ile çık
 $p = Start-Process $Setup -PassThru
 Start-Sleep 3
 $r = Win $p
+Click $r 500 375            # Kur
+Start-Sleep 2
 Shot "5-zaten-kurulu"
 Click $r 500 270            # ikinci seçenek
 Shot "6-ikinci-secenek"
@@ -107,12 +109,16 @@ $p.WaitForExit(60000) | Out-Null
 if (-not $p.HasExited) { throw "Pasif kurulum bitmedi" }
 Write-Host "pasif kurulum çıkış kodu: $($p.ExitCode)"
 
-# 4) Kaldırıcı
-$u = Start-Process (Join-Path $dir "uninstall.exe") -PassThru
-Start-Sleep 3
-# Kaldırıcı kendini geçici klasöre kopyalayıp oradan çalışır
-$un = Get-Process | Where-Object { $_.ProcessName -like "Un_*" -or $_.ProcessName -like "Au_*" } | Select-Object -First 1
-if ($un) { $r = Win $un } else { $r = Win $u }
+# 4) Kaldırıcı (kendini geçici klasöre kopyalayıp oradan çalışır: pencereyi başlığından bul)
+Start-Process (Join-Path $dir "uninstall.exe") | Out-Null
+$un = $null
+for ($i = 0; $i -lt 40 -and -not $un; $i++) {
+  Start-Sleep -Milliseconds 300
+  $un = Get-Process | Where-Object { $_.MainWindowHandle -ne 0 -and $_.MainWindowTitle -like "*West Client*" } | Select-Object -First 1
+}
+if (-not $un) { Shot "8-kaldirici-yok"; throw "Kaldırıcı penceresi açılmadı" }
+Start-Sleep 1
+$r = Win $un
 Shot "8-kaldir"
 Click $r 500 323            # Kaldır
 Start-Sleep 5
