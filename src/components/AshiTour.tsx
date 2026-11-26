@@ -38,8 +38,8 @@ const STEPS: Step[] = [
   },
   {
     target: "/skins",
-    title: tx("Skin ve hesaplar"),
-    text: tx("Microsoft ve offline hesapların, skin arşivin ve 3D önizleme burada."),
+    title: tx("Skinler"),
+    text: tx("Skin arşivin, 3D önizleme ve hesapların burada."),
     more: tx("Bilgisayarından .png yükleyebilir, bir oyuncunun skinini alabilir, favorilerini saklayıp tek tıkla hesabına uygulayabilirsin."),
     mood: "think",
   },

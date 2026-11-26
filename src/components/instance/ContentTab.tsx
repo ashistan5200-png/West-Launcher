@@ -266,7 +266,7 @@ export function ContentTab({ instanceId, locked }: { instanceId: string; locked:
             {counts.all === 0 ? (
               <>
                 <p>{tx("Bu instance'ta henüz içerik yok.")}</p>
-                <button className="btn btn-primary" onClick={() => navigate(`/browse?instance=${encodeURIComponent(instanceId)}`)}><Compass size={15} /> {tx("İçerik keşfet")}</button>
+                <button className="btn btn-ghost" onClick={() => navigate(`/browse?instance=${encodeURIComponent(instanceId)}`)}><Compass size={15} /> {tx("İçerik keşfet")}</button>
               </>
             ) : <p className="muted">{tx("Filtreye uyan içerik yok.")}</p>}
           </div>

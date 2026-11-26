@@ -115,7 +115,7 @@ export function AccountPage() {
               {a.active && <span className="chip chip-accent">{tx("Etkin")}</span>}
             </div>
           ))}
-          <button className="btn btn-ghost btn-sm" style={{ alignSelf: "flex-start" }} onClick={() => navigate("/skins")}><Shirt size={14} /> {tx("Skin ve hesaplar")}</button>
+          <button className="btn btn-ghost btn-sm" style={{ alignSelf: "flex-start" }} onClick={() => navigate("/skins")}><Shirt size={14} /> {tx("Hesapları ve skinleri yönet")}</button>
         </section>
       </div>
 

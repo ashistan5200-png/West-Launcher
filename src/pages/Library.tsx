@@ -73,12 +73,12 @@ export function LibraryPage() {
 
   return (
     <div className="lib">
-      <header className="lib-head">
+      <header className="rota-page-head">
         <div>
           <h1>{tx("Kütüphane")}</h1>
           <span className="muted small">{tx("{0} instance · toplam {1}", counts.all, formatDuration(instances.reduce((s, i) => s + i.totalPlaySecs, 0)))}</span>
         </div>
-        <div className="lib-actions">
+        <div className="rota-actions">
           <button className="btn btn-ghost btn-sm" onClick={() => useOnboarding.getState().openWizard()} title={tx("Modrinth App, CurseForge, Prism, MultiMC veya resmi launcher'dan")}>
             <Import size={15} /> {tx("Aktar")}
           </button>

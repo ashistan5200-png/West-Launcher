@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { convertFileSrc } from "@tauri-apps/api/core";
-import { ChevronLeft, ChevronRight, Copy, Download, FolderOpen, Grid3x3, Images, List, Pencil, RefreshCw, Trash2, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Copy, Download, FolderOpen, Grid3x3, Images, List, Pencil, RefreshCw, Search, Trash2, X } from "lucide-react";
 import clsx from "clsx";
 import { useGallery } from "@/stores/gallery";
 import { useInstances } from "@/stores/instances";
@@ -54,36 +54,46 @@ export function GalleryPage() {
   const editing = g.items.find((s) => s.path === g.editing) ?? null;
 
   return (
-    <div className="stack">
-      <div className="toolbar">
-        <div className="search grow">
-          <Images size={15} />
-          <input placeholder={tx("Dosya adı veya instance ara…")} value={query} onChange={(e) => setQuery(e.target.value)} />
+    <div className="rota-page">
+      <header className="rota-page-head">
+        <div>
+          <h1>{tx("Galeri")}</h1>
+          <p>{g.items.length === 0 ? tx("Oyunda F2 ile çektiğin ekran görüntüleri") : tx("{0} ekran görüntüsü", g.items.length)}</p>
         </div>
+        <div className="rota-actions">
+          {g.instance && (
+            <button className="btn btn-ghost" onClick={async () => api.openPath(await api.screenshotsFolder(g.instance!))}><FolderOpen size={15} /> {tx("Klasörü aç")}</button>
+          )}
+          <button className="icon-btn" title={tx("Yenile")} onClick={() => g.load()}><RefreshCw size={15} className={clsx(g.loading && "spin")} /></button>
+        </div>
+      </header>
+
+      <div className="rota-toolbar">
+        <label className="rota-search grow">
+          <Search size={14} />
+          <input placeholder={tx("Dosya adı veya instance ara")} value={query} onChange={(e) => setQuery(e.target.value)} />
+        </label>
         <select className="select-sm" value={g.instance ?? ""} onChange={(e) => g.setInstance(e.target.value || null)}>
           <option value="">{tx("Tüm instance'lar")}</option>
           {instances.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
         </select>
-        <div className="segmented mini">
-          <button className={clsx(layout === "grid" && "active")} onClick={() => setLayout("grid")} title={tx("Izgara")}><Grid3x3 size={14} /></button>
-          <button className={clsx(layout === "list" && "active")} onClick={() => setLayout("list")} title={tx("Liste")}><List size={14} /></button>
+        <div className="rota-seg" role="group" aria-label={tx("Görünüm")}>
+          <button className={clsx(layout === "grid" && "active")} onClick={() => setLayout("grid")} title={tx("Izgara")} aria-pressed={layout === "grid"}><Grid3x3 size={14} /></button>
+          <button className={clsx(layout === "list" && "active")} onClick={() => setLayout("list")} title={tx("Liste")} aria-pressed={layout === "list"}><List size={14} /></button>
         </div>
-        <button className="icon-btn" title={tx("Yenile")} onClick={() => g.load()}><RefreshCw size={15} className={clsx(g.loading && "spin")} /></button>
-        {g.instance && (
-          <button className="icon-btn" title={tx("Klasörü aç")} onClick={async () => api.openPath(await api.screenshotsFolder(g.instance!))}><FolderOpen size={15} /></button>
-        )}
       </div>
 
       {filtered.length === 0 && !g.loading && (
-        <div className="empty small-empty">
-          <Images size={34} />
-          <p className="muted">{tx("Henüz ekran görüntüsü yok. Oyunda")} <kbd>F2</kbd>{tx("'ye bas; yeni görüntüler burada kendiliğinden belirir.")}</p>
+        <div className="rota-empty-box">
+          <Images size={28} />
+          <strong>{query ? tx("Eşleşen görüntü yok") : tx("Henüz ekran görüntüsü yok")}</strong>
+          {!query && <span>{tx("Oyunda")} <kbd>F2</kbd>{tx("'ye bas; yeni görüntüler burada kendiliğinden belirir.")}</span>}
         </div>
       )}
 
       {groups.map(([day, items]) => (
         <section key={day} className="stack" style={{ gap: 8 }}>
-          <h3 className="gallery-day">{day} <span className="muted tiny">{items.length}</span></h3>
+          <h2 className="rota-day">{day} <span>{items.length}</span></h2>
           <div className={layout === "grid" ? "shot-grid" : "shot-list"}>
             {items.map((s) => <ShotCard key={s.path} s={s} layout={layout} />)}
           </div>

@@ -11,7 +11,7 @@ const NAV = [
   { to: "/", icon: Home, label: tx("Ana sayfa") },
   { to: "/library", icon: Library, label: tx("Kütüphane") },
   { to: "/browse", icon: Compass, label: tx("Keşfet") },
-  { to: "/skins", icon: Shirt, label: tx("Skin ve hesaplar") },
+  { to: "/skins", icon: Shirt, label: tx("Skinler") },
   { to: "/gallery", icon: Images, label: tx("Galeri") },
   { to: "/news", icon: Newspaper, label: tx("Haberler") },
 ];

@@ -16,7 +16,7 @@ const dateTR = (iso: string) => new Date(iso).toLocaleDateString(locale(), { day
 /** Mojang'ın sürüm notu HTML'ini güvenli hale getirir: betik, iframe ve olay öznitelikleri atılır. */
 function sanitize(html: string): string {
   const doc = new DOMParser().parseFromString(html, "text/html");
-  doc.querySelectorAll(tx("script, style, iframe, object, embed, form, link, meta")).forEach((n) => n.remove());
+  doc.querySelectorAll("script, style, iframe, object, embed, form, link, meta").forEach((n) => n.remove());
   doc.querySelectorAll("*").forEach((el) => {
     for (const a of [...el.attributes]) {
       const v = a.value.trim().toLowerCase();
@@ -35,10 +35,16 @@ function sanitize(html: string): string {
 export function NewsPage() {
   const [tab, setTab] = useState<Tab>("minecraft");
   return (
-    <div className="stack">
-      <div className="tabs">
-        {([["minecraft", tx("Minecraft güncellemeleri")], ["mods", tx("Mod güncellemeleri")], ["assets", tx("Yeni bloklar ve sesler")]] as const).map(([id, label]) => (
-          <button key={id} className={clsx("tab", tab === id && "active")} onClick={() => setTab(id)}>{label}</button>
+    <div className="rota-page">
+      <header className="rota-page-head">
+        <div>
+          <h1>{tx("Haberler")}</h1>
+          <p>{tx("Minecraft sürüm notları, kurduğun modların güncellemeleri ve yeni içerikler")}</p>
+        </div>
+      </header>
+      <div className="rota-tabs" role="tablist">
+        {([["minecraft", tx("Minecraft")], ["mods", tx("Mod güncellemeleri")], ["assets", tx("Yeni bloklar ve sesler")]] as const).map(([id, label]) => (
+          <button key={id} role="tab" aria-selected={tab === id} className={clsx(tab === id && "active")} onClick={() => setTab(id)}>{label}</button>
         ))}
       </div>
       {tab === "minecraft" && <PatchNotes />}
@@ -62,16 +68,16 @@ function PatchNotes() {
 
   return (
     <>
-      <div className="pills">
+      <div className="rota-chips">
         {(["all", "release", "snapshot"] as const).map((f) => (
-          <button key={f} className={clsx("pill", filter === f && "active")} onClick={() => setFilter(f)}>
+          <button key={f} className={clsx(filter === f && "active")} onClick={() => setFilter(f)}>
             {f === "all" ? tx("Tümü") : f === "release" ? tx("Tam sürümler") : tx("Snapshot'lar")}
           </button>
         ))}
       </div>
       {error && <div className="banner banner-error">{error}</div>}
       {!notes && !error && <div className="center pad muted"><Loader2 className="spin" size={18} /></div>}
-      {notes && !error && list.length === 0 && <p className="muted center pad">{notes.length ? tx("Bu filtrede sürüm notu yok.") : tx("Sürüm notları şu an alınamadı. Biraz sonra tekrar bak.")}</p>}
+      {notes && !error && list.length === 0 && <div className="rota-empty-box"><strong>{notes.length ? tx("Bu filtrede sürüm notu yok") : tx("Sürüm notları şu an alınamadı")}</strong>{!notes.length && <span>{tx("İnternet bağlantını kontrol et; biraz sonra tekrar bak.")}</span>}</div>}
       <div className="note-grid">
         {list.map((n) => (
           <button key={n.id} className="note-card" onClick={() => setReading(n)}>
@@ -144,7 +150,7 @@ function ModUpdates() {
       <p className="muted tiny">{tx("Modrinth'te en çok indirilen 40 modun en son yayınlanan sürümleri, yeniden eskiye.")}</p>
       {error && <div className="banner banner-error">{error}</div>}
       {!mods && !error && <div className="center pad muted"><Loader2 className="spin" size={18} /></div>}
-      {mods && !error && mods.length === 0 && <p className="muted center pad">{tx("Şu an gösterilecek mod güncellemesi yok.")}</p>}
+      {mods && !error && mods.length === 0 && <div className="rota-empty-box"><strong>{tx("Mod güncellemesi yok")}</strong><span>{tx("Kurduğun modların yeni sürümleri çıktığında burada görünür.")}</span></div>}
       <div className="content-list">
         {(mods ?? []).map((m) => (
           <div key={m.projectId} className="content-row mod-update">
