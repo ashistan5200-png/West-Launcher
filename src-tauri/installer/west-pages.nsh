@@ -21,6 +21,8 @@ Function WestMainPage
   SetCtlColors $WestLast "${WEST_TEXT}" "${WEST_FIELD}"
   Push $WestLast
   Call westRoundSmall
+  ; Alan zemini yazı kutusunun altında kalsın
+  System::Call 'user32::SetWindowPos(p $WestLast, p 1, i 0, i 0, i 0, i 0, i 0x13)'
   !insertmacro WEST_CTL EDIT ${DEFAULT_STYLES}|${WS_TABSTOP}|${ES_AUTOHSCROLL} 0 333 210 240 20 "$INSTDIR"
   StrCpy $WestDirEdit $WestLast
   SendMessage $WestDirEdit ${WM_SETFONT} $WestF_Body 1

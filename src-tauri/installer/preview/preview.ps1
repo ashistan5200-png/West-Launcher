@@ -12,6 +12,24 @@ public class U {
   [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
   [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
   public struct RECT { public int L, T, R, B; }
+  delegate bool EnumProc(IntPtr h, IntPtr l);
+  [DllImport("user32.dll")] static extern bool EnumChildWindows(IntPtr p, EnumProc f, IntPtr l);
+  [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetClassName(IntPtr h, System.Text.StringBuilder s, int n);
+  [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetWindowText(IntPtr h, System.Text.StringBuilder s, int n);
+  [DllImport("user32.dll")] static extern int GetDlgCtrlID(IntPtr h);
+  [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr h);
+  [DllImport("user32.dll")] static extern IntPtr GetParent(IntPtr h);
+  // Penceredeki tüm denetimler: sınıf, kimlik, görünürlük, konum, yazı
+  public static string Dump(IntPtr top) {
+    var sb = new System.Text.StringBuilder();
+    EnumChildWindows(top, (h, l) => {
+      var c = new System.Text.StringBuilder(64); GetClassName(h, c, 64);
+      var t = new System.Text.StringBuilder(128); GetWindowText(h, t, 128);
+      RECT r; GetWindowRect(h, out r);
+      sb.AppendLine(String.Format("  {0} parent={1} cls={2} id={3} vis={4} rect={5},{6},{7},{8} text={9}", h, GetParent(h), c, GetDlgCtrlID(h), IsWindowVisible(h), r.L, r.T, r.R - r.L, r.B - r.T, t));
+      return true; }, IntPtr.Zero);
+    return sb.ToString();
+  }
 }
 "@
 
@@ -21,12 +39,14 @@ function Shot($name) {
   $g = [Drawing.Graphics]::FromImage($bmp)
   $g.CopyFromScreen($b.Location, [Drawing.Point]::Empty, $b.Size)
   $bmp.Save((Join-Path $Out "$name.png"))
+  if ($script:cur -and -not $script:cur.HasExited) { $script:cur.Refresh(); if ($script:cur.MainWindowHandle -ne 0) { [U]::Dump($script:cur.MainWindowHandle) | Out-File (Join-Path $Out "$name.txt") } }
   $g.Dispose(); $bmp.Dispose()
   Write-Host "görüntü: $name"
 }
 
 # Sihirbaz penceresinin sol üst köşesi (pencere 720×440, 96 DPI)
 function Win($proc) {
+  $script:cur = $proc
   for ($i = 0; $i -lt 40; $i++) {
     $proc.Refresh()
     if ($proc.MainWindowHandle -ne 0) {

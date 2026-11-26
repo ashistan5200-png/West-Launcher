@@ -304,6 +304,10 @@ Function ${PFX}westProgressShow
   Call ${PFX}westHideNative
   FindWindow $0 "#32770" "" $HWNDPARENT
   SetCtlColors $0 "${WEST_TEXT}" "${WEST_BG}"
+  ; Windows'un sayfası kendi boyutunda gelir: tüm pencereyi kaplasın
+  !insertmacro WEST_PX $WW ${WEST_W}
+  !insertmacro WEST_PX $WH ${WEST_H}
+  System::Call 'user32::SetWindowPos(p r0, p 0, i 0, i 0, i $WW, i $WH, i 0x14)'
   ; Sayfadaki her şeyi gizle; ilerleme çubuğu ve durum yazısı yeniden yerleşir
   StrCpy $1 0
   hide:
