@@ -86,29 +86,6 @@
   };
   requestAnimationFrame(draw);
 
-  // ───────── Yükselen parçacıklar ─────────
-  if (!reduce) {
-    const m = $("#motes");
-    for (let i = 0; i < 26; i++) {
-      const el = document.createElement("i");
-      el.style.left = `${(i * 37 + 7) % 100}%`;
-      el.style.animationDuration = `${14 + ((i * 7) % 14)}s`;
-      el.style.animationDelay = `${-((i * 3.3) % 20)}s`;
-      m.appendChild(el);
-    }
-  }
-
-  // ───────── Eğik pencere: kaydırdıkça düzleşir ─────────
-  const win = $("#tiltWindow");
-  const tilt = () => {
-    const rect = win.getBoundingClientRect();
-    const p = Math.min(1, Math.max(0, 1 - (rect.top - innerHeight * 0.15) / (innerHeight * 0.7)));
-    win.style.setProperty("--tilt", `${18 * (1 - p)}deg`);
-    win.style.setProperty("--scale", `${0.94 + 0.06 * p}`);
-  };
-  addEventListener("scroll", tilt, { passive: true });
-  tilt();
-
   // ───────── Kaydırınca beliren öğeler + sayaçlar ─────────
   const io = new IntersectionObserver((entries) => {
     for (const e of entries) {

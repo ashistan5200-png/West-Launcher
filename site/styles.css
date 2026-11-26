@@ -316,3 +316,20 @@ main, footer { position: relative; z-index: 1; }
   .rel-head h3 { flex-basis: calc(100% - 40px); font-size: 17px; }
   .rel-date { order: 3; }
 }
+
+/* ═══════════ "Rota" tasarım dili (launcher ve oyun içiyle aynı) ═══════════
+   Düz yüzeyler, 1px çizgiler, amber yalnızca birincil eylem ve vurgu için. Süs animasyonları yok. */
+:root { --radius: 10px; }
+.motes, .glow-ring, .scroll-hint { display: none !important; }
+.grad { background: none; -webkit-background-clip: initial; background-clip: initial; color: var(--amber); animation: none; }
+.btn-primary, .btn-primary:hover { background: var(--amber); box-shadow: none; }
+.btn-primary:hover { background: var(--amber2); }
+.btn { border-radius: 8px; }
+.nav .btn { border-radius: 8px; }
+.hero h1 { font-size: clamp(38px, 5.6vw, 68px); letter-spacing: -0.03em; text-shadow: none; font-weight: 750; }
+.showcase { perspective: none; }
+.window { transform: none !important; border-radius: 12px; box-shadow: 0 24px 60px rgb(0 0 0 / .45); border-color: rgb(255 255 255 / .1); }
+.eyebrow { font-weight: 700; letter-spacing: .08em; font-size: 12px; }
+.frame { border-radius: 10px; box-shadow: none; }
+.frame img { border-radius: 10px; }
+.reveal { transition-duration: .35s !important; }
