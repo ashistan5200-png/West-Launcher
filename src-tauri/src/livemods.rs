@@ -1166,14 +1166,20 @@ pub async fn route(method: &str, path: &str, query: &str, body: &Value) -> Resul
             if !url.starts_with("https://") {
                 return Err(AppError::msg(crate::i18n::t("Geçersiz istek")));
             }
-            if let Some(hit) = ICONS.get_or_init(Default::default).lock().ok().and_then(|m| m.get(&url).cloned()) {
+            // Simgeler 64×64; galeri görselleri (Keşfet kartı, ayrıntı) istenen boyutta kırpılır
+            let (w, h) = (
+                param(query, "w").and_then(|v| v.parse::<u32>().ok()).unwrap_or(64).clamp(16, 640),
+                param(query, "h").and_then(|v| v.parse::<u32>().ok()).unwrap_or(64).clamp(16, 360),
+            );
+            let key = format!("{w}x{h}|{url}");
+            if let Some(hit) = ICONS.get_or_init(Default::default).lock().ok().and_then(|m| m.get(&key).cloned()) {
                 return Ok(json!({ "png": hit }));
             }
             let bytes = state.http.client.get(&url).timeout(std::time::Duration::from_secs(15)).send().await?.error_for_status()?.bytes().await?;
             let png = tokio::task::spawn_blocking(move || -> Result<String> {
                 use base64::Engine;
                 let img = image::load_from_memory(&bytes).map_err(|e| AppError::msg(e.to_string()))?;
-                let thumb = img.resize_to_fill(64, 64, image::imageops::FilterType::Triangle);
+                let thumb = img.resize_to_fill(w, h, image::imageops::FilterType::Triangle);
                 let mut out = std::io::Cursor::new(Vec::new());
                 thumb.write_to(&mut out, image::ImageFormat::Png).map_err(|e| AppError::msg(e.to_string()))?;
                 Ok(base64::engine::general_purpose::STANDARD.encode(out.into_inner()))
@@ -1184,7 +1190,7 @@ pub async fn route(method: &str, path: &str, query: &str, body: &Value) -> Resul
                 if m.len() > 400 {
                     m.clear();
                 }
-                m.insert(url, png.clone());
+                m.insert(key, png.clone());
             }
             Ok(json!({ "png": png }))
         }

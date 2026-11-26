@@ -57,8 +57,24 @@ public final class MenuScreen implements WestScreen {
 
     // ───────── Çerçeve ─────────
 
+    /** Arayüz ölçeği büyükse ekran küçültülerek çizilir (en az 600×340 birim) */
+    private float k = 1f;
+
     @Override
-    public void render(Gfx g, int mx, int my, float delta) {
+    public void render(Gfx real, int mx, int my, float delta) {
+        if (!WestHud.game.inWorld()) real.panorama(delta);
+        real.blurBehind();
+        dev.west.hud.api.ScaledGfx sg = new dev.west.hud.api.ScaledGfx(real, 600, 340);
+        k = sg.k;
+        sg.begin();
+        try {
+            renderScaled(sg, sg.toLogical(mx), sg.toLogical(my), delta);
+        } finally {
+            sg.end();
+        }
+    }
+
+    private void renderScaled(Gfx g, int mx, int my, float delta) {
         anim.frame();
         float time = (System.nanoTime() - opened) / 1e9f;
         ui.begin(g, WestHud.theme(), mx, my, time);
@@ -66,18 +82,14 @@ public final class MenuScreen implements WestScreen {
         int sw = g.width(), sh = g.height();
         float appear = ui.animate ? 1 - (float) Math.pow(1 - Math.min(1, time * 5f), 3) : 1;
 
-        if (!WestHud.game.inWorld()) g.panorama(delta);
-        g.blurBehind();
-        g.fill(0, 0, sw, sh, (int) (0xA0 * appear) << 24 | 0x06070A);
+        // Tam ekran: arkadaki oyun/manzara hafifçe görünür
+        g.fill(0, 0, sw, sh, (int) (0xE6 * appear) << 24 | 0x0B0C0F);
 
-        int pw = Math.min(680, sw - 16), ph = Math.min(400, sh - 16);
-        int px = (sw - pw) / 2, py = (sh - ph) / 2 + Math.round((1 - appear) * 8);
-        Rota.window(g, px, py, pw, ph);
-
-        int side = Rota.clamp(pw * 28 / 100, 124, 166);
+        int pw = sw, ph = sh, px = 0, py = Math.round((1 - appear) * 8);
+        int side = Rota.clamp(pw * 22 / 100, 150, 210);
         sidebar(px, py, side, ph);
 
-        int cx = px + side + 16, cw = pw - side - 32;
+        int cx = px + side + 22, cw = pw - side - 50;
         int top = header(g, px, py, pw, cx, cw);
         if (top < 0) { ui.end(); return; }
 
@@ -172,11 +184,14 @@ public final class MenuScreen implements WestScreen {
 
     private void sidebar(int x, int y, int w, int h) {
         Gfx g = ui.g;
-        Rota.side(g, x, y, w, h);
-        Icons.draw(g, Icon.LOGO, x + 12, y + 12, 12, ui.t.accent | 0xFF000000);
-        g.textBold(ui.fit("West Client", w - 40), x + 29, y + 14, Rota.TEXT, false);
+        Rota.dock(g, x, 0, w, g.height());
+        if (!g.texture("west_companion:textures/gui/west_mark.png", x + 12, y + 12, 18, 18, 0, 0, 256, 256, 256, 256, 0xFFFFFFFF))
+            Icons.draw(g, Icon.LOGO, x + 12, y + 12, 16, ui.t.accent | 0xFF000000);
+        g.textBold("West", x + 36, y + 13, Rota.TEXT, false);
+        g.textBold("Client", x + 36 + g.textBoldWidth("West "), y + 13, ui.t.accent | 0xFF000000, false);
+        Rota.small(g, ui.fit(Tr.t("Oyun içi menü"), Math.round((w - 44) / 0.8f)), x + 36, y + 23, Rota.FAINT);
 
-        int ny = y + 38, nx = x + 10, nw = w - 20;
+        int ny = y + 48, nx = x + 12, nw = w - 24;
         Rota.section(g, Tr.t("Oyun"), nx + 2, ny);
         ny += 10;
         ny = navItem(Page.FEATURES, nx, ny, nw);
@@ -246,7 +261,7 @@ public final class MenuScreen implements WestScreen {
     private int featuresPage(int x, int y, int w) {
         String q = search.toLowerCase(Locale.ROOT).trim();
         List<Feature> all = features();
-        int cols = w >= 380 ? 2 : 1, gap = 6, rw = (w - gap * (cols - 1)) / cols, rh = 34;
+        int gap = 8, cols = Math.max(2, (w + gap) / (124 + gap)), cw = (w - gap * (cols - 1)) / cols, ch = 94;
         boolean any = false;
         for (int c = 1; c <= 3; c++) {
             if (cat != 0 && cat != c) continue;
@@ -262,34 +277,58 @@ public final class MenuScreen implements WestScreen {
                 Rota.section(ui.g, CATS[c], x + 2, y + 2);
                 y += 12;
             }
-            for (int i = 0; i < list.size(); i++) {
-                featureRow(list.get(i), x + (i % cols) * (rw + gap), y + (i / cols) * (rh + gap), rw, rh);
-            }
-            y += ((list.size() + cols - 1) / cols) * (rh + gap) + 6;
+            for (int i = 0; i < list.size(); i++) featureCard(list.get(i), x + (i % cols) * (cw + gap), y + (i / cols) * (ch + gap), cw, ch);
+            y += ((list.size() + cols - 1) / cols) * (ch + gap) + 8;
         }
         if (!any) return y + Rota.empty(ui, Icon.SEARCH, Tr.t("Eşleşen özellik yok"), Tr.t("Başka bir sözcük dene ya da süzgeci kaldır."), x, y + 10, w);
         return y;
     }
 
-    private void featureRow(Feature f, int x, int y, int w, int h) {
+    /** Özellik kartı: üstte canlı önizleme (HUD öğesi gerçekten çizilir), altta ad, açıklama ve anahtar */
+    private void featureCard(Feature f, int x, int y, int w, int h) {
         Gfx g = ui.g;
         boolean on = f.on.getAsBoolean();
-        float hv = anim.get("row" + f.name, ui.hover(x, y, w, h));
-        Rota.card(g, x, y, w, h, hv);
+        float hv = anim.get("card" + f.name, ui.hover(x, y, w, h));
+        float en = anim.get("en" + f.name, on);
         int acc = ui.t.accent | 0xFF000000;
-        Ui.round(g, x + 7, y + 7, 20, 20, Rota.RADIUS_SM, on ? Theme.alpha(acc, 0x2A) : 0x10FFFFFF);
-        Icons.draw(g, f.icon, x + 12, y + 12, 10, on ? acc : Rota.MUTED);
-        int right = 36 + (f.element != null ? 20 : 0);
-        g.text(ui.fit(f.name, w - 40 - right), x + 34, y + 7, Rota.TEXT, false);
-        Rota.smallFit(ui, f.desc == null ? "" : f.desc, x + 34, y + 19, w - 40 - right, Rota.FAINT);
-        // Önce dişli ve anahtar (tıklamayı onlar alır), sonra satırın kendisi
-        if (f.element != null && Rota.iconButton(ui, anim, "gear" + f.name, Icon.GEAR, x + w - 54, y + 8, 18, 0)) {
-            WestHud.game.click();
-            editing = f.element;
-            scroll = scrollTarget = 0;
-            return;
+        Rota.card(g, x, y, w, h, hv);
+        if (on) Ui.outline(g, x, y, w, h, Rota.RADIUS, Theme.alpha(acc, (int) (0x70 * en)));
+        // Önizleme alanı
+        int px = x + 6, py = y + 6, pw = w - 12, ph = 52;
+        Ui.round(g, px, py, pw, ph, Rota.RADIUS_SM, 0xFF0D0E12);
+        g.scissor(px, py, px + pw, py + ph);
+        if (f.element != null) {
+            HudElement e = f.element;
+            try {
+                int[] sz = e.size(g, WestHud.game);
+                float sc = Math.min(1.6f, Math.min((pw - 16) / (float) Math.max(1, sz[0]), (ph - 12) / (float) Math.max(1, sz[1])));
+                g.push();
+                g.translate(px + (pw - sz[0] * sc) / 2f, py + (ph - sz[1] * sc) / 2f);
+                g.scale(sc);
+                e.draw(g, WestHud.game, WestHud.theme(), sz[0], sz[1]);
+                g.pop();
+            } catch (Throwable ex) {
+                Icons.draw(g, f.icon, px + pw / 2 - 10, py + ph / 2 - 10, 20, Rota.MUTED);
+            }
+        } else {
+            Icons.draw(g, f.icon, px + pw / 2 - 11, py + ph / 2 - 11, 22, Theme.mix(Rota.FAINT, acc, en));
         }
-        boolean nv = Rota.toggle(ui, on, x + w - 30, y + 11);
+        g.noScissor();
+        if (!on) Ui.round(g, px, py, pw, ph, Rota.RADIUS_SM, 0x8C0D0E12);
+        // Ad, açıklama, anahtar
+        int ty = py + ph + 7;
+        g.text(ui.fit(f.name, w - 46), x + 8, ty, on ? Rota.TEXT : Rota.MUTED, false);
+        Rota.smallFit(ui, f.desc == null ? "" : f.desc, x + 8, ty + 12, w - 46, Rota.FAINT);
+        if (f.element != null) {
+            Ui.round(g, px + pw - 22, py + 4, 18, 18, Rota.RADIUS_SM, 0x99000000);
+            if (Rota.iconButton(ui, anim, "gear" + f.name, Icon.GEAR, px + pw - 22, py + 4, 18, 0)) {
+                WestHud.game.click();
+                editing = f.element;
+                scroll = scrollTarget = 0;
+                return;
+            }
+        }
+        boolean nv = Rota.toggle(ui, on, x + w - 30, ty + 2);
         if (nv != on || ui.clicked(x, y, w, h)) {
             f.toggle.run();
             WestHud.save();
@@ -521,7 +560,7 @@ public final class MenuScreen implements WestScreen {
 
     @Override
     public void mouseClicked(double x, double y, int button) {
-        ui.click((int) x, (int) y, button);
+        ui.click((int) Math.floor(x / k), (int) Math.floor(y / k), button);
     }
 
     @Override

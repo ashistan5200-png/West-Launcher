@@ -96,9 +96,11 @@ public final class TitleHome implements WestScreen {
 
         // ── alt: oyuncu + ayar simgeleri + çıkış ──
         int by = sh - 14 - 18 - 8 - 20;
-        Rota.rule(g, x, by - 8, w);
-        g.playerFace(x + 1, by + 1, 16);
-        g.textBold(ui.fit(game.playerName(), w - 24), x + 22, by + 5, Rota.TEXT, false);
+        if (y + 6 <= by - 8) {
+            Rota.rule(g, x, by - 8, w);
+            g.playerFace(x + 1, by + 1, 16);
+            g.textBold(ui.fit(game.playerName(), w - 24), x + 22, by + 5, Rota.TEXT, false);
+        } else Rota.rule(g, x, by + 18, w); // kısa ekran: oyuncu satırı düşer, gezinmeyle çakışmaz
         by += 26;
         Object[][] icons = {
             { Icon.GEAR, Tr.t("Ayarlar"), (Runnable) () -> game.open(Game.Target.OPTIONS) },

@@ -422,18 +422,24 @@ public final class ModBridge {
         }, e -> installing.remove(projectId));
     }
 
-    /** Simge (PNG baytları) ya da henüz yoksa null; ilk istekte arka planda indirilir */
+    /** Simge (64×64 PNG baytları) ya da henüz yoksa null; ilk istekte arka planda indirilir */
     public byte[] icon(String url) {
+        return image(url, 64, 64);
+    }
+
+    /** Galeri görseli w×h'ye kırpılmış olarak (Keşfet kartı, ayrıntı başlığı) */
+    public byte[] image(String url, int w, int h) {
         if (url == null || url.isEmpty() || !url.startsWith("https://")) return null;
-        byte[] b = icons.get(url);
+        String key = w + "x" + h + "|" + url;
+        byte[] b = icons.get(key);
         if (b != null) return b.length == 0 ? null : b;
-        if (iconBusy.putIfAbsent(url, true) == null && iconBusy.size() < 64) {
-            get("/mods/icon?url=" + enc(url), v -> {
-                icons.put(url, Base64.getDecoder().decode(v.getAsJsonObject().get("png").getAsString()));
-                iconBusy.remove(url);
+        if (iconBusy.putIfAbsent(key, true) == null && iconBusy.size() < 64) {
+            get("/mods/icon?url=" + enc(url) + "&w=" + w + "&h=" + h, v -> {
+                icons.put(key, Base64.getDecoder().decode(v.getAsJsonObject().get("png").getAsString()));
+                iconBusy.remove(key);
             }, e -> {
-                icons.put(url, new byte[0]);
-                iconBusy.remove(url);
+                icons.put(key, new byte[0]);
+                iconBusy.remove(key);
             });
         }
         return null;
