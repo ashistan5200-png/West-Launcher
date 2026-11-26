@@ -48,6 +48,16 @@ public final class WestMod implements ClientModInitializer {
                     return 1;
                 }));
         });
+        // Yalnızca geliştirmede (-Dwest.dev=1): /westpanorama ana menü arka planı için 6 yüzlü panorama çeker
+        if (Boolean.getBoolean("west.dev")) net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback.EVENT.register((dispatcher, ctx) ->
+                dispatcher.register(net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal("westpanorama").executes(c -> {
+                    WestHud.later(() -> WestHud.later(() -> {
+                        var mc = net.minecraft.client.Minecraft.getInstance();
+                        var msg = mc.grabPanoramixScreenshot(mc.gameDirectory);
+                        WestHud.LOG.info("Panorama: {}", msg.getString());
+                    }));
+                    return 1;
+                })));
         ClientTickEvents.END_CLIENT_TICK.register(WestMod::tick);
         // Arka planda açılan devralma oturumu: pencere hemen simge durumuna
         dev.west.hud.mods.Handoff.early(WestHud.game);
