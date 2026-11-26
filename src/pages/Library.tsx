@@ -11,6 +11,7 @@ import { CreateInstanceModal } from "@/components/CreateInstanceModal";
 import type { Instance, LoaderKind } from "@/lib/types";
 import { LOADER_LABEL, formatDuration, formatRelative } from "@/lib/format";
 import { tx } from "@/lib/i18n";
+import { api } from "@/lib/ipc";
 
 type Filter = "all" | "templates" | LoaderKind;
 type Sort = "recent" | "name" | "played" | "created" | "version";
@@ -171,9 +172,36 @@ function Tile({ i }: { i: Instance }) {
             {LOADER_LABEL[i.loader.kind]} {i.mcVersion} · {r ? tx("Oynanıyor") : i.totalPlaySecs > 0 ? formatDuration(i.totalPlaySecs) : formatRelative(i.lastPlayed)}
           </span>
         </div>
-        <PlayBtn i={i} cls="rota-mini" />
+        {i.isTemplate ? <FromTemplate i={i} /> : <PlayBtn i={i} cls="rota-mini" />}
       </div>
     </div>
+  );
+}
+
+/** Şablon kartında: bu şablondan yeni bir instance oluştur ve aç */
+function FromTemplate({ i }: { i: Instance }) {
+  const navigate = useNavigate();
+  const refresh = useInstances((s) => s.refresh);
+  const [busy, setBusy] = useState(false);
+  return (
+    <button
+      className="rota-mini"
+      title={tx("Bu şablondan yeni instance oluştur")}
+      aria-label={tx("Bu şablondan yeni instance oluştur")}
+      disabled={busy}
+      onClick={async () => {
+        setBusy(true);
+        try {
+          const created = await api.createFromTemplate(i.id, i.name.replace(/ şablonu$/, ""));
+          await refresh();
+          navigate(`/instance/${created.id}`);
+        } finally {
+          setBusy(false);
+        }
+      }}
+    >
+      {busy ? <Loader2 size={15} className="spin" /> : <Plus size={15} />}
+    </button>
   );
 }
 

@@ -131,6 +131,8 @@ public final class TitleHome implements WestScreen {
         }
         if (tip != null) tooltip(g, tip, Math.min(mx + 10, sw - g.textWidth(tip) - 16), my - 18);
 
+        brand(g, sw, in);
+
         // ── sağ alt: Essential / Flashback ──
         cards.showHub = false;
         int cw = Rota.clamp(Math.round(sw * 0.3f), 160, 220);
@@ -191,6 +193,33 @@ public final class TitleHome implements WestScreen {
             y += rh;
         }
         return y;
+    }
+
+    /** Sağ üst köşe: West Client pusula işareti ve altında adı (manzaranın üstünde, gölgeli) */
+    private void brand(Gfx g, int sw, float in) {
+        int a = Math.round(255 * in);
+        if (a < 8) return;
+        int mark = Rota.clamp(Math.round(g.height() * 0.11f), 30, 52);
+        String west = "West", client = " Client";
+        float sc = mark >= 44 ? 1.6f : 1.35f;
+        int tw = Math.round((g.textBoldWidth(west) + g.textBoldWidth(client)) * sc);
+        int right = sw - 16, top = 14;
+        int mx = right - Math.max(mark, tw) / 2 - mark / 2;
+        if (!g.texture("west_companion:textures/gui/west_mark.png", mx, top, mark, mark, 0, 0, 256, 256, 256, 256, Theme.alpha(0xFFFFFFFF, a)))
+            Icons.draw(g, Icon.LOGO, mx, top, mark, Theme.alpha(WestHud.theme().accent, a));
+        int ty = top + mark + 6, tx = right - Math.max(mark, tw) / 2 - tw / 2;
+        g.push();
+        g.translate(tx, ty);
+        g.scale(sc);
+        g.textBold(west, 0, 0, Theme.alpha(0xFFFFFFFF, a), true);
+        g.textBold(client.trim(), g.textBoldWidth(west + " "), 0, Theme.alpha(WestHud.theme().accent | 0xFF000000, a), true);
+        g.pop();
+        String ver = Tr.t("Minecraft {0}", WestHud.game.minecraftVersion());
+        g.push();
+        g.translate(right - Math.max(mark, tw) / 2 - Rota.smallWidth(g, ver) / 2f, ty + Math.round(10 * sc) + 4);
+        g.scale(0.8f);
+        g.text(ver, 0, 0, Theme.alpha(0xFFE6E7EA, (int) (a * 0.85f)), true);
+        g.pop();
     }
 
     private boolean nav(Icon icon, String label, int x, int y, int w, int badge, boolean warn) {

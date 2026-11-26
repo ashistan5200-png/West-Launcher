@@ -20,7 +20,7 @@ public final class WestHost extends Screen {
     }
     private boolean modelDrag;
 
-    WestHost(WestScreen inner) {
+    public WestHost(WestScreen inner) {
         super(Component.literal("West"));
         this.inner = inner;
     }

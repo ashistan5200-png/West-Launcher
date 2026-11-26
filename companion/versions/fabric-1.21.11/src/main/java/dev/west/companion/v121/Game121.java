@@ -384,7 +384,7 @@ public final class Game121 implements Game {
     private static volatile boolean worldsLoading;
 
     /** Ana menü yeniden açıldığında dünya listesi tazelensin */
-    static void refreshWorlds() {
+    public static void refreshWorlds() {
         if (!worldsLoading) worldCache = null;
     }
 
