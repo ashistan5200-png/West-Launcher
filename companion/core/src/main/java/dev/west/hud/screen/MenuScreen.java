@@ -8,6 +8,7 @@ import dev.west.hud.api.Gfx;
 import dev.west.hud.hud.HudElement;
 import dev.west.hud.ui.Icons;
 import dev.west.hud.ui.Icons.Icon;
+import dev.west.hud.ui.Rota;
 import dev.west.hud.ui.Theme;
 import dev.west.hud.ui.Ui;
 
@@ -71,9 +72,7 @@ public final class MenuScreen implements WestScreen {
 
         int pw = Math.min(660, sw - 16), ph = Math.min(390, sh - 16);
         int px = (sw - pw) / 2, py = (sh - ph) / 2 + Math.round((1 - appear) * 12);
-        Ui.round(g, px - 1, py + 3, pw + 2, ph + 2, 13, 0x50000000);
-        Ui.round(g, px, py, pw, ph, 12, 0xF00E0F16);
-        Ui.outline(g, px, py, pw, ph, 12, 0x1FFFFFFF);
+        Rota.window(g, px, py, pw, ph);
 
         int side = clamp(pw / 4, 96, 150);
         sidebar(px, py, side, ph);
@@ -136,8 +135,7 @@ public final class MenuScreen implements WestScreen {
     private void sidebar(int x, int y, int w, int h) {
         Theme t = ui.t;
         Gfx g = ui.g;
-        Ui.round(g, x, y, w, h, 12, 0xF0090A10);
-        g.fill(x + w - 1, y + 10, x + w, y + h - 10, 0x14FFFFFF);
+        Rota.side(g, x, y, w, h);
         Icons.draw(g, Icon.LOGO, x + 11, y + 12, 12, t.accent | 0xFF000000);
         float cx = x + 28;
         for (char c : Tr.t("WEST CLIENT").toCharArray()) {
@@ -193,14 +191,9 @@ public final class MenuScreen implements WestScreen {
         Theme t = ui.t;
         Gfx g = ui.g;
         boolean active = page == p && editing == null || (editing != null && p == Page.MODS);
-        boolean on = ui.hover(x + 6, y, w - 12, 18);
-        float hv = hov("nav" + p, on);
-        if (active) Ui.round(g, x + 6, y, w - 12, 18, 6, t.accent | 0xFF000000);
-        else if (hv > 0.01f) Ui.round(g, x + 6, y, w - 12, 18, 6, Theme.alpha(0xFFFFFFFF, Math.max(1, (int) (0x18 * hv))));
-        int c = active ? t.onAccent : Theme.mix(0xCCFFFFFF, 0xFFFFFFFF, hv);
-        Icons.draw(g, PAGE_ICONS[p.ordinal()], x + 13, y + 4, 10, c);
-        g.textBold(ui.fit(PAGE_NAMES[p.ordinal()], w - 40), x + 29, y + 5, c, false);
-        if (ui.clicked(x + 6, y, w - 12, 18)) {
+        float hv = hov("nav" + p, ui.hover(x + 8, y, w - 16, 18));
+        boolean clicked = Rota.nav(ui, PAGE_ICONS[p.ordinal()], PAGE_NAMES[p.ordinal()], x + 8, y, w - 16, active, hv, 0, false);
+        if (clicked) {
             page = p;
             editing = null;
             scroll = scrollTarget = 0;

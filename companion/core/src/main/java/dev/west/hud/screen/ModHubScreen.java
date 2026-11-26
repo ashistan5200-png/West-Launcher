@@ -10,6 +10,7 @@ import dev.west.hud.api.Gfx;
 import dev.west.hud.mods.ModBridge;
 import dev.west.hud.ui.Icons;
 import dev.west.hud.ui.Icons.Icon;
+import dev.west.hud.ui.Rota;
 import dev.west.hud.ui.Theme;
 import dev.west.hud.ui.Ui;
 
@@ -111,9 +112,7 @@ public final class ModHubScreen implements WestScreen {
 
         int pw = Math.min(680, sw - 16), ph = Math.min(400, sh - 16);
         int px = (sw - pw) / 2, py = (sh - ph) / 2 + Math.round((1 - appear) * 12);
-        Ui.round(g, px - 1, py + 3, pw + 2, ph + 2, 13, 0x50000000);
-        Ui.round(g, px, py, pw, ph, 12, 0xF00E0F16);
-        Ui.outline(g, px, py, pw, ph, 12, 0x1FFFFFFF);
+        Rota.window(g, px, py, pw, ph);
 
         if (!api.available()) {
             unavailable(px, py, pw, ph);
@@ -121,7 +120,7 @@ public final class ModHubScreen implements WestScreen {
             return;
         }
 
-        int side = clamp(pw * 28 / 100, 112, 160);
+        int side = clamp(pw * 31 / 100, 124, 170);
         sidebar(px, py, side, ph);
         int cx = px + side + 12, cy = py + 10, cw = pw - side - 24;
 
@@ -206,8 +205,7 @@ public final class ModHubScreen implements WestScreen {
     private void sidebar(int x, int y, int w, int h) {
         Theme t = ui.t;
         Gfx g = ui.g;
-        Ui.round(g, x, y, w, h, 12, 0xF0090A10);
-        g.fill(x + w - 1, y + 10, x + w, y + h - 10, 0x14FFFFFF);
+        Rota.side(g, x, y, w, h);
         Icons.draw(g, Icon.BOX, x + 11, y + 12, 12, t.accent | 0xFF000000);
         g.textBold(ui.fit(Tr.t("Mod Merkezi"), w - 36), x + 28, y + 14, 0xFFFFFFFF, false);
 
@@ -219,20 +217,8 @@ public final class ModHubScreen implements WestScreen {
                 default -> 0;
             };
             boolean active = tab == p;
-            boolean on = ui.hover(x + 6, by, w - 12, 18);
-            float hv = hov("nav" + p, on);
-            if (active) Ui.round(g, x + 6, by, w - 12, 18, 6, t.accent | 0xFF000000);
-            else if (hv > 0.01f) Ui.round(g, x + 6, by, w - 12, 18, 6, Theme.alpha(0xFFFFFFFF, Math.max(1, (int) (0x18 * hv))));
-            int c = active ? t.onAccent : Theme.mix(0xCCFFFFFF, 0xFFFFFFFF, hv);
-            Icons.draw(g, TAB_ICONS[p.ordinal()], x + 13, by + 4, 10, c);
-            String n = count > 99 ? "99+" : String.valueOf(count);
-            int bw = count > 0 ? Math.max(14, g.textWidth(n) + 8) : 0;
-            g.textBold(ui.fit(TAB_NAMES[p.ordinal()], w - 44 - bw), x + 29, by + 5, c, false);
-            if (count > 0) {
-                Ui.round(g, x + w - 12 - bw, by + 3, bw, 12, 6, active ? Theme.alpha(t.onAccent, 0x40) : p == Tab.PENDING ? 0xFFE8A33D : 0x40FFFFFF);
-                g.text(n, x + w - 12 - bw + (bw - g.textWidth(n)) / 2, by + 5, active ? t.onAccent : p == Tab.PENDING ? 0xFF1A140C : 0xFFFFFFFF, false);
-            }
-            if (ui.clicked(x + 6, by, w - 12, 18)) setTab(p);
+            float hv = hov("nav" + p, ui.hover(x + 8, by, w - 16, 18));
+            if (Rota.nav(ui, TAB_ICONS[p.ordinal()], TAB_NAMES[p.ordinal()], x + 8, by, w - 16, active, hv, count, p == Tab.PENDING)) setTab(p);
             by += 20;
         }
 
@@ -306,25 +292,7 @@ public final class ModHubScreen implements WestScreen {
 
     /** Yazı genişliğine göre boyutlanan sekmeler; seçileni döner */
     private int tabs(String[] labels, int sel, int x, int y, int maxW) {
-        Gfx g = ui.g;
-        Theme t = ui.t;
-        int total = 4;
-        for (String l : labels) total += g.textWidth(l) + 16;
-        float k = Math.min(1f, maxW / (float) total);
-        Ui.round(g, x, y, Math.round(total * k), 16, 8, 0x22FFFFFF);
-        int cx = x + 2;
-        for (int i = 0; i < labels.length; i++) {
-            int bw = Math.round((g.textWidth(labels[i]) + 16) * k);
-            boolean on = i == sel;
-            boolean hv = ui.hover(cx, y, bw, 16);
-            if (on) Ui.round(g, cx, y + 2, bw, 12, 6, t.accent | 0xFF000000);
-            else if (hv) Ui.round(g, cx, y + 2, bw, 12, 6, 0x22FFFFFF);
-            String l = ui.fit(labels[i], bw - 6);
-            g.text(l, cx + (bw - g.textWidth(l)) / 2, y + 4, on ? t.onAccent : 0xFFD0D2D8, false);
-            if (ui.clicked(cx, y, bw, 16)) sel = i;
-            cx += bw;
-        }
-        return sel;
+        return Rota.tabs(ui, labels, sel, x, y, maxW);
     }
 
     private int chips(int x, int y, int w) {
