@@ -1,0 +1,12 @@
+// West Client tanıtım sitesi — Cloudflare (westclient.app)
+// Derleme yok: site/ klasörü olduğu gibi yayınlanır. /hesap → hesap.html
+// eşlemesini Cloudflare kendisi yapar; güvenlik başlıkları site/_headers'ta.
+{
+  "name": "westclient",
+  "compatibility_date": "2026-06-01",
+  "assets": {
+    "directory": "./site",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "none"
+  }
+}
