@@ -2,7 +2,7 @@
 """installer.nsi şablonunu deneme değerleriyle doldurur (installer-preview iş akışı için).
 
 Kullanım: render.py <bağımlılık klasörü> [--slow]
-Bağımlılık klasörü: utils.nsh, FileAssociation.nsh, lang/*.nsh, nsis_tauri_utils.dll, dummy.exe
+Bağımlılık klasörü: utils.nsh, FileAssociation.nsh, lang/*.nsh, nsis_tauri_utils.dll, west-launcher.exe
 Çıktı: <bağımlılık klasörü>/test.nsi → makensis ile derlenir, preview-setup.exe üretir."""
 import pathlib, re, sys
 
@@ -17,7 +17,7 @@ vals = {
     'installer_icon': P(inst.parent / 'icons' / 'icon.ico'),
     'sidebar_image': P(inst / 'sidebar.bmp'), 'header_image': P(inst / 'header.bmp'),
     'uninstaller_icon': '', 'uninstaller_header_image': '', 'main_binary_name': 'west-launcher',
-    'main_binary_path': P(deps / 'dummy.exe'), 'bundle_id': 'dev.west.launcher.preview', 'copyright': '',
+    'main_binary_path': P(deps / 'west-launcher.exe'), 'bundle_id': 'dev.west.launcher.preview', 'copyright': '',
     'out_file': P(deps / 'preview-setup.exe'), 'arch': 'x64', 'additional_plugins_path': P(deps),
     'allow_downgrades': 'true', 'display_language_selector': 'false',
     'install_webview2_mode': 'skip', 'webview2_installer_args': '', 'webview2_bootstrapper_path': '',

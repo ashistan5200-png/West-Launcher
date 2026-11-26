@@ -28,7 +28,7 @@ jobs:
           curl -sfL $B/FileAssociation.nsh -o $D/FileAssociation.nsh
           for l in Turkish English German; do curl -sfL $B/languages/$l.nsh -o $D/lang/$l.nsh; done
           curl -sfL https://github.com/tauri-apps/nsis-tauri-utils/releases/download/nsis_tauri_utils-v0.5.3/nsis_tauri_utils.dll -o $D/nsis_tauri_utils.dll
-          cp "C:/Windows/System32/whoami.exe" $D/dummy.exe
+          cp "C:/Windows/System32/whoami.exe" $D/west-launcher.exe
 
       - name: Şablonu doldur ve derle
         shell: bash
