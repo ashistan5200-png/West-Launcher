@@ -8,6 +8,10 @@ on:
     paths: ["src-tauri/installer/**", ".github/workflows/installer-preview.yml"]
   workflow_dispatch:
 
+env:
+  PYTHONIOENCODING: utf-8
+  PYTHONUTF8: "1"
+
 jobs:
   preview:
     runs-on: windows-latest
