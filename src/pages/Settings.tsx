@@ -424,6 +424,9 @@ function DownloadsTab() {
         <Row title={tx("Aynı anda indirme")} desc={tx("{0} dosya. İnternetin yavaşsa düşür.", settings.maxConcurrentDownloads)}>
           <input className="set-range" type="range" min={4} max={64} value={settings.maxConcurrentDownloads} onChange={(e) => void update({ maxConcurrentDownloads: Number(e.target.value) })} />
         </Row>
+        <Row title={tx("CurseForge API anahtarı")} desc={tx("CurseForge'daki içerikleri aramak ve kurmak için. console.curseforge.com'dan ücretsiz alınır; yalnızca bu bilgisayarda saklanır.")}>
+          <SecretInput name="curseforge" />
+        </Row>
         <Row title={tx("İndirme önbelleği")} desc={size === null ? tx("Hesaplanıyor…") : tx("{0} · sürüm listeleri ve geçici indirmeler. Instance'ların ve oyun dosyaların etkilenmez.", fmt(size))}>
           <button className="btn btn-ghost btn-sm" disabled={busy || !size} onClick={async () => { setBusy(true); try { await api.clearCache(); load(); } finally { setBusy(false); } }}>
             {busy ? <Loader2 size={14} className="spin" /> : <Trash2 size={14} />} {tx("Temizle")}
@@ -591,14 +594,14 @@ function AiTab() {
   const { status, refresh, ask, install, progress } = useAi();
   useEffect(() => void refresh(), [refresh]);
   const ready = aiReady(status);
-  const smart = settings.aiProvider === "ollama";
+  const smart = settings.aiProvider === "ollama" || settings.aiProvider === "claude";
 
   return (
     <>
       <div className={clsx("ai-hero", ready && smart && "on")}>
         <Brain size={26} />
         <div className="grow">
-          <strong>{ready && smart ? tx("Ashi akıllı modda") : tx("Ashi basit modda")}</strong>
+          <strong>{settings.aiProvider === "claude" ? tx("Ashi Claude ile çalışıyor") : ready && smart ? tx("Ashi akıllı modda") : tx("Ashi basit modda")}</strong>
           <span className="muted small">
             {ready && smart
               ? tx("Yapay zeka bilgisayarında çalışıyor. Ücretsiz, anahtarsız; yazdıkların hiçbir yere gitmez.")
@@ -615,6 +618,15 @@ function AiTab() {
             if (v && !ready) return ask(true);
             void update({ aiProvider: v ? "ollama" : "off" });
           }} />
+        </Row>
+      </Group>
+
+      <Group title={tx("Claude (en akıllı)")}>
+        <Row title={tx("Anthropic API anahtarı")} desc={tx("Claude ile Ashi isteğini anlayıp işi kendisi yapar: modpack kurar, mod ekler/kapatır, çökmeleri çözer. Anahtar yalnızca bu bilgisayarda saklanır; kullanım ücretini Anthropic hesabından ödersin.")}>
+          <SecretInput name="anthropic" onSaved={(has) => void update({ aiProvider: has ? "claude" : settings.aiProvider === "claude" ? "ollama" : settings.aiProvider })} />
+        </Row>
+        <Row title={tx("Claude kullan")} desc={settings.aiProvider === "claude" ? tx("Ashi şu an Claude ile çalışıyor.") : tx("Kapalıyken Ashi yerel modeli (ya da basit modu) kullanır.")}>
+          <ClaudeToggle />
         </Row>
       </Group>
 
@@ -647,6 +659,50 @@ function AiTab() {
       </details>
     </>
   );
+}
+
+/** Gizli anahtar alanı: değer asla geri okunmaz; yalnızca kayıtlı olup olmadığı gösterilir */
+function SecretInput({ name, onSaved }: { name: "curseforge" | "anthropic"; onSaved?: (has: boolean) => void }) {
+  const [has, setHas] = useState<boolean | null>(null);
+  const [val, setVal] = useState("");
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (isTauri()) api.secretStatus().then((s) => setHas(s[name])).catch(() => setHas(false));
+  }, [name]);
+  const save = async (v: string) => {
+    setBusy(true);
+    try {
+      const s = await api.setSecret(name, v);
+      setHas(s[name]);
+      setVal("");
+      onSaved?.(s[name]);
+    } finally {
+      setBusy(false);
+    }
+  };
+  if (has) {
+    return (
+      <div className="row" style={{ gap: 8 }}>
+        <span className="set-ok"><Check size={14} /> {tx("Kayıtlı")}</span>
+        <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => void save("")}>{tx("Kaldır")}</button>
+      </div>
+    );
+  }
+  return (
+    <form className="row" style={{ gap: 6 }} onSubmit={(e) => { e.preventDefault(); if (val.trim()) void save(val.trim()); }}>
+      <input className="set-input" type="password" autoComplete="off" spellCheck={false} placeholder={name === "anthropic" ? "sk-ant-…" : tx("Anahtar")} value={val} onChange={(e) => setVal(e.target.value)} />
+      <button className="btn btn-primary btn-sm" disabled={!val.trim() || busy}>{busy ? <Loader2 size={14} className="spin" /> : tx("Kaydet")}</button>
+    </form>
+  );
+}
+
+function ClaudeToggle() {
+  const { settings, update } = useSettings();
+  const [has, setHas] = useState(false);
+  useEffect(() => {
+    if (isTauri()) api.secretStatus().then((s) => setHas(s.anthropic)).catch(() => setHas(false));
+  }, [settings.aiProvider]);
+  return <Toggle label={tx("Claude kullan")} on={settings.aiProvider === "claude" && has} onChange={(v) => { if (!v || has) void update({ aiProvider: v ? "claude" : "ollama" }); }} />;
 }
 
 /** Launcher kilidi: açılışta şifre sorulur. Şifre yalnızca Argon2 özeti olarak saklanır. */

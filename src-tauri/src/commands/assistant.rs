@@ -24,18 +24,20 @@ pub async fn ashi_chat(state: State<'_, AppState>, history: Vec<Value>, message:
         })
         .collect();
     let active = active_instance.and_then(|id| instances.iter().find(|i| i.id == id).cloned());
-    let (provider_name, url, model) = {
+    let (provider_name, url, model, claude_model) = {
         let s = state.settings.read();
-        (s.ai_provider.clone(), s.ollama_url.clone(), s.ollama_model.clone())
+        (s.ai_provider.clone(), s.ollama_url.clone(), s.ollama_model.clone(), s.claude_model.clone())
     };
-    // Kurulu ama kapalıysa Ollama'yı sessizce aç; değilse anahtar kelime moduna düşülür
-    let provider = if provider_name == "ollama" && setup::ensure_running(&state.http, &url, &state.paths.root).await {
-        Provider::Ollama { url, model }
-    } else {
-        Provider::Off
+    let claude_key = secrets.anthropic_api_key.clone().filter(|k| !k.trim().is_empty());
+    // Claude seçili ve anahtar varsa ajan modu; yoksa yerel model (kapalıysa sessizce açılır); o da yoksa anahtar kelime modu
+    let provider = match (provider_name.as_str(), claude_key) {
+        ("claude", Some(key)) => Provider::Claude { key, model: claude_model },
+        _ if provider_name != "off" && setup::ensure_running(&state.http, &url, &state.paths.root).await => Provider::Ollama { url, model },
+        _ => Provider::Off,
     };
     let ctx = Ctx {
         http: &state.http,
+        state: &state,
         provider,
         cf_key: secrets.curseforge_api_key.as_deref().filter(|k| !k.trim().is_empty()),
         instances,
@@ -56,6 +58,7 @@ pub fn set_secret(state: State<'_, AppState>, name: String, value: String) -> Re
     let v = Some(value.trim().to_string()).filter(|v| !v.is_empty());
     match name.as_str() {
         "curseforge" => s.curseforge_api_key = v,
+        "anthropic" => s.anthropic_api_key = v,
         _ => return Err(crate::error::AppError::msg("bilinmeyen anahtar")),
     }
     s.save(&state.paths.root)?;

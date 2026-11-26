@@ -19,6 +19,7 @@ const DEFAULT: Settings = {
   game: { resolution: null, fullscreen: false, jvmArgs: [], preLaunch: "", postExit: "", wrapper: "" },
   microsoftClientId: null,
   aiProvider: "ollama",
+  claudeModel: "claude-opus-5-5",
   ollamaUrl: "http://localhost:11434",
   ollamaModel: "qwen2.5:7b",
   onboardingDone: false,

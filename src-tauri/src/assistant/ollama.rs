@@ -16,36 +16,14 @@ pub const DEFAULT_MODEL: &str = "qwen2.5:7b";
 /// Küçük modeller için kısaltılmış talimat (bağlam ve hız için).
 const SYSTEM: &str = "Sen Ashi'sin: West Client'daki Minecraft yardımcısı. Kullanıcının dilinde (çoğunlukla Türkçe), kısa ve samimi konuş.\n\
 Kurallar:\n\
-1. İçerik önermeden önce MUTLAKA search_content aracını çağır; aramada İngilizce anahtar kelimeler kullan (horror, pvp, performance, magic…).\n\
-2. Yalnızca arama sonuçlarındaki projeleri öner, asla uydurma.\n\
-3. Sonunda present_recommendations ile en iyi 3-5 sonucu, her biri için tek cümlelik gerekçeyle göster.\n\
-4. Cevabın 2-3 cümleyi geçmesin. Kurulumu kullanıcı kartlardaki düğmeyle yapar.\n\
-5. Bağlamda verilen instance'ın Minecraft sürümünü ve loader'ını aramada kullan.";
+1. İçerik önermeden ya da kurmadan önce search_content ile ara; İngilizce anahtar kelimeler kullan (horror, pvp, performance, magic…). Asla proje uydurma.\n\
+2. Kullanıcı öneri isterse present_recommendations ile en iyi 3-5 sonucu göster.\n\
+3. Kullanıcı bir şey yapmanı isterse (modpack kur, mod ekle/kapat, FPS'i artır, sunucuya hazırla) araçlarla kendin yap: modpack için create_instance, sonra her mod için install_content.\n\
+4. Büyük bir değişiklikten önce (yeni modpack, 5'ten fazla mod) planı tek cümleyle söyle ve onay iste; kullanıcı onaylayınca yap.\n\
+5. Cevabın 2-4 cümleyi geçmesin; ne yaptığını açıkça söyle.";
 
 fn tools() -> Value {
-    json!([
-        { "type": "function", "function": {
-            "name": "search_content",
-            "description": "Modrinth ve CurseForge'da Minecraft içeriği arar. İngilizce anahtar kelimeler kullan.",
-            "parameters": { "type": "object", "required": ["query", "kind"], "properties": {
-                "query": { "type": "string", "description": "İngilizce arama terimleri" },
-                "kind": { "type": "string", "enum": ["mod", "modpack", "shader", "resourcepack"] },
-                "game_version": { "type": "string", "description": "Örn. 1.21.1 (bilinmiyorsa boş bırak)" },
-                "loader": { "type": "string", "enum": ["fabric", "quilt", "forge", "neoforge"] }
-            } }
-        } },
-        { "type": "function", "function": {
-            "name": "present_recommendations",
-            "description": "Seçtiğin arama sonuçlarını kullanıcıya kurulabilir kart olarak gösterir.",
-            "parameters": { "type": "object", "required": ["items"], "properties": {
-                "items": { "type": "array", "items": { "type": "object", "required": ["source", "id", "reason"], "properties": {
-                    "source": { "type": "string", "enum": ["modrinth", "curseforge"] },
-                    "id": { "type": "string" },
-                    "reason": { "type": "string" }
-                } } }
-            } }
-        } }
-    ])
+    Value::Array(super::actions::defs().into_iter().map(|(name, description, parameters)| json!({ "type": "function", "function": { "name": name, "description": description, "parameters": parameters } })).collect())
 }
 
 /// Bazı modeller argümanları nesne yerine JSON metni olarak döndürür.
@@ -104,7 +82,7 @@ pub async fn chat(ctx: &Ctx<'_>, url: &str, model: &str, mut history: Vec<Value>
     if reply.is_empty() {
         reply = if st.picks.is_empty() { "Uygun bir şey bulamadım; farklı kelimelerle dener misin?".into() } else { "İşte bulduklarım:".into() };
     }
-    Ok(ChatOutcome { history, reply, picks: st.picks, searches: st.searches, mode: "ollama" })
+    Ok(ChatOutcome { history, reply, picks: st.picks, searches: st.searches, actions: st.actions, mode: "ollama" })
 }
 
 #[derive(Debug, Clone, Serialize)]

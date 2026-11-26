@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { ArrowUp, Brain, RotateCcw, Sparkles, X } from "lucide-react";
+import { ArrowUp, Brain, Check, RotateCcw, Sparkles, X } from "lucide-react";
 import { useChat } from "@/stores/chat";
 import { useInstances } from "@/stores/instances";
 import { useContent } from "@/stores/content";
@@ -139,6 +139,11 @@ export function AshiChat() {
                       <span className="muted tiny">{tx("Yakaladığım kelimeler")}</span>
                       {m.keywords.map((k) => <mark key={k}>{k}</mark>)}
                     </div>
+                  )}
+                  {m.actions && m.actions.length > 0 && (
+                    <ul className="chat-actions">
+                      {m.actions.map((a, i) => <li key={i}><Check size={12} /> {a}</li>)}
+                    </ul>
                   )}
                   {m.picks && m.picks.length > 0 && (
                     <div className="chat-picks">

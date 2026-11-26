@@ -8,6 +8,8 @@ export interface ChatMessage {
   role: "user" | "ashi";
   text: string;
   picks?: Pick[];
+  /** Ashi'nin yaptığı değişiklikler ("X kuruldu" …) */
+  actions?: string[];
   /** Basit modda Ashi'nin mesajdan yakaladığı anahtar kelimeler */
   keywords?: string[];
   error?: boolean;
@@ -19,7 +21,7 @@ interface ChatState {
   messages: ChatMessage[];
   /** Ham API geçmişi (tool_use / thinking blokları dahil) — opak */
   history: unknown[];
-  mode: "ollama" | "keyword" | null;
+  mode: "claude" | "ollama" | "keyword" | null;
   activeInstance: string | null;
   /** Sohbet kutusuna önceden yazılacak metin (ör. ana sayfadan "Bana bir modpack kur") */
   draft: string | null;
@@ -56,7 +58,7 @@ export const useChat = create<ChatState>((set, get) => ({
       set((s) => ({
         history: out.history,
         mode: out.mode,
-        messages: [...s.messages, { id: ++mid, role: "ashi", text: out.reply, picks: out.picks, keywords: out.mode === "keyword" ? out.searches.flatMap((q) => q.split(" ")).filter(Boolean) : undefined }],
+        messages: [...s.messages, { id: ++mid, role: "ashi", text: out.reply, picks: out.picks, actions: out.actions, keywords: out.mode === "keyword" ? out.searches.flatMap((q) => q.split(" ")).filter(Boolean) : undefined }],
       }));
     } catch (e) {
       set((s) => ({ messages: [...s.messages, { id: ++mid, role: "ashi", text: errorText(e), error: true }] }));

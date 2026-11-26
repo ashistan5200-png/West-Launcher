@@ -10,6 +10,8 @@
 //! Yerel model yoksa `keyword_assist` aynı arama motoruyla basit bir yanıt üretir.
 
 
+pub mod actions;
+pub mod claude;
 pub mod ollama;
 pub mod setup;
 
@@ -48,19 +50,25 @@ pub struct ChatOutcome {
     pub reply: String,
     pub picks: Vec<Pick>,
     pub searches: Vec<String>,
-    /// "ollama" | "keyword"
+    /// Ashi'nin bu turda yaptığı değişiklikler ("X kuruldu", "Instance oluşturuldu" …)
+    pub actions: Vec<String>,
+    /// "claude" | "ollama" | "keyword"
     pub mode: &'static str,
 }
 
 /// Kullanıcının seçtiği yapay zeka sağlayıcısı.
 #[derive(Debug, Clone)]
 pub enum Provider {
+    /// Anthropic API (kullanıcının kendi anahtarıyla); araç kullanmada en güçlüsü
+    Claude { key: String, model: String },
     Ollama { url: String, model: String },
     Off,
 }
 
 pub struct Ctx<'a> {
     pub http: &'a Http,
+    /// Eylem araçları (instance oluşturma, kurma, aç/kapa…) için
+    pub state: &'a crate::state::AppState,
     pub provider: Provider,
     pub cf_key: Option<&'a str>,
     pub instances: Vec<InstanceBrief>,
@@ -87,15 +95,19 @@ pub(crate) struct ToolState {
     pub seen: HashMap<(Source, String), ContentHit>,
     pub picks: Vec<Pick>,
     pub searches: Vec<String>,
+    pub actions: Vec<String>,
 }
 
 impl ToolState {
     pub fn new() -> Self {
-        Self { seen: HashMap::new(), picks: vec![], searches: vec![] }
+        Self { seen: HashMap::new(), picks: vec![], searches: vec![], actions: vec![] }
     }
 }
 
 pub(crate) async fn run_tool(ctx: &Ctx<'_>, st: &mut ToolState, name: &str, input: &Value) -> (String, bool) {
+    if let Some(r) = actions::run(ctx.state, name, input, &mut st.actions).await {
+        return r;
+    }
     match name {
         "search_content" => {
             let kind: Kind = serde_json::from_value(input["kind"].clone()).unwrap_or(Kind::Mod);
@@ -150,6 +162,7 @@ pub(crate) async fn run_tool(ctx: &Ctx<'_>, st: &mut ToolState, name: &str, inpu
 /// sessizce anahtar kelime moduna düşer ve bunu yanıtta söyler.
 pub async fn chat(ctx: &Ctx<'_>, history: Vec<Value>, user_text: &str) -> Result<ChatOutcome> {
     match &ctx.provider {
+        Provider::Claude { key, model } => claude::chat(ctx, key, model, keep(history, |m| m["role"] == "user" || m["role"] == "assistant"), user_text).await,
         Provider::Ollama { url, model } => match ollama::chat(ctx, url, model, keep(history, |m| m["content"].is_string() || m["role"] == "assistant"), user_text).await {
             Ok(out) => Ok(out),
             // Yerel model kurulu/açık değilse anahtar kelime moduyla sessizce devam et;
@@ -230,7 +243,7 @@ async fn keyword_assist(ctx: &Ctx<'_>, history: Vec<Value>, text: &str) -> Resul
             if query.is_empty() { "popüler" } else { query.as_str() }
         )
     };
-    Ok(ChatOutcome { history, reply, picks, searches: vec![query], mode: "keyword" })
+    Ok(ChatOutcome { history, reply, picks, searches: vec![query], actions: vec![], mode: "keyword" })
 }
 
 fn fmt_count(n: u64) -> String {

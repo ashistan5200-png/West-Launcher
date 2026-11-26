@@ -10,6 +10,9 @@ use std::path::{Path, PathBuf};
 #[serde(default, rename_all = "camelCase")]
 pub struct Secrets {
     pub curseforge_api_key: Option<String>,
+    /// Ashi'nin Claude modu için kullanıcının kendi Anthropic API anahtarı (yalnızca bu bilgisayarda)
+    #[serde(default)]
+    pub anthropic_api_key: Option<String>,
     /// İsteğe bağlı launcher kilidi — Argon2id PHC dizesi (şifrenin kendisi asla saklanmaz)
     pub launcher_password: Option<String>,
 }
@@ -18,6 +21,7 @@ pub struct Secrets {
 #[serde(rename_all = "camelCase")]
 pub struct SecretStatus {
     pub curseforge: bool,
+    pub anthropic: bool,
 }
 
 impl Secrets {
@@ -42,7 +46,7 @@ impl Secrets {
 
     pub fn status(&self) -> SecretStatus {
         let has = |k: &Option<String>| k.as_deref().map(|s| !s.trim().is_empty()).unwrap_or(false);
-        SecretStatus { curseforge: has(&self.curseforge_api_key) }
+        SecretStatus { curseforge: has(&self.curseforge_api_key), anthropic: has(&self.anthropic_api_key) }
     }
 }
 

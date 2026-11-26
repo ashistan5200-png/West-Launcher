@@ -112,6 +112,8 @@ pub struct Settings {
     pub ai_provider: String,
     pub ollama_url: String,
     pub ollama_model: String,
+    /// Claude modunda kullanılan model
+    pub claude_model: String,
     /// İlk açılış turu (Ashi) ve aktarım sihirbazı tamamlandı mı
     pub onboarding_done: bool,
     /// Uyumlu instance'lara West Companion oyun içi modunu kur
@@ -154,6 +156,7 @@ impl Default for Settings {
             ai_provider: "ollama".into(),
             ollama_url: crate::assistant::ollama::DEFAULT_URL.into(),
             ollama_model: crate::assistant::ollama::DEFAULT_MODEL.into(),
+            claude_model: crate::assistant::claude::DEFAULT_MODEL.into(),
             onboarding_done: false,
             companion_enabled: true,
             discord_rpc: true,
@@ -173,9 +176,12 @@ impl Settings {
             .ok()
             .and_then(|b| serde_json::from_slice::<Self>(&b).ok())
             .map(|mut s| {
-                // Claude seçeneği kaldırıldı → yerel modele geç (yoksa anahtar kelime moduna düşer)
-                if s.ai_provider != "off" {
+                // Bilinmeyen sağlayıcı → yerel model (yoksa anahtar kelime moduna düşer)
+                if !["off", "ollama", "claude"].contains(&s.ai_provider.as_str()) {
                     s.ai_provider = "ollama".into();
+                }
+                if s.claude_model.trim().is_empty() {
+                    s.claude_model = crate::assistant::claude::DEFAULT_MODEL.into();
                 }
                 // Eski "oyun açılınca küçült" anahtarı yeni davranış seçimine taşınır
                 if s.close_on_launch && (s.launch_behavior.is_empty() || s.launch_behavior == "keep") {

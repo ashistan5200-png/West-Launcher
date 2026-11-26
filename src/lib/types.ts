@@ -84,7 +84,8 @@ export interface Settings {
   game: GameDefaults;
   microsoftClientId: string | null;
   /** Ashi'nin yapay zekası: ücretsiz yerel model (Ollama) veya anahtar kelime modu */
-  aiProvider: "ollama" | "off";
+  aiProvider: "ollama" | "claude" | "off";
+  claudeModel: string;
   ollamaUrl: string;
   ollamaModel: string;
   onboardingDone: boolean;
@@ -304,7 +305,9 @@ export interface ChatOutcome {
   reply: string;
   picks: Pick[];
   searches: string[];
-  mode: "ollama" | "keyword";
+  /** Ashi'nin bu turda yaptığı değişiklikler */
+  actions: string[];
+  mode: "claude" | "ollama" | "keyword";
 }
 
 /** Ashi'nin yerel yapay zekası (Ollama) */
@@ -327,6 +330,7 @@ export interface AiSetupProgress {
 
 export interface SecretStatus {
   curseforge: boolean;
+  anthropic: boolean;
 }
 
 // ───────── Hesaplar + skinler ─────────
