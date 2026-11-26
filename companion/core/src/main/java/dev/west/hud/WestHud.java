@@ -73,9 +73,12 @@ public final class WestHud {
         // Launcher'ın yaptığı ayar değişikliklerini ~2 sn'de bir yakala
         if (++ticks % 40 == 0) safe("config", () -> config.reloadIfChanged(HUD));
         safe("stats", () -> stats.tick(game));
+        // Dünyadan çıkınca bu oturumun performans ölçümü launcher'a gider
+        if (!game.inWorld()) safe("perf", () -> dev.west.hud.mods.PerfRecorder.finish(game));
     }
 
     public static void renderHud(Gfx g) {
+        if (game.inWorld()) safe("perf", () -> dev.west.hud.mods.PerfRecorder.frame(game));
         safe("handoff-overlay", () -> dev.west.hud.mods.Handoff.overlay(g));
         safe("update-hint", () -> dev.west.hud.mods.UpdateHint.overlay(g));
         if (config != null && !config.data.hudEnabled && !editorOpen) return;

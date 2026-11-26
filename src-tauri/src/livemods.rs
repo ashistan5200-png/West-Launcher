@@ -474,7 +474,7 @@ pub struct ImportReport {
 
 /// Kodu çöz, eksikleri Modrinth'ten kur, set olarak kaydet. in_game: yeni modlar "yeniden başlatınca yüklenir"
 /// bekleyen değişikliği olarak kaydedilir (Uygula ile oyun kapanmadan geçilir).
-async fn import_set(state: &AppState, inst_id: &str, code: &str, in_game: bool) -> Result<ImportReport> {
+pub(crate) async fn import_set(state: &AppState, inst_id: &str, code: &str, in_game: bool) -> Result<ImportReport> {
     let set = crate::setshare::decode(code)?;
     let inst = InstanceManager::new(&state.paths).get(inst_id)?;
     let (dir, game) = (state.paths.instance_dir(inst_id), state.paths.instance_game_dir(inst_id));
@@ -1160,6 +1160,11 @@ pub async fn route(method: &str, path: &str, query: &str, body: &Value) -> Resul
                 Some(h) => json!({ "state": h.state(), "join": h.join }),
                 None => json!({ "state": "none" }),
             })
+        }
+        ("POST", "/perf/report") => {
+            let session: crate::features::PerfSession = serde_json::from_value(body.clone()).map_err(|e| AppError::msg(e.to_string()))?;
+            crate::features::perf_record(&state, &inst_id, session)?;
+            Ok(json!({ "ok": true }))
         }
         ("GET", "/mods/icon") => {
             let url = param(query, "url").unwrap_or_default();

@@ -9,6 +9,8 @@ pub mod core;
 pub mod discord;
 pub mod crash;
 pub mod error;
+pub mod features;
+pub mod packsync;
 pub mod importer;
 pub mod instance;
 pub mod news;
@@ -108,6 +110,17 @@ pub fn run() {
             // İçerik: birleşik arama + kurulum
             commands::content::search_content,
             commands::content::install_content,
+            commands::features::server_probe,
+            commands::features::server_prep,
+            commands::features::fps_plan,
+            commands::features::fps_install,
+            commands::features::install_precheck,
+            commands::features::perf_report,
+            commands::features::pack_sync_publish,
+            commands::features::pack_sync_join,
+            commands::features::pack_sync_status,
+            commands::features::pack_sync_pull,
+            commands::features::pack_sync_unlink,
             commands::content::install_modpack,
             commands::content::installed_content,
             commands::content::content_tags,

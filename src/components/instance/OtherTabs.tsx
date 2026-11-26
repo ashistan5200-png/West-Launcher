@@ -8,6 +8,7 @@ import type { ExportReport, FileEntry, Instance, LogFile, World } from "@/lib/ty
 import { EDITABLE, FileEditor } from "./FileEditor";
 import { askConfirm } from "@/components/ConfirmDialog";
 import { tx } from "@/lib/i18n";
+import { PackSyncCard } from "@/components/features/PackSyncCard";
 import { useSolver } from "@/stores/solver";
 import { AshiHead } from "@/components/AshiHead";
 import { useInstances } from "@/stores/instances";
@@ -230,6 +231,7 @@ export function ShareTab({ instance }: { instance: Instance }) {
 
   return (
     <div className="settings-grid">
+      <PackSyncCard instance={instance} />
       <section className="card stack">
         <h3><Share2 size={17} /> {tx("Modpack olarak paylaş")}</h3>
         <p className="small">

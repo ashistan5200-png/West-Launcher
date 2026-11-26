@@ -59,6 +59,11 @@ public final class WestMod implements ClientModInitializer {
                     return 1;
                 })));
         ClientTickEvents.END_CLIENT_TICK.register(WestMod::tick);
+        // Oyun kapanırken açık oturumun performans ölçümü launcher'a gider
+        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents.CLIENT_STOPPING.register(c -> WestHud.safe("perf", () -> {
+            dev.west.hud.mods.PerfRecorder.finish(WestHud.game);
+            try { Thread.sleep(400); } catch (InterruptedException ignored) {}
+        }));
         // Arka planda açılan devralma oturumu: pencere hemen simge durumuna
         dev.west.hud.mods.Handoff.early(WestHud.game);
         // Dünya paylaşma: e4mc'nin verdiği herkese açık adresi sohbetten yakala

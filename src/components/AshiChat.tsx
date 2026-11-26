@@ -28,6 +28,13 @@ export function AshiChat() {
   const instances = useMemo(() => allInstances.filter((i) => !i.isTemplate), [allInstances]);
   const loadInstalled = useContent((s) => s.loadInstalled);
   const [draft, setDraft] = useState("");
+  const preset = useChat((s) => s.draft);
+  useEffect(() => {
+    if (preset) {
+      setDraft(preset);
+      useChat.getState().setDraft(null);
+    }
+  }, [preset]);
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 

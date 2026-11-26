@@ -21,6 +21,9 @@ interface ChatState {
   history: unknown[];
   mode: "ollama" | "keyword" | null;
   activeInstance: string | null;
+  /** Sohbet kutusuna önceden yazılacak metin (ör. ana sayfadan "Bana bir modpack kur") */
+  draft: string | null;
+  setDraft: (v: string | null) => void;
   setOpen: (v: boolean) => void;
   toggle: () => void;
   setActiveInstance: (id: string | null) => void;
@@ -37,7 +40,9 @@ export const useChat = create<ChatState>((set, get) => ({
   history: [],
   mode: null,
   activeInstance: null,
+  draft: null,
 
+  setDraft: (draft) => set({ draft }),
   setOpen: (open) => set({ open }),
   toggle: () => set((s) => ({ open: !s.open })),
   setActiveInstance: (activeInstance) => set({ activeInstance }),

@@ -536,3 +536,76 @@ export interface CrashAnalysis {
   frame: string | null;
   via: "stack" | "mixin" | "loader" | null;
 }
+
+// ───────── Kolaylaştırıcılar ─────────
+export interface ServerProbe {
+  address: string;
+  versionName: string;
+  protocol: number;
+  mcVersion: string | null;
+  motd: string;
+  online: number;
+  max: number;
+  loader: string | null;
+  mods: string[];
+  favicon: string | null;
+}
+export interface ServerPrepResult {
+  instance: Instance;
+  probe: ServerProbe;
+  installed: string[];
+  missing: string[];
+}
+export interface FpsItem {
+  slug: string;
+  title: string;
+  why: string;
+  status: "installed" | "install" | "skip";
+  note: string | null;
+}
+export interface Precheck {
+  problems: string[];
+  notes: string[];
+  version: string | null;
+}
+export interface PerfSession {
+  at: number;
+  seconds: number;
+  fpsAvg: number;
+  fpsLow1: number;
+  fpsMin: number;
+  stutters: number;
+  memPeakPct: number;
+  memMaxMb: number;
+  renderDistance: number;
+  shaders: boolean;
+  mods: number;
+  inWorldSecs: number;
+}
+export interface PerfFinding {
+  tone: "bad" | "warn" | "ok";
+  title: string;
+  text: string;
+  action: "fps-pack" | "memory" | "render-distance" | null;
+}
+export interface PerfReport {
+  sessions: PerfSession[];
+  findings: PerfFinding[];
+}
+export interface SyncLink {
+  code: string;
+  role: "owner" | "member";
+  updatedAt: string;
+}
+export interface SyncStatus {
+  link: SyncLink | null;
+  hasUpdate: boolean;
+  remoteName: string | null;
+  remoteUpdatedAt: string | null;
+}
+export interface SetImportReport {
+  name: string;
+  installed: number;
+  missing: string[];
+  otherVersion: string | null;
+}

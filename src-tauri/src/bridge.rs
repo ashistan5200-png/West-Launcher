@@ -156,7 +156,7 @@ fn urlencoding_decode(s: &str) -> String {
 
 async fn route(_http: &Http, _root: &PathBuf, method: &str, path: &str, query: &str, body: &Value) -> Result<Value> {
     // Oyun içi mod merkezi. (West sosyal kaldırıldı: arkadaşlar, mesajlar, davetler ve durum artık yok.)
-    if path.starts_with("/mods/") {
+    if path.starts_with("/mods/") || path.starts_with("/perf/") {
         return crate::livemods::route(method, path, query, body).await;
     }
     Err(AppError::msg("bilinmeyen istek"))

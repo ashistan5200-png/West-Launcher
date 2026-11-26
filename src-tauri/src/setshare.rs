@@ -50,11 +50,15 @@ pub fn encode(name: &str, mc: &str, loader: &str, enabled: &[String], files: &[C
         return Err(AppError::msg(crate::i18n::t("Bu sette Modrinth'te bulunan içerik yok; paylaşılacak bir şey kalmadı.")));
     }
     let set = SharedSet { v: 1, n: name.chars().take(32).collect(), mc: mc.into(), l: loader.into(), m, r, s };
-    let json = serde_json::to_vec(&set)?;
+    Ok((pack(&set)?, skipped))
+}
+
+/// Seti "WEST-SET:…" koduna çevirir
+pub fn pack(set: &SharedSet) -> Result<String> {
+    let json = serde_json::to_vec(set)?;
     let mut z = flate2::write::DeflateEncoder::new(Vec::new(), flate2::Compression::best());
     z.write_all(&json)?;
-    let code = format!("{PREFIX}{}", base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(z.finish()?));
-    Ok((code, skipped))
+    Ok(format!("{PREFIX}{}", base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(z.finish()?)))
 }
 
 pub fn decode(code: &str) -> Result<SharedSet> {

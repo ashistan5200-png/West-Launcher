@@ -6,6 +6,8 @@ import { LOADER_LABEL } from "@/lib/format";
 import { Menu } from "./instance/Menu";
 import { InstanceIcon } from "./InstanceIcon";
 import { tx } from "@/lib/i18n";
+import { api, isTauri } from "@/lib/ipc";
+import { askConfirm } from "./ConfirmDialog";
 
 /** İçerik bu instance'a kurulabilir mi? Değilse nedeni. */
 export function incompatibility(hit: ContentHit, inst: Instance): string | null {
@@ -27,6 +29,14 @@ export function InstallMenu({ hit, instances, preferred, direct }: { hit: Conten
   const installed = useContent((s) => !!preferred && !!s.installed[preferred.id]?.has(contentKey(hit)));
   const [done, setDone] = useState<string | null>(null);
   const run = async (inst: Instance | null) => {
+    // Kurmadan önce uyumluluk: çakışan mod, uyumsuz sürüm ya da bilinen sorun varsa önce sor
+    if (inst && hit.source === "modrinth" && hit.kind !== "modpack" && isTauri()) {
+      const pc = await api.installPrecheck(inst.id, hit.id, hit.title).catch(() => null);
+      if (pc && pc.problems.length > 0) {
+        const msg = [tx("{0} kurulmadan önce dikkat:", hit.title), ...pc.problems.map((p) => "• " + p), ...pc.notes.map((n) => "· " + n)].join("\n");
+        if (!(await askConfirm(msg, { title: tx("Uyumluluk uyarısı"), confirmLabel: tx("Yine de kur"), danger: true }))) return;
+      }
+    }
     await install(hit, inst?.id ?? null);
     setDone(inst?.name ?? "yeni instance");
   };

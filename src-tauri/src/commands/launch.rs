@@ -337,6 +337,10 @@ pub async fn run_prepared(app: &AppHandle, id: &str, mode: LaunchMode, p: &Prepa
         if mode == LaunchMode::Play {
             let _ = mgr.record_session(&exit_id, secs);
         }
+        // Ayarlar → "Dünyaları yedekle": bu oturumda değişen dünyalar arka planda yedeklenir
+        if mode == LaunchMode::Play {
+            crate::features::backup_changed_worlds(&st, &exit_id, secs);
+        }
         if let Some(w) = st.watchers.lock().get(&exit_id) {
             let _ = w.send(GameSignal::Exit(code));
         }

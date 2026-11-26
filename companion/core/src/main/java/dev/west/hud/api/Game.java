@@ -187,6 +187,9 @@ public interface Game {
     /** Iris yüklü mü (shader canlı değiştirilebilir mi) */
     default boolean shadersSupported() { return false; }
 
+    /** Görüş mesafesi (parça); bilinmiyorsa 0 */
+    default int renderDistance() { return 0; }
+
     /** Etkin shader paketinin dosya adı (kapalıysa null) */
     default String activeShader() { return null; }
 

@@ -491,6 +491,15 @@ public final class Game121 implements Game {
     @Override public void applyResourcePacks(List<String> enable, List<String> disable, Runnable then) { LiveContent.applyResourcePacks(enable, disable, then); }
     @Override public java.util.Set<String> activeResourcePacks() { return LiveContent.activeResourcePacks(); }
     @Override public boolean shadersSupported() { return LiveContent.shadersSupported(); }
+
+    @Override
+    public int renderDistance() {
+        try {
+            return mc().options.renderDistance().get();
+        } catch (Throwable e) {
+            return 0;
+        }
+    }
     @Override public String activeShader() { return LiveContent.activeShader(); }
     @Override public boolean applyShader(String file) { return LiveContent.applyShader(file); }
     @Override public void enableDatapack(String file) { LiveContent.enableDatapack(file); }

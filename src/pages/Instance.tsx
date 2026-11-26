@@ -18,6 +18,7 @@ import { LOADER_LABEL, formatDuration, formatRelative, errorText } from "@/lib/f
 import type { CompanionConfig, CompanionInfo, Instance, JvmProfile, LoaderKind, LoaderVersion, ManifestEntry } from "@/lib/types";
 import { askConfirm } from "@/components/ConfirmDialog";
 import { tx } from "@/lib/i18n";
+import { PerfCard } from "@/components/features/PerfCard";
 
 type Tab = "content" | "files" | "worlds" | "logs" | "share" | "settings";
 const TABS: { id: Tab; label: string; icon: typeof Boxes }[] = [
@@ -112,6 +113,8 @@ export function InstancePage() {
           )}
         </div>
       )}
+
+      <PerfCard instance={inst} onOpenSettings={() => setTab("settings")} refreshKey={isRunning} />
 
       <nav className="pill-tabs" role="tablist">
         {TABS.map(({ id: t, label, icon: Icon }) => (

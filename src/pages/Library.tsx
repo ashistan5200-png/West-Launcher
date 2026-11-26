@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ChevronDown, Clock, Import, LayoutGrid, List, Loader2, Play, Plus, Search, Square, } from "lucide-react";
+import { ChevronDown, Clock, Import, LayoutGrid, Link2, List, Loader2, Play, Plus, Search, Square, } from "lucide-react";
 import { useOnboarding } from "@/stores/onboarding";
 import clsx from "clsx";
 import { useInstances } from "@/stores/instances";
@@ -12,6 +12,7 @@ import type { Instance, LoaderKind } from "@/lib/types";
 import { LOADER_LABEL, formatDuration, formatRelative } from "@/lib/format";
 import { tx } from "@/lib/i18n";
 import { api } from "@/lib/ipc";
+import { JoinPackModal } from "@/components/features/JoinPackModal";
 
 type Filter = "all" | "templates" | LoaderKind;
 type Sort = "recent" | "name" | "played" | "created" | "version";
@@ -36,6 +37,7 @@ export function LibraryPage() {
   const [view, setView] = useState<"grid" | "list">(get(VIEW_KEY, "grid") as "grid" | "list");
   const [sort, setSort] = useState<Sort>(get(SORT_KEY, "recent") as Sort);
   const [closed, setClosed] = useState<Set<string>>(new Set());
+  const [join, setJoin] = useState(false);
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase();
@@ -83,6 +85,7 @@ export function LibraryPage() {
           <button className="btn btn-ghost btn-sm" onClick={() => useOnboarding.getState().openWizard()} title={tx("Modrinth App, CurseForge, Prism, MultiMC veya resmi launcher'dan")}>
             <Import size={15} /> {tx("Aktar")}
           </button>
+          <button className="btn btn-ghost btn-sm" onClick={() => setJoin(true)} title={tx("Arkadaşının senkron kodundan paket kur")}><Link2 size={15} /> {tx("Kodla ekle")}</button>
           <button className="btn btn-primary btn-sm" onClick={() => setParams({ new: "1" })}><Plus size={15} /> {tx("Yeni instance")}</button>
         </div>
       </header>
@@ -136,6 +139,7 @@ export function LibraryPage() {
       )}
 
       <CreateInstanceModal open={params.get("new") === "1"} onClose={() => setParams({})} onCreated={(id) => navigate(`/instance/${id}`)} />
+      {join && <JoinPackModal onClose={() => setJoin(false)} />}
     </div>
   );
 }

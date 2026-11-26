@@ -479,6 +479,11 @@ public final class ModBridge {
         return URLEncoder.encode(s == null ? "" : s, StandardCharsets.UTF_8);
     }
 
+    /** "Neden kasıyor?" oturum ölçümü (yanıt beklenmez) */
+    public void sendPerf(JsonObject o) {
+        post("/perf/report", o, v -> {}, e -> {});
+    }
+
     private String withInst(String path) {
         return base + path + (path.contains("?") ? "&" : "?") + "inst=" + enc(inst);
     }
