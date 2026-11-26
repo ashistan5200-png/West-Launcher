@@ -65,6 +65,7 @@ pub fn run() {
             commands::settings::get_settings,
             commands::settings::save_settings,
             commands::settings::get_hardware,
+            commands::settings::discord_page,
             commands::settings::get_data_dir,
             commands::settings::cache_size,
             commands::settings::clear_cache,

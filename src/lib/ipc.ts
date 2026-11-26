@@ -20,6 +20,7 @@ export const api = {
   saveSettings: (settings: Settings) => invoke<void>("save_settings", { settings }),
   getHardware: () => invoke<Hardware>("get_hardware"),
   getDataDir: () => invoke<string>("get_data_dir"),
+  discordPage: (page: string) => invoke<void>("discord_page", { page }),
   cacheSize: () => invoke<number>("cache_size"),
   clearCache: () => invoke<void>("clear_cache"),
   resetSettings: () => invoke<Settings>("reset_settings"),

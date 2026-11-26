@@ -301,5 +301,20 @@
  "Bu isteğe yardımcı olamıyorum.": "Bei dieser Anfrage kann ich nicht helfen.",
  "Yanıt çok uzadı; isteği biraz daraltır mısın?": "Die Antwort wurde zu lang; kannst du die Anfrage eingrenzen?",
  "Bitti.": "Fertig.",
- "Tamamlandı.": "Abgeschlossen."
+ "Tamamlandı.": "Abgeschlossen.",
+ "Kütüphanesini düzenliyor": "Ordnet die Bibliothek",
+ "Yeni modlar keşfediyor": "Entdeckt neue Mods",
+ "Paketini hazırlıyor": "Bereitet ein Modpack vor",
+ "Skinine bakıyor": "Schaut sich Skins an",
+ "Ekran görüntülerine bakıyor": "Sieht sich Screenshots an",
+ "Minecraft haberlerini okuyor": "Liest Minecraft-News",
+ "Ayarları kurcalıyor": "Passt Einstellungen an",
+ "Sunucu seçiyor": "Sucht einen Server aus",
+ "Ana sayfada": "Auf der Startseite",
+ "{0} sunucusunda": "Auf {0}",
+ "{0} {1} · {2} mod": "{0} {1} · {2} Mods",
+ "{0} {1} · tek başına": "{0} {1} · ohne Mods",
+ "West Client'ı indir": "West Client holen",
+ "West Client ile oynuyor": "Spielt mit West Client",
+ "Launcher'da, oyuna hazırlanıyor": "Im Launcher, bereit zum Spielen"
 }

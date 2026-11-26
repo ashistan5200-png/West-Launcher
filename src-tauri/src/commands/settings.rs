@@ -18,6 +18,12 @@ pub fn save_settings(state: State<'_, AppState>, settings: Settings) -> Result<(
     Ok(())
 }
 
+/// Discord durumunda launcher'da ne yapıldığını gösterir (sayfa anahtarı: home, library, browse…)
+#[tauri::command]
+pub fn discord_page(state: State<'_, AppState>, page: String) {
+    state.discord.send(crate::discord::Presence::Idle { page });
+}
+
 #[tauri::command]
 pub fn get_hardware() -> Hardware {
     hardware()

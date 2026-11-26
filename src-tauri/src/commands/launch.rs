@@ -231,7 +231,7 @@ pub async fn start_game(app: &AppHandle, id: &str, auth: AuthSession, join_serve
         post,
         hook_env,
         inst_name: inst.name.clone(),
-        presence: format!("{} {} · {} mod", loader, inst.mc_version, mod_count),
+        game: crate::discord::GameInfo { loader, mc: inst.mc_version.clone(), mods: mod_count },
         memory_mb: profile.memory_mb as u64,
     };
     if mode == LaunchMode::Play {
@@ -265,7 +265,8 @@ pub struct Prepared {
     pub post: String,
     pub hook_env: Vec<(String, String)>,
     pub inst_name: String,
-    pub presence: String,
+    /// Discord'da gösterilen özet
+    pub game: crate::discord::GameInfo,
     pub memory_mb: u64,
 }
 
@@ -364,7 +365,7 @@ pub async fn run_prepared(app: &AppHandle, id: &str, mode: LaunchMode, p: &Prepa
         }
         let crashed = matches!(code, Some(c) if c != 0 && c != -1);
         if mode == LaunchMode::Play && !relaunching && st.running.lock().is_empty() {
-            st.discord.send(crate::discord::Presence::Idle);
+            st.discord.send(crate::discord::Presence::Idle { page: "__exit".into() });
         }
         let _ = exit_app.emit(
             EV_GAME_EXIT,
@@ -408,7 +409,8 @@ pub async fn run_prepared(app: &AppHandle, id: &str, mode: LaunchMode, p: &Prepa
     if mode == LaunchMode::Play {
         state.discord.send(crate::discord::Presence::Playing {
             instance: p.inst_name.clone(),
-            detail: p.presence.clone(),
+            game: p.game.clone(),
+            server: join.map(str::to_string),
             started_unix: chrono::Utc::now().timestamp(),
         });
     }

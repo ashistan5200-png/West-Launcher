@@ -18,6 +18,7 @@ import { SkinsPage } from "@/pages/Skins";
 import { GalleryPage } from "@/pages/Gallery";
 import { NewsPage } from "@/pages/News";
 import { Splash } from "@/components/Splash";
+import { api } from "@/lib/ipc";
 import { TooltipLayer } from "@/components/TooltipLayer";
 import { UpdateBanner, UpdateModal } from "@/components/UpdateCenter";
 import { LockScreen, SetupWizard } from "@/components/SetupWizard";
@@ -50,6 +51,11 @@ export default function App() {
     // Kaldırılan sayfalar (ör. eski Sosyal) açılış sayfası olarak kalmışsa ana sayfada kal
     if (startPage !== "/" && !startPage.startsWith("/social") && location.pathname === "/") navigate(startPage, { replace: true });
   }, [startPage]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Discord durumu: launcher'da hangi sayfada olunduğu (oyun sürerken Rust tarafı yok sayar)
+  useEffect(() => {
+    const seg = location.pathname.split("/")[1] || "home";
+    void api.discordPage(seg).catch(() => {});
+  }, [location.pathname]);
   const loadSettings = useSettings((s) => s.load);
   const reduceMotion = useSettings((s) => s.settings.theme.reduceMotion);
   const { refresh, bindEvents } = useInstances();
