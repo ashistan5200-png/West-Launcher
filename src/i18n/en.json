@@ -2061,5 +2061,16 @@
  "{0} mod bildirildi": "{0} mods reported",
  "{0} mod kuruldu. Oyunu açınca fark hemen hissedilir.": "{0} mods installed. You'll feel the difference as soon as you play.",
  "{0} modu kur": "Install {0} mods",
- "ör. play.ornek.com": "e.g. play.example.com"
+ "ör. play.ornek.com": "e.g. play.example.com",
+ "Birlikte oyna": "Play together",
+ "Davet açılıyor…": "Opening invite…",
+ "Arkadaşın bu paketle {0} sunucusunda oynuyor. Aynı paketi kurup yanına bağlanabilirsin.": "Your friend is playing this pack on {0}. Install the same pack and join them.",
+ "Arkadaşın bu paketle oynuyor. Aynı paketi kurup sen de oynayabilirsin.": "Your friend is playing this pack. Install the same pack and play too.",
+ "{0} paket ve shader": "{0} packs and shaders",
+ "Bu paket zaten kurulu; yeniden indirilmez.": "This pack is already installed; it won't be downloaded again.",
+ "Yalnızca kur": "Install only",
+ "Kur ve katıl": "Install and join",
+ "Kur ve oyna": "Install and play",
+ "\"Birlikte oyna\" düğmesi": "\"Play together\" button",
+ "Oynarken Discord profilinde bir düğme çıkar; arkadaşın tıklayınca aynı paketi kurar ve aynı sunucuya katılır. Paketin mod listesi ve sunucu adresi bunun için 7 günlük bir davetle paylaşılır.": "While you play, a button appears on your Discord profile; a friend who clicks it installs the same pack and joins the same server. The pack's mod list and server address are shared through a 7-day invite for this."
 }

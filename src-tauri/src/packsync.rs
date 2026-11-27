@@ -49,7 +49,7 @@ fn new_code() -> String {
     r.as_bytes().iter().take(7).map(|b| A[(*b as usize) % A.len()] as char).collect()
 }
 
-fn loader_name(k: LoaderKind) -> &'static str {
+pub(crate) fn loader_name(k: LoaderKind) -> &'static str {
     match k {
         LoaderKind::Vanilla => "vanilla",
         LoaderKind::Fabric => "fabric",
@@ -59,7 +59,7 @@ fn loader_name(k: LoaderKind) -> &'static str {
     }
 }
 
-fn loader_kind(s: &str) -> LoaderKind {
+pub(crate) fn loader_kind(s: &str) -> LoaderKind {
     match s {
         "fabric" => LoaderKind::Fabric,
         "quilt" => LoaderKind::Quilt,

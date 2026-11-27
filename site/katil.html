@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Birlikte oyna — West Client</title>
+<meta name="description" content="Arkadaşın West Client ile oynuyor. Aynı paketi tek tıkla kur ve yanına katıl.">
+<meta property="og:title" content="Birlikte oyna — West Client">
+<meta property="og:description" content="Arkadaşın West Client ile oynuyor. Aynı paketi tek tıkla kur ve yanına katıl.">
+<meta property="og:image" content="https://westclient.app/assets/rpc/west.png">
+<link rel="icon" href="assets/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="acct-page">
+<main class="acct">
+  <a class="brand" href="./"><img src="assets/icon-256.png" alt=""> West <b>Client</b></a>
+  <section class="acct-card">
+    <div class="acct-state" id="loading"><span class="spinner"></span><p class="muted">Davet açılıyor…</p></div>
+
+    <div class="acct-state" id="invite" hidden>
+      <div class="acct-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+      <h1>Birlikte oyna</h1>
+      <p class="muted" id="lead">Arkadaşın bu paketle oynuyor.</p>
+      <div class="inv-pack">
+        <strong id="packName">Paket</strong>
+        <div class="inv-tags" id="packTags"></div>
+      </div>
+      <a class="btn btn-primary" id="openBtn" href="#">West Client'ta aç</a>
+      <p class="acct-foot muted inv-help">West Client açılınca aynı paketi kurar<span id="joinHelp">, sonra sunucuya bağlanır</span>. Açılmadıysa önce <a class="amber" href="./#indir">West Client'ı indir</a>, kurduktan sonra bu sayfaya dön.</p>
+    </div>
+
+    <div class="acct-state" id="failed" hidden>
+      <div class="acct-ico bad"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 7v6"/><path d="M12 17h.01"/></svg></div>
+      <h1>Davet bulunamadı</h1>
+      <p class="muted" id="failText">Bu davetin süresi dolmuş olabilir. Davetler 7 gün geçerlidir; arkadaşından oyunu yeniden açmasını iste.</p>
+      <a class="btn btn-ghost" href="./">West Client'ın sitesine git</a>
+    </div>
+  </section>
+</main>
+<script src="config.js"></script>
+<script src="katil.js"></script>
+</body>
+</html>

@@ -27,6 +27,7 @@ pub mod i18n;
 pub mod livemods;
 pub mod restorepoints;
 pub mod setshare;
+pub mod invite;
 
 use paths::Paths;
 use state::AppState;
@@ -45,6 +46,16 @@ pub fn run() {
     let effect = state.settings.read().theme.window_effect.clone();
 
     tauri::Builder::default()
+        // İkinci kez açılırsa (ya da westclient:// bağlantısıyla) mevcut pencere öne gelir;
+        // bağlantı deep-link eklentisine iletilir
+        .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
+            if let Some(w) = app.get_webview_window("main") {
+                let _ = w.unminimize();
+                let _ = w.show();
+                let _ = w.set_focus();
+            }
+        }))
+        .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_clipboard_manager::init())
@@ -55,6 +66,7 @@ pub fn run() {
             commands::window::apply_effect(&window, &effect);
             commands::updater::spawn_background(app.handle().clone());
             livemods::set_app(app.handle());
+            commands::invite::bind_deep_links(app.handle());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -66,6 +78,9 @@ pub fn run() {
             commands::settings::save_settings,
             commands::settings::get_hardware,
             commands::settings::discord_page,
+            commands::invite::invite_info,
+            commands::invite::invite_install,
+            commands::invite::take_pending_invite,
             commands::settings::get_data_dir,
             commands::settings::cache_size,
             commands::settings::clear_cache,

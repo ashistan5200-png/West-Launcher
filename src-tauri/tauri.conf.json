@@ -66,5 +66,14 @@
     },
     "publisher": "West",
     "shortDescription": "West Client — Minecraft launcher"
+  },
+  "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": [
+          "westclient"
+        ]
+      }
+    }
   }
 }

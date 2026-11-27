@@ -19,6 +19,7 @@ import { GalleryPage } from "@/pages/Gallery";
 import { NewsPage } from "@/pages/News";
 import { Splash } from "@/components/Splash";
 import { api } from "@/lib/ipc";
+import { InviteHost } from "@/components/features/InviteModal";
 import { TooltipLayer } from "@/components/TooltipLayer";
 import { UpdateBanner, UpdateModal } from "@/components/UpdateCenter";
 import { LockScreen, SetupWizard } from "@/components/SetupWizard";
@@ -123,6 +124,7 @@ export default function App() {
           <ProgressDock />
         </div>
         <AshiConfirmModal />
+        <InviteHost />
         <AshiSolver />
         <AiSetupModal />
         <ImageCropperHost />

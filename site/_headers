@@ -15,3 +15,7 @@
 /hesap
   X-Robots-Tag: noindex
   Cache-Control: no-store
+
+/katil
+  X-Robots-Tag: noindex
+  Cache-Control: no-store

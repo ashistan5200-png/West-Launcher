@@ -206,6 +206,11 @@ function GeneralTab() {
         <Row title={tx("Discord'da göster")} desc={tx("Arkadaşların ne oynadığını Discord profilinde görür.")}>
           <Toggle label={tx("Discord'da göster")} on={settings.discordRpc} onChange={(v) => void update({ discordRpc: v })} />
         </Row>
+        {settings.discordRpc && (
+          <Row title={tx("\"Birlikte oyna\" düğmesi")} desc={tx("Oynarken Discord profilinde bir düğme çıkar; arkadaşın tıklayınca aynı paketi kurar ve aynı sunucuya katılır. Paketin mod listesi ve sunucu adresi bunun için 7 günlük bir davetle paylaşılır.")}>
+            <Toggle label={tx("\"Birlikte oyna\" düğmesi")} on={settings.discordJoin} onChange={(v) => void update({ discordJoin: v })} />
+          </Row>
+        )}
       </Group>
 
       <Group title={tx("Galeri")}>

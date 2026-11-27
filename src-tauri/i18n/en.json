@@ -316,5 +316,10 @@
  "{0} {1} · tek başına": "{0} {1} · no mods",
  "West Client'ı indir": "Get West Client",
  "West Client ile oynuyor": "Playing with West Client",
- "Launcher'da, oyuna hazırlanıyor": "In the launcher, getting ready to play"
+ "Launcher'da, oyuna hazırlanıyor": "In the launcher, getting ready to play",
+ "Davet kodu geçersiz.": "Invalid invite code.",
+ "Davet oluşturulamadı.": "Couldn't create the invite.",
+ "Bu davetin süresi dolmuş ya da hiç yok. Arkadaşından oyunu yeniden açmasını iste.": "This invite has expired or doesn't exist. Ask your friend to restart the game.",
+ "Davet okunamadı.": "Couldn't read the invite.",
+ "Birlikte oyna": "Play together"
 }

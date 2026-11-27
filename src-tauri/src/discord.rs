@@ -28,7 +28,9 @@ pub struct GameInfo {
 pub enum Presence {
     /// Launcher açık; `page` hangi sayfada olunduğu (home, library, browse…)
     Idle { page: String },
-    Playing { instance: String, game: GameInfo, server: Option<String>, started_unix: i64 },
+    Playing { instance: String, game: GameInfo, server: Option<String>, started_unix: i64, invite: Option<String> },
+    /// Oynanan paketin "Birlikte oyna" daveti hazır
+    Invite { code: String },
     /// Yeni uygulama kimliği / açma-kapama
     Configure { client_id: Option<String>, enabled: bool },
     Shutdown,
@@ -156,6 +158,12 @@ fn worker(rx: Receiver<Presence>, mut client_id: Option<String>, mut enabled: bo
                     current = p;
                     dirty = true;
                 }
+                Presence::Invite { code } => {
+                    if let Presence::Playing { invite, .. } = &mut current {
+                        *invite = Some(code);
+                        dirty = true;
+                    }
+                }
             }
         }
         if !enabled {
@@ -176,9 +184,18 @@ fn worker(rx: Receiver<Presence>, mut client_id: Option<String>, mut enabled: bo
         }
         let c = client.as_mut().unwrap();
         let download = t("West Client'ı indir");
-        let buttons = vec![activity::Button::new(&download, SITE)];
+        let together = t("Birlikte oyna");
+        let join_url = match &current {
+            Presence::Playing { invite: Some(c), .. } => Some(format!("{SITE}/katil?k={c}")),
+            _ => None,
+        };
+        let mut buttons = vec![];
+        if let Some(u) = &join_url {
+            buttons.push(activity::Button::new(&together, u));
+        }
+        buttons.push(activity::Button::new(&download, SITE));
         let res = match &current {
-            Presence::Playing { instance, game, server, started_unix } => {
+            Presence::Playing { instance, game, server, started_unix, .. } => {
                 let (badge, name) = loader_badge(&game.loader);
                 let small = format!("{name} · {}", game.mc);
                 let state = playing_state(game, server.as_deref());

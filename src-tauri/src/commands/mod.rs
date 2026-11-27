@@ -9,6 +9,7 @@ pub mod features;
 pub mod files;
 pub mod importer;
 pub mod instance;
+pub mod invite;
 pub mod java;
 pub mod launch;
 pub mod news;

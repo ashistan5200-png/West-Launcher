@@ -25,6 +25,7 @@ const DEFAULT: Settings = {
   onboardingDone: false,
   companionEnabled: true,
   discordRpc: true,
+  discordJoin: true,
   discordClientId: null,
   autoUpdate: true,
   music: true,

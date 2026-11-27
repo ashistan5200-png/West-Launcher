@@ -91,6 +91,8 @@ export interface Settings {
   onboardingDone: boolean;
   companionEnabled: boolean;
   discordRpc: boolean;
+  /** Discord durumunda "Birlikte oyna" düğmesi */
+  discordJoin: boolean;
   discordClientId: string | null;
   autoUpdate: boolean;
   /** West arka plan müziği (launcher ve oyun menüleri) */
@@ -601,6 +603,18 @@ export interface SyncLink {
   role: "owner" | "member";
   updatedAt: string;
 }
+/** "Birlikte oyna" daveti (Discord'dan) */
+export interface InviteInfo {
+  code: string;
+  name: string;
+  mc: string;
+  loader: string;
+  mods: number;
+  packs: number;
+  server: string | null;
+  installed: string | null;
+}
+
 export interface SyncStatus {
   link: SyncLink | null;
   hasUpdate: boolean;

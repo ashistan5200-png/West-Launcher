@@ -49,6 +49,8 @@ pub struct AppState {
     pub ms_login: Mutex<Option<Arc<AtomicBool>>>,
     pub discord: crate::discord::Discord,
     pub update: Mutex<crate::commands::updater::UpdateState>,
+    /// Launcher açılırken gelen westclient://katil/KOD bağlantısı (arayüz hazır olunca alınır)
+    pub pending_invite: Mutex<Option<String>>,
 }
 
 impl AppState {
@@ -66,6 +68,7 @@ impl AppState {
             ms_login: Mutex::new(None),
             discord,
             update: Mutex::new(Default::default()),
+            pending_invite: Mutex::new(None),
         }
     }
 

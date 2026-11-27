@@ -121,6 +121,8 @@ pub struct Settings {
     /// Discord Rich Presence (Discord Developer Portal'daki uygulama kimliği gerekir)
     pub discord_rpc: bool,
     pub discord_client_id: Option<String>,
+    /// Discord durumunda "Birlikte oyna" düğmesi (paketin mod listesi ve sunucu adresi davetle paylaşılır)
+    pub discord_join: bool,
     /// Yeni sürüm bulununca arka planda indir (kurulum yine kullanıcı onayıyla)
     pub auto_update: bool,
     /// West arka plan müziği (launcher'da ve oyunun menülerinde)
@@ -161,6 +163,7 @@ impl Default for Settings {
             companion_enabled: true,
             discord_rpc: true,
             discord_client_id: None,
+            discord_join: true,
             auto_update: true,
             music: true,
             music_in_game: true,

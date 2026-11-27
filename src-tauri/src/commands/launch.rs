@@ -412,7 +412,22 @@ pub async fn run_prepared(app: &AppHandle, id: &str, mode: LaunchMode, p: &Prepa
             game: p.game.clone(),
             server: join.map(str::to_string),
             started_unix: chrono::Utc::now().timestamp(),
+            invite: None,
         });
+        // Discord'da "Birlikte oyna": paketin daveti arka planda hazırlanır
+        let (rpc, join_btn) = { let st = state.settings.read(); (st.discord_rpc, st.discord_join) };
+        if rpc && join_btn && crate::cloud::configured() {
+            let app = app.clone();
+            let id = id.to_string();
+            let server = join.map(str::to_string);
+            tauri::async_runtime::spawn(async move {
+                let st = app.state::<AppState>();
+                match crate::invite::ensure(&st, &id, server.as_deref()).await {
+                    Ok(code) => st.discord.send(crate::discord::Presence::Invite { code }),
+                    Err(e) => tracing::warn!("Discord daveti hazırlanamadı: {e}"),
+                }
+            });
+        }
     }
     Ok(handle.pid)
 }
