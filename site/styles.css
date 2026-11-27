@@ -79,7 +79,7 @@ p { margin: 0; }
 .hero-meta { display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; color: rgb(238 240 243 / .6); font-size: 14px; font-weight: 600; }
 .compass { width: 84px; height: 84px; animation: float 6s ease-in-out infinite; }
 .compass .needle { transform-origin: 12px 12px; animation: needle 7s ease-in-out infinite; }
-@keyframes needle { 0%,100% { transform: rotate(-35deg); } 20% { transform: rotate(-10deg); } 45% { transform: rotate(-48deg); } 70% { transform: rotate(-28deg); } }
+@keyframes needle { 0%,100% { transform: rotate(0deg); } 20% { transform: rotate(14deg); } 45% { transform: rotate(-11deg); } 70% { transform: rotate(6deg); } }
 @keyframes float { 50% { transform: translateY(-8px); } }
 .pill { display: inline-flex; align-items: center; gap: 10px; padding: 6px 14px 6px 6px; border-radius: 999px; background: rgb(10 11 14 / .6); border: 1px solid var(--line2); font-size: 14px; font-weight: 600; color: rgb(238 240 243 / .9); }
 .pill:hover { border-color: rgb(232 162 92 / .5); }
